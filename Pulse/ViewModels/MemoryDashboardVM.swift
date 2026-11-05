@@ -12,6 +12,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var machineLabel: String?
     @Published private(set) var quitPhase: QuitPhase = .idle
     @Published private(set) var quitMessage: String?
+    @Published private(set) var pageNavigation = MenuBarNavigation()
+    @Published private(set) var samplingFailed = false
     @Published var filter = ""
     @Published var sortOrder: [KeyPathComparator<ProcessRow>] = [
         KeyPathComparator(\ProcessRow.memoryBytes, order: .reverse)
@@ -49,6 +51,15 @@ final class MemoryDashboardVM: ObservableObject {
         !filter.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    var selectedPage: DashboardPage { pageNavigation.selectedPage }
+
+    /// Menu-bar primary click. Does not follow whatever page was last shown.
+    func focusMemoryPage() {
+        var navigation = pageNavigation
+        navigation.focusMemoryPage()
+        pageNavigation = navigation
+    }
+
     func start() {
         guard !started else { return }
         started = true
@@ -77,6 +88,7 @@ final class MemoryDashboardVM: ObservableObject {
         systemCpuPercent = nil
         rows = []
         processListFailed = false
+        samplingFailed = false
         Task { await tick() }
     }
 
@@ -114,6 +126,7 @@ final class MemoryDashboardVM: ObservableObject {
         let result = await sampler.sample()
         switch result {
         case .success(let frame):
+            samplingFailed = false
             snapshot = frame.snapshot
             systemCpuPercent = frame.systemCpuPercent
             rows = frame.rows
@@ -130,6 +143,7 @@ final class MemoryDashboardVM: ObservableObject {
             }
             loadState = .ready
         case .failure:
+            samplingFailed = true
             if snapshot == nil {
                 loadState = .failed
             }

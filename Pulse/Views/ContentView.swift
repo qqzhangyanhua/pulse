@@ -1,10 +1,19 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject private var vm: MemoryDashboardVM
+
     var body: some View {
         NavigationStack {
             MemoryDashboardView()
                 .background(PulsePalette.windowBackground)
+                .onAppear {
+                    // Status-item clicks set memory before the window is ordered front.
+                    // Other resource pages are not built in this PR, so a stale page snaps back.
+                    if vm.selectedPage != .memory {
+                        vm.focusMemoryPage()
+                    }
+                }
         }
         .frame(minWidth: 1100, minHeight: 720)
         .preferredColorScheme(.dark)
