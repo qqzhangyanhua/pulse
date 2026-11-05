@@ -90,3 +90,31 @@ enum MemoryGrowthSidebar {
         return MemoryGrowthSlot(title: MemoryGrowthCopy.title, caption: caption)
     }
 }
+
+/// Locked memory-tab list-row copy. Short badge, calm hover; never a leak verdict.
+enum MemoryGrowthListCopy {
+    static let title = "上涨"
+    static let help = "近期内存持续上涨"
+}
+
+/// Visible list badge. Absence means the row paints nothing in the badge slot.
+struct MemoryGrowthListBadge: Equatable, Sendable {
+    let title: String
+    let help: String
+}
+
+/// Memory-page selected-row list only. Other tabs and unselected rows stay silent.
+enum MemoryGrowthList {
+    /// Only `.rising` returns a badge. Insufficient / none / unselected / other pages are `nil`.
+    /// Does not reuse sidebar insufficient copy — the list slot stays empty.
+    static func badge(
+        page: DashboardPage,
+        rowPid: Int32,
+        selectedPid: Int32?,
+        detailSeries: [ChartSample]?
+    ) -> MemoryGrowthListBadge? {
+        guard page == .memory, selectedPid == rowPid else { return nil }
+        guard MemoryGrowthSignal.evaluate(detailSeries ?? []) == .rising else { return nil }
+        return MemoryGrowthListBadge(title: MemoryGrowthListCopy.title, help: MemoryGrowthListCopy.help)
+    }
+}
