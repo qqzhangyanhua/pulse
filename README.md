@@ -2,7 +2,7 @@
 
 好看的 Mac **内存诊断器**（一期 MVP）。外表像活动监视器，任务按诊断走：约 30 秒内找到吃内存的进程并安全退出。
 
-技术设计：[docs/TECH.md](docs/TECH.md)（二期首包见文末「二期」；三期增长软信号见「三期」；四期网络 Tab 见「四期」；五期磁盘 Tab 见「五期」；六期列表上涨角标见「六期」；七期菜单栏轻量条 B 见「七期」）。公证直装：[docs/RELEASE.md](docs/RELEASE.md)。
+技术设计：[docs/TECH.md](docs/TECH.md)（二期首包见文末「二期」；三期增长软信号见「三期」；四期网络 Tab 见「四期」；五期磁盘 Tab 见「五期」；六期列表上涨角标见「六期」；七期菜单栏轻量条 B 见「七期」；八期 polish / 本机冒烟见「八期」）。公证直装：[docs/RELEASE.md](docs/RELEASE.md)。
 
 ## 一期范围
 
@@ -54,6 +54,8 @@ scripts/make-dmg.sh      可选 DMG（可再公证）
 
 建议对照活动监视器看总用量数量级是否接近；第一帧 CPU 列显示「—」是预期（要两帧才有差值）。
 
+八期收尾：本机对照 [docs/TECH.md](docs/TECH.md)「八期」冒烟清单勾选（矩阵以 TECH 为准）。设计侧 4 条不可少：详情「内存趋势」三态、列表「上涨」徽标、菜单栏 B、网络 / 磁盘空加载失败文案。无 Developer ID 时公证标 blocked，不挡功能勾选。
+
 ## 出货清单
 
 验收以 [docs/PRD.md](docs/PRD.md) 为准，签名与直装以 [docs/RELEASE.md](docs/RELEASE.md) 为准。采样、权限和界面不在这条发布路径里改。
@@ -64,7 +66,7 @@ scripts/make-dmg.sh      可选 DMG（可再公证）
 - [ ] PRD：侧栏内存主曲线 + CPU 辅曲线，切换进程后重采
 - [ ] PRD：退出走 `terminate`；失败后可 `forceTerminate`，强制退出有系统确认
 - [ ] PRD：前台采样约 1–2 秒；文案无恐吓措辞；约 30 秒能定位并退出
-- [ ] 本机 Debug 冒烟：`CODE_SIGN_IDENTITY=-`（工程已这样设），Xcode Run
+- [ ] 本机 Debug 冒烟：`CODE_SIGN_IDENTITY=-`（工程已这样设），Xcode Run；八期清单见 TECH「八期」（设计侧 4 条 + 一期～七期回归）
 - [ ] 登录钥匙串有 Developer ID Application；`DEVELOPMENT_TEAM` 与 `NOTARY_KEYCHAIN_PROFILE`（或 Apple ID + app 专用密码）只放在环境里
 - [ ] `./scripts/notarize.sh` 得到已装订的 `build/export/Pulse.app`，并拷到 `/Applications` 后能打开
 - [ ] 可选：`./scripts/make-dmg.sh --notarize` 得到可分发的 DMG
