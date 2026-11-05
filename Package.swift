@@ -23,6 +23,7 @@ let package = Package(
                 "Sampling/HostCPUReader.swift",
                 "Sampling/HostMemoryReader.swift",
                 "Sampling/HostNetworkReader.swift",
+                "Sampling/HostDiskReader.swift",
                 "Sampling/MachineInfo.swift",
                 "Sampling/MemorySampler.swift",
                 "Sampling/ProcessEnumerator.swift",
@@ -37,6 +38,7 @@ let package = Package(
                 "Models/NetworkPage.swift",
                 "Sampling/CPULoad.swift",
                 "Sampling/HostNetwork.swift",
+                "Sampling/HostDisk.swift",
                 "Sampling/SamplingPace.swift",
                 "MenuBar/MenuBarStatus.swift",
             ]

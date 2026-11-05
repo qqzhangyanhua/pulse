@@ -9,12 +9,16 @@ struct RawProcessSample: Sendable, Equatable {
     let threadCount: Int
     let userTimeNs: UInt64
     let systemTimeNs: UInt64
+    /// `ri_diskio_*` from `proc_pid_rusage`. Nil when the call fails (EPERM / ESRCH / other).
+    let diskBytesRead: UInt64?
+    let diskBytesWritten: UInt64?
 }
 
 /// `proc_listpids` / `proc_pidinfo` walk. Display names are resolved later with a cache.
 enum ProcessEnumerator {
     private static let procAllPids: UInt32 = 1
     private static let procPidTaskInfo: Int32 = 4
+    private static let rusageInfoV4: Int32 = 4
     private static let pathBufferSize: Int32 = 4_096
 
     static func list() -> [RawProcessSample]? {
@@ -65,6 +69,7 @@ enum ProcessEnumerator {
             pulse_proc_pidpath(pid, buffer.baseAddress, UInt32(buffer.count))
         }
         let path = pathLen > 0 ? String(cString: pathBuffer) : nil
+        let diskIO = readDiskIO(pid: pid)
 
         return RawProcessSample(
             pid: pid,
@@ -73,8 +78,20 @@ enum ProcessEnumerator {
             memoryBytes: info.pti_resident_size,
             threadCount: max(0, Int(info.pti_threadnum)),
             userTimeNs: info.pti_total_user,
-            systemTimeNs: info.pti_total_system
+            systemTimeNs: info.pti_total_system,
+            diskBytesRead: diskIO?.read,
+            diskBytesWritten: diskIO?.written
         )
+    }
+
+    /// rusage failure must not drop the row. SIP / kernel tasks often return EPERM.
+    private static func readDiskIO(pid: pid_t) -> (read: UInt64, written: UInt64)? {
+        var info = PulseRusageInfoV4()
+        let status = withUnsafeMutablePointer(to: &info) { pointer in
+            pulse_proc_pid_rusage(pid, rusageInfoV4, pointer)
+        }
+        guard status == 0 else { return nil }
+        return (info.ri_diskio_bytesread, info.ri_diskio_byteswritten)
     }
 }
 
@@ -175,3 +192,53 @@ private func pulse_proc_pidpath(
     _ buffer: UnsafeMutableRawPointer?,
     _ buffersize: UInt32
 ) -> Int32
+
+@_silgen_name("proc_pid_rusage")
+private func pulse_proc_pid_rusage(
+    _ pid: Int32,
+    _ flavor: Int32,
+    _ buffer: UnsafeMutableRawPointer?
+) -> Int32
+
+/// Matches Darwin `struct rusage_info_v4` (sys/resource.h). Only `ri_diskio_*` is consumed.
+private struct PulseRusageInfoV4 {
+    var ri_uuid: (
+        UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
+        UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8
+    ) = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    var ri_user_time: UInt64 = 0
+    var ri_system_time: UInt64 = 0
+    var ri_pkg_idle_wkups: UInt64 = 0
+    var ri_interrupt_wkups: UInt64 = 0
+    var ri_pageins: UInt64 = 0
+    var ri_wired_size: UInt64 = 0
+    var ri_resident_size: UInt64 = 0
+    var ri_phys_footprint: UInt64 = 0
+    var ri_proc_start_abstime: UInt64 = 0
+    var ri_proc_exit_abstime: UInt64 = 0
+    var ri_child_user_time: UInt64 = 0
+    var ri_child_system_time: UInt64 = 0
+    var ri_child_pkg_idle_wkups: UInt64 = 0
+    var ri_child_interrupt_wkups: UInt64 = 0
+    var ri_child_pageins: UInt64 = 0
+    var ri_child_elapsed_abstime: UInt64 = 0
+    var ri_diskio_bytesread: UInt64 = 0
+    var ri_diskio_byteswritten: UInt64 = 0
+    var ri_cpu_time_qos_default: UInt64 = 0
+    var ri_cpu_time_qos_maintenance: UInt64 = 0
+    var ri_cpu_time_qos_background: UInt64 = 0
+    var ri_cpu_time_qos_utility: UInt64 = 0
+    var ri_cpu_time_qos_legacy: UInt64 = 0
+    var ri_cpu_time_qos_user_initiated: UInt64 = 0
+    var ri_cpu_time_qos_user_interactive: UInt64 = 0
+    var ri_billed_system_time: UInt64 = 0
+    var ri_serviced_system_time: UInt64 = 0
+    var ri_logical_writes: UInt64 = 0
+    var ri_lifetime_max_phys_footprint: UInt64 = 0
+    var ri_instructions: UInt64 = 0
+    var ri_cycles: UInt64 = 0
+    var ri_billed_energy: UInt64 = 0
+    var ri_serviced_energy: UInt64 = 0
+    var ri_interval_max_phys_footprint: UInt64 = 0
+    var ri_runnable_time: UInt64 = 0
+}

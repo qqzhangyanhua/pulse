@@ -85,9 +85,40 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     let cpuPercent: Double?
     let memoryBytes: UInt64
     let threadCount: Int
+    /// `proc_pid_rusage` two-frame rates. Nil on first frame, EPERM, wrap, or a failed read.
+    let diskReadBytesPerSecond: Double?
+    let diskWriteBytesPerSecond: Double?
+
+    init(
+        pid: Int32,
+        name: String,
+        bundleIdentifier: String?,
+        executablePath: String?,
+        cpuPercent: Double?,
+        memoryBytes: UInt64,
+        threadCount: Int,
+        diskReadBytesPerSecond: Double? = nil,
+        diskWriteBytesPerSecond: Double? = nil
+    ) {
+        self.pid = pid
+        self.name = name
+        self.bundleIdentifier = bundleIdentifier
+        self.executablePath = executablePath
+        self.cpuPercent = cpuPercent
+        self.memoryBytes = memoryBytes
+        self.threadCount = threadCount
+        self.diskReadBytesPerSecond = diskReadBytesPerSecond
+        self.diskWriteBytesPerSecond = diskWriteBytesPerSecond
+    }
 
     /// Missing first-sample CPU sorts below real values without pretending it is 0%.
     var cpuSortKey: Double { cpuPercent ?? -1 }
+
+    /// Combined disk rate for later tab sort. Missing values sink below a real 0 B/s.
+    var diskSortKey: Double {
+        guard let diskReadBytesPerSecond, let diskWriteBytesPerSecond else { return -1 }
+        return diskReadBytesPerSecond + diskWriteBytesPerSecond
+    }
 
     /// Per-process bytes are not available from `PROC_PIDTASKINFO`. Never a fabricated count.
     var networkAvailability: ProcessNetworkAvailability { .unavailable }
@@ -140,4 +171,6 @@ struct SampledFrame: Sendable {
     let systemCpuPercent: Double?
     /// Host inbound/outbound rates for this tick. Nil insides on first frame, failure, or wrap.
     let hostNetworkRates: HostNetworkRates
+    /// Host disk read/write rates for this tick. Nil insides on first frame, failure, or wrap.
+    let hostDiskRates: HostDiskRates
 }
