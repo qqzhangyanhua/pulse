@@ -133,8 +133,8 @@ struct OverviewSection: View {
     private var failureBody: some View {
         AppEmptyState(
             systemImage: "waveform.path.ecg",
-            title: "暂时无法读取内存数据",
-            message: "采样没有返回可用快照。不会用 0 填充总览。",
+            title: "暂时读不到内存数据",
+            message: "这轮采样没有回来，点重新采样再试。",
             retryTitle: "重新采样",
             onRetry: vm.retrySampling
         )

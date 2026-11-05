@@ -59,7 +59,7 @@ struct ProcessTablePane: View {
                 AppEmptyState(
                     systemImage: "list.bullet.rectangle",
                     title: "暂时无法列出进程",
-                    message: "进程枚举失败，不会用空占用数字填充表格。",
+                    message: "这轮没读到进程列表，点重新采样再试。",
                     retryTitle: "重新采样",
                     onRetry: vm.retrySampling
                 )
@@ -67,7 +67,7 @@ struct ProcessTablePane: View {
                 AppEmptyState(
                     systemImage: "waveform.path.ecg",
                     title: "进程列表还没有数据",
-                    message: "总览采样没有返回，列表保持空态。",
+                    message: "总览还没回来，列表先空着。",
                     retryTitle: "重新采样",
                     onRetry: vm.retrySampling
                 )
@@ -77,7 +77,7 @@ struct ProcessTablePane: View {
                 AppEmptyState(
                     systemImage: "list.bullet.rectangle",
                     title: "没有可显示的进程",
-                    message: "这一帧没有返回进程。"
+                    message: "这一帧没有进程可显示。"
                 )
             } else {
                 processList
