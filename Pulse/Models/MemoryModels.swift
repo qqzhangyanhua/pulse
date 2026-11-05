@@ -1,0 +1,100 @@
+import Foundation
+
+enum PressureLevel: String, Sendable, Equatable {
+    case normal
+    case elevated
+
+    var title: String {
+        switch self {
+        case .normal: return "正常"
+        case .elevated: return "偏高"
+        }
+    }
+
+    var caption: String {
+        switch self {
+        case .normal:
+            return "内存压力正常，仍有可回收空间。"
+        case .elevated:
+            return "内存压力偏高，可退出占用较高的进程来回收内存。"
+        }
+    }
+}
+
+struct ChartSample: Identifiable, Sendable, Equatable, Hashable {
+    let id: UInt64
+    let date: Date
+    let value: Double
+}
+
+struct MemoryBreakdown: Sendable, Equatable {
+    let appBytes: UInt64
+    let wiredBytes: UInt64
+    let compressedBytes: UInt64
+    let cachedBytes: UInt64
+
+    var usedBytes: UInt64 {
+        appBytes &+ wiredBytes &+ compressedBytes
+    }
+
+    var categorizedBytes: UInt64 {
+        usedBytes &+ cachedBytes
+    }
+}
+
+struct MemorySnapshot: Sendable, Equatable {
+    let usedBytes: UInt64
+    let totalBytes: UInt64
+    let breakdown: MemoryBreakdown
+    let pressure: PressureLevel
+    let pressureMetric: Double
+    let pressureSeries: [ChartSample]
+    let capturedAt: Date
+}
+
+struct ProcessRow: Identifiable, Sendable, Hashable {
+    var id: Int32 { pid }
+
+    let pid: Int32
+    let name: String
+    let bundleIdentifier: String?
+    let executablePath: String?
+    let cpuPercent: Double?
+    let memoryBytes: UInt64
+    let threadCount: Int
+
+    /// Missing first-sample CPU sorts below real values without pretending it is 0%.
+    var cpuSortKey: Double { cpuPercent ?? -1 }
+}
+
+struct ProcessDetail: Sendable, Equatable {
+    let row: ProcessRow
+    let memorySeries: [ChartSample]
+    let cpuSeries: [ChartSample]
+}
+
+enum LoadState: Equatable {
+    case sampling
+    case ready
+    case failed
+}
+
+enum QuitPhase: Equatable {
+    case idle
+    case quitting
+    case failed
+}
+
+enum ProcessActionResult: Equatable {
+    case exited
+    case notFound
+    case requestFailed
+    case stillRunning
+}
+
+struct SampledFrame: Sendable {
+    let snapshot: MemorySnapshot
+    let rows: [ProcessRow]
+    let detail: ProcessDetail?
+    let processListFailed: Bool
+}
