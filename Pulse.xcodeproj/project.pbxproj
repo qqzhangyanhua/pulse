@@ -1,0 +1,451 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B00000000000000000000001 /* PulseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000001 /* PulseApp.swift */; };
+		B00000000000000000000002 /* MemoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000002 /* MemoryModels.swift */; };
+		B00000000000000000000003 /* HostMemoryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000003 /* HostMemoryReader.swift */; };
+		B00000000000000000000004 /* ProcessEnumerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000004 /* ProcessEnumerator.swift */; };
+		B00000000000000000000005 /* MemorySampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000005 /* MemorySampler.swift */; };
+		B00000000000000000000006 /* MachineInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000006 /* MachineInfo.swift */; };
+		B00000000000000000000007 /* ProcessActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000007 /* ProcessActions.swift */; };
+		B00000000000000000000008 /* MemoryDashboardVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000008 /* MemoryDashboardVM.swift */; };
+		B00000000000000000000009 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000009 /* ContentView.swift */; };
+		B0000000000000000000000A /* MemoryDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000A /* MemoryDashboardView.swift */; };
+		B0000000000000000000000B /* OverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000B /* OverviewSection.swift */; };
+		B0000000000000000000000C /* ProcessTablePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000C /* ProcessTablePane.swift */; };
+		B0000000000000000000000D /* ProcessDetailSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000D /* ProcessDetailSidebar.swift */; };
+		B0000000000000000000000E /* SharedUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000E /* SharedUI.swift */; };
+		B0000000000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000F /* Assets.xcassets */; };
+		B00000000000000000000012 /* Charts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000000012 /* Charts.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A00000000000000000000001 /* PulseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseApp.swift; sourceTree = "<group>"; };
+		A00000000000000000000002 /* MemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryModels.swift; sourceTree = "<group>"; };
+		A00000000000000000000003 /* HostMemoryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostMemoryReader.swift; sourceTree = "<group>"; };
+		A00000000000000000000004 /* ProcessEnumerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessEnumerator.swift; sourceTree = "<group>"; };
+		A00000000000000000000005 /* MemorySampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemorySampler.swift; sourceTree = "<group>"; };
+		A00000000000000000000006 /* MachineInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineInfo.swift; sourceTree = "<group>"; };
+		A00000000000000000000007 /* ProcessActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessActions.swift; sourceTree = "<group>"; };
+		A00000000000000000000008 /* MemoryDashboardVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDashboardVM.swift; sourceTree = "<group>"; };
+		A00000000000000000000009 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A0000000000000000000000A /* MemoryDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDashboardView.swift; sourceTree = "<group>"; };
+		A0000000000000000000000B /* OverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewSection.swift; sourceTree = "<group>"; };
+		A0000000000000000000000C /* ProcessTablePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessTablePane.swift; sourceTree = "<group>"; };
+		A0000000000000000000000D /* ProcessDetailSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessDetailSidebar.swift; sourceTree = "<group>"; };
+		A0000000000000000000000E /* SharedUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUI.swift; sourceTree = "<group>"; };
+		A0000000000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A00000000000000000000010 /* Pulse.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Pulse.entitlements; sourceTree = "<group>"; };
+		A00000000000000000000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A00000000000000000000012 /* Charts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Charts.framework; path = System/Library/Frameworks/Charts.framework; sourceTree = SDKROOT; };
+		D00000000000000000000008 /* Pulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C00000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B00000000000000000000012 /* Charts.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D00000000000000000000001 /* Pulse */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000001 /* PulseApp.swift */,
+				A00000000000000000000011 /* Info.plist */,
+				A00000000000000000000010 /* Pulse.entitlements */,
+				A0000000000000000000000F /* Assets.xcassets */,
+				D00000000000000000000002 /* Models */,
+				D00000000000000000000003 /* Sampling */,
+				D00000000000000000000004 /* Actions */,
+				D00000000000000000000005 /* ViewModels */,
+				D00000000000000000000006 /* Views */,
+			);
+			path = Pulse;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000002 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000002 /* MemoryModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000003 /* Sampling */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000003 /* HostMemoryReader.swift */,
+				A00000000000000000000004 /* ProcessEnumerator.swift */,
+				A00000000000000000000005 /* MemorySampler.swift */,
+				A00000000000000000000006 /* MachineInfo.swift */,
+			);
+			path = Sampling;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000004 /* Actions */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000007 /* ProcessActions.swift */,
+			);
+			path = Actions;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000005 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000008 /* MemoryDashboardVM.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000006 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000009 /* ContentView.swift */,
+				A0000000000000000000000A /* MemoryDashboardView.swift */,
+				A0000000000000000000000B /* OverviewSection.swift */,
+				A0000000000000000000000C /* ProcessTablePane.swift */,
+				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
+				A0000000000000000000000E /* SharedUI.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000007 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D00000000000000000000008 /* Pulse.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000009 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000012 /* Charts.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D0000000000000000000000A /* Root */ = {
+			isa = PBXGroup;
+			children = (
+				D00000000000000000000001 /* Pulse */,
+				D00000000000000000000009 /* Frameworks */,
+				D00000000000000000000007 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F00000000000000000000001 /* Pulse */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E00000000000000000000006 /* Build configuration list for PBXNativeTarget "Pulse" */;
+			buildPhases = (
+				C00000000000000000000001 /* Sources */,
+				C00000000000000000000003 /* Frameworks */,
+				C00000000000000000000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Pulse;
+			productName = Pulse;
+			productReference = D00000000000000000000008 /* Pulse.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F00000000000000000000002 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					F00000000000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = E00000000000000000000005 /* Build configuration list for PBXProject "Pulse" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = "zh-Hans";
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = D0000000000000000000000A /* Root */;
+			productRefGroup = D00000000000000000000007 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F00000000000000000000001 /* Pulse */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C00000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B0000000000000000000000F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C00000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B00000000000000000000001 /* PulseApp.swift in Sources */,
+				B00000000000000000000002 /* MemoryModels.swift in Sources */,
+				B00000000000000000000003 /* HostMemoryReader.swift in Sources */,
+				B00000000000000000000004 /* ProcessEnumerator.swift in Sources */,
+				B00000000000000000000005 /* MemorySampler.swift in Sources */,
+				B00000000000000000000006 /* MachineInfo.swift in Sources */,
+				B00000000000000000000007 /* ProcessActions.swift in Sources */,
+				B00000000000000000000008 /* MemoryDashboardVM.swift in Sources */,
+				B00000000000000000000009 /* ContentView.swift in Sources */,
+				B0000000000000000000000A /* MemoryDashboardView.swift in Sources */,
+				B0000000000000000000000B /* OverviewSection.swift in Sources */,
+				B0000000000000000000000C /* ProcessTablePane.swift in Sources */,
+				B0000000000000000000000D /* ProcessDetailSidebar.swift in Sources */,
+				B0000000000000000000000E /* SharedUI.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		E00000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		E00000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		E00000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Pulse/Pulse.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Pulse/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.qqzhangyanhua.pulse;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E00000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Pulse/Pulse.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Pulse/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.qqzhangyanhua.pulse;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E00000000000000000000005 /* Build configuration list for PBXProject "Pulse" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E00000000000000000000001 /* Debug */,
+				E00000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E00000000000000000000006 /* Build configuration list for PBXNativeTarget "Pulse" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E00000000000000000000003 /* Debug */,
+				E00000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F00000000000000000000002 /* Project object */;
+}
