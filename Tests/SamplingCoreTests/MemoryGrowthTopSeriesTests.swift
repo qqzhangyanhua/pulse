@@ -208,22 +208,18 @@ final class MemoryGrowthTopSeriesTests: XCTestCase {
         }
     }
 
-    func testSelectedOnlyBadgeIsUnchangedWhenTopFiveWouldRise() {
+    func testSelectionIsNotAGateWhenATopFiveRowIsRising() {
         let rising = climbingSeries(count: MemoryGrowthSignal.minSamples, step: 1_048_576)
-        let selected = MemoryGrowthList.badge(
-            page: .memory,
-            rowPid: 3,
-            selectedPid: 3,
-            detailSeries: rising
+        let store = [Int32(3): rising]
+        XCTAssertEqual(
+            MemoryGrowthList.badge(page: .memory, rowPid: 3, seriesByPid: store)?.title,
+            MemoryGrowthListCopy.title,
+            "an unselected Top5 ∩ rising row still lights"
         )
-        let unselected = MemoryGrowthList.badge(
-            page: .memory,
-            rowPid: 3,
-            selectedPid: 9,
-            detailSeries: rising
+        XCTAssertNil(
+            MemoryGrowthList.badge(page: .memory, rowPid: 9, seriesByPid: store),
+            "selection alone is not enough; pid 9 is outside the Top 5 map"
         )
-        XCTAssertEqual(selected?.title, MemoryGrowthListCopy.title)
-        XCTAssertNil(unselected, "list UI wiring stays selected-only until phase 9②")
     }
 
     func testAdoptKeepsTheLongerSelectedSeriesWhenAPidEntersTopFive() {

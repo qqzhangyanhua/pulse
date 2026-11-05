@@ -103,23 +103,11 @@ struct MemoryGrowthListBadge: Equatable, Sendable {
     let help: String
 }
 
-/// Memory-page selected-row list only. Other tabs and unselected rows stay silent.
+/// Memory-page list rows. Other tabs stay silent. Selection is not a gate.
 enum MemoryGrowthList {
-    /// Only `.rising` returns a badge. Insufficient / none / unselected / other pages are `nil`.
+    /// Only `.rising` returns a badge. Insufficient / none / missing pid / other pages are `nil`.
+    /// `seriesByPid` is the current Top 5 map. A selected pid outside that map stays `nil`.
     /// Does not reuse sidebar insufficient copy — the list slot stays empty.
-    static func badge(
-        page: DashboardPage,
-        rowPid: Int32,
-        selectedPid: Int32?,
-        detailSeries: [ChartSample]?
-    ) -> MemoryGrowthListBadge? {
-        guard page == .memory, selectedPid == rowPid else { return nil }
-        guard MemoryGrowthSignal.evaluate(detailSeries ?? []) == .rising else { return nil }
-        return MemoryGrowthListBadge(title: MemoryGrowthListCopy.title, help: MemoryGrowthListCopy.help)
-    }
-
-    /// Phase-9 density predicate. `seriesByPid` only holds current Top 5 series.
-    /// Missing / insufficient / none / other pages stay `nil`. Same `evaluate` as the sidebar.
     static func badge(
         page: DashboardPage,
         rowPid: Int32,

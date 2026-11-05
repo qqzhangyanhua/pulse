@@ -218,14 +218,13 @@ struct ProcessTablePane: View {
     }
 
     private var processList: some View {
-        let growthBadge = vm.memoryGrowthListBadge
-        return List(sortedRows, selection: $vm.selectedPid) { row in
+        List(sortedRows, selection: $vm.selectedPid) { row in
             ProcessLine(
                 row: row,
                 selected: vm.selectedPid == row.pid,
                 showsNetwork: showsNetworkColumn,
                 showsDisk: showsDiskColumns,
-                growthBadge: vm.selectedPid == row.pid ? growthBadge : nil
+                growthBadge: vm.memoryGrowthListBadge(for: row.pid)
             )
                 .listRowInsets(EdgeInsets(top: 3, leading: 10, bottom: 3, trailing: 10))
                 .listRowSeparator(.hidden)
@@ -284,6 +283,7 @@ private struct ProcessLine: View {
     var selected: Bool
     var showsNetwork: Bool
     var showsDisk: Bool
+    /// Phase-6 chip. Per-row Top5 ∩ `.rising`; selection is not a gate. Nil paints nothing.
     var growthBadge: MemoryGrowthListBadge?
 
     var body: some View {
