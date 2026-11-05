@@ -14,9 +14,9 @@ enum PressureLevel: String, Sendable, Equatable {
     var caption: String {
         switch self {
         case .normal:
-            return "内存压力正常，仍有可回收空间。"
+            return "余量充足"
         case .elevated:
-            return "内存压力偏高，可退出占用较高的进程来回收内存。"
+            return "余量紧张"
         }
     }
 }

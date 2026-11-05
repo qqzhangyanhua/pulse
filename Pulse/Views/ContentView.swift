@@ -2,13 +2,17 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        MemoryDashboardView()
-            .frame(minWidth: 880, minHeight: 560)
+        NavigationStack {
+            MemoryDashboardView()
+        }
+        .frame(minWidth: 1100, minHeight: 720)
+        .preferredColorScheme(.dark)
+        .containerBackground(PulsePalette.windowBackground, for: .window)
     }
 }
 
 #Preview {
     ContentView()
         .environmentObject(MemoryDashboardVM())
-        .frame(width: 1100, height: 720)
+        .frame(width: 1280, height: 820)
 }

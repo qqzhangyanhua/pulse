@@ -1,30 +1,33 @@
-import AppKit
 import SwiftUI
 
 struct MemoryDashboardView: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
 
     var body: some View {
-        VStack(spacing: 0) {
-            ResourceTabs()
-            Divider()
-            OverviewSection()
-            Divider()
-            HSplitView {
+        HSplitView {
+            VStack(spacing: 12) {
+                OverviewSection()
                 ProcessTablePane()
-                    .frame(minWidth: 420)
-                ProcessDetailSidebar()
-                    .frame(minWidth: 260, idealWidth: 320, maxWidth: 420)
             }
+            .padding(12)
+            .frame(minWidth: 680, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(PulsePalette.windowBackground)
+
+            ProcessDetailSidebar()
+                .frame(minWidth: 300, idealWidth: 332, maxWidth: 400)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(PulsePalette.windowBackground)
+        .navigationTitle("Pulse")
+        .navigationSubtitle(vm.machineLabel ?? "机型读取中")
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                ResourceTabs()
+            }
             ToolbarItem(placement: .primaryAction) {
-                Text(vm.machineLabel ?? "机型读取中")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                AppFilterField(text: $vm.filter)
             }
         }
+        .toolbarBackground(PulsePalette.windowBackground, for: .windowToolbar)
         .onAppear { vm.start() }
     }
 }

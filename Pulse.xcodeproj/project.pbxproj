@@ -21,6 +21,7 @@
 		B0000000000000000000000C /* ProcessTablePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000C /* ProcessTablePane.swift */; };
 		B0000000000000000000000D /* ProcessDetailSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000D /* ProcessDetailSidebar.swift */; };
 		B0000000000000000000000E /* SharedUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000E /* SharedUI.swift */; };
+		B00000000000000000000013 /* OverviewCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* OverviewCards.swift */; };
 		B0000000000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000F /* Assets.xcassets */; };
 		B00000000000000000000012 /* Charts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000000012 /* Charts.framework */; };
 /* End PBXBuildFile section */
@@ -40,6 +41,7 @@
 		A0000000000000000000000C /* ProcessTablePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessTablePane.swift; sourceTree = "<group>"; };
 		A0000000000000000000000D /* ProcessDetailSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessDetailSidebar.swift; sourceTree = "<group>"; };
 		A0000000000000000000000E /* SharedUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUI.swift; sourceTree = "<group>"; };
+		A00000000000000000000013 /* OverviewCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewCards.swift; sourceTree = "<group>"; };
 		A0000000000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A00000000000000000000010 /* Pulse.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Pulse.entitlements; sourceTree = "<group>"; };
 		A00000000000000000000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -116,6 +118,7 @@
 				A00000000000000000000009 /* ContentView.swift */,
 				A0000000000000000000000A /* MemoryDashboardView.swift */,
 				A0000000000000000000000B /* OverviewSection.swift */,
+				A00000000000000000000013 /* OverviewCards.swift */,
 				A0000000000000000000000C /* ProcessTablePane.swift */,
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
 				A0000000000000000000000E /* SharedUI.swift */,
@@ -229,6 +232,7 @@
 				B00000000000000000000009 /* ContentView.swift in Sources */,
 				B0000000000000000000000A /* MemoryDashboardView.swift in Sources */,
 				B0000000000000000000000B /* OverviewSection.swift in Sources */,
+				B00000000000000000000013 /* OverviewCards.swift in Sources */,
 				B0000000000000000000000C /* ProcessTablePane.swift in Sources */,
 				B0000000000000000000000D /* ProcessDetailSidebar.swift in Sources */,
 				B0000000000000000000000E /* SharedUI.swift in Sources */,
