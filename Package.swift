@@ -25,11 +25,15 @@ let package = Package(
                 "Sampling/MachineInfo.swift",
                 "Sampling/MemorySampler.swift",
                 "Sampling/ProcessEnumerator.swift",
+                "MenuBar/MenuBarController.swift",
+                "MenuBar/MainWindowAnchor.swift",
+                "MenuBar/PulseAppDelegate.swift",
             ],
             sources: [
                 "Models/MemoryModels.swift",
                 "Sampling/CPULoad.swift",
                 "Sampling/SamplingPace.swift",
+                "MenuBar/MenuBarStatus.swift",
             ]
         ),
         .testTarget(
