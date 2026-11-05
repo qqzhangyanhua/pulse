@@ -88,6 +88,22 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
 
     /// Missing first-sample CPU sorts below real values without pretending it is 0%.
     var cpuSortKey: Double { cpuPercent ?? -1 }
+
+    /// Per-process bytes are not available from `PROC_PIDTASKINFO`. Never a fabricated count.
+    var networkAvailability: ProcessNetworkAvailability { .unavailable }
+}
+
+/// Process-level network has no public byte source without entitlements / private APIs.
+enum ProcessNetworkAvailability: Sendable, Equatable {
+    case unavailable
+
+    /// UI later shows this marker. Not an em dash and not `0 B/s`.
+    var label: String {
+        switch self {
+        case .unavailable:
+            return "暂不可用"
+        }
+    }
 }
 
 struct ProcessDetail: Sendable, Equatable {
@@ -122,4 +138,6 @@ struct SampledFrame: Sendable {
     let processListFailed: Bool
     /// Host CPU for this tick. Nil on the first sample or when the host read fails.
     let systemCpuPercent: Double?
+    /// Host inbound/outbound rates for this tick. Nil insides on first frame, failure, or wrap.
+    let hostNetworkRates: HostNetworkRates
 }
