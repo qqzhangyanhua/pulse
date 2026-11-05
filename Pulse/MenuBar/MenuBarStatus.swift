@@ -265,6 +265,49 @@ struct MenuBarPopoverSnapshot: Equatable, Sendable {
     }
 }
 
+/// Strip B click targets. Only live Top3 rows and 「打开 Pulse」 are tappable.
+/// Pressure and used-memory host-block lines are display-only.
+enum MenuBarPopoverTapTarget: Equatable, Sendable {
+    /// A process still projected into Top3. Identity is pid.
+    case process(Int32)
+    /// Bottom-bar 「打开 Pulse」. Focus only; never writes `selectedPid`.
+    case openPulse
+}
+
+/// Ordered side effects for a strip-B tap. Selection still goes through
+/// `ProcessSelection` / `selectPidIfPresent`; focus stays `focusMemoryPage()`.
+enum MenuBarPopoverTapStep: Equatable, Sendable {
+    case dismissPopover
+    case selectPidIfPresent(Int32)
+    case focusMemoryPage
+}
+
+/// Phase 11 step 2 wiring. Does not open a second focus / select path.
+enum MenuBarPopoverTap {
+    /// Host pressure + used memory stay information-only.
+    static let hostBlockIsTappable = false
+
+    /// Live Top3 pids. Empty / `processListFailed` projections have none.
+    static func tappableProcessPids(in strip: MenuBarPopoverSnapshot) -> [Int32] {
+        strip.processes.map(\.pid)
+    }
+
+    /// Tappable controls on the strip. 「打开 Pulse」 is always present.
+    static func targets(in strip: MenuBarPopoverSnapshot) -> [MenuBarPopoverTapTarget] {
+        tappableProcessPids(in: strip).map(MenuBarPopoverTapTarget.process) + [.openPulse]
+    }
+
+    /// Dismiss first. A process row then select-if-present + focus; 「打开 Pulse」 is focus only.
+    static func steps(for target: MenuBarPopoverTapTarget) -> [MenuBarPopoverTapStep] {
+        switch target {
+        case .process(let pid):
+            return [.dismissPopover, .selectPidIfPresent(pid), .focusMemoryPage]
+        case .openPulse:
+            return [.dismissPopover, .focusMemoryPage]
+        }
+    }
+}
+
 /// Foreground pace only while the main window is on screen and the app is active.
 /// Closing the window keeps the same sampler and lengthens the interval.
 struct MenuBarSamplingGate: Equatable, Sendable {

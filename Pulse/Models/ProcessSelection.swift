@@ -5,7 +5,7 @@ import Foundation
 /// `focusMemoryPage()` stays a separate, selection-free path. Callers write
 /// `selectedPid` only through `acceptedPid` / `applying` so a vanished pid
 /// never becomes a ghost selection. The scroll target is the same present-pid
-/// identity; list UI wiring is a later step.
+/// identity the process list reveals.
 enum ProcessSelection {
     /// `pid` only when it still appears in `rows`. Missing / vanished pids
     /// return nil so callers do not write that pid.

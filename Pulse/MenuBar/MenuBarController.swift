@@ -118,9 +118,15 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
         popover.animates = true
         popover.delegate = self
         let hosting = NSHostingController(
-            rootView: MenuBarPopoverView(dashboard: dashboard) { [weak self] in
-                self?.openPulse()
-            }
+            rootView: MenuBarPopoverView(
+                dashboard: dashboard,
+                onOpenPulse: { [weak self] in
+                    self?.handlePopoverTap(.openPulse)
+                },
+                onSelectProcess: { [weak self] pid in
+                    self?.handlePopoverTap(.process(pid))
+                }
+            )
         )
         hosting.sizingOptions = .preferredContentSize
         popover.contentViewController = hosting
@@ -128,9 +134,17 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
         self.popover = popover
     }
 
-    private func openPulse() {
-        dismissPopover()
-        onOpenPulse()
+    private func handlePopoverTap(_ target: MenuBarPopoverTapTarget) {
+        for step in MenuBarPopoverTap.steps(for: target) {
+            switch step {
+            case .dismissPopover:
+                dismissPopover()
+            case .selectPidIfPresent(let pid):
+                dashboard?.selectPidIfPresent(pid)
+            case .focusMemoryPage:
+                onOpenPulse()
+            }
+        }
     }
 
     private func dismissPopover() {
