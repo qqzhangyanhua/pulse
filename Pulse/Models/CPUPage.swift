@@ -64,9 +64,13 @@ enum ProcessColumnTitle {
     static let cpu = "CPU"
     static let memory = "内存"
     static let threads = "线程"
+    static let network = NetworkPageCopy.columnTitle
 
     /// CPU page keeps the memory column. The CPU column is a percent (`CPUPercentText`), not a raw tick count.
     static let cpuPage = [name, cpu, memory, threads]
+
+    /// Network page adds an unavailable marker column. It is not a sortable byte count.
+    static let networkPage = [name, cpu, memory, network, threads]
 }
 
 enum ProcessSortColumn: Equatable, Sendable {
@@ -82,9 +86,9 @@ struct ProcessTableSort: Equatable, Sendable {
 
     static func defaultSort(for page: DashboardPage) -> ProcessTableSort {
         switch page {
-        case .cpu:
+        case .cpu, .network:
             return ProcessTableSort(column: .cpu, descending: true)
-        case .memory, .disk, .network, .gpu:
+        case .memory, .disk, .gpu:
             return ProcessTableSort(column: .memory, descending: true)
         }
     }

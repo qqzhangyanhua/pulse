@@ -34,6 +34,7 @@ let package = Package(
                 "Models/MemoryModels.swift",
                 "Models/MemoryGrowthSignal.swift",
                 "Models/CPUPage.swift",
+                "Models/NetworkPage.swift",
                 "Sampling/CPULoad.swift",
                 "Sampling/HostNetwork.swift",
                 "Sampling/SamplingPace.swift",

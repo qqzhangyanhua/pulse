@@ -9,7 +9,7 @@ struct ContentView: View {
                 .background(PulsePalette.windowBackground)
                 .onAppear {
                     // Status-item clicks set memory before the window is ordered front.
-                    // Disk, network, and GPU are still unbuilt, so a stale page snaps back.
+                    // Disk and GPU are still unbuilt, so a stale page snaps back.
                     if !vm.selectedPage.isSelectable {
                         vm.focusMemoryPage()
                     }

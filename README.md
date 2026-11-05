@@ -43,7 +43,7 @@ scripts/make-dmg.sh      可选 DMG（可再公证）
 
 1. 打开 `Pulse.xcodeproj`，选 Pulse scheme → My Mac。
 2. Debug 已设 `CODE_SIGN_IDENTITY = "-"`（ad-hoc）。Signing Team 可留空。
-3. Run。冷启动应落在内存页；CPU Tab 可点（总览用系统 CPU，进程表默认按 CPU% 降序）；磁盘 / 网络 / GPU 仍灰置。
+3. Run。冷启动应落在内存页；CPU / 网络 Tab 可点（网络总览用主机上/下行，进程网络列「暂不可用」，默认按 CPU% 降序）；磁盘 / GPU 仍灰置。
 4. 按 [docs/PRD.md](docs/PRD.md) 验收：
    - 用量大数、分类条、压力「正常 / 偏高」+ 曲线
    - 进程表默认内存降序；名称过滤；无结果空态

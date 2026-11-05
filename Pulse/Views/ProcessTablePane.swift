@@ -3,6 +3,7 @@ import SwiftUI
 private enum ProcessColumn {
     static let cpu: CGFloat = 96
     static let memory: CGFloat = 124
+    static let network: CGFloat = 80
     static let threads: CGFloat = 64
 }
 
@@ -37,6 +38,10 @@ struct ProcessTablePane: View {
         )
     }
 
+    private var showsNetworkColumn: Bool {
+        vm.selectedPage == .network
+    }
+
     private var columnHeader: some View {
         HStack(spacing: 0) {
             sortHeader(ProcessColumnTitle.name, column: .name, trailing: false)
@@ -45,6 +50,10 @@ struct ProcessTablePane: View {
                 .frame(width: ProcessColumn.cpu, alignment: .trailing)
             sortHeader(ProcessColumnTitle.memory, column: .memory, trailing: true)
                 .frame(width: ProcessColumn.memory, alignment: .trailing)
+            if showsNetworkColumn {
+                staticHeader(ProcessColumnTitle.network)
+                    .frame(width: ProcessColumn.network, alignment: .trailing)
+            }
             sortHeader(ProcessColumnTitle.threads, column: .threads, trailing: true)
                 .frame(width: ProcessColumn.threads, alignment: .trailing)
         }
@@ -54,9 +63,28 @@ struct ProcessTablePane: View {
 
     private var tableBody: some View {
         Group {
-            if vm.selectedPage == .cpu {
-                cpuTableBody
-            } else {
+            switch vm.selectedPage {
+            case .cpu:
+                resourceTableBody(
+                    sampling: CPUPageCopy.sampling,
+                    failureTitle: CPUPageCopy.failureTitle,
+                    failureMessage: CPUPageCopy.failureMessage,
+                    retryTitle: CPUPageCopy.retry,
+                    emptyTitle: CPUPageCopy.emptyTitle,
+                    emptyMessage: CPUPageCopy.emptyMessage,
+                    systemImage: "cpu"
+                )
+            case .network:
+                resourceTableBody(
+                    sampling: NetworkPageCopy.sampling,
+                    failureTitle: NetworkPageCopy.failureTitle,
+                    failureMessage: NetworkPageCopy.failureMessage,
+                    retryTitle: NetworkPageCopy.retry,
+                    emptyTitle: NetworkPageCopy.emptyTitle,
+                    emptyMessage: NetworkPageCopy.emptyMessage,
+                    systemImage: "network"
+                )
+            default:
                 memoryTableBody
             }
         }
@@ -98,23 +126,31 @@ struct ProcessTablePane: View {
     }
 
     @ViewBuilder
-    private var cpuTableBody: some View {
+    private func resourceTableBody(
+        sampling: String,
+        failureTitle: String,
+        failureMessage: String,
+        retryTitle: String,
+        emptyTitle: String,
+        emptyMessage: String,
+        systemImage: String
+    ) -> some View {
         switch cpuPhase {
         case .sampling:
-            samplingPlaceholder(status: CPUPageCopy.sampling)
+            samplingPlaceholder(status: sampling)
         case .failed:
             AppEmptyState(
-                systemImage: "cpu",
-                title: CPUPageCopy.failureTitle,
-                message: CPUPageCopy.failureMessage,
-                retryTitle: CPUPageCopy.retry,
+                systemImage: systemImage,
+                title: failureTitle,
+                message: failureMessage,
+                retryTitle: retryTitle,
                 onRetry: vm.retrySampling
             )
         case .empty:
             AppEmptyState(
                 systemImage: "list.bullet.rectangle",
-                title: CPUPageCopy.emptyTitle,
-                message: CPUPageCopy.emptyMessage
+                title: emptyTitle,
+                message: emptyMessage
             )
         case .filteredEmpty:
             filterEmpty
@@ -162,7 +198,11 @@ struct ProcessTablePane: View {
 
     private var processList: some View {
         List(sortedRows, selection: $vm.selectedPid) { row in
-            ProcessLine(row: row, selected: vm.selectedPid == row.pid)
+            ProcessLine(
+                row: row,
+                selected: vm.selectedPid == row.pid,
+                showsNetwork: showsNetworkColumn
+            )
                 .listRowInsets(EdgeInsets(top: 3, leading: 10, bottom: 3, trailing: 10))
                 .listRowSeparator(.hidden)
                 .listRowBackground(rowBackground(vm.selectedPid == row.pid))
@@ -175,6 +215,15 @@ struct ProcessTablePane: View {
     private func rowBackground(_ selected: Bool) -> some View {
         RoundedRectangle(cornerRadius: 8, style: .continuous)
             .fill(selected ? PulsePalette.selection : Color.clear)
+    }
+
+    private func staticHeader(_ title: String) -> some View {
+        HStack(spacing: 3) {
+            Spacer(minLength: 0)
+            Text(title)
+        }
+        .font(.caption)
+        .foregroundStyle(Color.secondary)
     }
 
     private func sortHeader(
@@ -209,6 +258,7 @@ struct ProcessTablePane: View {
 private struct ProcessLine: View {
     let row: ProcessRow
     var selected: Bool
+    var showsNetwork: Bool
 
     var body: some View {
         HStack(spacing: 0) {
@@ -224,6 +274,11 @@ private struct ProcessLine: View {
                 .frame(width: ProcessColumn.cpu, alignment: .trailing)
             metric(ByteFormat.memory(row.memoryBytes), dot: PulsePalette.accent)
                 .frame(width: ProcessColumn.memory, alignment: .trailing)
+            if showsNetwork {
+                Text(row.networkAvailability.label)
+                    .foregroundStyle(selected ? Color.white.opacity(0.82) : Color.secondary)
+                    .frame(width: ProcessColumn.network, alignment: .trailing)
+            }
             Text("\(row.threadCount)")
                 .monospacedDigit()
                 .frame(width: ProcessColumn.threads, alignment: .trailing)
@@ -231,9 +286,20 @@ private struct ProcessLine: View {
         .font(.callout)
         .foregroundStyle(selected ? Color.white : Color.primary)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(
-            "\(row.name)，CPU \(ByteFormat.cpu(row.cpuPercent))，内存 \(ByteFormat.memory(row.memoryBytes))，\(row.threadCount) 线程"
-        )
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var accessibilityLabel: String {
+        var parts = [
+            row.name,
+            "CPU \(ByteFormat.cpu(row.cpuPercent))",
+            "内存 \(ByteFormat.memory(row.memoryBytes))",
+        ]
+        if showsNetwork {
+            parts.append("网络 \(row.networkAvailability.label)")
+        }
+        parts.append("\(row.threadCount) 线程")
+        return parts.joined(separator: "，")
     }
 
     private func metric(_ text: String, dot: Color) -> some View {

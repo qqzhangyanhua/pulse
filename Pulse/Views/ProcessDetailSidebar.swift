@@ -21,7 +21,14 @@ struct ProcessDetailSidebar: View {
     }
 
     private var emptyPrompt: String {
-        vm.selectedPage == .cpu ? CPUPageCopy.sidebarEmpty : "选择一个进程查看详情"
+        switch vm.selectedPage {
+        case .cpu:
+            return CPUPageCopy.sidebarEmpty
+        case .network:
+            return NetworkPageCopy.sidebarEmpty
+        default:
+            return "选择一个进程查看详情"
+        }
     }
 
     private var emptyBody: some View {
