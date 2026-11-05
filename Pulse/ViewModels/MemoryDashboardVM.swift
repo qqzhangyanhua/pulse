@@ -18,6 +18,7 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var usageHistory = UsageHistory()
     @Published private(set) var cpuHistory = SystemCPUHistory()
     @Published private(set) var networkHistory = SystemNetworkHistory()
+    @Published private(set) var diskHistory = SystemDiskHistory()
     @Published var filter = ""
     @Published private(set) var navigation = DashboardNavigation()
 
@@ -71,7 +72,7 @@ final class MemoryDashboardVM: ObservableObject {
         navigation = next
     }
 
-    /// Memory, CPU, and network. Disk and GPU stay on the current page.
+    /// Memory, CPU, network, and disk. GPU stays on the current page.
     func selectPage(_ page: DashboardPage) {
         var next = navigation
         next.select(page)
@@ -124,6 +125,9 @@ final class MemoryDashboardVM: ObservableObject {
         var clearedNetwork = networkHistory
         clearedNetwork.reset()
         networkHistory = clearedNetwork
+        var clearedDisk = diskHistory
+        clearedDisk.reset()
+        diskHistory = clearedDisk
         Task { await tick() }
     }
 
@@ -175,6 +179,9 @@ final class MemoryDashboardVM: ObservableObject {
             var nextNetwork = networkHistory
             nextNetwork.record(rates: frame.hostNetworkRates, at: frame.snapshot.capturedAt)
             networkHistory = nextNetwork
+            var nextDisk = diskHistory
+            nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
+            diskHistory = nextDisk
             rows = frame.rows
             processListFailed = frame.processListFailed
             if let frameDetail = frame.detail {

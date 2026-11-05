@@ -77,11 +77,11 @@ final class NetworkPageTests: XCTestCase {
         XCTAssertNotEqual(row.networkAvailability.label, "0 字节/秒")
     }
 
-    func testNetworkTabIsSelectableAndDiskGPUStayGray() {
+    func testNetworkTabIsSelectableAndGPUStaysGray() {
         XCTAssertTrue(DashboardPage.memory.isSelectable)
         XCTAssertTrue(DashboardPage.cpu.isSelectable)
         XCTAssertTrue(DashboardPage.network.isSelectable)
-        XCTAssertFalse(DashboardPage.disk.isSelectable)
+        XCTAssertTrue(DashboardPage.disk.isSelectable)
         XCTAssertFalse(DashboardPage.gpu.isSelectable)
     }
 
@@ -96,7 +96,6 @@ final class NetworkPageTests: XCTestCase {
         XCTAssertNotEqual(navigation.sort, ProcessTableSort.defaultSort(for: .memory))
 
         navigation.updateSort(ProcessTableSort(column: .name, descending: false))
-        navigation.select(.disk)
         navigation.select(.gpu)
         XCTAssertEqual(navigation.selectedPage, .network)
         XCTAssertEqual(navigation.sort.column, .name)

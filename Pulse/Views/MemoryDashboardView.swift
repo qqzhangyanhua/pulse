@@ -11,6 +11,8 @@ struct MemoryDashboardView: View {
                     CPUOverviewSection()
                 case .network:
                     NetworkOverviewSection()
+                case .disk:
+                    DiskOverviewSection()
                 default:
                     OverviewSection()
                 }
