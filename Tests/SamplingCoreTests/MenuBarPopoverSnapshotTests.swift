@@ -258,6 +258,50 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
         XCTAssertEqual(strip.processes.map(\.name), ["chrome"])
     }
 
+    func testHostBlockWiresUsedMemoryUnderPressureWithoutAFourthSection() {
+        let used: UInt64 = 13_261_991_936
+        let strip = MenuBarPopoverSnapshot.project(
+            pressure: .normal,
+            usedBytes: used,
+            samplingFailed: false,
+            rows: [process(pid: 1, name: "Finder", memory: 12)],
+            processListFailed: false
+        )
+        XCTAssertEqual(MenuBarPopoverShell.sections, [.hostPressure, .topProcesses, .openPulse])
+        XCTAssertEqual(MenuBarPopoverShell.hostBlockLineCount, 2)
+        XCTAssertEqual(strip.hostBlockLines.count, MenuBarPopoverShell.hostBlockLineCount)
+        XCTAssertEqual(strip.hostBlockLines, [strip.pressureLine, strip.usedMemoryLine])
+        XCTAssertEqual(strip.hostBlockLines[0], "正常 · 余量充足")
+        XCTAssertEqual(strip.hostBlockLines[1], "已用 \(ByteFormat.memory(used))")
+        XCTAssertEqual(strip.hostBlockLines[1], "已用 12.35 GB")
+        XCTAssertFalse(strip.hostBlockLines[1].contains("已用 0 GB"))
+        XCTAssertEqual(strip.processes.map(\.name), ["Finder"])
+    }
+
+    func testHostBlockEmptyCopyIsTemporarilyUnreadableAndNeverFakesZeroGB() {
+        let missing = MenuBarPopoverSnapshot.project(
+            pressure: nil,
+            usedBytes: nil,
+            samplingFailed: false,
+            rows: [],
+            processListFailed: false
+        )
+        let failed = MenuBarPopoverSnapshot.project(
+            pressure: .elevated,
+            usedBytes: 12_884_901_888,
+            samplingFailed: true,
+            rows: [process(pid: 9, name: "mail", memory: 200)],
+            processListFailed: false
+        )
+        XCTAssertEqual(missing.hostBlockLines, ["暂时读不到", "暂时读不到"])
+        XCTAssertEqual(failed.hostBlockLines, ["暂时读不到", "暂时读不到"])
+        XCTAssertEqual(failed.hostBlockLines[1], MenuBarCopy.unavailableTooltip)
+        XCTAssertFalse(missing.hostBlockLines.contains { $0.contains("已用") })
+        XCTAssertFalse(failed.hostBlockLines.contains { $0.contains("已用 0 GB") })
+        XCTAssertFalse(failed.hostBlockLines.contains { $0.contains("12") })
+        XCTAssertEqual(failed.processes.map(\.name), ["mail"])
+    }
+
     func testUsedMemoryLineFormatsSubGibibytesWithTheSameMemoryFormatter() {
         let used: UInt64 = 524_288_000
         let strip = MenuBarPopoverSnapshot.project(
