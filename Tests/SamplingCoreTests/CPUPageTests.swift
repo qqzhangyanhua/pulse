@@ -131,11 +131,11 @@ final class CPUPageTests: XCTestCase {
         XCTAssertTrue(ProcessColumnTitle.cpuPage.contains(ProcessColumnTitle.memory))
     }
 
-    func testOnlyMemoryAndCPUTabsAreSelectable() {
+    func testMemoryCPUAndNetworkTabsAreSelectable() {
         XCTAssertTrue(DashboardPage.memory.isSelectable)
         XCTAssertTrue(DashboardPage.cpu.isSelectable)
+        XCTAssertTrue(DashboardPage.network.isSelectable)
         XCTAssertFalse(DashboardPage.disk.isSelectable)
-        XCTAssertFalse(DashboardPage.network.isSelectable)
         XCTAssertFalse(DashboardPage.gpu.isSelectable)
     }
 
@@ -150,7 +150,6 @@ final class CPUPageTests: XCTestCase {
 
         navigation.updateSort(ProcessTableSort(column: .name, descending: false))
         navigation.select(.disk)
-        navigation.select(.network)
         navigation.select(.gpu)
         XCTAssertEqual(navigation.selectedPage, .cpu)
         XCTAssertEqual(navigation.sort.column, .name)

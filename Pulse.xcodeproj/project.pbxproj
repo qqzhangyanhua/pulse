@@ -12,6 +12,8 @@
 		B0000000000000000000001B /* CPUPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001B /* CPUPage.swift */; };
 		B0000000000000000000001D /* MemoryGrowthSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001D /* MemoryGrowthSignal.swift */; };
 		B0000000000000000000001C /* CPUOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001C /* CPUOverviewSection.swift */; };
+		B00000000000000000000020 /* NetworkPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000020 /* NetworkPage.swift */; };
+		B00000000000000000000021 /* NetworkOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000021 /* NetworkOverviewSection.swift */; };
 		B00000000000000000000003 /* HostMemoryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000003 /* HostMemoryReader.swift */; };
 		B00000000000000000000004 /* ProcessEnumerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000004 /* ProcessEnumerator.swift */; };
 		B00000000000000000000005 /* MemorySampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000005 /* MemorySampler.swift */; };
@@ -44,6 +46,8 @@
 		A0000000000000000000001B /* CPUPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUPage.swift; sourceTree = "<group>"; };
 		A0000000000000000000001D /* MemoryGrowthSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGrowthSignal.swift; sourceTree = "<group>"; };
 		A0000000000000000000001C /* CPUOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUOverviewSection.swift; sourceTree = "<group>"; };
+		A00000000000000000000020 /* NetworkPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkPage.swift; sourceTree = "<group>"; };
+		A00000000000000000000021 /* NetworkOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkOverviewSection.swift; sourceTree = "<group>"; };
 		A00000000000000000000003 /* HostMemoryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostMemoryReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000004 /* ProcessEnumerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessEnumerator.swift; sourceTree = "<group>"; };
 		A00000000000000000000005 /* MemorySampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemorySampler.swift; sourceTree = "<group>"; };
@@ -108,6 +112,7 @@
 				A00000000000000000000002 /* MemoryModels.swift */,
 				A0000000000000000000001D /* MemoryGrowthSignal.swift */,
 				A0000000000000000000001B /* CPUPage.swift */,
+				A00000000000000000000020 /* NetworkPage.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -162,6 +167,7 @@
 				A0000000000000000000000A /* MemoryDashboardView.swift */,
 				A0000000000000000000000B /* OverviewSection.swift */,
 				A0000000000000000000001C /* CPUOverviewSection.swift */,
+				A00000000000000000000021 /* NetworkOverviewSection.swift */,
 				A00000000000000000000013 /* OverviewCards.swift */,
 				A0000000000000000000000C /* ProcessTablePane.swift */,
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
@@ -269,7 +275,9 @@
 				B00000000000000000000002 /* MemoryModels.swift in Sources */,
 				B0000000000000000000001D /* MemoryGrowthSignal.swift in Sources */,
 				B0000000000000000000001B /* CPUPage.swift in Sources */,
+				B00000000000000000000020 /* NetworkPage.swift in Sources */,
 				B0000000000000000000001C /* CPUOverviewSection.swift in Sources */,
+				B00000000000000000000021 /* NetworkOverviewSection.swift in Sources */,
 				B00000000000000000000003 /* HostMemoryReader.swift in Sources */,
 				B00000000000000000000004 /* ProcessEnumerator.swift in Sources */,
 				B00000000000000000000005 /* MemorySampler.swift in Sources */,

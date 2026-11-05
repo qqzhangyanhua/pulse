@@ -1,7 +1,7 @@
 import Foundation
 
-/// Pages the status item can land on. The main window presents memory and CPU.
-/// Disk, network, and GPU stay in the enum so a click can force memory instead of following them.
+/// Pages the status item can land on. The main window presents memory, CPU, and network.
+/// Disk and GPU stay in the enum so a click can force memory instead of following them.
 enum DashboardPage: String, Equatable, Sendable, CaseIterable {
     case memory
     case cpu
@@ -9,12 +9,12 @@ enum DashboardPage: String, Equatable, Sendable, CaseIterable {
     case network
     case gpu
 
-    /// CPU is tappable. Disk, network, and GPU stay disabled.
+    /// Memory, CPU, and network are tappable. Disk and GPU stay disabled.
     var isSelectable: Bool {
         switch self {
-        case .memory, .cpu:
+        case .memory, .cpu, .network:
             return true
-        case .disk, .network, .gpu:
+        case .disk, .gpu:
             return false
         }
     }
