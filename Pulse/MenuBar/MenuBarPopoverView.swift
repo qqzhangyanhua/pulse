@@ -1,8 +1,14 @@
 import SwiftUI
 
-/// Strip B shell. Three slots, single column, secondary type. Live pressure + Top3 come later.
+/// Strip B. Three slots, single column, secondary type. Live values are a
+/// read-only projection of the same dashboard the color-dot and main window use.
 struct MenuBarPopoverView: View {
+    @ObservedObject var dashboard: MemoryDashboardVM
     var onOpenPulse: () -> Void
+
+    private var strip: MenuBarPopoverSnapshot {
+        dashboard.menuBarPopover
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -24,19 +30,14 @@ struct MenuBarPopoverView: View {
     private func slot(_ section: MenuBarPopoverSection) -> some View {
         switch section {
         case .hostPressure:
-            Text(MenuBarPopoverShell.placeholder(for: .hostPressure))
+            Text(strip.pressureLine)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityLabel("主机压力")
-                .accessibilityValue(MenuBarPopoverShell.placeholder(for: .hostPressure))
+                .accessibilityValue(strip.pressureLine)
         case .topProcesses:
-            Text(MenuBarPopoverShell.placeholder(for: .topProcesses))
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityLabel("占用最多的进程")
-                .accessibilityValue(MenuBarPopoverShell.placeholder(for: .topProcesses))
+            topProcessesSlot
         case .openPulse:
             Button(action: onOpenPulse) {
                 Text(MenuBarCopy.openPulseTitle)
@@ -47,6 +48,39 @@ struct MenuBarPopoverView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(MenuBarCopy.openPulseTitle)
+        }
+    }
+
+    @ViewBuilder
+    private var topProcessesSlot: some View {
+        if let empty = strip.processesEmptyCopy {
+            Text(empty)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel("占用最多的进程")
+                .accessibilityValue(empty)
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(strip.processes) { process in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(process.name)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        Spacer(minLength: 8)
+                        Text(ByteFormat.memory(process.memoryBytes))
+                            .monospacedDigit()
+                    }
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(process.name)
+                    .accessibilityValue(ByteFormat.memory(process.memoryBytes))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("占用最多的进程")
         }
     }
 }

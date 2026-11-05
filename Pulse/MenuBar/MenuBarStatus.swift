@@ -142,7 +142,7 @@ enum MenuBarPointer: Equatable, Sendable {
     var showsPopover: Bool { statusItemAction == .showPopover }
 }
 
-/// Locked strip B slots. This PR ships the empty shell; live pressure + Top3 fill later.
+/// Locked strip B slots. Live values come from `MenuBarPopoverSnapshot`.
 enum MenuBarPopoverSection: String, Equatable, Sendable, CaseIterable, Identifiable {
     case hostPressure
     case topProcesses
@@ -152,7 +152,7 @@ enum MenuBarPopoverSection: String, Equatable, Sendable, CaseIterable, Identifia
 }
 
 enum MenuBarPopoverShell {
-    /// Memory Top N. Live rows arrive in the next PR; the shell only reserves this many.
+    /// Memory Top N. The projection never pads up to this count.
     static let maxProcessRows = 3
 
     static var sections: [MenuBarPopoverSection] {
@@ -169,6 +169,67 @@ enum MenuBarPopoverShell {
         case .openPulse:
             return MenuBarCopy.openPulseTitle
         }
+    }
+}
+
+/// One strip-B process row. Identity is pid; the surface only shows name + memory.
+struct MenuBarPopoverProcess: Equatable, Sendable, Identifiable {
+    var id: Int32 { pid }
+
+    let pid: Int32
+    let name: String
+    let memoryBytes: UInt64
+}
+
+/// Read-only strip B. Same `snapshot` / `rows` the main window and color-dot A already read.
+struct MenuBarPopoverSnapshot: Equatable, Sendable {
+    /// Nil when there is no snapshot or the latest sample failed. Never a fake `.normal`.
+    let pressure: PressureLevel?
+    /// At most `MenuBarPopoverShell.maxProcessRows`, memory descending. Empty — never padded.
+    let processes: [MenuBarPopoverProcess]
+
+    static let empty = MenuBarPopoverSnapshot(pressure: nil, processes: [])
+
+    var pressureLine: String {
+        guard let pressure else {
+            return MenuBarPopoverShell.placeholder(for: .hostPressure)
+        }
+        return Self.pressureLine(for: pressure)
+    }
+
+    var processesEmptyCopy: String? {
+        processes.isEmpty ? MenuBarPopoverShell.placeholder(for: .topProcesses) : nil
+    }
+
+    static func pressureLine(for pressure: PressureLevel) -> String {
+        "\(pressure.title) · \(pressure.caption)"
+    }
+
+    static func project(
+        pressure: PressureLevel?,
+        samplingFailed: Bool,
+        rows: [ProcessRow],
+        processListFailed: Bool
+    ) -> MenuBarPopoverSnapshot {
+        let resolvedPressure = samplingFailed ? nil : pressure
+        let processes = processListFailed ? [] : topProcesses(from: rows)
+        return MenuBarPopoverSnapshot(pressure: resolvedPressure, processes: processes)
+    }
+
+    /// Sampler already sorts this way; the projection repeats it so a caller cannot
+    /// accidentally feed the main-window table sort or a filtered slice.
+    static func topProcesses(from rows: [ProcessRow]) -> [MenuBarPopoverProcess] {
+        rows
+            .sorted { lhs, rhs in
+                if lhs.memoryBytes != rhs.memoryBytes {
+                    return lhs.memoryBytes > rhs.memoryBytes
+                }
+                return lhs.pid < rhs.pid
+            }
+            .prefix(MenuBarPopoverShell.maxProcessRows)
+            .map { row in
+                MenuBarPopoverProcess(pid: row.pid, name: row.name, memoryBytes: row.memoryBytes)
+            }
     }
 }
 
