@@ -2,7 +2,7 @@
 
 好看的 Mac **内存诊断器**（一期 MVP）。外表像活动监视器，任务按诊断走：约 30 秒内找到吃内存的进程并安全退出。
 
-技术设计：[docs/TECH.md](docs/TECH.md)（二期首包见文末「二期」；三期增长软信号见「三期」；四期网络 Tab 见「四期」）。公证直装：[docs/RELEASE.md](docs/RELEASE.md)。
+技术设计：[docs/TECH.md](docs/TECH.md)（二期首包见文末「二期」；三期增长软信号见「三期」；四期网络 Tab 见「四期」；五期磁盘 Tab 见「五期」）。公证直装：[docs/RELEASE.md](docs/RELEASE.md)。
 
 ## 一期范围
 
