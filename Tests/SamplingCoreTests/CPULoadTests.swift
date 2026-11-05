@@ -150,7 +150,8 @@ final class SampledFrameCPUTests: XCTestCase {
             detail: nil,
             processListFailed: false,
             systemCpuPercent: systemCpuPercent,
-            hostNetworkRates: .missing
+            hostNetworkRates: .missing,
+            hostDiskRates: .missing
         )
     }
 }

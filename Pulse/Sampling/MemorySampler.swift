@@ -10,8 +10,10 @@ actor MemorySampler {
     private var selectedMemorySeries: [ChartSample] = []
     private var selectedCPUSeries: [ChartSample] = []
     private var cpuTicks: [Int32: CPUTick] = [:]
+    private var diskTicks: [Int32: DiskTick] = [:]
     private var previousHostCPU: HostCPUTicks?
     private var previousHostNetwork: HostNetworkSnapshot?
+    private var previousHostDisk: HostDiskSnapshot?
     private var identityCache: [Int32: ProcessIdentity] = [:]
 
     func setSelectedPid(_ pid: Int32?) {
@@ -50,6 +52,7 @@ actor MemorySampler {
         )
         let systemCpuPercent = consumeSystemCPU()
         let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
+        let hostDiskRates = consumeSystemDisk(at: capturedAt)
 
         guard let rawProcesses = ProcessEnumerator.list() else {
             return .success(
@@ -59,12 +62,14 @@ actor MemorySampler {
                     detail: nil,
                     processListFailed: true,
                     systemCpuPercent: systemCpuPercent,
-                    hostNetworkRates: hostNetworkRates
+                    hostNetworkRates: hostNetworkRates,
+                    hostDiskRates: hostDiskRates
                 )
             )
         }
 
         var nextTicks: [Int32: CPUTick] = [:]
+        var nextDiskTicks: [Int32: DiskTick] = [:]
         var nextIdentities: [Int32: ProcessIdentity] = [:]
         var rows: [ProcessRow] = []
         rows.reserveCapacity(rawProcesses.count)
@@ -84,6 +89,17 @@ actor MemorySampler {
             let cpu = ProcessCPUPercent.percent(previous: cpuTicks[raw.pid], current: tick)
             nextTicks[raw.pid] = tick
 
+            let diskReading: DiskTick?
+            if let bytesRead = raw.diskBytesRead, let bytesWritten = raw.diskBytesWritten {
+                diskReading = DiskTick(bytesRead: bytesRead, bytesWritten: bytesWritten, date: capturedAt)
+            } else {
+                diskReading = nil
+            }
+            let disk = ProcessDiskLoad.advance(previous: diskTicks[raw.pid], reading: diskReading)
+            if let baseline = disk.baseline {
+                nextDiskTicks[raw.pid] = baseline
+            }
+
             rows.append(
                 ProcessRow(
                     pid: raw.pid,
@@ -92,12 +108,15 @@ actor MemorySampler {
                     executablePath: identity.path,
                     cpuPercent: cpu,
                     memoryBytes: raw.memoryBytes,
-                    threadCount: raw.threadCount
+                    threadCount: raw.threadCount,
+                    diskReadBytesPerSecond: disk.rates.readBytesPerSecond,
+                    diskWriteBytesPerSecond: disk.rates.writeBytesPerSecond
                 )
             )
         }
 
         cpuTicks = nextTicks
+        diskTicks = nextDiskTicks
         identityCache = nextIdentities
 
         rows.sort { lhs, rhs in
@@ -115,7 +134,8 @@ actor MemorySampler {
                 detail: detail,
                 processListFailed: false,
                 systemCpuPercent: systemCpuPercent,
-                hostNetworkRates: hostNetworkRates
+                hostNetworkRates: hostNetworkRates,
+                hostDiskRates: hostDiskRates
             )
         )
     }
@@ -132,6 +152,15 @@ actor MemorySampler {
             reading: HostNetworkReader.read(at: date)
         )
         previousHostNetwork = advanced.baseline
+        return advanced.rates
+    }
+
+    private func consumeSystemDisk(at date: Date) -> HostDiskRates {
+        let advanced = HostDiskLoad.advance(
+            previous: previousHostDisk,
+            reading: HostDiskReader.read(at: date)
+        )
+        previousHostDisk = advanced.baseline
         return advanced.rates
     }
 

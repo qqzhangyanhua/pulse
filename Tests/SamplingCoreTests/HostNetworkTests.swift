@@ -308,7 +308,8 @@ final class SampledFrameNetworkTests: XCTestCase {
             detail: nil,
             processListFailed: false,
             systemCpuPercent: nil,
-            hostNetworkRates: rates
+            hostNetworkRates: rates,
+            hostDiskRates: .missing
         )
     }
 }
