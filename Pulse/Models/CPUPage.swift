@@ -207,6 +207,7 @@ struct DashboardNavigation: Equatable, Sendable {
         sort = ProcessTableSort.defaultSort(for: page.selectedPage)
     }
 
+    /// Lands on memory. Does not touch process selection; pair with `ProcessSelection`.
     mutating func focusMemoryPage() {
         let previous = page.selectedPage
         page.focusMemoryPage()

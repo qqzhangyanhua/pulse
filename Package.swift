@@ -37,6 +37,7 @@ let package = Package(
                 "Models/ByteFormat.swift",
                 "Models/MemoryGrowthSignal.swift",
                 "Models/MemoryGrowthTopSeries.swift",
+                "Models/ProcessSelection.swift",
                 "Models/CPUPage.swift",
                 "Models/NetworkPage.swift",
                 "Models/DiskPage.swift",

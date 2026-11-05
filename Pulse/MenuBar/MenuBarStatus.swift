@@ -28,6 +28,7 @@ struct MenuBarNavigation: Equatable, Sendable {
     }
 
     /// Status-item primary click. Always memory, including when the open window was elsewhere.
+    /// Page-only: no pid argument and no selection side effect.
     mutating func focusMemoryPage() {
         selectedPage = .memory
     }
