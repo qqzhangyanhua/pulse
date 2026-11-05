@@ -11,7 +11,7 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var rows: [ProcessRow] = []
     @Published private(set) var processListFailed = false
     @Published private(set) var detail: ProcessDetail?
-    /// Bounded Top N=5 memory series. List UI still reads `memoryGrowthListBadge` (selected only).
+    /// Bounded Top N=5 memory series. List rows look up `memoryGrowthListBadge(for:)`.
     @Published private(set) var topMemorySeries: [Int32: [ChartSample]] = [:]
     @Published private(set) var machineLabel: String?
     @Published private(set) var quitPhase: QuitPhase = .idle
@@ -77,14 +77,12 @@ final class MemoryDashboardVM: ObservableObject {
         )
     }
 
-    /// Memory-tab selected-row list badge. Same series as the sidebar; only `.rising` paints.
-    var memoryGrowthListBadge: MemoryGrowthListBadge? {
-        guard let selectedPid else { return nil }
-        return MemoryGrowthList.badge(
+    /// Per-row memory-tab list badge. Top5 ∩ `.rising`; selection is not a gate.
+    func memoryGrowthListBadge(for rowPid: Int32) -> MemoryGrowthListBadge? {
+        MemoryGrowthList.badge(
             page: selectedPage,
-            rowPid: selectedPid,
-            selectedPid: selectedPid,
-            detailSeries: detail?.memorySeries
+            rowPid: rowPid,
+            seriesByPid: topMemorySeries
         )
     }
 

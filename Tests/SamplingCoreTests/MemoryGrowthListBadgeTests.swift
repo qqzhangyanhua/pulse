@@ -20,20 +20,80 @@ final class MemoryGrowthListBadgeTests: XCTestCase {
         XCTAssertFalse(blob.localizedCaseInsensitiveContains("leak"))
     }
 
-    func testRisingSelectedMemoryRowShowsTheBadge() {
+    func testRisingTopFiveMemoryRowShowsTheBadge() {
         let series = risingSeries()
         XCTAssertEqual(MemoryGrowthSignal.evaluate(series), .rising)
 
         let badge = MemoryGrowthList.badge(
             page: .memory,
             rowPid: 42,
-            selectedPid: 42,
-            detailSeries: series
+            seriesByPid: [42: series]
         )
         XCTAssertEqual(
             badge,
             MemoryGrowthListBadge(title: MemoryGrowthListCopy.title, help: MemoryGrowthListCopy.help)
         )
+    }
+
+    /// ProcessTablePane looks up every row. Selection is not a gate.
+    func testListWiringLightsEachTopFiveRisingRowNotOnlyTheSelection() {
+        let rising = risingSeries()
+        let short = series(count: 12, step: 8_388_608)
+        let flat = series(count: 90, step: 0)
+        XCTAssertEqual(MemoryGrowthSignal.evaluate(rising), .rising)
+        XCTAssertEqual(MemoryGrowthSignal.evaluate(short), .insufficient)
+        XCTAssertEqual(MemoryGrowthSignal.evaluate(flat), .none)
+
+        let seriesByPid: [Int32: [ChartSample]] = [
+            1: rising,
+            2: rising,
+            3: flat,
+            4: rising,
+            5: short,
+        ]
+        let rowPids: [Int32] = [1, 2, 3, 4, 5, 6]
+        let badges = rowPids.map { pid in
+            MemoryGrowthList.badge(page: .memory, rowPid: pid, seriesByPid: seriesByPid)
+        }
+
+        XCTAssertEqual(badges[0]?.title, MemoryGrowthListCopy.title)
+        XCTAssertEqual(badges[1]?.title, MemoryGrowthListCopy.title)
+        XCTAssertNil(badges[2], "Top5 ∩ none stays empty")
+        XCTAssertEqual(badges[3]?.title, MemoryGrowthListCopy.title)
+        XCTAssertNil(badges[4], "Top5 ∩ insufficient stays empty")
+        XCTAssertNil(badges[5], "outside Top5 stays empty even if this row is selected")
+        XCTAssertEqual(badges.compactMap { $0 }.count, 3)
+    }
+
+    func testSelectionAloneIsNotEnoughForTheBadge() {
+        let rising = risingSeries()
+        XCTAssertEqual(MemoryGrowthSignal.evaluate(rising), .rising)
+
+        // Selected pid 99 can be rising in the sidebar series, but it is not in Top 5.
+        XCTAssertNil(
+            MemoryGrowthList.badge(
+                page: .memory,
+                rowPid: 99,
+                seriesByPid: [
+                    1: rising,
+                    2: rising,
+                    3: rising,
+                    4: rising,
+                    5: rising,
+                ]
+            )
+        )
+    }
+
+    func testUnselectedTopFiveRisingRowStillShowsTheBadge() {
+        let series = risingSeries()
+        let badge = MemoryGrowthList.badge(
+            page: .memory,
+            rowPid: 7,
+            seriesByPid: [7: series]
+        )
+        XCTAssertEqual(badge?.title, MemoryGrowthListCopy.title)
+        XCTAssertEqual(badge?.help, MemoryGrowthListCopy.help)
     }
 
     func testSameRisingSeriesLightsSidebarAndListTogether() {
@@ -42,40 +102,52 @@ final class MemoryGrowthListBadgeTests: XCTestCase {
         let badge = MemoryGrowthList.badge(
             page: .memory,
             rowPid: 7,
-            selectedPid: 7,
-            detailSeries: series
+            seriesByPid: [7: series]
         )
         XCTAssertEqual(sidebar?.caption, MemoryGrowthCopy.rising)
         XCTAssertEqual(badge?.title, MemoryGrowthListCopy.title)
     }
 
-    func testInsufficientAndNoneOmitTheBadge() {
-        let short = MemoryGrowthList.badge(
+    func testSelectedOutsideTopFiveKeepsSidebarButOmitsListBadge() {
+        let series = risingSeries()
+        let sidebar = MemoryGrowthSidebar.slot(page: .memory, selectedPid: 99, detailSeries: series)
+        let badge = MemoryGrowthList.badge(
             page: .memory,
-            rowPid: 42,
-            selectedPid: 42,
-            detailSeries: series(count: 12, step: 8_388_608)
+            rowPid: 99,
+            seriesByPid: [1: series]
         )
-        XCTAssertEqual(MemoryGrowthSignal.evaluate(series(count: 12, step: 8_388_608)), .insufficient)
-        XCTAssertNil(short)
+        XCTAssertEqual(sidebar?.caption, MemoryGrowthCopy.rising)
+        XCTAssertNil(badge)
+    }
+
+    func testInsufficientAndNoneOmitTheBadge() {
+        let shortSeries = series(count: 12, step: 8_388_608)
+        XCTAssertEqual(MemoryGrowthSignal.evaluate(shortSeries), .insufficient)
+        XCTAssertNil(
+            MemoryGrowthList.badge(
+                page: .memory,
+                rowPid: 42,
+                seriesByPid: [42: shortSeries]
+            )
+        )
 
         let flatSeries = series(count: 90, step: 0)
         XCTAssertEqual(MemoryGrowthSignal.evaluate(flatSeries), .none)
-        let flat = MemoryGrowthList.badge(
-            page: .memory,
-            rowPid: 42,
-            selectedPid: 42,
-            detailSeries: flatSeries
+        XCTAssertNil(
+            MemoryGrowthList.badge(
+                page: .memory,
+                rowPid: 42,
+                seriesByPid: [42: flatSeries]
+            )
         )
-        XCTAssertNil(flat)
 
-        let cleared = MemoryGrowthList.badge(
-            page: .memory,
-            rowPid: 42,
-            selectedPid: 42,
-            detailSeries: nil
+        XCTAssertNil(
+            MemoryGrowthList.badge(
+                page: .memory,
+                rowPid: 42,
+                seriesByPid: [:]
+            )
         )
-        XCTAssertNil(cleared)
     }
 
     func testInsufficientStillShowsSidebarButNotTheListBadge() {
@@ -84,73 +156,51 @@ final class MemoryGrowthListBadgeTests: XCTestCase {
         let badge = MemoryGrowthList.badge(
             page: .memory,
             rowPid: 42,
-            selectedPid: 42,
-            detailSeries: short
+            seriesByPid: [42: short]
         )
         XCTAssertEqual(sidebar?.caption, MemoryGrowthCopy.insufficient)
         XCTAssertNil(badge)
     }
 
-    func testUnselectedRowStaysSilentEvenWhenSeriesIsRising() {
-        let series = risingSeries()
-        let otherRow = MemoryGrowthList.badge(
-            page: .memory,
-            rowPid: 99,
-            selectedPid: 42,
-            detailSeries: series
-        )
-        XCTAssertNil(otherRow)
-
-        let deselected = MemoryGrowthList.badge(
-            page: .memory,
-            rowPid: 42,
-            selectedPid: nil,
-            detailSeries: series
-        )
-        XCTAssertNil(deselected)
-    }
-
     func testNonMemoryPagesNeverShowTheBadge() {
         let series = risingSeries()
+        let seriesByPid = [Int32(42): series]
         for page in [DashboardPage.cpu, .disk, .network, .gpu] {
             XCTAssertNil(
                 MemoryGrowthList.badge(
                     page: page,
                     rowPid: 42,
-                    selectedPid: 42,
-                    detailSeries: series
+                    seriesByPid: seriesByPid
                 ),
                 page.rawValue
             )
         }
     }
 
-    func testSwitchingAwayDropsThePreviousRisingBadge() {
+    func testPidMissingFromTheMapDropsTheBadge() {
         let earlier = risingSeries()
         let rising = MemoryGrowthList.badge(
             page: .memory,
             rowPid: 7,
-            selectedPid: 7,
-            detailSeries: earlier
+            seriesByPid: [7: earlier]
         )
         XCTAssertEqual(rising?.title, MemoryGrowthListCopy.title)
 
-        // Sampler / VM clear the series on pid change; the new row starts insufficient.
-        let nextProcess = MemoryGrowthList.badge(
-            page: .memory,
-            rowPid: 8,
-            selectedPid: 8,
-            detailSeries: nil
+        // Sort churn / drop: the fallen pid is gone from the Top 5 map.
+        XCTAssertNil(
+            MemoryGrowthList.badge(
+                page: .memory,
+                rowPid: 7,
+                seriesByPid: [8: earlier]
+            )
         )
-        XCTAssertNil(nextProcess)
-
-        let deselected = MemoryGrowthList.badge(
-            page: .memory,
-            rowPid: 7,
-            selectedPid: nil,
-            detailSeries: earlier
+        XCTAssertNil(
+            MemoryGrowthList.badge(
+                page: .memory,
+                rowPid: 8,
+                seriesByPid: [:]
+            )
         )
-        XCTAssertNil(deselected)
     }
 
     private func risingSeries() -> [ChartSample] {
