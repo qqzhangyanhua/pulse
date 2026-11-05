@@ -218,12 +218,14 @@ struct ProcessTablePane: View {
     }
 
     private var processList: some View {
-        List(sortedRows, selection: $vm.selectedPid) { row in
+        let growthBadge = vm.memoryGrowthListBadge
+        return List(sortedRows, selection: $vm.selectedPid) { row in
             ProcessLine(
                 row: row,
                 selected: vm.selectedPid == row.pid,
                 showsNetwork: showsNetworkColumn,
-                showsDisk: showsDiskColumns
+                showsDisk: showsDiskColumns,
+                growthBadge: vm.selectedPid == row.pid ? growthBadge : nil
             )
                 .listRowInsets(EdgeInsets(top: 3, leading: 10, bottom: 3, trailing: 10))
                 .listRowSeparator(.hidden)
@@ -282,6 +284,7 @@ private struct ProcessLine: View {
     var selected: Bool
     var showsNetwork: Bool
     var showsDisk: Bool
+    var growthBadge: MemoryGrowthListBadge?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -289,6 +292,9 @@ private struct ProcessLine: View {
                 ProcessIconView(pid: row.pid, bundleIdentifier: row.bundleIdentifier, size: 16)
                 Text(row.name)
                     .lineLimit(1)
+                if let growthBadge {
+                    MemoryGrowthRisingBadge(badge: growthBadge)
+                }
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -331,6 +337,9 @@ private struct ProcessLine: View {
             parts.append("\(DiskPageCopy.readTitle) \(DiskRateText.string(row.diskReadBytesPerSecond))")
             parts.append("\(DiskPageCopy.writeTitle) \(DiskRateText.string(row.diskWriteBytesPerSecond))")
         }
+        if let growthBadge {
+            parts.append(growthBadge.help)
+        }
         parts.append("\(row.threadCount) 线程")
         return parts.joined(separator: "，")
     }
@@ -349,5 +358,22 @@ private struct ProcessLine: View {
             Text(text)
                 .monospacedDigit()
         }
+    }
+}
+
+/// Calm selected-row chip. Secondary ink only; no red, flash, or click-through.
+private struct MemoryGrowthRisingBadge: View {
+    let badge: MemoryGrowthListBadge
+
+    var body: some View {
+        Text(badge.title)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(Color.secondary.opacity(0.14), in: Capsule())
+            .help(badge.help)
+            .accessibilityHidden(true)
+            .layoutPriority(1)
     }
 }

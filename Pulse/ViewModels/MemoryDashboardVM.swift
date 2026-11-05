@@ -65,6 +65,17 @@ final class MemoryDashboardVM: ObservableObject {
         )
     }
 
+    /// Memory-tab selected-row list badge. Same series as the sidebar; only `.rising` paints.
+    var memoryGrowthListBadge: MemoryGrowthListBadge? {
+        guard let selectedPid else { return nil }
+        return MemoryGrowthList.badge(
+            page: selectedPage,
+            rowPid: selectedPid,
+            selectedPid: selectedPid,
+            detailSeries: detail?.memorySeries
+        )
+    }
+
     /// Menu-bar primary click. Does not follow whatever page was last shown.
     func focusMemoryPage() {
         var next = navigation
