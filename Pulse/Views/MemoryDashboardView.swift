@@ -6,7 +6,11 @@ struct MemoryDashboardView: View {
     var body: some View {
         HSplitView {
             VStack(spacing: 12) {
-                OverviewSection()
+                if vm.selectedPage == .cpu {
+                    CPUOverviewSection()
+                } else {
+                    OverviewSection()
+                }
                 ProcessTablePane()
             }
             .padding(12)

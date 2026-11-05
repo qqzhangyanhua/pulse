@@ -44,8 +44,7 @@ enum ByteFormat {
     }
 
     static func cpu(_ value: Double?) -> String {
-        guard let value else { return "—" }
-        return String(format: "%.1f%%", value)
+        CPUPercentText.string(value)
     }
 
     static func wholePercent(value: Double) -> String {
@@ -113,7 +112,18 @@ enum ResourceTab: String, CaseIterable, Identifiable {
     case gpu = "GPU"
 
     var id: String { rawValue }
-    var isEnabled: Bool { self == .memory }
+
+    var page: DashboardPage {
+        switch self {
+        case .memory: return .memory
+        case .cpu: return .cpu
+        case .disk: return .disk
+        case .network: return .network
+        case .gpu: return .gpu
+        }
+    }
+
+    var isEnabled: Bool { page.isSelectable }
 
     var symbol: String {
         switch self {
@@ -127,11 +137,13 @@ enum ResourceTab: String, CaseIterable, Identifiable {
 }
 
 struct ResourceTabs: View {
+    @EnvironmentObject private var vm: MemoryDashboardVM
+
     var body: some View {
         HStack(spacing: 2) {
             ForEach(ResourceTab.allCases) { tab in
                 if tab.isEnabled {
-                    memoryPill
+                    enabledTab(tab)
                 } else {
                     disabledTab(tab)
                 }
@@ -139,21 +151,35 @@ struct ResourceTabs: View {
         }
         .padding(3)
         .background(Color.white.opacity(0.05), in: Capsule())
-        .allowsHitTesting(false)
     }
 
-    private var memoryPill: some View {
-        HStack(spacing: 5) {
-            Image(systemName: ResourceTab.memory.symbol)
-            Text(ResourceTab.memory.rawValue)
+    private func enabledTab(_ tab: ResourceTab) -> some View {
+        let selected = vm.selectedPage == tab.page
+        return Button {
+            vm.selectPage(tab.page)
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: tab.symbol)
+                if selected {
+                    Text(tab.rawValue)
+                }
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(selected ? Color.white : Color.white.opacity(0.78))
+            .padding(.horizontal, selected ? 10 : 8)
+            .padding(.vertical, 5)
+            .frame(minWidth: selected ? nil : 30, minHeight: 24)
+            .background {
+                if selected {
+                    Capsule().fill(PulsePalette.accent)
+                }
+            }
+            .contentShape(Capsule())
         }
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.white)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(PulsePalette.accent, in: Capsule())
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isSelected)
+        .buttonStyle(.plain)
+        .help(tab.rawValue)
+        .accessibilityLabel(tab.rawValue)
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 
     private func disabledTab(_ tab: ResourceTab) -> some View {
@@ -161,6 +187,7 @@ struct ResourceTabs: View {
             .font(.caption)
             .foregroundStyle(Color.white.opacity(0.32))
             .frame(width: 30, height: 24)
+            .allowsHitTesting(false)
             .accessibilityLabel("\(tab.rawValue)，不可用")
     }
 }

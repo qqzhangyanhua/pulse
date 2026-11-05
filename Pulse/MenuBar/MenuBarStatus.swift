@@ -1,13 +1,23 @@
 import Foundation
 
-/// Pages the status item can land on. This PR only presents memory; the other
-/// cases exist so a click can force memory instead of following a future tab.
+/// Pages the status item can land on. The main window presents memory and CPU.
+/// Disk, network, and GPU stay in the enum so a click can force memory instead of following them.
 enum DashboardPage: String, Equatable, Sendable, CaseIterable {
     case memory
     case cpu
     case disk
     case network
     case gpu
+
+    /// CPU is tappable. Disk, network, and GPU stay disabled.
+    var isSelectable: Bool {
+        switch self {
+        case .memory, .cpu:
+            return true
+        case .disk, .network, .gpu:
+            return false
+        }
+    }
 }
 
 struct MenuBarNavigation: Equatable, Sendable {
@@ -20,6 +30,14 @@ struct MenuBarNavigation: Equatable, Sendable {
     /// Status-item primary click. Always memory, including when the open window was elsewhere.
     mutating func focusMemoryPage() {
         selectedPage = .memory
+    }
+
+    /// Main-window tab. Disabled pages are refused and the current page stays put.
+    @discardableResult
+    mutating func select(_ page: DashboardPage) -> Bool {
+        guard page.isSelectable else { return false }
+        selectedPage = page
+        return true
     }
 }
 

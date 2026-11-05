@@ -20,6 +20,10 @@ struct ProcessDetailSidebar: View {
         return ProcessDetail(row: row, memorySeries: [], cpuSeries: [])
     }
 
+    private var emptyPrompt: String {
+        vm.selectedPage == .cpu ? CPUPageCopy.sidebarEmpty : "选择一个进程查看详情"
+    }
+
     private var emptyBody: some View {
         VStack(spacing: 18) {
             ZStack {
@@ -47,7 +51,7 @@ struct ProcessDetailSidebar: View {
             .frame(height: 120)
             .accessibilityHidden(true)
 
-            Text("选择一个进程查看详情")
+            Text(emptyPrompt)
                 .font(.body)
                 .foregroundStyle(.secondary)
         }
