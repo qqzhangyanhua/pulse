@@ -28,6 +28,7 @@
 		B00000000000000000000023 /* HostDiskReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000023 /* HostDiskReader.swift */; };
 		B00000000000000000000017 /* MenuBarStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000017 /* MenuBarStatus.swift */; };
 		B00000000000000000000018 /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000018 /* MenuBarController.swift */; };
+		B00000000000000000000026 /* MenuBarPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000026 /* MenuBarPopoverView.swift */; };
 		B00000000000000000000019 /* MainWindowAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000019 /* MainWindowAnchor.swift */; };
 		B0000000000000000000001A /* PulseAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001A /* PulseAppDelegate.swift */; };
 		B00000000000000000000006 /* MachineInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000006 /* MachineInfo.swift */; };
@@ -66,6 +67,7 @@
 		A00000000000000000000023 /* HostDiskReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostDiskReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000017 /* MenuBarStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatus.swift; sourceTree = "<group>"; };
 		A00000000000000000000018 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
+		A00000000000000000000026 /* MenuBarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverView.swift; sourceTree = "<group>"; };
 		A00000000000000000000019 /* MainWindowAnchor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowAnchor.swift; sourceTree = "<group>"; };
 		A0000000000000000000001A /* PulseAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseAppDelegate.swift; sourceTree = "<group>"; };
 		A00000000000000000000006 /* MachineInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineInfo.swift; sourceTree = "<group>"; };
@@ -165,6 +167,7 @@
 			children = (
 				A00000000000000000000017 /* MenuBarStatus.swift */,
 				A00000000000000000000018 /* MenuBarController.swift */,
+				A00000000000000000000026 /* MenuBarPopoverView.swift */,
 				A00000000000000000000019 /* MainWindowAnchor.swift */,
 				A0000000000000000000001A /* PulseAppDelegate.swift */,
 			);
@@ -314,6 +317,7 @@
 				B0000000000000000000000E /* SharedUI.swift in Sources */,
 				B00000000000000000000017 /* MenuBarStatus.swift in Sources */,
 				B00000000000000000000018 /* MenuBarController.swift in Sources */,
+				B00000000000000000000026 /* MenuBarPopoverView.swift in Sources */,
 				B00000000000000000000019 /* MainWindowAnchor.swift in Sources */,
 				B0000000000000000000001A /* PulseAppDelegate.swift in Sources */,
 			);

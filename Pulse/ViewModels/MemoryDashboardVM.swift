@@ -76,7 +76,7 @@ final class MemoryDashboardVM: ObservableObject {
         )
     }
 
-    /// Menu-bar primary click. Does not follow whatever page was last shown.
+    /// 「打开 Pulse」 and dock reopen. Always memory; does not follow the last tab.
     func focusMemoryPage() {
         var next = navigation
         next.focusMemoryPage()

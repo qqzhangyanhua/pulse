@@ -28,6 +28,7 @@ let package = Package(
                 "Sampling/MemorySampler.swift",
                 "Sampling/ProcessEnumerator.swift",
                 "MenuBar/MenuBarController.swift",
+                "MenuBar/MenuBarPopoverView.swift",
                 "MenuBar/MainWindowAnchor.swift",
                 "MenuBar/PulseAppDelegate.swift",
             ],

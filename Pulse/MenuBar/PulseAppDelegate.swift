@@ -43,7 +43,7 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.regular)
         menuBar.install(
             currentDot: { [weak self] in self?.currentDot() ?? .unavailable },
-            onFocusMemory: { [weak self] in self?.focusMemoryPage() },
+            onOpenPulse: { [weak self] in self?.focusMemoryPage() },
             onQuit: {
                 DispatchQueue.main.async {
                     NSApp.terminate(nil)
@@ -76,6 +76,7 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate {
         applyPace()
     }
 
+    /// Unique open / focus path for 「打开 Pulse」. Lands on the memory page.
     func focusMemoryPage() {
         dashboard?.focusMemoryPage()
         NSApp.activate()

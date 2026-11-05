@@ -59,14 +59,21 @@ final class MenuBarStatusTests: XCTestCase {
         XCTAssertFalse(MenuBarCopy.quitTitle.contains("危险"))
     }
 
-    func testPrimaryClickFocusesMemoryAndSecondaryClickIsQuit() {
+    func testPrimaryClickShowsPopoverAndSecondaryClickIsQuit() {
         XCTAssertEqual(
             MenuBarPointer.classify(isSecondaryClick: false, controlDown: false),
             .primary
         )
+        XCTAssertEqual(MenuBarPointer.primary.statusItemAction, .showPopover)
+        XCTAssertTrue(MenuBarPointer.primary.showsPopover)
         XCTAssertFalse(MenuBarPointer.primary.showsQuitMenu)
+        XCTAssertEqual(
+            MenuBarPointer.classify(isSecondaryClick: true, controlDown: false).statusItemAction,
+            .showQuitMenu
+        )
         XCTAssertTrue(MenuBarPointer.classify(isSecondaryClick: true, controlDown: false).showsQuitMenu)
         XCTAssertTrue(MenuBarPointer.classify(isSecondaryClick: false, controlDown: true).showsQuitMenu)
+        XCTAssertFalse(MenuBarPointer.secondary.showsPopover)
     }
 
     func testClickForcesMemoryPageFromAnyTab() {
@@ -94,5 +101,54 @@ final class MenuBarStatusTests: XCTestCase {
         XCTAssertTrue(foreground.isForeground)
         XCTAssertTrue(foreground.step.samples)
         XCTAssertEqual(foreground.step.sleepNanoseconds, SamplingPace.foregroundSleepNanoseconds)
+    }
+
+    func testPopoverShellIsSingleColumnPressureTop3AndOpenPulse() {
+        XCTAssertEqual(
+            MenuBarPopoverShell.sections,
+            [.hostPressure, .topProcesses, .openPulse]
+        )
+        XCTAssertEqual(MenuBarPopoverShell.maxProcessRows, 3)
+        XCTAssertEqual(
+            MenuBarPopoverShell.placeholder(for: .hostPressure),
+            MenuBarCopy.unavailableTooltip
+        )
+        XCTAssertEqual(
+            MenuBarPopoverShell.placeholder(for: .topProcesses),
+            MenuBarCopy.processesEmpty
+        )
+        XCTAssertEqual(
+            MenuBarPopoverShell.placeholder(for: .openPulse),
+            MenuBarCopy.openPulseTitle
+        )
+        XCTAssertEqual(MenuBarCopy.openPulseTitle, "打开 Pulse")
+        XCTAssertEqual(MenuBarCopy.processesEmpty, "暂无进程")
+        XCTAssertEqual(MenuBarCopy.unavailableTooltip, "暂时读不到")
+    }
+
+    func testPopoverShellReusesTwoLevelPressureCopyAndNeverScares() {
+        XCTAssertEqual(PressureLevel.normal.title, "正常")
+        XCTAssertEqual(PressureLevel.normal.caption, "余量充足")
+        XCTAssertEqual(PressureLevel.elevated.title, "偏高")
+        XCTAssertEqual(PressureLevel.elevated.caption, "余量紧张")
+
+        let blob = [
+            PressureLevel.normal.title,
+            PressureLevel.normal.caption,
+            PressureLevel.elevated.title,
+            PressureLevel.elevated.caption,
+            MenuBarPopoverShell.placeholder(for: .hostPressure),
+            MenuBarPopoverShell.placeholder(for: .topProcesses),
+            MenuBarPopoverShell.placeholder(for: .openPulse),
+            MenuBarCopy.quitTitle,
+        ].joined(separator: "\n")
+        for word in ["危急", "泄漏", "泄露", "危险", "告警"] {
+            XCTAssertFalse(blob.contains(word), word)
+        }
+        XCTAssertFalse(blob.localizedCaseInsensitiveContains("leak"))
+        XCTAssertFalse(MenuBarPopoverShell.placeholder(for: .hostPressure).contains("正常"))
+        XCTAssertFalse(MenuBarPopoverShell.placeholder(for: .topProcesses).contains("0"))
+        XCTAssertFalse(MenuBarCopy.openPulseTitle.contains("结束"))
+        XCTAssertFalse(MenuBarCopy.openPulseTitle.contains("立即处理"))
     }
 }
