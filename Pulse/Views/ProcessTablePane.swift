@@ -218,21 +218,36 @@ struct ProcessTablePane: View {
     }
 
     private var processList: some View {
-        List(sortedRows, selection: $vm.selectedPid) { row in
-            ProcessLine(
-                row: row,
-                selected: vm.selectedPid == row.pid,
-                showsNetwork: showsNetworkColumn,
-                showsDisk: showsDiskColumns,
-                growthBadge: vm.memoryGrowthListBadge(for: row.pid)
-            )
-                .listRowInsets(EdgeInsets(top: 3, leading: 10, bottom: 3, trailing: 10))
-                .listRowSeparator(.hidden)
-                .listRowBackground(rowBackground(vm.selectedPid == row.pid))
+        ScrollViewReader { proxy in
+            List(sortedRows, selection: $vm.selectedPid) { row in
+                ProcessLine(
+                    row: row,
+                    selected: vm.selectedPid == row.pid,
+                    showsNetwork: showsNetworkColumn,
+                    showsDisk: showsDiskColumns,
+                    growthBadge: vm.memoryGrowthListBadge(for: row.pid)
+                )
+                    .id(row.pid)
+                    .listRowInsets(EdgeInsets(top: 3, leading: 10, bottom: 3, trailing: 10))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(rowBackground(vm.selectedPid == row.pid))
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .tint(PulsePalette.selection)
+            .onAppear { revealProcessListTarget(proxy) }
+            .onChange(of: vm.processListScrollTarget) { _, _ in
+                revealProcessListTarget(proxy)
+            }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .tint(PulsePalette.selection)
+    }
+
+    /// Step-1 `processListScrollTarget`: reveal the present selected pid, never a vanished one.
+    private func revealProcessListTarget(_ proxy: ScrollViewProxy) {
+        guard let target = vm.processListScrollTarget else { return }
+        DispatchQueue.main.async {
+            proxy.scrollTo(target, anchor: .center)
+        }
     }
 
     private func rowBackground(_ selected: Bool) -> some View {

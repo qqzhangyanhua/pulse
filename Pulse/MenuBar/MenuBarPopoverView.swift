@@ -6,6 +6,7 @@ import SwiftUI
 struct MenuBarPopoverView: View {
     @ObservedObject var dashboard: MemoryDashboardVM
     var onOpenPulse: () -> Void
+    var onSelectProcess: (Int32) -> Void
 
     private var strip: MenuBarPopoverSnapshot {
         dashboard.menuBarPopover
@@ -72,19 +73,27 @@ struct MenuBarPopoverView: View {
         } else {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(strip.processes) { process in
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(process.name)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        Spacer(minLength: 8)
-                        Text(ByteFormat.memory(process.memoryBytes))
-                            .monospacedDigit()
+                    Button {
+                        onSelectProcess(process.pid)
+                    } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(process.name)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            Spacer(minLength: 8)
+                            Text(ByteFormat.memory(process.memoryBytes))
+                                .monospacedDigit()
+                        }
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .buttonStyle(.plain)
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(process.name)
                     .accessibilityValue(ByteFormat.memory(process.memoryBytes))
+                    .accessibilityAddTraits(.isButton)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

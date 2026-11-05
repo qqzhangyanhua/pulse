@@ -2,7 +2,7 @@ import XCTest
 @testable import SamplingCore
 
 /// Phase 11 step 1: select-if-present + focus stays selection-free.
-/// The process list scroll target is the same present-pid contract; UI wiring is step 2.
+/// The process list scroll target is the same present-pid contract.
 final class ProcessSelectionTests: XCTestCase {
     func testFocusMemoryPageDoesNotChangeSelectedPid() {
         let rows = [
