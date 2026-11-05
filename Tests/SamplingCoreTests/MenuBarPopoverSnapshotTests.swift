@@ -5,6 +5,7 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
     func testNormalPressureLineReusesTitleAndCaption() {
         let strip = MenuBarPopoverSnapshot.project(
             pressure: .normal,
+            usedBytes: nil,
             samplingFailed: false,
             rows: [],
             processListFailed: false
@@ -24,6 +25,7 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
     func testElevatedPressureLineReusesTitleAndCaption() {
         let strip = MenuBarPopoverSnapshot.project(
             pressure: .elevated,
+            usedBytes: nil,
             samplingFailed: false,
             rows: [],
             processListFailed: false
@@ -42,38 +44,55 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
     func testMissingSnapshotIsTemporarilyUnreadableAndNeverFakeNormal() {
         let strip = MenuBarPopoverSnapshot.project(
             pressure: nil,
+            usedBytes: nil,
             samplingFailed: false,
             rows: [],
             processListFailed: false
         )
         XCTAssertEqual(strip, .empty)
         XCTAssertNil(strip.pressure)
+        XCTAssertNil(strip.usedBytes)
         XCTAssertEqual(strip.pressureLine, MenuBarCopy.unavailableTooltip)
         XCTAssertEqual(strip.pressureLine, "暂时读不到")
+        XCTAssertEqual(strip.usedMemoryLine, MenuBarCopy.unavailableTooltip)
+        XCTAssertEqual(strip.usedMemoryLine, "暂时读不到")
         XCTAssertFalse(strip.pressureLine.contains("正常"))
         XCTAssertFalse(strip.pressureLine.contains("偏高"))
+        XCTAssertFalse(strip.usedMemoryLine.contains("已用"))
+        XCTAssertFalse(strip.usedMemoryLine.contains("0 GB"))
+        XCTAssertFalse(strip.usedMemoryLine.contains("0"))
     }
 
     func testSamplingFailureHidesStalePressureAndNeverWritesZeroPercent() {
         let staleNormal = MenuBarPopoverSnapshot.project(
             pressure: .normal,
+            usedBytes: 8_589_934_592,
             samplingFailed: true,
             rows: [process(pid: 11, name: "Safari", memory: 400_000_000)],
             processListFailed: false
         )
         let staleElevated = MenuBarPopoverSnapshot.project(
             pressure: .elevated,
+            usedBytes: 0,
             samplingFailed: true,
             rows: [],
             processListFailed: false
         )
         XCTAssertNil(staleNormal.pressure)
         XCTAssertNil(staleElevated.pressure)
+        XCTAssertNil(staleNormal.usedBytes)
+        XCTAssertNil(staleElevated.usedBytes)
         XCTAssertEqual(staleNormal.pressureLine, "暂时读不到")
         XCTAssertEqual(staleElevated.pressureLine, MenuBarPopoverShell.placeholder(for: .hostPressure))
+        XCTAssertEqual(staleNormal.usedMemoryLine, "暂时读不到")
+        XCTAssertEqual(staleElevated.usedMemoryLine, MenuBarCopy.unavailableTooltip)
         XCTAssertFalse(staleNormal.pressureLine.contains("正常"))
         XCTAssertFalse(staleElevated.pressureLine.contains("偏高"))
         XCTAssertFalse(staleNormal.pressureLine.contains("0%"))
+        XCTAssertFalse(staleNormal.usedMemoryLine.contains("已用"))
+        XCTAssertFalse(staleNormal.usedMemoryLine.contains("0 GB"))
+        XCTAssertFalse(staleElevated.usedMemoryLine.contains("已用 0 GB"))
+        XCTAssertFalse(staleElevated.usedMemoryLine.contains("0"))
         XCTAssertEqual(staleNormal.processes.map(\.name), ["Safari"])
     }
 
@@ -87,6 +106,7 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
         ]
         let strip = MenuBarPopoverSnapshot.project(
             pressure: .normal,
+            usedBytes: nil,
             samplingFailed: false,
             rows: rows,
             processListFailed: false
@@ -102,6 +122,7 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
     func testFewerThanThreeRowsAreShownWithoutPadding() {
         let one = MenuBarPopoverSnapshot.project(
             pressure: .elevated,
+            usedBytes: nil,
             samplingFailed: false,
             rows: [process(pid: 9, name: "only", memory: 42)],
             processListFailed: false
@@ -113,6 +134,7 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
 
         let two = MenuBarPopoverSnapshot.project(
             pressure: .normal,
+            usedBytes: nil,
             samplingFailed: false,
             rows: [
                 process(pid: 2, name: "low", memory: 1),
@@ -128,6 +150,7 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
     func testEmptyRowsStayCalmAndNeverInventAZeroByteProcess() {
         let strip = MenuBarPopoverSnapshot.project(
             pressure: .normal,
+            usedBytes: nil,
             samplingFailed: false,
             rows: [],
             processListFailed: false
@@ -144,8 +167,10 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
     }
 
     func testProcessListFailureDropsExistingRowsInsteadOfFakingZero() {
+        let used: UInt64 = 4_294_967_296
         let strip = MenuBarPopoverSnapshot.project(
             pressure: .normal,
+            usedBytes: used,
             samplingFailed: false,
             rows: [
                 process(pid: 1, name: "stale", memory: 1_000),
@@ -158,11 +183,14 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
         XCTAssertFalse(strip.processes.contains { $0.memoryBytes == 0 })
         XCTAssertEqual(strip.pressure, .normal)
         XCTAssertEqual(strip.pressureLine, "正常 · 余量充足")
+        XCTAssertEqual(strip.usedBytes, used)
+        XCTAssertEqual(strip.usedMemoryLine, "已用 \(ByteFormat.memory(used))")
     }
 
     func testARealZeroByteProcessIsKeptBecauseItIsNotAPlaceholder() {
         let strip = MenuBarPopoverSnapshot.project(
             pressure: .normal,
+            usedBytes: nil,
             samplingFailed: false,
             rows: [process(pid: 8, name: "idle", memory: 0)],
             processListFailed: false
@@ -176,6 +204,7 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
     func testEqualMemoryBreaksTiesByPidAscending() {
         let strip = MenuBarPopoverSnapshot.project(
             pressure: .normal,
+            usedBytes: nil,
             samplingFailed: false,
             rows: [
                 process(pid: 30, name: "c", memory: 100),
@@ -196,6 +225,7 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
         ]
         let strip = MenuBarPopoverSnapshot.project(
             pressure: .normal,
+            usedBytes: nil,
             samplingFailed: false,
             rows: unfiltered,
             processListFailed: false
@@ -203,22 +233,117 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
         XCTAssertEqual(strip.processes.map(\.name), ["keep-me", "other"])
     }
 
+    func testUsedMemoryLineMatchesMainWindowByteFormatAndNeverUsesGibWhole() {
+        let used: UInt64 = 13_261_991_936
+        let strip = MenuBarPopoverSnapshot.project(
+            pressure: .normal,
+            usedBytes: used,
+            samplingFailed: false,
+            rows: [process(pid: 1, name: "chrome", memory: 800)],
+            processListFailed: false
+        )
+        XCTAssertEqual(strip.usedBytes, used)
+        XCTAssertEqual(strip.usedMemoryLine, "已用 \(ByteFormat.memory(used))")
+        XCTAssertEqual(
+            strip.usedMemoryLine,
+            MenuBarPopoverSnapshot.usedMemoryLine(for: used)
+        )
+        XCTAssertEqual(ByteFormat.memory(used), "12.35 GB")
+        XCTAssertEqual(strip.usedMemoryLine, "已用 12.35 GB")
+        XCTAssertEqual(ByteFormat.gibWhole(used), "12 GB")
+        XCTAssertFalse(strip.usedMemoryLine.contains(ByteFormat.gibWhole(used)))
+        XCTAssertFalse(strip.usedMemoryLine.contains("已用 0 GB"))
+        XCTAssertEqual(strip.pressure, .normal)
+        XCTAssertEqual(strip.pressureLine, "正常 · 余量充足")
+        XCTAssertEqual(strip.processes.map(\.name), ["chrome"])
+    }
+
+    func testUsedMemoryLineFormatsSubGibibytesWithTheSameMemoryFormatter() {
+        let used: UInt64 = 524_288_000
+        let strip = MenuBarPopoverSnapshot.project(
+            pressure: .elevated,
+            usedBytes: used,
+            samplingFailed: false,
+            rows: [],
+            processListFailed: false
+        )
+        XCTAssertEqual(ByteFormat.memory(used), "500 MB")
+        XCTAssertEqual(strip.usedMemoryLine, "已用 500 MB")
+        XCTAssertEqual(strip.pressureLine, "偏高 · 余量紧张")
+        XCTAssertEqual(strip.processesEmptyCopy, "暂无进程")
+    }
+
+    func testMissingUsedBytesIsTemporarilyUnreadableAndNeverFakesZeroGB() {
+        let strip = MenuBarPopoverSnapshot.project(
+            pressure: nil,
+            usedBytes: nil,
+            samplingFailed: false,
+            rows: [],
+            processListFailed: false
+        )
+        XCTAssertNil(strip.usedBytes)
+        XCTAssertEqual(strip.usedMemoryLine, "暂时读不到")
+        XCTAssertEqual(strip.usedMemoryLine, MenuBarCopy.unavailableTooltip)
+        XCTAssertFalse(strip.usedMemoryLine.contains("已用"))
+        XCTAssertFalse(strip.usedMemoryLine.contains("0 GB"))
+        XCTAssertFalse(strip.usedMemoryLine.contains("0 MB"))
+        XCTAssertFalse(strip.usedMemoryLine.contains("0"))
+        XCTAssertEqual(strip.pressureLine, "暂时读不到")
+    }
+
+    func testSamplingFailureHidesStaleUsedBytesAndNeverWritesFakeZeroGB() {
+        let stale = MenuBarPopoverSnapshot.project(
+            pressure: .elevated,
+            usedBytes: 12_884_901_888,
+            samplingFailed: true,
+            rows: [process(pid: 3, name: "mail", memory: 200)],
+            processListFailed: false
+        )
+        XCTAssertNil(stale.usedBytes)
+        XCTAssertNil(stale.pressure)
+        XCTAssertEqual(stale.usedMemoryLine, "暂时读不到")
+        XCTAssertEqual(stale.pressureLine, "暂时读不到")
+        XCTAssertFalse(stale.usedMemoryLine.contains("已用"))
+        XCTAssertFalse(stale.usedMemoryLine.contains("已用 0 GB"))
+        XCTAssertFalse(stale.usedMemoryLine.contains("0 GB"))
+        XCTAssertFalse(stale.usedMemoryLine.contains("12"))
+        XCTAssertEqual(stale.processes.map(\.name), ["mail"])
+    }
+
+    func testARealZeroUsedByteReadingIsKeptBecauseItIsNotAPlaceholder() {
+        let strip = MenuBarPopoverSnapshot.project(
+            pressure: .normal,
+            usedBytes: 0,
+            samplingFailed: false,
+            rows: [],
+            processListFailed: false
+        )
+        XCTAssertEqual(strip.usedBytes, 0)
+        XCTAssertEqual(strip.usedMemoryLine, "已用 \(ByteFormat.memory(0))")
+        XCTAssertEqual(strip.usedMemoryLine, "已用 0 字节")
+        XCTAssertFalse(strip.usedMemoryLine.contains("已用 0 GB"))
+        XCTAssertEqual(strip.pressureLine, "正常 · 余量充足")
+    }
+
     func testStripCopyNeverScaresOrMentionsKill() {
         let cases = [
             MenuBarPopoverSnapshot.project(
                 pressure: .normal,
+                usedBytes: 13_261_991_936,
                 samplingFailed: false,
                 rows: [process(pid: 1, name: "Finder", memory: 12)],
                 processListFailed: false
             ),
             MenuBarPopoverSnapshot.project(
                 pressure: .elevated,
+                usedBytes: nil,
                 samplingFailed: false,
                 rows: [],
                 processListFailed: false
             ),
             MenuBarPopoverSnapshot.project(
                 pressure: nil,
+                usedBytes: 8_589_934_592,
                 samplingFailed: true,
                 rows: [],
                 processListFailed: true
@@ -227,6 +352,7 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
         let blob = cases.flatMap { strip in
             [
                 strip.pressureLine,
+                strip.usedMemoryLine,
                 strip.processesEmptyCopy ?? "",
                 strip.processes.map(\.name).joined(separator: " "),
             ]

@@ -34,6 +34,7 @@ let package = Package(
             ],
             sources: [
                 "Models/MemoryModels.swift",
+                "Models/ByteFormat.swift",
                 "Models/MemoryGrowthSignal.swift",
                 "Models/MemoryGrowthTopSeries.swift",
                 "Models/CPUPage.swift",

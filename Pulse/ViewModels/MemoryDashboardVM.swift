@@ -49,6 +49,7 @@ final class MemoryDashboardVM: ObservableObject {
     var menuBarPopover: MenuBarPopoverSnapshot {
         MenuBarPopoverSnapshot.project(
             pressure: snapshot?.pressure,
+            usedBytes: snapshot?.usedBytes,
             samplingFailed: samplingFailed,
             rows: rows,
             processListFailed: processListFailed

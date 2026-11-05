@@ -185,16 +185,26 @@ struct MenuBarPopoverProcess: Equatable, Sendable, Identifiable {
 struct MenuBarPopoverSnapshot: Equatable, Sendable {
     /// Nil when there is no snapshot or the latest sample failed. Never a fake `.normal`.
     let pressure: PressureLevel?
+    /// Nil when there is no snapshot or the latest sample failed. Never a fake 0.
+    let usedBytes: UInt64?
     /// At most `MenuBarPopoverShell.maxProcessRows`, memory descending. Empty — never padded.
     let processes: [MenuBarPopoverProcess]
 
-    static let empty = MenuBarPopoverSnapshot(pressure: nil, processes: [])
+    static let empty = MenuBarPopoverSnapshot(pressure: nil, usedBytes: nil, processes: [])
 
     var pressureLine: String {
         guard let pressure else {
             return MenuBarPopoverShell.placeholder(for: .hostPressure)
         }
         return Self.pressureLine(for: pressure)
+    }
+
+    /// Product copy: "已用" + `ByteFormat.memory`. Missing / failed → "暂时读不到", never "已用 0 GB".
+    var usedMemoryLine: String {
+        guard let usedBytes else {
+            return MenuBarCopy.unavailableTooltip
+        }
+        return Self.usedMemoryLine(for: usedBytes)
     }
 
     var processesEmptyCopy: String? {
@@ -205,15 +215,26 @@ struct MenuBarPopoverSnapshot: Equatable, Sendable {
         "\(pressure.title) · \(pressure.caption)"
     }
 
+    static func usedMemoryLine(for usedBytes: UInt64) -> String {
+        "已用 \(ByteFormat.memory(usedBytes))"
+    }
+
     static func project(
         pressure: PressureLevel?,
+        usedBytes: UInt64?,
         samplingFailed: Bool,
         rows: [ProcessRow],
         processListFailed: Bool
     ) -> MenuBarPopoverSnapshot {
-        let resolvedPressure = samplingFailed ? nil : pressure
+        let hostReadable = !samplingFailed
+        let resolvedPressure = hostReadable ? pressure : nil
+        let resolvedUsedBytes = hostReadable ? usedBytes : nil
         let processes = processListFailed ? [] : topProcesses(from: rows)
-        return MenuBarPopoverSnapshot(pressure: resolvedPressure, processes: processes)
+        return MenuBarPopoverSnapshot(
+            pressure: resolvedPressure,
+            usedBytes: resolvedUsedBytes,
+            processes: processes
+        )
     }
 
     /// Sampler already sorts this way; the projection repeats it so a caller cannot
