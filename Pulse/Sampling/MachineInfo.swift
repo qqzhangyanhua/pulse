@@ -2,12 +2,18 @@ import Darwin
 import Foundation
 
 enum MachineInfo {
+    static var processorCount: Int {
+        let count = ProcessInfo.processInfo.processorCount
+        return count > 0 ? count : 1
+    }
+
     static func toolbarLabel() -> String {
         let model = hardwareModel() ?? "Mac"
+        let cores = "\(processorCount) 核"
         if let ram = memoryLabel() {
-            return "\(model) · \(ram)"
+            return "\(model) · \(cores) · \(ram)"
         }
-        return model
+        return "\(model) · \(cores)"
     }
 
     static func hardwareModel() -> String? {

@@ -13,8 +13,9 @@ struct PulseApp: App {
                     dashboard.setForeground(phase == .active)
                 }
         }
-        .defaultSize(width: 1100, height: 720)
+        .defaultSize(width: 1280, height: 820)
         .windowResizability(.contentMinSize)
+        .windowToolbarStyle(.unifiedCompact)
         .commands {
             CommandGroup(replacing: .newItem) {}
         }
