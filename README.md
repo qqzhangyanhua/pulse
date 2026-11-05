@@ -2,6 +2,8 @@
 
 好看的 Mac **内存诊断器**（一期 MVP）。外表像活动监视器，任务按诊断走：约 30 秒内找到吃内存的进程并安全退出。
 
+技术设计：[docs/TECH.md](docs/TECH.md)。公证直装：[docs/RELEASE.md](docs/RELEASE.md)。
+
 ## 一期范围
 
 - 单页：用量大数 → 分类条（App / Wired / Compressed / Cached）→ 压力档与曲线 → 按内存降序的进程表 → 侧栏曲线 + 退出 / 强制退出
@@ -28,6 +30,9 @@ Pulse/
   ViewModels/            MemoryDashboardVM
   Views/                 总览、进程表、侧栏
   Pulse.entitlements     空 dict（非沙盒）；Hardened Runtime 由 build setting 打开
+  Assets.xcassets        AppIcon（从 docs/design/app-icon-master.jpg 导出）
+scripts/notarize.sh      Developer ID archive → notarytool → staple
+scripts/make-dmg.sh      可选 DMG（可再公证）
 ```
 
 前台每 1.5s 在后台 Actor 采一帧不可变快照；切后台暂停。采样失败进入空态，不写假 0。
@@ -45,6 +50,21 @@ Pulse/
    - 点选侧栏：内存主曲线 + CPU 辅曲线；切进程后曲线重采
    - 「退出」走 `terminate()`；失败后再「强制退出」，系统 `NSAlert` 确认
    - 文案无「危险」类恐吓措辞
-5. Release / 公证：把 `CODE_SIGN_IDENTITY` 换成 Developer ID Application，填 `DEVELOPMENT_TEAM`，再 `notarytool`。一期不做 App Store 沙盒。
+5. 公证直装不要改工程里的 ad-hoc 设置。装上 Developer ID Application 证书后按 [docs/RELEASE.md](docs/RELEASE.md) 执行 `./scripts/notarize.sh`。一期不做 App Store 沙盒。
 
 建议对照活动监视器看总用量数量级是否接近；第一帧 CPU 列显示「—」是预期（要两帧才有差值）。
+
+## 出货清单
+
+验收以 [docs/PRD.md](docs/PRD.md) 为准，签名与直装以 [docs/RELEASE.md](docs/RELEASE.md) 为准。采样、权限和界面不在这条发布路径里改。
+
+- [ ] PRD：冷启动在内存页，进程表按内存降序
+- [ ] PRD：用量大数、分类条、压力「正常 / 偏高」和压力曲线
+- [ ] PRD：名称过滤，无结果有空态
+- [ ] PRD：侧栏内存主曲线 + CPU 辅曲线，切换进程后重采
+- [ ] PRD：退出走 `terminate`；失败后可 `forceTerminate`，强制退出有系统确认
+- [ ] PRD：前台采样约 1–2 秒；文案无恐吓措辞；约 30 秒能定位并退出
+- [ ] 本机 Debug 冒烟：`CODE_SIGN_IDENTITY=-`（工程已这样设），Xcode Run
+- [ ] 登录钥匙串有 Developer ID Application；`DEVELOPMENT_TEAM` 与 `NOTARY_KEYCHAIN_PROFILE`（或 Apple ID + app 专用密码）只放在环境里
+- [ ] `./scripts/notarize.sh` 得到已装订的 `build/export/Pulse.app`，并拷到 `/Applications` 后能打开
+- [ ] 可选：`./scripts/make-dmg.sh --notarize` 得到可分发的 DMG
