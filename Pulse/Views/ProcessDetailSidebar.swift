@@ -26,6 +26,8 @@ struct ProcessDetailSidebar: View {
             return CPUPageCopy.sidebarEmpty
         case .network:
             return NetworkPageCopy.sidebarEmpty
+        case .disk:
+            return DiskPageCopy.sidebarEmpty
         default:
             return "选择一个进程查看详情"
         }

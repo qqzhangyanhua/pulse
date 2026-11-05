@@ -4,6 +4,7 @@ private enum ProcessColumn {
     static let cpu: CGFloat = 96
     static let memory: CGFloat = 124
     static let network: CGFloat = 80
+    static let disk: CGFloat = 108
     static let threads: CGFloat = 64
 }
 
@@ -42,6 +43,10 @@ struct ProcessTablePane: View {
         vm.selectedPage == .network
     }
 
+    private var showsDiskColumns: Bool {
+        vm.selectedPage == .disk
+    }
+
     private var columnHeader: some View {
         HStack(spacing: 0) {
             sortHeader(ProcessColumnTitle.name, column: .name, trailing: false)
@@ -53,6 +58,12 @@ struct ProcessTablePane: View {
             if showsNetworkColumn {
                 staticHeader(ProcessColumnTitle.network)
                     .frame(width: ProcessColumn.network, alignment: .trailing)
+            }
+            if showsDiskColumns {
+                sortHeader(ProcessColumnTitle.diskRead, column: .disk, trailing: true)
+                    .frame(width: ProcessColumn.disk, alignment: .trailing)
+                sortHeader(ProcessColumnTitle.diskWrite, column: .disk, trailing: true)
+                    .frame(width: ProcessColumn.disk, alignment: .trailing)
             }
             sortHeader(ProcessColumnTitle.threads, column: .threads, trailing: true)
                 .frame(width: ProcessColumn.threads, alignment: .trailing)
@@ -83,6 +94,16 @@ struct ProcessTablePane: View {
                     emptyTitle: NetworkPageCopy.emptyTitle,
                     emptyMessage: NetworkPageCopy.emptyMessage,
                     systemImage: "network"
+                )
+            case .disk:
+                resourceTableBody(
+                    sampling: DiskPageCopy.sampling,
+                    failureTitle: DiskPageCopy.failureTitle,
+                    failureMessage: DiskPageCopy.failureMessage,
+                    retryTitle: DiskPageCopy.retry,
+                    emptyTitle: DiskPageCopy.emptyTitle,
+                    emptyMessage: DiskPageCopy.emptyMessage,
+                    systemImage: "internaldrive"
                 )
             default:
                 memoryTableBody
@@ -201,7 +222,8 @@ struct ProcessTablePane: View {
             ProcessLine(
                 row: row,
                 selected: vm.selectedPid == row.pid,
-                showsNetwork: showsNetworkColumn
+                showsNetwork: showsNetworkColumn,
+                showsDisk: showsDiskColumns
             )
                 .listRowInsets(EdgeInsets(top: 3, leading: 10, bottom: 3, trailing: 10))
                 .listRowSeparator(.hidden)
@@ -259,6 +281,7 @@ private struct ProcessLine: View {
     let row: ProcessRow
     var selected: Bool
     var showsNetwork: Bool
+    var showsDisk: Bool
 
     var body: some View {
         HStack(spacing: 0) {
@@ -279,6 +302,12 @@ private struct ProcessLine: View {
                     .foregroundStyle(selected ? Color.white.opacity(0.82) : Color.secondary)
                     .frame(width: ProcessColumn.network, alignment: .trailing)
             }
+            if showsDisk {
+                diskCell(DiskRateText.string(row.diskReadBytesPerSecond))
+                    .frame(width: ProcessColumn.disk, alignment: .trailing)
+                diskCell(DiskRateText.string(row.diskWriteBytesPerSecond))
+                    .frame(width: ProcessColumn.disk, alignment: .trailing)
+            }
             Text("\(row.threadCount)")
                 .monospacedDigit()
                 .frame(width: ProcessColumn.threads, alignment: .trailing)
@@ -298,8 +327,18 @@ private struct ProcessLine: View {
         if showsNetwork {
             parts.append("网络 \(row.networkAvailability.label)")
         }
+        if showsDisk {
+            parts.append("\(DiskPageCopy.readTitle) \(DiskRateText.string(row.diskReadBytesPerSecond))")
+            parts.append("\(DiskPageCopy.writeTitle) \(DiskRateText.string(row.diskWriteBytesPerSecond))")
+        }
         parts.append("\(row.threadCount) 线程")
         return parts.joined(separator: "，")
+    }
+
+    private func diskCell(_ text: String) -> some View {
+        Text(text)
+            .monospacedDigit()
+            .foregroundStyle(selected ? Color.white.opacity(0.88) : Color.primary)
     }
 
     private func metric(_ text: String, dot: Color) -> some View {

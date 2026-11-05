@@ -65,12 +65,17 @@ enum ProcessColumnTitle {
     static let memory = "内存"
     static let threads = "线程"
     static let network = NetworkPageCopy.columnTitle
+    static let diskRead = DiskPageCopy.readTitle
+    static let diskWrite = DiskPageCopy.writeTitle
 
     /// CPU page keeps the memory column. The CPU column is a percent (`CPUPercentText`), not a raw tick count.
     static let cpuPage = [name, cpu, memory, threads]
 
     /// Network page adds an unavailable marker column. It is not a sortable byte count.
     static let networkPage = [name, cpu, memory, network, threads]
+
+    /// Disk page adds read / write rate columns. Missing cells are 「—」, not 「暂不可用」.
+    static let diskPage = [name, cpu, memory, diskRead, diskWrite, threads]
 }
 
 enum ProcessSortColumn: Equatable, Sendable {
@@ -78,6 +83,7 @@ enum ProcessSortColumn: Equatable, Sendable {
     case cpu
     case memory
     case threads
+    case disk
 }
 
 struct ProcessTableSort: Equatable, Sendable {
@@ -88,7 +94,9 @@ struct ProcessTableSort: Equatable, Sendable {
         switch page {
         case .cpu, .network:
             return ProcessTableSort(column: .cpu, descending: true)
-        case .memory, .disk, .gpu:
+        case .disk:
+            return ProcessTableSort(column: .disk, descending: true)
+        case .memory, .gpu:
             return ProcessTableSort(column: .memory, descending: true)
         }
     }
@@ -122,6 +130,8 @@ struct ProcessTableSort: Equatable, Sendable {
             if lhs.threadCount < rhs.threadCount { return .orderedAscending }
             if lhs.threadCount > rhs.threadCount { return .orderedDescending }
             return .orderedSame
+        case .disk:
+            return compareDoubles(lhs.diskSortKey, rhs.diskSortKey)
         }
     }
 

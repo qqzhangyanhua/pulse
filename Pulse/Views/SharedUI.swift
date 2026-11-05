@@ -17,6 +17,7 @@ enum PulsePalette {
     static let pressureElevated = Color(red: 0.96, green: 0.62, blue: 0.20)
     static let chartCPU = Color(red: 0.36, green: 0.62, blue: 0.98)
     static let chartNetwork = Color(red: 0.30, green: 0.74, blue: 0.72)
+    static let chartDisk = Color(red: 0.78, green: 0.58, blue: 0.36)
     static let destructive = Color(red: 0.93, green: 0.47, blue: 0.44)
     static let hairline = Color.white.opacity(0.08)
 }
@@ -50,6 +51,10 @@ enum ByteFormat {
 
     static func networkRate(_ bytesPerSecond: Double?) -> String {
         NetworkRateText.string(bytesPerSecond)
+    }
+
+    static func diskRate(_ bytesPerSecond: Double?) -> String {
+        DiskRateText.string(bytesPerSecond)
     }
 
     static func wholePercent(value: Double) -> String {
