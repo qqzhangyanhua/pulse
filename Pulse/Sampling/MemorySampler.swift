@@ -11,6 +11,7 @@ actor MemorySampler {
     private var selectedCPUSeries: [ChartSample] = []
     private var cpuTicks: [Int32: CPUTick] = [:]
     private var previousHostCPU: HostCPUTicks?
+    private var previousHostNetwork: HostNetworkSnapshot?
     private var identityCache: [Int32: ProcessIdentity] = [:]
 
     func setSelectedPid(_ pid: Int32?) {
@@ -48,6 +49,7 @@ actor MemorySampler {
             capturedAt: capturedAt
         )
         let systemCpuPercent = consumeSystemCPU()
+        let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
 
         guard let rawProcesses = ProcessEnumerator.list() else {
             return .success(
@@ -56,7 +58,8 @@ actor MemorySampler {
                     rows: [],
                     detail: nil,
                     processListFailed: true,
-                    systemCpuPercent: systemCpuPercent
+                    systemCpuPercent: systemCpuPercent,
+                    hostNetworkRates: hostNetworkRates
                 )
             )
         }
@@ -111,7 +114,8 @@ actor MemorySampler {
                 rows: rows,
                 detail: detail,
                 processListFailed: false,
-                systemCpuPercent: systemCpuPercent
+                systemCpuPercent: systemCpuPercent,
+                hostNetworkRates: hostNetworkRates
             )
         )
     }
@@ -120,6 +124,15 @@ actor MemorySampler {
         let advanced = SystemCPULoad.advance(previous: previousHostCPU, reading: HostCPUReader.read())
         previousHostCPU = advanced.baseline
         return advanced.percent
+    }
+
+    private func consumeSystemNetwork(at date: Date) -> HostNetworkRates {
+        let advanced = HostNetworkLoad.advance(
+            previous: previousHostNetwork,
+            reading: HostNetworkReader.read(at: date)
+        )
+        previousHostNetwork = advanced.baseline
+        return advanced.rates
     }
 
     private func detailFrame(from rows: [ProcessRow], at date: Date) -> ProcessDetail? {

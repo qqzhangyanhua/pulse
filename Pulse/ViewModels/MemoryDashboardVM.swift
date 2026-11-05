@@ -6,6 +6,7 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var loadState: LoadState = .sampling
     @Published private(set) var snapshot: MemorySnapshot?
     @Published private(set) var systemCpuPercent: Double?
+    @Published private(set) var hostNetworkRates = HostNetworkRates.missing
     @Published private(set) var rows: [ProcessRow] = []
     @Published private(set) var processListFailed = false
     @Published private(set) var detail: ProcessDetail?
@@ -107,6 +108,7 @@ final class MemoryDashboardVM: ObservableObject {
         loadState = .sampling
         snapshot = nil
         systemCpuPercent = nil
+        hostNetworkRates = .missing
         rows = []
         processListFailed = false
         samplingFailed = false
@@ -156,6 +158,7 @@ final class MemoryDashboardVM: ObservableObject {
             samplingFailed = false
             snapshot = frame.snapshot
             systemCpuPercent = frame.systemCpuPercent
+            hostNetworkRates = frame.hostNetworkRates
             var nextUsage = usageHistory
             nextUsage.record(frame.snapshot)
             usageHistory = nextUsage

@@ -18,6 +18,8 @@
 		B00000000000000000000014 /* CPULoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000014 /* CPULoad.swift */; };
 		B00000000000000000000015 /* SamplingPace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000015 /* SamplingPace.swift */; };
 		B00000000000000000000016 /* HostCPUReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000016 /* HostCPUReader.swift */; };
+		B0000000000000000000001E /* HostNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001E /* HostNetwork.swift */; };
+		B0000000000000000000001F /* HostNetworkReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001F /* HostNetworkReader.swift */; };
 		B00000000000000000000017 /* MenuBarStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000017 /* MenuBarStatus.swift */; };
 		B00000000000000000000018 /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000018 /* MenuBarController.swift */; };
 		B00000000000000000000019 /* MainWindowAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000019 /* MainWindowAnchor.swift */; };
@@ -48,6 +50,8 @@
 		A00000000000000000000014 /* CPULoad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPULoad.swift; sourceTree = "<group>"; };
 		A00000000000000000000015 /* SamplingPace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SamplingPace.swift; sourceTree = "<group>"; };
 		A00000000000000000000016 /* HostCPUReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostCPUReader.swift; sourceTree = "<group>"; };
+		A0000000000000000000001E /* HostNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostNetwork.swift; sourceTree = "<group>"; };
+		A0000000000000000000001F /* HostNetworkReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostNetworkReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000017 /* MenuBarStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatus.swift; sourceTree = "<group>"; };
 		A00000000000000000000018 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
 		A00000000000000000000019 /* MainWindowAnchor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowAnchor.swift; sourceTree = "<group>"; };
@@ -113,7 +117,9 @@
 			children = (
 				A00000000000000000000003 /* HostMemoryReader.swift */,
 				A00000000000000000000016 /* HostCPUReader.swift */,
+				A0000000000000000000001F /* HostNetworkReader.swift */,
 				A00000000000000000000014 /* CPULoad.swift */,
+				A0000000000000000000001E /* HostNetwork.swift */,
 				A00000000000000000000015 /* SamplingPace.swift */,
 				A00000000000000000000004 /* ProcessEnumerator.swift */,
 				A00000000000000000000005 /* MemorySampler.swift */,
@@ -270,6 +276,8 @@
 				B00000000000000000000014 /* CPULoad.swift in Sources */,
 				B00000000000000000000015 /* SamplingPace.swift in Sources */,
 				B00000000000000000000016 /* HostCPUReader.swift in Sources */,
+				B0000000000000000000001E /* HostNetwork.swift in Sources */,
+				B0000000000000000000001F /* HostNetworkReader.swift in Sources */,
 				B00000000000000000000006 /* MachineInfo.swift in Sources */,
 				B00000000000000000000007 /* ProcessActions.swift in Sources */,
 				B00000000000000000000008 /* MemoryDashboardVM.swift in Sources */,

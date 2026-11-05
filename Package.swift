@@ -22,6 +22,7 @@ let package = Package(
                 "Views",
                 "Sampling/HostCPUReader.swift",
                 "Sampling/HostMemoryReader.swift",
+                "Sampling/HostNetworkReader.swift",
                 "Sampling/MachineInfo.swift",
                 "Sampling/MemorySampler.swift",
                 "Sampling/ProcessEnumerator.swift",
@@ -34,6 +35,7 @@ let package = Package(
                 "Models/MemoryGrowthSignal.swift",
                 "Models/CPUPage.swift",
                 "Sampling/CPULoad.swift",
+                "Sampling/HostNetwork.swift",
                 "Sampling/SamplingPace.swift",
                 "MenuBar/MenuBarStatus.swift",
             ]
