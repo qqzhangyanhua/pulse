@@ -49,3 +49,44 @@ enum MemoryGrowthSignal: Equatable, Sendable {
         return .rising
     }
 }
+
+/// Locked memory-page sidebar copy. The title is a trend label, never a leak verdict.
+enum MemoryGrowthCopy {
+    static let title = "内存趋势"
+    static let rising = "近几分钟持续上涨"
+    static let insufficient = "样本不足，暂不判断"
+
+    static func caption(for signal: MemoryGrowthSignal) -> String? {
+        switch signal {
+        case .rising:
+            return rising
+        case .insufficient:
+            return insufficient
+        case .none:
+            return nil
+        }
+    }
+}
+
+/// One visible sidebar slot. Absence means the view renders nothing.
+struct MemoryGrowthSlot: Equatable, Sendable {
+    let title: String
+    let caption: String
+}
+
+/// Memory-page detail sidebar only. CPU and the other pages stay silent.
+enum MemoryGrowthSidebar {
+    /// `selectedPid == nil` clears the slot even if a previous series is still passed in.
+    /// A live selection with `detailSeries == nil` (detail just cleared) evaluates an empty
+    /// window, so the result is insufficient rather than the previous process's rising line.
+    static func slot(
+        page: DashboardPage,
+        selectedPid: Int32?,
+        detailSeries: [ChartSample]?
+    ) -> MemoryGrowthSlot? {
+        guard page == .memory, selectedPid != nil else { return nil }
+        let signal = MemoryGrowthSignal.evaluate(detailSeries ?? [])
+        guard let caption = MemoryGrowthCopy.caption(for: signal) else { return nil }
+        return MemoryGrowthSlot(title: MemoryGrowthCopy.title, caption: caption)
+    }
+}
