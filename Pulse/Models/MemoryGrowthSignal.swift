@@ -117,4 +117,16 @@ enum MemoryGrowthList {
         guard MemoryGrowthSignal.evaluate(detailSeries ?? []) == .rising else { return nil }
         return MemoryGrowthListBadge(title: MemoryGrowthListCopy.title, help: MemoryGrowthListCopy.help)
     }
+
+    /// Phase-9 density predicate. `seriesByPid` only holds current Top 5 series.
+    /// Missing / insufficient / none / other pages stay `nil`. Same `evaluate` as the sidebar.
+    static func badge(
+        page: DashboardPage,
+        rowPid: Int32,
+        seriesByPid: [Int32: [ChartSample]]
+    ) -> MemoryGrowthListBadge? {
+        guard page == .memory, let series = seriesByPid[rowPid] else { return nil }
+        guard MemoryGrowthSignal.evaluate(series) == .rising else { return nil }
+        return MemoryGrowthListBadge(title: MemoryGrowthListCopy.title, help: MemoryGrowthListCopy.help)
+    }
 }

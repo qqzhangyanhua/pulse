@@ -35,6 +35,7 @@ let package = Package(
             sources: [
                 "Models/MemoryModels.swift",
                 "Models/MemoryGrowthSignal.swift",
+                "Models/MemoryGrowthTopSeries.swift",
                 "Models/CPUPage.swift",
                 "Models/NetworkPage.swift",
                 "Models/DiskPage.swift",

@@ -3,7 +3,7 @@ import Foundation
 
 /// Background sampling actor. Snapshots are immutable value types; the main thread only reads them.
 actor MemorySampler {
-    private let seriesLimit = 90
+    private let seriesLimit = ChartSampleRing.limit
     private var nextSampleID: UInt64 = 1
     private var pressureSeries: [ChartSample] = []
     private var selectedPid: Int32?
@@ -15,12 +15,23 @@ actor MemorySampler {
     private var previousHostNetwork: HostNetworkSnapshot?
     private var previousHostDisk: HostDiskSnapshot?
     private var identityCache: [Int32: ProcessIdentity] = [:]
+    /// Last memory-page table sort. Leaving memory does not follow CPU / disk sort.
+    private var memoryPageSort = ProcessTableSort.defaultSort(for: .memory)
+    private var lastRows: [ProcessRow] = []
+    private var topMemoryStore = MemoryGrowthTopStore()
 
     func setSelectedPid(_ pid: Int32?) {
         guard selectedPid != pid else { return }
         selectedPid = pid
         selectedMemorySeries.removeAll(keepingCapacity: true)
         selectedCPUSeries.removeAll(keepingCapacity: true)
+    }
+
+    /// Memory-page sort only. A churning sort drops fallen Top 5 series immediately.
+    func setMemoryPageSort(_ sort: ProcessTableSort) {
+        guard memoryPageSort != sort else { return }
+        memoryPageSort = sort
+        topMemoryStore.retain(only: MemoryGrowthTopSeries.pids(from: lastRows, sort: sort))
     }
 
     func sample() -> Result<SampledFrame, HostMemoryError> {
@@ -55,6 +66,8 @@ actor MemorySampler {
         let hostDiskRates = consumeSystemDisk(at: capturedAt)
 
         guard let rawProcesses = ProcessEnumerator.list() else {
+            lastRows = []
+            topMemoryStore.retain(only: [])
             return .success(
                 SampledFrame(
                     snapshot: snapshot,
@@ -63,7 +76,8 @@ actor MemorySampler {
                     processListFailed: true,
                     systemCpuPercent: systemCpuPercent,
                     hostNetworkRates: hostNetworkRates,
-                    hostDiskRates: hostDiskRates
+                    hostDiskRates: hostDiskRates,
+                    topMemorySeries: topMemoryStore.seriesByPid
                 )
             )
         }
@@ -126,7 +140,24 @@ actor MemorySampler {
             return lhs.pid < rhs.pid
         }
 
-        let detail = detailFrame(from: rows, at: capturedAt)
+        lastRows = rows
+        let topPids = MemoryGrowthTopSeries.pids(from: rows, sort: memoryPageSort)
+        if let selectedPid, topPids.contains(selectedPid), !selectedMemorySeries.isEmpty {
+            topMemoryStore.adopt(pid: selectedPid, series: selectedMemorySeries)
+        }
+        var memoryValues: [Int32: Double] = [:]
+        memoryValues.reserveCapacity(rows.count)
+        for row in rows {
+            memoryValues[row.pid] = Double(row.memoryBytes)
+        }
+        topMemoryStore.advance(
+            values: memoryValues,
+            topPids: topPids,
+            at: capturedAt,
+            nextSampleID: &nextSampleID
+        )
+
+        let detail = detailFrame(from: rows, at: capturedAt, topPids: topPids)
         return .success(
             SampledFrame(
                 snapshot: snapshot,
@@ -135,7 +166,8 @@ actor MemorySampler {
                 processListFailed: false,
                 systemCpuPercent: systemCpuPercent,
                 hostNetworkRates: hostNetworkRates,
-                hostDiskRates: hostDiskRates
+                hostDiskRates: hostDiskRates,
+                topMemorySeries: topMemoryStore.seriesByPid
             )
         )
     }
@@ -164,14 +196,18 @@ actor MemorySampler {
         return advanced.rates
     }
 
-    private func detailFrame(from rows: [ProcessRow], at date: Date) -> ProcessDetail? {
+    private func detailFrame(from rows: [ProcessRow], at date: Date, topPids: [Int32]) -> ProcessDetail? {
         guard let selectedPid,
               let row = rows.first(where: { $0.pid == selectedPid })
         else {
             return nil
         }
 
-        append(Double(row.memoryBytes), at: date, to: &selectedMemorySeries)
+        if topPids.contains(selectedPid), let shared = topMemoryStore.series(for: selectedPid) {
+            selectedMemorySeries = shared
+        } else {
+            append(Double(row.memoryBytes), at: date, to: &selectedMemorySeries)
+        }
         if let cpu = row.cpuPercent {
             append(cpu, at: date, to: &selectedCPUSeries)
         }
@@ -184,11 +220,7 @@ actor MemorySampler {
     }
 
     private func append(_ value: Double, at date: Date, to series: inout [ChartSample]) {
-        let sample = ChartSample(id: nextSampleID, date: date, value: value)
+        ChartSampleRing.append(value, at: date, id: nextSampleID, to: &series, limit: seriesLimit)
         nextSampleID += 1
-        series.append(sample)
-        if series.count > seriesLimit {
-            series.removeFirst(series.count - seriesLimit)
-        }
     }
 }
