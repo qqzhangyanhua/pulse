@@ -71,6 +71,8 @@ struct MenuBarDotColor: Equatable, Sendable {
 enum MenuBarCopy {
     static let unavailableTooltip = "暂时读不到"
     static let quitTitle = "退出 Pulse"
+    static let openPulseTitle = "打开 Pulse"
+    static let processesEmpty = "暂无进程"
 }
 
 struct MenuBarDot: Equatable, Sendable {
@@ -111,6 +113,13 @@ struct MenuBarDot: Equatable, Sendable {
     }
 }
 
+enum MenuBarStatusItemAction: Equatable, Sendable {
+    /// Strip B. Primary click shows the popover; it does not open the main window.
+    case showPopover
+    /// Secondary click / Control-click. Same quit item as ⌘Q.
+    case showQuitMenu
+}
+
 enum MenuBarPointer: Equatable, Sendable {
     case primary
     case secondary
@@ -120,8 +129,47 @@ enum MenuBarPointer: Equatable, Sendable {
         return .primary
     }
 
-    /// Secondary click is the quit menu. Primary click focuses the memory page and does not open a panel.
-    var showsQuitMenu: Bool { self == .secondary }
+    var statusItemAction: MenuBarStatusItemAction {
+        switch self {
+        case .primary:
+            return .showPopover
+        case .secondary:
+            return .showQuitMenu
+        }
+    }
+
+    var showsQuitMenu: Bool { statusItemAction == .showQuitMenu }
+    var showsPopover: Bool { statusItemAction == .showPopover }
+}
+
+/// Locked strip B slots. This PR ships the empty shell; live pressure + Top3 fill later.
+enum MenuBarPopoverSection: String, Equatable, Sendable, CaseIterable, Identifiable {
+    case hostPressure
+    case topProcesses
+    case openPulse
+
+    var id: String { rawValue }
+}
+
+enum MenuBarPopoverShell {
+    /// Memory Top N. Live rows arrive in the next PR; the shell only reserves this many.
+    static let maxProcessRows = 3
+
+    static var sections: [MenuBarPopoverSection] {
+        Array(MenuBarPopoverSection.allCases)
+    }
+
+    /// Calm empty copy. Never a fake "正常" or a 0-byte process row.
+    static func placeholder(for section: MenuBarPopoverSection) -> String {
+        switch section {
+        case .hostPressure:
+            return MenuBarCopy.unavailableTooltip
+        case .topProcesses:
+            return MenuBarCopy.processesEmpty
+        case .openPulse:
+            return MenuBarCopy.openPulseTitle
+        }
+    }
 }
 
 /// Foreground pace only while the main window is on screen and the app is active.

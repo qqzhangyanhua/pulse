@@ -1,27 +1,33 @@
 import AppKit
 import Combine
+import SwiftUI
 
 /// In-process status item. One shared `MemoryDashboardVM` feeds the dot; this type does not sample.
 ///
-/// `MenuBarExtra` is the wrong surface for interaction A: `.menu` opens a menu and `.window` opens a
-/// floating panel. Primary click has to focus the main window, with quit only on the secondary click.
-/// `NSStatusItem` stays in this process (`activationPolicy` remains `.regular`; no helper, no XPC).
+/// `MenuBarExtra` is the wrong surface: `.menu` opens a menu and `.window` opens a second
+/// floating panel. Interaction A stays a color dot. Primary click shows strip B as an
+/// `NSPopover` on this button; 「打开 Pulse」 focuses the existing main window. Quit stays
+/// on the secondary click. `activationPolicy` remains `.regular` (no helper, no XPC).
 @MainActor
-final class MenuBarController: NSObject {
+final class MenuBarController: NSObject, NSPopoverDelegate {
     private var statusItem: NSStatusItem?
     private var cancellable: AnyCancellable?
     private var rendered: MenuBarDot?
     private var currentDot: @MainActor () -> MenuBarDot = { .unavailable }
-    private var onFocusMemory: @MainActor () -> Void = {}
+    private var onOpenPulse: @MainActor () -> Void = {}
     private var onQuit: @MainActor () -> Void = {}
+    private var popover: NSPopover?
+    /// Transient popovers close on the mouse-down that also hits the status button.
+    /// Ignore that same click so the strip does not bounce back open.
+    private var popoverClosedAt: Date?
 
     func install(
         currentDot: @escaping @MainActor () -> MenuBarDot,
-        onFocusMemory: @escaping @MainActor () -> Void,
+        onOpenPulse: @escaping @MainActor () -> Void,
         onQuit: @escaping @MainActor () -> Void
     ) {
         self.currentDot = currentDot
-        self.onFocusMemory = onFocusMemory
+        self.onOpenPulse = onOpenPulse
         self.onQuit = onQuit
         if statusItem == nil {
             let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -47,6 +53,7 @@ final class MenuBarController: NSObject {
 
     /// ⌘Q and 「退出 Pulse」 both end here, via `applicationWillTerminate`.
     func uninstall() {
+        dismissPopover()
         cancellable = nil
         rendered = nil
         guard let statusItem else { return }
@@ -80,10 +87,58 @@ final class MenuBarController: NSObject {
             isSecondaryClick: type == .rightMouseUp,
             controlDown: event?.modifierFlags.contains(.control) ?? false
         )
-        if pointer.showsQuitMenu {
+        switch pointer.statusItemAction {
+        case .showQuitMenu:
+            dismissPopover()
             presentQuitMenu(from: sender)
-        } else {
-            onFocusMemory()
+        case .showPopover:
+            togglePopover(from: sender)
+        }
+    }
+
+    private func togglePopover(from button: NSStatusBarButton) {
+        if let popover, popover.isShown {
+            dismissPopover()
+            return
+        }
+        if let popoverClosedAt, Date().timeIntervalSince(popoverClosedAt) < 0.3 {
+            return
+        }
+        presentPopover(from: button)
+    }
+
+    private func presentPopover(from button: NSStatusBarButton) {
+        let popover = NSPopover()
+        popover.behavior = .transient
+        popover.animates = true
+        popover.delegate = self
+        let hosting = NSHostingController(
+            rootView: MenuBarPopoverView { [weak self] in
+                self?.openPulse()
+            }
+        )
+        hosting.sizingOptions = .preferredContentSize
+        popover.contentViewController = hosting
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        self.popover = popover
+    }
+
+    private func openPulse() {
+        dismissPopover()
+        onOpenPulse()
+    }
+
+    private func dismissPopover() {
+        guard let popover else { return }
+        popover.delegate = nil
+        popover.performClose(nil)
+        self.popover = nil
+    }
+
+    func popoverDidClose(_ notification: Notification) {
+        popoverClosedAt = Date()
+        if let closing = notification.object as? NSPopover, closing == popover {
+            popover = nil
         }
     }
 
