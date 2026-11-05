@@ -173,4 +173,26 @@ struct SampledFrame: Sendable {
     let hostNetworkRates: HostNetworkRates
     /// Host disk read/write rates for this tick. Nil insides on first frame, failure, or wrap.
     let hostDiskRates: HostDiskRates
+    /// Bounded Top N=5 memory series for this tick. Empty when the process list failed.
+    let topMemorySeries: [Int32: [ChartSample]]
+
+    init(
+        snapshot: MemorySnapshot,
+        rows: [ProcessRow],
+        detail: ProcessDetail?,
+        processListFailed: Bool,
+        systemCpuPercent: Double?,
+        hostNetworkRates: HostNetworkRates,
+        hostDiskRates: HostDiskRates,
+        topMemorySeries: [Int32: [ChartSample]] = [:]
+    ) {
+        self.snapshot = snapshot
+        self.rows = rows
+        self.detail = detail
+        self.processListFailed = processListFailed
+        self.systemCpuPercent = systemCpuPercent
+        self.hostNetworkRates = hostNetworkRates
+        self.hostDiskRates = hostDiskRates
+        self.topMemorySeries = topMemorySeries
+    }
 }

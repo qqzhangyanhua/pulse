@@ -11,6 +11,7 @@
 		B00000000000000000000002 /* MemoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000002 /* MemoryModels.swift */; };
 		B0000000000000000000001B /* CPUPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001B /* CPUPage.swift */; };
 		B0000000000000000000001D /* MemoryGrowthSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001D /* MemoryGrowthSignal.swift */; };
+		B00000000000000000000027 /* MemoryGrowthTopSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000027 /* MemoryGrowthTopSeries.swift */; };
 		B0000000000000000000001C /* CPUOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001C /* CPUOverviewSection.swift */; };
 		B00000000000000000000020 /* NetworkPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000020 /* NetworkPage.swift */; };
 		B00000000000000000000021 /* NetworkOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000021 /* NetworkOverviewSection.swift */; };
@@ -50,6 +51,7 @@
 		A00000000000000000000002 /* MemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryModels.swift; sourceTree = "<group>"; };
 		A0000000000000000000001B /* CPUPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUPage.swift; sourceTree = "<group>"; };
 		A0000000000000000000001D /* MemoryGrowthSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGrowthSignal.swift; sourceTree = "<group>"; };
+		A00000000000000000000027 /* MemoryGrowthTopSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGrowthTopSeries.swift; sourceTree = "<group>"; };
 		A0000000000000000000001C /* CPUOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUOverviewSection.swift; sourceTree = "<group>"; };
 		A00000000000000000000020 /* NetworkPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkPage.swift; sourceTree = "<group>"; };
 		A00000000000000000000021 /* NetworkOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkOverviewSection.swift; sourceTree = "<group>"; };
@@ -121,6 +123,7 @@
 			children = (
 				A00000000000000000000002 /* MemoryModels.swift */,
 				A0000000000000000000001D /* MemoryGrowthSignal.swift */,
+				A00000000000000000000027 /* MemoryGrowthTopSeries.swift */,
 				A0000000000000000000001B /* CPUPage.swift */,
 				A00000000000000000000020 /* NetworkPage.swift */,
 				A00000000000000000000024 /* DiskPage.swift */,
@@ -289,6 +292,7 @@
 				B00000000000000000000001 /* PulseApp.swift in Sources */,
 				B00000000000000000000002 /* MemoryModels.swift in Sources */,
 				B0000000000000000000001D /* MemoryGrowthSignal.swift in Sources */,
+				B00000000000000000000027 /* MemoryGrowthTopSeries.swift in Sources */,
 				B0000000000000000000001B /* CPUPage.swift in Sources */,
 				B00000000000000000000020 /* NetworkPage.swift in Sources */,
 				B00000000000000000000024 /* DiskPage.swift in Sources */,

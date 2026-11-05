@@ -11,6 +11,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var rows: [ProcessRow] = []
     @Published private(set) var processListFailed = false
     @Published private(set) var detail: ProcessDetail?
+    /// Bounded Top N=5 memory series. List UI still reads `memoryGrowthListBadge` (selected only).
+    @Published private(set) var topMemorySeries: [Int32: [ChartSample]] = [:]
     @Published private(set) var machineLabel: String?
     @Published private(set) var quitPhase: QuitPhase = .idle
     @Published private(set) var quitMessage: String?
@@ -91,6 +93,7 @@ final class MemoryDashboardVM: ObservableObject {
         var next = navigation
         next.focusMemoryPage()
         navigation = next
+        publishMemoryPageSort()
     }
 
     /// Memory, CPU, network, and disk. GPU stays on the current page.
@@ -98,18 +101,21 @@ final class MemoryDashboardVM: ObservableObject {
         var next = navigation
         next.select(page)
         navigation = next
+        publishMemoryPageSort()
     }
 
     func setTableSort(_ sort: ProcessTableSort) {
         var next = navigation
         next.updateSort(sort)
         navigation = next
+        publishMemoryPageSort()
     }
 
     func start() {
         guard !started else { return }
         started = true
         machineLabel = MachineInfo.toolbarLabel()
+        publishMemoryPageSort()
         loopTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { break }
@@ -182,6 +188,13 @@ final class MemoryDashboardVM: ObservableObject {
         }
     }
 
+    /// Only the memory-page sort drives Top 5. Other tabs keep the last memory sort.
+    private func publishMemoryPageSort() {
+        guard selectedPage == .memory else { return }
+        let sort = tableSort
+        Task { await sampler.setMemoryPageSort(sort) }
+    }
+
     private func tick() async {
         let result = await sampler.sample()
         switch result {
@@ -205,6 +218,7 @@ final class MemoryDashboardVM: ObservableObject {
             diskHistory = nextDisk
             rows = frame.rows
             processListFailed = frame.processListFailed
+            topMemorySeries = frame.topMemorySeries
             if let frameDetail = frame.detail {
                 detail = frameDetail
             } else if let pid = selectedPid, !frame.rows.contains(where: { $0.pid == pid }) {
