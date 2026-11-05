@@ -51,6 +51,16 @@ final class MemoryDashboardVM: ObservableObject {
     var selectedPage: DashboardPage { navigation.selectedPage }
     var tableSort: ProcessTableSort { navigation.sort }
 
+    /// Memory-page sidebar trend. Reads the current detail series, so a pid or detail clear
+    /// drops the previous process's rising line on the same turn.
+    var memoryGrowthSlot: MemoryGrowthSlot? {
+        MemoryGrowthSidebar.slot(
+            page: selectedPage,
+            selectedPid: selectedPid,
+            detailSeries: detail?.memorySeries
+        )
+    }
+
     /// Menu-bar primary click. Does not follow whatever page was last shown.
     func focusMemoryPage() {
         var next = navigation

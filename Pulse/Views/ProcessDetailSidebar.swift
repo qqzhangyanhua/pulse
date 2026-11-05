@@ -64,6 +64,9 @@ struct ProcessDetailSidebar: View {
             VStack(alignment: .leading, spacing: 14) {
                 header(detail)
                 metrics(detail)
+                if let slot = vm.memoryGrowthSlot {
+                    memoryTrend(slot)
+                }
                 memoryChart(detail)
                     .frame(height: 168)
                 cpuChart(detail)
@@ -133,6 +136,17 @@ struct ProcessDetailSidebar: View {
                 )
             )
         }
+    }
+
+    private func memoryTrend(_ slot: MemoryGrowthSlot) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(slot.title)
+                .font(.caption.weight(.semibold))
+            Text(slot.caption)
+                .font(.caption)
+        }
+        .foregroundStyle(.secondary)
+        .accessibilityElement(children: .combine)
     }
 
     private func memoryCaption(_ row: ProcessRow) -> String {
