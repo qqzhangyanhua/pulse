@@ -88,11 +88,23 @@ final class MemoryDashboardVM: ObservableObject {
     }
 
     /// 「打开 Pulse」 and dock reopen. Always memory; does not follow the last tab.
+    /// Page-only: does not write `selectedPid`. Pair with `selectPidIfPresent` when a pid is known.
     func focusMemoryPage() {
         var next = navigation
         next.focusMemoryPage()
         navigation = next
         publishMemoryPageSort()
+    }
+
+    /// Select-if-present against the live `rows`. Missing / vanished pids are not written.
+    func selectPidIfPresent(_ pid: Int32) {
+        guard let accepted = ProcessSelection.acceptedPid(pid, in: rows) else { return }
+        selectedPid = accepted
+    }
+
+    /// Process-list identity to reveal. Nil when nothing is selected or the pid left `rows`.
+    var processListScrollTarget: Int32? {
+        ProcessSelection.scrollTarget(selectedPid: selectedPid, rows: rows)
     }
 
     /// Memory, CPU, network, and disk. GPU stays on the current page.

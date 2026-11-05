@@ -77,6 +77,7 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Unique open / focus path for 「打开 Pulse」. Lands on the memory page.
+    /// Does not write `selectedPid`. Select-if-present is `MemoryDashboardVM.selectPidIfPresent`.
     func focusMemoryPage() {
         dashboard?.focusMemoryPage()
         NSApp.activate()
