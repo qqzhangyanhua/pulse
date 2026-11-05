@@ -2,7 +2,8 @@ import AppKit
 import Combine
 import SwiftUI
 
-/// In-process status item. One shared `MemoryDashboardVM` feeds the dot; this type does not sample.
+/// In-process status item. One shared `MemoryDashboardVM` feeds the dot and strip B;
+/// this type does not sample.
 ///
 /// `MenuBarExtra` is the wrong surface: `.menu` opens a menu and `.window` opens a second
 /// floating panel. Interaction A stays a color dot. Primary click shows strip B as an
@@ -12,6 +13,7 @@ import SwiftUI
 final class MenuBarController: NSObject, NSPopoverDelegate {
     private var statusItem: NSStatusItem?
     private var cancellable: AnyCancellable?
+    private weak var dashboard: MemoryDashboardVM?
     private var rendered: MenuBarDot?
     private var currentDot: @MainActor () -> MenuBarDot = { .unavailable }
     private var onOpenPulse: @MainActor () -> Void = {}
@@ -43,6 +45,7 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
     }
 
     func observe(_ dashboard: MemoryDashboardVM) {
+        self.dashboard = dashboard
         cancellable = dashboard.objectWillChange.sink { [weak self] _ in
             Task { @MainActor in
                 self?.render()
@@ -55,6 +58,7 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
     func uninstall() {
         dismissPopover()
         cancellable = nil
+        dashboard = nil
         rendered = nil
         guard let statusItem else { return }
         NSStatusBar.system.removeStatusItem(statusItem)
@@ -108,12 +112,13 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
     }
 
     private func presentPopover(from button: NSStatusBarButton) {
+        guard let dashboard else { return }
         let popover = NSPopover()
         popover.behavior = .transient
         popover.animates = true
         popover.delegate = self
         let hosting = NSHostingController(
-            rootView: MenuBarPopoverView { [weak self] in
+            rootView: MenuBarPopoverView(dashboard: dashboard) { [weak self] in
                 self?.openPulse()
             }
         )

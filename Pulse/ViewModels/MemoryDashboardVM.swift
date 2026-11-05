@@ -43,6 +43,16 @@ final class MemoryDashboardVM: ObservableObject {
         ProcessNameFilter.apply(rows, query: filter)
     }
 
+    /// Strip B. Full memory-ordered `rows`, never the filtered table or its header sort.
+    var menuBarPopover: MenuBarPopoverSnapshot {
+        MenuBarPopoverSnapshot.project(
+            pressure: snapshot?.pressure,
+            samplingFailed: samplingFailed,
+            rows: rows,
+            processListFailed: processListFailed
+        )
+    }
+
     var selectedRow: ProcessRow? {
         guard let selectedPid else { return nil }
         return rows.first { $0.pid == selectedPid }
