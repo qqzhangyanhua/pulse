@@ -155,9 +155,13 @@ enum MenuBarPopoverShell {
     /// Memory Top N. The projection never pads up to this count.
     static let maxProcessRows = 3
 
+    /// Peer slots that get a Divider between them. Used memory is not one of these.
     static var sections: [MenuBarPopoverSection] {
         Array(MenuBarPopoverSection.allCases)
     }
+
+    /// Pressure then used memory, same information block. No Divider between them.
+    static let hostBlockLineCount = 2
 
     /// Calm empty copy. Never a fake "正常" or a 0-byte process row.
     static func placeholder(for section: MenuBarPopoverSection) -> String {
@@ -209,6 +213,12 @@ struct MenuBarPopoverSnapshot: Equatable, Sendable {
 
     var processesEmptyCopy: String? {
         processes.isEmpty ? MenuBarPopoverShell.placeholder(for: .topProcesses) : nil
+    }
+
+    /// Strip-B host block, top to bottom. The view draws these under `.hostPressure`
+    /// with no Divider and no tap target.
+    var hostBlockLines: [String] {
+        [pressureLine, usedMemoryLine]
     }
 
     static func pressureLine(for pressure: PressureLevel) -> String {

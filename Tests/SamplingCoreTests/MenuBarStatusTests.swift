@@ -108,6 +108,12 @@ final class MenuBarStatusTests: XCTestCase {
             MenuBarPopoverShell.sections,
             [.hostPressure, .topProcesses, .openPulse]
         )
+        XCTAssertEqual(
+            MenuBarPopoverSection.allCases.map(\.rawValue),
+            ["hostPressure", "topProcesses", "openPulse"]
+        )
+        XCTAssertFalse(MenuBarPopoverSection.allCases.map(\.rawValue).contains("usedMemory"))
+        XCTAssertEqual(MenuBarPopoverShell.hostBlockLineCount, 2)
         XCTAssertEqual(MenuBarPopoverShell.maxProcessRows, 3)
         XCTAssertEqual(
             MenuBarPopoverShell.placeholder(for: .hostPressure),

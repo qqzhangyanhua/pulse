@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Strip B. Three slots, single column, secondary type. Live values are a
-/// read-only projection of the same dashboard the color-dot and main window use.
+/// Strip B. Three peer slots, single column, secondary type. Host pressure and
+/// used memory share one information block. Live values are a read-only
+/// projection of the same dashboard the color-dot and main window use.
 struct MenuBarPopoverView: View {
     @ObservedObject var dashboard: MemoryDashboardVM
     var onOpenPulse: () -> Void
@@ -30,12 +31,20 @@ struct MenuBarPopoverView: View {
     private func slot(_ section: MenuBarPopoverSection) -> some View {
         switch section {
         case .hostPressure:
-            Text(strip.pressureLine)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityLabel("主机压力")
-                .accessibilityValue(strip.pressureLine)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(strip.pressureLine)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityLabel("主机压力")
+                    .accessibilityValue(strip.pressureLine)
+                Text(strip.usedMemoryLine)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityLabel("已用内存")
+                    .accessibilityValue(strip.usedMemoryLine)
+            }
         case .topProcesses:
             topProcessesSlot
         case .openPulse:
