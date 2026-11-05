@@ -1,31 +1,7 @@
 import SwiftUI
 
-struct UsageHistory {
-    private(set) var samples: [ChartSample] = []
-    private var nextID: UInt64 = 1
-    private let limit = 90
-
-    mutating func record(_ snapshot: MemorySnapshot?) {
-        guard let snapshot else {
-            samples.removeAll(keepingCapacity: true)
-            return
-        }
-        if samples.last?.date == snapshot.capturedAt {
-            return
-        }
-        samples.append(
-            ChartSample(id: nextID, date: snapshot.capturedAt, value: Double(snapshot.usedBytes))
-        )
-        nextID += 1
-        if samples.count > limit {
-            samples.removeFirst(samples.count - limit)
-        }
-    }
-}
-
 struct OverviewSection: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
-    @State private var usageHistory = UsageHistory()
 
     var body: some View {
         Group {
@@ -41,10 +17,6 @@ struct OverviewSection: View {
                     failureBody
                 }
             }
-        }
-        .onAppear { usageHistory.record(vm.snapshot) }
-        .onChange(of: vm.snapshot) { _, snapshot in
-            usageHistory.record(snapshot)
         }
     }
 
@@ -153,7 +125,7 @@ struct OverviewSection: View {
 
         return VStack(spacing: 12) {
             HStack(spacing: 12) {
-                MemoryHeroCard(snapshot: snapshot, usedSeries: usageHistory.samples)
+                MemoryHeroCard(snapshot: snapshot, usedSeries: vm.usageHistory.samples)
                 CompositionCard(breakdown: snapshot.breakdown, totalBytes: snapshot.totalBytes)
                     .frame(width: 300)
             }

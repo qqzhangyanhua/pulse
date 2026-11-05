@@ -6,17 +6,8 @@ private enum ProcessColumn {
     static let threads: CGFloat = 64
 }
 
-private enum SortColumn {
-    case name
-    case cpu
-    case memory
-    case threads
-}
-
 struct ProcessTablePane: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
-    @State private var sortColumn: SortColumn = .memory
-    @State private var sortDescending = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -33,18 +24,28 @@ struct ProcessTablePane: View {
     }
 
     private var sortedRows: [ProcessRow] {
-        vm.visibleRows.sorted(using: vm.sortOrder)
+        vm.tableSort.ordered(vm.visibleRows)
+    }
+
+    private var cpuPhase: CPUPagePhase {
+        CPUPagePhaseResolver.resolve(
+            loadState: vm.loadState,
+            processCount: vm.rows.count,
+            visibleCount: vm.visibleRows.count,
+            hasActiveFilter: vm.hasActiveFilter,
+            processListFailed: vm.processListFailed
+        )
     }
 
     private var columnHeader: some View {
         HStack(spacing: 0) {
-            sortHeader("名称", column: .name, defaultDescending: false, trailing: false)
+            sortHeader(ProcessColumnTitle.name, column: .name, trailing: false)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            sortHeader("CPU", column: .cpu, defaultDescending: true, trailing: true)
+            sortHeader(ProcessColumnTitle.cpu, column: .cpu, trailing: true)
                 .frame(width: ProcessColumn.cpu, alignment: .trailing)
-            sortHeader("内存", column: .memory, defaultDescending: true, trailing: true)
+            sortHeader(ProcessColumnTitle.memory, column: .memory, trailing: true)
                 .frame(width: ProcessColumn.memory, alignment: .trailing)
-            sortHeader("线程", column: .threads, defaultDescending: true, trailing: true)
+            sortHeader(ProcessColumnTitle.threads, column: .threads, trailing: true)
                 .frame(width: ProcessColumn.threads, alignment: .trailing)
         }
         .padding(.horizontal, 10)
@@ -53,8 +54,19 @@ struct ProcessTablePane: View {
 
     private var tableBody: some View {
         Group {
+            if vm.selectedPage == .cpu {
+                cpuTableBody
+            } else {
+                memoryTableBody
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var memoryTableBody: some View {
+        Group {
             if vm.loadState == .sampling, vm.rows.isEmpty {
-                samplingPlaceholder
+                samplingPlaceholder(status: "采样中…")
             } else if vm.processListFailed, vm.rows.isEmpty {
                 AppEmptyState(
                     systemImage: "list.bullet.rectangle",
@@ -83,10 +95,35 @@ struct ProcessTablePane: View {
                 processList
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var samplingPlaceholder: some View {
+    @ViewBuilder
+    private var cpuTableBody: some View {
+        switch cpuPhase {
+        case .sampling:
+            samplingPlaceholder(status: CPUPageCopy.sampling)
+        case .failed:
+            AppEmptyState(
+                systemImage: "cpu",
+                title: CPUPageCopy.failureTitle,
+                message: CPUPageCopy.failureMessage,
+                retryTitle: CPUPageCopy.retry,
+                onRetry: vm.retrySampling
+            )
+        case .empty:
+            AppEmptyState(
+                systemImage: "list.bullet.rectangle",
+                title: CPUPageCopy.emptyTitle,
+                message: CPUPageCopy.emptyMessage
+            )
+        case .filteredEmpty:
+            filterEmpty
+        case .ready:
+            processList
+        }
+    }
+
+    private func samplingPlaceholder(status: String) -> some View {
         VStack(spacing: 16) {
             VStack(spacing: 8) {
                 ForEach(0..<5, id: \.self) { _ in
@@ -94,7 +131,7 @@ struct ProcessTablePane: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            Text("采样中…")
+            Text(status)
                 .font(.callout)
                 .foregroundStyle(.secondary)
             if vm.hasActiveFilter {
@@ -142,19 +179,12 @@ struct ProcessTablePane: View {
 
     private func sortHeader(
         _ title: String,
-        column: SortColumn,
-        defaultDescending: Bool,
+        column: ProcessSortColumn,
         trailing: Bool
     ) -> some View {
-        let active = sortColumn == column
+        let active = vm.tableSort.column == column
         return Button {
-            if active {
-                sortDescending.toggle()
-            } else {
-                sortColumn = column
-                sortDescending = defaultDescending
-            }
-            applySort()
+            vm.setTableSort(vm.tableSort.selecting(column))
         } label: {
             HStack(spacing: 3) {
                 if trailing {
@@ -162,7 +192,7 @@ struct ProcessTablePane: View {
                 }
                 Text(title)
                 if active {
-                    Image(systemName: sortDescending ? "chevron.down" : "chevron.up")
+                    Image(systemName: vm.tableSort.descending ? "chevron.down" : "chevron.up")
                         .font(.system(size: 8, weight: .bold))
                 }
                 if !trailing {
@@ -173,20 +203,6 @@ struct ProcessTablePane: View {
             .foregroundStyle(active ? Color.white.opacity(0.88) : Color.secondary)
         }
         .buttonStyle(.plain)
-    }
-
-    private func applySort() {
-        let order: SortOrder = sortDescending ? .reverse : .forward
-        switch sortColumn {
-        case .name:
-            vm.sortOrder = [KeyPathComparator(\ProcessRow.name, order: order)]
-        case .cpu:
-            vm.sortOrder = [KeyPathComparator(\ProcessRow.cpuSortKey, order: order)]
-        case .memory:
-            vm.sortOrder = [KeyPathComparator(\ProcessRow.memoryBytes, order: order)]
-        case .threads:
-            vm.sortOrder = [KeyPathComparator(\ProcessRow.threadCount, order: order)]
-        }
     }
 }
 

@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		B00000000000000000000001 /* PulseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000001 /* PulseApp.swift */; };
 		B00000000000000000000002 /* MemoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000002 /* MemoryModels.swift */; };
+		B0000000000000000000001B /* CPUPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001B /* CPUPage.swift */; };
+		B0000000000000000000001C /* CPUOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001C /* CPUOverviewSection.swift */; };
 		B00000000000000000000003 /* HostMemoryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000003 /* HostMemoryReader.swift */; };
 		B00000000000000000000004 /* ProcessEnumerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000004 /* ProcessEnumerator.swift */; };
 		B00000000000000000000005 /* MemorySampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000005 /* MemorySampler.swift */; };
@@ -36,6 +38,8 @@
 /* Begin PBXFileReference section */
 		A00000000000000000000001 /* PulseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseApp.swift; sourceTree = "<group>"; };
 		A00000000000000000000002 /* MemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryModels.swift; sourceTree = "<group>"; };
+		A0000000000000000000001B /* CPUPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUPage.swift; sourceTree = "<group>"; };
+		A0000000000000000000001C /* CPUOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUOverviewSection.swift; sourceTree = "<group>"; };
 		A00000000000000000000003 /* HostMemoryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostMemoryReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000004 /* ProcessEnumerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessEnumerator.swift; sourceTree = "<group>"; };
 		A00000000000000000000005 /* MemorySampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemorySampler.swift; sourceTree = "<group>"; };
@@ -96,6 +100,7 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000002 /* MemoryModels.swift */,
+				A0000000000000000000001B /* CPUPage.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -147,6 +152,7 @@
 				A00000000000000000000009 /* ContentView.swift */,
 				A0000000000000000000000A /* MemoryDashboardView.swift */,
 				A0000000000000000000000B /* OverviewSection.swift */,
+				A0000000000000000000001C /* CPUOverviewSection.swift */,
 				A00000000000000000000013 /* OverviewCards.swift */,
 				A0000000000000000000000C /* ProcessTablePane.swift */,
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
@@ -252,6 +258,8 @@
 			files = (
 				B00000000000000000000001 /* PulseApp.swift in Sources */,
 				B00000000000000000000002 /* MemoryModels.swift in Sources */,
+				B0000000000000000000001B /* CPUPage.swift in Sources */,
+				B0000000000000000000001C /* CPUOverviewSection.swift in Sources */,
 				B00000000000000000000003 /* HostMemoryReader.swift in Sources */,
 				B00000000000000000000004 /* ProcessEnumerator.swift in Sources */,
 				B00000000000000000000005 /* MemorySampler.swift in Sources */,

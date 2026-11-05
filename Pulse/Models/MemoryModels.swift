@@ -42,6 +42,29 @@ struct MemoryBreakdown: Sendable, Equatable {
     }
 }
 
+struct UsageHistory: Equatable, Sendable {
+    private(set) var samples: [ChartSample] = []
+    private var nextID: UInt64 = 1
+    private let limit = 90
+
+    mutating func record(_ snapshot: MemorySnapshot?) {
+        guard let snapshot else {
+            samples.removeAll(keepingCapacity: true)
+            return
+        }
+        if samples.last?.date == snapshot.capturedAt {
+            return
+        }
+        samples.append(
+            ChartSample(id: nextID, date: snapshot.capturedAt, value: Double(snapshot.usedBytes))
+        )
+        nextID += 1
+        if samples.count > limit {
+            samples.removeFirst(samples.count - limit)
+        }
+    }
+}
+
 struct MemorySnapshot: Sendable, Equatable {
     let usedBytes: UInt64
     let totalBytes: UInt64

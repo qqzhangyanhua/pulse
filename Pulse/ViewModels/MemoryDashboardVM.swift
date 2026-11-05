@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import SwiftUI
 
 @MainActor
 final class MemoryDashboardVM: ObservableObject {
@@ -12,12 +12,11 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var machineLabel: String?
     @Published private(set) var quitPhase: QuitPhase = .idle
     @Published private(set) var quitMessage: String?
-    @Published private(set) var pageNavigation = MenuBarNavigation()
     @Published private(set) var samplingFailed = false
+    @Published private(set) var usageHistory = UsageHistory()
+    @Published private(set) var cpuHistory = SystemCPUHistory()
     @Published var filter = ""
-    @Published var sortOrder: [KeyPathComparator<ProcessRow>] = [
-        KeyPathComparator(\ProcessRow.memoryBytes, order: .reverse)
-    ]
+    @Published private(set) var navigation = DashboardNavigation()
 
     @Published var selectedPid: Int32? {
         didSet {
@@ -37,9 +36,7 @@ final class MemoryDashboardVM: ObservableObject {
     private var samplingClock = SamplingClock()
 
     var visibleRows: [ProcessRow] {
-        let query = filter.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return rows }
-        return rows.filter { $0.name.localizedCaseInsensitiveContains(query) }
+        ProcessNameFilter.apply(rows, query: filter)
     }
 
     var selectedRow: ProcessRow? {
@@ -51,13 +48,27 @@ final class MemoryDashboardVM: ObservableObject {
         !filter.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    var selectedPage: DashboardPage { pageNavigation.selectedPage }
+    var selectedPage: DashboardPage { navigation.selectedPage }
+    var tableSort: ProcessTableSort { navigation.sort }
 
     /// Menu-bar primary click. Does not follow whatever page was last shown.
     func focusMemoryPage() {
-        var navigation = pageNavigation
-        navigation.focusMemoryPage()
-        pageNavigation = navigation
+        var next = navigation
+        next.focusMemoryPage()
+        navigation = next
+    }
+
+    /// Memory and CPU only. Disk, network, and GPU stay on the current page.
+    func selectPage(_ page: DashboardPage) {
+        var next = navigation
+        next.select(page)
+        navigation = next
+    }
+
+    func setTableSort(_ sort: ProcessTableSort) {
+        var next = navigation
+        next.updateSort(sort)
+        navigation = next
     }
 
     func start() {
@@ -89,6 +100,12 @@ final class MemoryDashboardVM: ObservableObject {
         rows = []
         processListFailed = false
         samplingFailed = false
+        var clearedUsage = usageHistory
+        clearedUsage.record(nil)
+        usageHistory = clearedUsage
+        var clearedCPU = cpuHistory
+        clearedCPU.reset()
+        cpuHistory = clearedCPU
         Task { await tick() }
     }
 
@@ -129,6 +146,12 @@ final class MemoryDashboardVM: ObservableObject {
             samplingFailed = false
             snapshot = frame.snapshot
             systemCpuPercent = frame.systemCpuPercent
+            var nextUsage = usageHistory
+            nextUsage.record(frame.snapshot)
+            usageHistory = nextUsage
+            var nextCPU = cpuHistory
+            nextCPU.record(percent: frame.systemCpuPercent, at: frame.snapshot.capturedAt)
+            cpuHistory = nextCPU
             rows = frame.rows
             processListFailed = frame.processListFailed
             if let frameDetail = frame.detail {

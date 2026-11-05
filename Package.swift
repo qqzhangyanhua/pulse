@@ -31,6 +31,7 @@ let package = Package(
             ],
             sources: [
                 "Models/MemoryModels.swift",
+                "Models/CPUPage.swift",
                 "Sampling/CPULoad.swift",
                 "Sampling/SamplingPace.swift",
                 "MenuBar/MenuBarStatus.swift",
