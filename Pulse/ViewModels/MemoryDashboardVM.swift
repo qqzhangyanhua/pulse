@@ -5,6 +5,7 @@ import SwiftUI
 final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var loadState: LoadState = .sampling
     @Published private(set) var snapshot: MemorySnapshot?
+    @Published private(set) var systemCpuPercent: Double?
     @Published private(set) var rows: [ProcessRow] = []
     @Published private(set) var processListFailed = false
     @Published private(set) var detail: ProcessDetail?
@@ -30,7 +31,8 @@ final class MemoryDashboardVM: ObservableObject {
     private let sampler = MemorySampler()
     private var loopTask: Task<Void, Never>?
     private var started = false
-    private var isForeground = true
+    private var samplingSession = SamplingSession()
+    private var samplingClock = SamplingClock()
 
     var visibleRows: [ProcessRow] {
         let query = filter.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -54,23 +56,25 @@ final class MemoryDashboardVM: ObservableObject {
         loopTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { break }
-                if self.isForeground {
+                let plan = self.samplingClock.plan(step: self.samplingSession.step)
+                if plan.sample {
                     await self.tick()
-                    try? await Task.sleep(nanoseconds: 1_500_000_000)
-                } else {
-                    try? await Task.sleep(nanoseconds: 400_000_000)
                 }
+                try? await Task.sleep(nanoseconds: plan.sleepNanoseconds)
+                self.samplingClock.recordSleep(plan.sleepNanoseconds)
             }
         }
     }
 
+    /// App hook for scene phase. Background keeps the same sampler and only lengthens the interval.
     func setForeground(_ active: Bool) {
-        isForeground = active
+        samplingSession.setForeground(active)
     }
 
     func retrySampling() {
         loadState = .sampling
         snapshot = nil
+        systemCpuPercent = nil
         rows = []
         processListFailed = false
         Task { await tick() }
@@ -111,6 +115,7 @@ final class MemoryDashboardVM: ObservableObject {
         switch result {
         case .success(let frame):
             snapshot = frame.snapshot
+            systemCpuPercent = frame.systemCpuPercent
             rows = frame.rows
             processListFailed = frame.processListFailed
             if let frameDetail = frame.detail {

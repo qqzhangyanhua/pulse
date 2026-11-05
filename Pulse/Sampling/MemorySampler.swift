@@ -1,12 +1,6 @@
 import Darwin
 import Foundation
 
-struct CPUTick: Sendable {
-    let userTimeNs: UInt64
-    let systemTimeNs: UInt64
-    let date: Date
-}
-
 /// Background sampling actor. Snapshots are immutable value types; the main thread only reads them.
 actor MemorySampler {
     private let seriesLimit = 90
@@ -16,6 +10,7 @@ actor MemorySampler {
     private var selectedMemorySeries: [ChartSample] = []
     private var selectedCPUSeries: [ChartSample] = []
     private var cpuTicks: [Int32: CPUTick] = [:]
+    private var previousHostCPU: HostCPUTicks?
     private var identityCache: [Int32: ProcessIdentity] = [:]
 
     func setSelectedPid(_ pid: Int32?) {
@@ -52,6 +47,7 @@ actor MemorySampler {
             pressureSeries: pressureSeries,
             capturedAt: capturedAt
         )
+        let systemCpuPercent = consumeSystemCPU()
 
         guard let rawProcesses = ProcessEnumerator.list() else {
             return .success(
@@ -59,7 +55,8 @@ actor MemorySampler {
                     snapshot: snapshot,
                     rows: [],
                     detail: nil,
-                    processListFailed: true
+                    processListFailed: true,
+                    systemCpuPercent: systemCpuPercent
                 )
             )
         }
@@ -81,7 +78,7 @@ actor MemorySampler {
                 systemTimeNs: raw.systemTimeNs,
                 date: capturedAt
             )
-            let cpu = cpuPercent(previous: cpuTicks[raw.pid], current: tick)
+            let cpu = ProcessCPUPercent.percent(previous: cpuTicks[raw.pid], current: tick)
             nextTicks[raw.pid] = tick
 
             rows.append(
@@ -113,9 +110,16 @@ actor MemorySampler {
                 snapshot: snapshot,
                 rows: rows,
                 detail: detail,
-                processListFailed: false
+                processListFailed: false,
+                systemCpuPercent: systemCpuPercent
             )
         )
+    }
+
+    private func consumeSystemCPU() -> Double? {
+        let advanced = SystemCPULoad.advance(previous: previousHostCPU, reading: HostCPUReader.read())
+        previousHostCPU = advanced.baseline
+        return advanced.percent
     }
 
     private func detailFrame(from rows: [ProcessRow], at date: Date) -> ProcessDetail? {
@@ -144,20 +148,5 @@ actor MemorySampler {
         if series.count > seriesLimit {
             series.removeFirst(series.count - seriesLimit)
         }
-    }
-
-    private func cpuPercent(previous: CPUTick?, current: CPUTick) -> Double? {
-        guard let previous,
-              current.userTimeNs >= previous.userTimeNs,
-              current.systemTimeNs >= previous.systemTimeNs
-        else {
-            return nil
-        }
-        let deltaCPU = Double(
-            (current.userTimeNs - previous.userTimeNs) + (current.systemTimeNs - previous.systemTimeNs)
-        )
-        let wallNs = current.date.timeIntervalSince(previous.date) * 1_000_000_000
-        guard wallNs > 0 else { return nil }
-        return (deltaCPU / wallNs) * 100
     }
 }
