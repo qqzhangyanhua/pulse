@@ -97,4 +97,6 @@ struct SampledFrame: Sendable {
     let rows: [ProcessRow]
     let detail: ProcessDetail?
     let processListFailed: Bool
+    /// Host CPU for this tick. Nil on the first sample or when the host read fails.
+    let systemCpuPercent: Double?
 }

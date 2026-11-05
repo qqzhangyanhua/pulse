@@ -35,7 +35,7 @@ scripts/notarize.sh      Developer ID archive → notarytool → staple
 scripts/make-dmg.sh      可选 DMG（可再公证）
 ```
 
-前台每 1.5s 在后台 Actor 采一帧不可变快照；切后台暂停。采样失败进入空态，不写假 0。
+前台每 1.5s 在同一个后台 Actor 采一帧不可变快照（含可空的系统 CPU）；主窗不在前台时降到约 3s 续采，不另开轮询。采样失败进入空态，不写假 0。`swift test` 跑这几条采样单测（不编译 App）。
 
 ## 在 Mac 上本地验证
 
