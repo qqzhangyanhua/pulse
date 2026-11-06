@@ -35,7 +35,7 @@ struct NetworkOverviewSection: View {
             systemImage: "network",
             title: NetworkPageCopy.failureTitle,
             message: NetworkPageCopy.failureMessage,
-            retryTitle: NetworkPageCopy.retry,
+            retrying: vm.isRetrying,
             onRetry: vm.retrySampling
         )
         .frame(minHeight: 150)

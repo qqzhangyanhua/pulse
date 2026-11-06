@@ -106,8 +106,8 @@ struct OverviewSection: View {
         AppEmptyState(
             systemImage: "waveform.path.ecg",
             title: "暂时读不到内存数据",
-            message: "这轮采样没有回来，点重新采样再试。",
-            retryTitle: "重新采样",
+            message: SamplingRetryChrome.overviewFailureMessage,
+            retrying: vm.isRetrying,
             onRetry: vm.retrySampling
         )
         .frame(minHeight: 220)

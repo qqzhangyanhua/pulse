@@ -16,8 +16,8 @@ enum DiskPageCopy {
     static let emptyTitle = "暂无磁盘数据"
     static let emptyMessage = "这一帧没有进程可显示。"
     static let failureTitle = "暂时读不到磁盘数据，稍后重试"
-    static let failureMessage = "这轮采样没有回来，点重新采样再试。"
-    static let retry = "重新采样"
+    static let failureMessage = SamplingRetryChrome.overviewFailureMessage
+    static let retry = SamplingRetryChrome.buttonTitle
     static let sidebarEmpty = "选一个进程看详情"
     static let readTitle = "读取"
     static let writeTitle = "写入"

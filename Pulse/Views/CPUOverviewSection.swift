@@ -45,7 +45,7 @@ struct CPUOverviewSection: View {
             systemImage: "cpu",
             title: CPUPageCopy.failureTitle,
             message: CPUPageCopy.failureMessage,
-            retryTitle: CPUPageCopy.retry,
+            retrying: vm.isRetrying,
             onRetry: vm.retrySampling
         )
         .frame(minHeight: 150)

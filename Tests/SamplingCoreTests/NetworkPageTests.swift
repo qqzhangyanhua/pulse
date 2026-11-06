@@ -30,8 +30,8 @@ final class NetworkPageTests: XCTestCase {
         XCTAssertEqual(NetworkPageCopy.emptyTitle, "还没有进程数据")
         XCTAssertEqual(NetworkPageCopy.emptyMessage, "这一帧没有进程可显示。")
         XCTAssertEqual(NetworkPageCopy.failureTitle, "暂时读不到网络数据")
-        XCTAssertEqual(NetworkPageCopy.failureMessage, "这轮采样没有回来，点重新采样再试。")
-        XCTAssertEqual(NetworkPageCopy.retry, "重新采样")
+        XCTAssertEqual(NetworkPageCopy.failureMessage, "这轮采样没有回来，点重试再试。")
+        XCTAssertEqual(NetworkPageCopy.retry, "重试")
         XCTAssertEqual(NetworkPageCopy.sidebarEmpty, "选一个进程看详情")
         XCTAssertEqual(NetworkPageCopy.processNetworkUnavailable, "暂不可用")
     }

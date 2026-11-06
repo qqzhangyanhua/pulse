@@ -16,8 +16,8 @@ enum CPUPageCopy {
     static let emptyTitle = "还没有进程数据"
     static let emptyMessage = "这一帧没有进程可显示。"
     static let failureTitle = "暂时读不到 CPU 数据"
-    static let failureMessage = "这轮采样没有回来，点重新采样再试。"
-    static let retry = "重新采样"
+    static let failureMessage = SamplingRetryChrome.overviewFailureMessage
+    static let retry = SamplingRetryChrome.buttonTitle
     static let sidebarEmpty = "选一个进程看详情"
 
     /// Overview slot. `nil` (first frame or a missed host read) is 「CPU · —」, not 「CPU · 0.0%」.

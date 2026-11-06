@@ -2,8 +2,7 @@ import Foundation
 
 /// One retry chrome for every failure empty state. No second page-specific chrome.
 ///
-/// Locked by TECH #43 / #44. ② applies these to the seven empties and `*PageCopy`.
-/// ① does not rewrite Views or today's `*Copy.retry` / failure sentences.
+/// Locked by TECH #43 / #44. Seven empties and `*PageCopy` read these strings.
 enum SamplingRetryChrome {
     static let buttonTitle = "重试"
     static let pendingLine = "正在重试…"
@@ -30,9 +29,15 @@ enum SamplingRetryChrome {
     }
 }
 
-/// LoadState write after `accept`. Nil means do not write (stale / cancelled).
-/// Success → ready. Failure → failed if there is no snapshot, else keep ready (today's tick).
+/// Retry-visible VM slice. Click does not clear; `accept` false does not write.
 enum SamplingRetryApply {
+    struct Held: Equatable, Sendable {
+        var loadState: LoadState
+        var samplingFailed: Bool
+        var processListFailed: Bool
+        var hasSnapshot: Bool
+    }
+
     static func loadState(
         accepted: Bool,
         sampleSucceeded: Bool,
@@ -41,5 +46,52 @@ enum SamplingRetryApply {
         guard accepted else { return nil }
         if sampleSucceeded { return .ready }
         return hasSnapshot ? .ready : .failed
+    }
+
+    /// Manual retry click: keep the failure phase and flags. Never `.sampling`.
+    static func afterManualRetry(_ held: Held) -> Held {
+        Held(
+            loadState: SamplingRetryChrome.loadStateDuringRetry(held.loadState),
+            samplingFailed: held.samplingFailed,
+            processListFailed: held.processListFailed,
+            hasSnapshot: held.hasSnapshot
+        )
+    }
+
+    /// `nil` = stale / cancelled: caller writes nothing.
+    static func apply(
+        _ held: Held,
+        accepted: Bool,
+        sampleSucceeded: Bool
+    ) -> Held? {
+        guard let loadState = loadState(
+            accepted: accepted,
+            sampleSucceeded: sampleSucceeded,
+            hasSnapshot: held.hasSnapshot
+        ) else {
+            return nil
+        }
+        var next = held
+        next.loadState = loadState
+        next.samplingFailed = !sampleSucceeded
+        if sampleSucceeded {
+            next.hasSnapshot = true
+        }
+        return next
+    }
+}
+
+/// Empty-state button / pending line from `gate.retrying`. One chrome, seven call sites.
+struct SamplingRetryEmptyChrome: Equatable, Sendable {
+    let buttonTitle: String
+    let isButtonEnabled: Bool
+    let pendingMessage: String?
+
+    init(retrying: Bool) {
+        buttonTitle = SamplingRetryChrome.buttonTitle
+        isButtonEnabled = SamplingRetryChrome.isButtonEnabled(retrying: retrying)
+        pendingMessage = SamplingRetryChrome.showsPendingLine(retrying: retrying)
+            ? SamplingRetryChrome.pendingLine
+            : nil
     }
 }

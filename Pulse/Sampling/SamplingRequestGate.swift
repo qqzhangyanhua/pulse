@@ -20,6 +20,23 @@ enum SamplingSleepInterruption {
     }
 }
 
+/// Loop wait → `recordSleep`. `nil` means skip: the loop was cancelled before this slice finished.
+enum SamplingSleepWait {
+    static func recordableNanoseconds(
+        planned: UInt64,
+        consumed: UInt64,
+        completed: Bool,
+        loopCancelled: Bool
+    ) -> UInt64? {
+        if loopCancelled, !completed { return nil }
+        return SamplingSleepInterruption.recordableNanoseconds(
+            planned: planned,
+            consumed: consumed,
+            completed: completed
+        )
+    }
+}
+
 /// Darwin-free request gate. Manual retry and Clock due share one in-flight sample.
 ///
 /// Idle `requestManualRetry()` sets `retrying` + `pendingImmediate`. In-flight

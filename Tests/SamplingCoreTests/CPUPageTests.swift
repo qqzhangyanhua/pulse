@@ -19,7 +19,8 @@ final class CPUPageTests: XCTestCase {
         XCTAssertEqual(CPUPageCopy.sampling, "正在采样…")
         XCTAssertEqual(CPUPageCopy.emptyTitle, "还没有进程数据")
         XCTAssertEqual(CPUPageCopy.failureTitle, "暂时读不到 CPU 数据")
-        XCTAssertEqual(CPUPageCopy.retry, "重新采样")
+        XCTAssertEqual(CPUPageCopy.retry, "重试")
+        XCTAssertEqual(CPUPageCopy.failureMessage, "这轮采样没有回来，点重试再试。")
         XCTAssertEqual(CPUPageCopy.sidebarEmpty, "选一个进程看详情")
     }
 
