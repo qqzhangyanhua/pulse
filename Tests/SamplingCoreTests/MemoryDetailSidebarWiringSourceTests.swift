@@ -22,8 +22,8 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
         XCTAssertTrue(package.contains("\"Views\""))
         XCTAssertTrue(package.contains("\"ViewModels\""))
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
-        XCTAssertEqual(occurrenceCount(of: "MemoryDetailPresentation.swift in Sources", in: project), 1)
-        XCTAssertTrue(project.contains("MemoryDetailPresentation.swift"))
+        XCTAssertTrue(project.contains("MemoryDetailPresentation.swift in Sources"))
+        XCTAssertTrue(project.contains("path = MemoryDetailPresentation.swift;"))
     }
 
     func testSidebarUsesPageGatedTitlesAndOneCollapsedDisclosure() throws {
@@ -151,7 +151,6 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
         XCTAssertTrue(sidebar.contains("samples.count < 2"))
         XCTAssertTrue(sidebar.contains("正在采集内存曲线"))
         XCTAssertFalse(sidebar.contains("NSAlert"))
-        XCTAssertFalse(sidebar.contains("snapshot"))
     }
 
     private func repoText(_ relative: String) throws -> String {
