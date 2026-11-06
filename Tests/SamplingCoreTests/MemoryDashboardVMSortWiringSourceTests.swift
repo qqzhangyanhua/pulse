@@ -94,6 +94,72 @@ final class MemoryDashboardVMSortWiringSourceTests: XCTestCase {
         }
     }
 
+    /// Phase 19 source read. Not a GUI test: it does not instantiate
+    /// `MemoryDashboardVM`, does not compile the app, and does not click a header.
+    func testPhase19DiskHeadersAreLiteralColumnsAndThisIsNotGUI() throws {
+        let pane = try String(contentsOf: repoFile("Pulse/Views/ProcessTablePane.swift"), encoding: .utf8)
+        let readHeader = "sortHeader(ProcessColumnTitle.diskRead, column: .diskRead, trailing: true)"
+        let writeHeader = "sortHeader(ProcessColumnTitle.diskWrite, column: .diskWrite, trailing: true)"
+        XCTAssertEqual(occurrenceCount(of: readHeader, in: pane), 1)
+        XCTAssertEqual(occurrenceCount(of: writeHeader, in: pane), 1)
+        XCTAssertFalse(pane.contains("column: .disk,"))
+        XCTAssertFalse(pane.contains("column: .disk)"))
+
+        let columnHeader = try functionBody(named: "columnHeader", in: pane)
+        XCTAssertTrue(columnHeader.contains(readHeader))
+        XCTAssertTrue(columnHeader.contains(writeHeader))
+        XCTAssertTrue(columnHeader.contains("staticHeader(ProcessColumnTitle.network)"))
+        XCTAssertFalse(columnHeader.contains("sortHeader(ProcessColumnTitle.network"))
+
+        let sortHeader = try functionBody(named: "sortHeader", in: pane)
+        XCTAssertTrue(sortHeader.contains("let active = vm.tableSort.column == column"))
+        XCTAssertTrue(sortHeader.contains("vm.setTableSort(vm.tableSort.selecting(column))"))
+        XCTAssertTrue(sortHeader.contains("vm.tableSort.descending ? \"chevron.down\" : \"chevron.up\""))
+        XCTAssertFalse(sortHeader.contains("diskRead"))
+        XCTAssertFalse(sortHeader.contains("diskWrite"))
+        XCTAssertFalse(sortHeader.contains("click"))
+
+        let vm = try vmSource()
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 22)
+        for line in vm.components(separatedBy: .newlines) where line.contains("@Published") {
+            XCTAssertFalse(line.contains("diskRead"), line)
+            XCTAssertFalse(line.contains("diskWrite"), line)
+            XCTAssertFalse(line.contains("lastMemorySort"), line)
+        }
+        let setTableSort = try functionBody(named: "setTableSort", in: vm)
+        XCTAssertTrue(setTableSort.contains("next.updateSort(sort)"))
+        XCTAssertTrue(setTableSort.contains("publishMemoryPageSort()"))
+        XCTAssertFalse(setTableSort.contains("selectedPid"))
+        XCTAssertFalse(setTableSort.contains("setSelectedPid"))
+        XCTAssertFalse(setTableSort.contains("sample("))
+        XCTAssertFalse(setTableSort.contains("detail"))
+
+        let model = try String(contentsOf: repoFile("Pulse/Models/CPUPage.swift"), encoding: .utf8)
+        let compare = try functionBody(named: "compare", in: model)
+        XCTAssertTrue(compare.contains("compareDoubles(lhs.diskSortKey, rhs.diskSortKey)"))
+        XCTAssertTrue(compare.contains("lhs.diskReadBytesPerSecond ?? -1"))
+        XCTAssertTrue(compare.contains("rhs.diskReadBytesPerSecond ?? -1"))
+        XCTAssertTrue(compare.contains("lhs.diskWriteBytesPerSecond ?? -1"))
+        XCTAssertTrue(compare.contains("rhs.diskWriteBytesPerSecond ?? -1"))
+        for forbidden in ["ProcessDetail", "frozenDetail", "selectedPid", "sampler", "DiskRateText"] {
+            XCTAssertFalse(compare.contains(forbidden), forbidden)
+        }
+        let ordered = try functionBody(named: "ordered", in: model)
+        XCTAssertTrue(ordered.contains("lhs.pid < rhs.pid"))
+        for forbidden in ["ProcessNameFilter", "MemoryGrowthRisingFilter", "selectedPid", "risingOnly", "sample("] {
+            XCTAssertFalse(ordered.contains(forbidden), forbidden)
+        }
+
+        let rows = try String(contentsOf: repoFile("Pulse/Models/MemoryModels.swift"), encoding: .utf8)
+        let diskSortKey = try functionBody(named: "diskSortKey", in: rows)
+        XCTAssertTrue(
+            diskSortKey.contains(
+                "guard let diskReadBytesPerSecond, let diskWriteBytesPerSecond else { return -1 }"
+            )
+        )
+        XCTAssertTrue(diskSortKey.contains("return diskReadBytesPerSecond + diskWriteBytesPerSecond"))
+    }
+
     private func vmSource() throws -> String {
         try String(contentsOf: repoFile("Pulse/ViewModels/MemoryDashboardVM.swift"), encoding: .utf8)
     }
@@ -164,6 +230,10 @@ final class MemoryDashboardVMSortWiringSourceTests: XCTestCase {
             throw SourceSliceError.missing(needle)
         }
         return haystack.distance(from: haystack.startIndex, to: range.lowerBound)
+    }
+
+    private func occurrenceCount(of needle: String, in haystack: String) -> Int {
+        haystack.components(separatedBy: needle).count - 1
     }
 }
 
