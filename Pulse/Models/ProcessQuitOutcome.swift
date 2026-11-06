@@ -178,9 +178,15 @@ struct ProcessQuitOutcome: Equatable, Sendable {
             && record.presence == .inRows
     }
 
+    /// Store presence, not the rows argument. A successful reappearance frame
+    /// moves this off `.absentAndUnknown` before a new quit is legal.
+    private func isAbsent(_ pid: Int32) -> Bool {
+        records[pid]?.presence == .absentAndUnknown
+    }
+
     private mutating func beginTerminate(selectedPid: Int32?, rows: [ProcessRow]) -> ProcessQuitIssued? {
         guard let pid = Self.legalListSelection(selectedPid, in: rows) else { return nil }
-        if let existing = records[pid], isInFlight(existing) {
+        if let existing = records[pid], isInFlight(existing) || isAbsent(pid) {
             return nil
         }
         pendingForceConfirmation = nil
@@ -190,7 +196,7 @@ struct ProcessQuitOutcome: Equatable, Sendable {
     private mutating func beginForceConfirmation(selectedPid: Int32?, rows: [ProcessRow]) {
         guard pendingForceConfirmation == nil else { return }
         guard let pid = Self.legalListSelection(selectedPid, in: rows) else { return }
-        if let existing = records[pid], isInFlight(existing) {
+        if let existing = records[pid], isInFlight(existing) || isAbsent(pid) {
             return
         }
         let generation = nextForceGeneration
@@ -209,6 +215,9 @@ struct ProcessQuitOutcome: Equatable, Sendable {
         rows: [ProcessRow]
     ) -> ProcessQuitIssued? {
         guard let pending = pendingForceConfirmation, pending.generation == generation else {
+            return nil
+        }
+        if isAbsent(pending.targetPid) {
             return nil
         }
         pendingForceConfirmation = nil
