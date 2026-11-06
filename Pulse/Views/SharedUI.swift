@@ -386,3 +386,23 @@ struct SparklineChart: View {
         }
     }
 }
+
+struct HistoryAnnotatedChart<Content: View>: View {
+    let annotation: String?
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        content()
+            .overlay(alignment: .topLeading) {
+                if let annotation {
+                    Text(annotation)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .padding(.top, 5)
+                        .padding(.leading, 5)
+                }
+            }
+    }
+}

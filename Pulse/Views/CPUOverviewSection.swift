@@ -80,7 +80,14 @@ struct CPUOverviewSection: View {
         }
         .frame(height: 150)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(overviewLine)
+        .accessibilityLabel(readyAccessibilityLabel)
+    }
+
+    private var readyAccessibilityLabel: String {
+        if let note = HistoryCurvePresentation.annotation(current: vm.systemCpuPercent, sampleCount: vm.cpuHistory.samples.count) {
+            return "\(overviewLine)，\(note)"
+        }
+        return overviewLine
     }
 
     private var cpuLabel: some View {
@@ -103,12 +110,16 @@ struct CPUOverviewSection: View {
         if vm.cpuHistory.samples.count < 2 {
             ChartPlaceholder(text: "曲线采集中")
         } else {
-            SparklineChart(
-                samples: vm.cpuHistory.samples,
-                tint: PulsePalette.chartCPU,
-                domain: domain,
-                formatY: { CPUPercentText.string($0) }
-            )
+            HistoryAnnotatedChart(
+                annotation: HistoryCurvePresentation.annotation(current: vm.systemCpuPercent, sampleCount: vm.cpuHistory.samples.count)
+            ) {
+                SparklineChart(
+                    samples: vm.cpuHistory.samples,
+                    tint: PulsePalette.chartCPU,
+                    domain: domain,
+                    formatY: { CPUPercentText.string($0) }
+                )
+            }
         }
     }
 
