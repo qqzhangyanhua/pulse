@@ -4,11 +4,19 @@ import XCTest
 final class MemoryGrowthSidebarTests: XCTestCase {
     func testLockedCopy() {
         XCTAssertEqual(MemoryGrowthCopy.title, "内存趋势")
-        XCTAssertEqual(MemoryGrowthCopy.rising, "近几分钟持续上涨")
+        XCTAssertEqual(MemoryGrowthCopy.rising, "近期驻留内存上涨")
+        XCTAssertEqual(MemoryGrowthCopy.basis, "当前进程近期趋势 · 基于现有驻留采样序列")
         XCTAssertEqual(MemoryGrowthCopy.insufficient, "样本不足，暂不判断")
         XCTAssertEqual(MemoryGrowthCopy.caption(for: .rising), MemoryGrowthCopy.rising)
         XCTAssertEqual(MemoryGrowthCopy.caption(for: .insufficient), MemoryGrowthCopy.insufficient)
         XCTAssertNil(MemoryGrowthCopy.caption(for: .none))
+        XCTAssertEqual(MemoryGrowthCopy.basis(for: .rising), MemoryGrowthCopy.basis)
+        XCTAssertNil(MemoryGrowthCopy.basis(for: .insufficient))
+        XCTAssertNil(MemoryGrowthCopy.basis(for: .none))
+        XCTAssertFalse(MemoryGrowthCopy.rising.contains("分钟"))
+        XCTAssertFalse(MemoryGrowthCopy.basis.contains("分钟"))
+        XCTAssertFalse(MemoryGrowthCopy.rising.contains("每点都在涨"))
+        XCTAssertFalse(MemoryGrowthCopy.basis.contains("每点都在涨"))
     }
 
     func testCopyDoesNotClaimALeakOrDanger() {
@@ -16,6 +24,7 @@ final class MemoryGrowthSidebarTests: XCTestCase {
             MemoryGrowthCopy.title,
             MemoryGrowthCopy.rising,
             MemoryGrowthCopy.insufficient,
+            MemoryGrowthCopy.basis,
         ].joined(separator: "\n")
         for word in ["泄漏", "泄露", "危险", "告警"] {
             XCTAssertFalse(blob.contains(word), word)
@@ -31,7 +40,11 @@ final class MemoryGrowthSidebarTests: XCTestCase {
         )
         XCTAssertEqual(
             slot,
-            MemoryGrowthSlot(title: MemoryGrowthCopy.title, caption: MemoryGrowthCopy.rising)
+            MemoryGrowthSlot(
+                title: MemoryGrowthCopy.title,
+                caption: MemoryGrowthCopy.rising,
+                basis: MemoryGrowthCopy.basis
+            )
         )
     }
 

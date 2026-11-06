@@ -13,6 +13,7 @@
 		B0000000000000000000001B /* CPUPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001B /* CPUPage.swift */; };
 		B0000000000000000000002E /* MemoryPageSortPublication.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002E /* MemoryPageSortPublication.swift */; };
 		B0000000000000000000001D /* MemoryGrowthSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001D /* MemoryGrowthSignal.swift */; };
+		B00000000000000000000031 /* MemoryDetailPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000031 /* MemoryDetailPresentation.swift */; };
 		B00000000000000000000027 /* MemoryGrowthTopSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000027 /* MemoryGrowthTopSeries.swift */; };
 		B0000000000000000000002A /* MemoryGrowthRisingFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002A /* MemoryGrowthRisingFilter.swift */; };
 		B0000000000000000000002B /* MemoryTablePhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002B /* MemoryTablePhase.swift */; };
@@ -62,6 +63,7 @@
 		A0000000000000000000001B /* CPUPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUPage.swift; sourceTree = "<group>"; };
 		A0000000000000000000002E /* MemoryPageSortPublication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPageSortPublication.swift; sourceTree = "<group>"; };
 		A0000000000000000000001D /* MemoryGrowthSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGrowthSignal.swift; sourceTree = "<group>"; };
+		A00000000000000000000031 /* MemoryDetailPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDetailPresentation.swift; sourceTree = "<group>"; };
 		A00000000000000000000027 /* MemoryGrowthTopSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGrowthTopSeries.swift; sourceTree = "<group>"; };
 		A0000000000000000000002A /* MemoryGrowthRisingFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGrowthRisingFilter.swift; sourceTree = "<group>"; };
 		A0000000000000000000002B /* MemoryTablePhase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryTablePhase.swift; sourceTree = "<group>"; };
@@ -142,6 +144,7 @@
 				A00000000000000000000002 /* MemoryModels.swift */,
 				A00000000000000000000028 /* ByteFormat.swift */,
 				A0000000000000000000001D /* MemoryGrowthSignal.swift */,
+				A00000000000000000000031 /* MemoryDetailPresentation.swift */,
 				A00000000000000000000027 /* MemoryGrowthTopSeries.swift */,
 				A0000000000000000000002A /* MemoryGrowthRisingFilter.swift */,
 				A0000000000000000000002B /* MemoryTablePhase.swift */,
@@ -320,6 +323,7 @@
 				B00000000000000000000002 /* MemoryModels.swift in Sources */,
 				B00000000000000000000028 /* ByteFormat.swift in Sources */,
 				B0000000000000000000001D /* MemoryGrowthSignal.swift in Sources */,
+				B00000000000000000000031 /* MemoryDetailPresentation.swift in Sources */,
 				B00000000000000000000027 /* MemoryGrowthTopSeries.swift in Sources */,
 				B0000000000000000000002A /* MemoryGrowthRisingFilter.swift in Sources */,
 				B0000000000000000000002B /* MemoryTablePhase.swift in Sources */,
