@@ -3441,23 +3441,37 @@ Reducer 仍接收 `identityEvidence: Bool`，只为单测两支。`false`（生�
 
 ### 点击（point-in-time）
 
-1. 只允许对**当前合法选中**发起：`ProcessSelection.acceptedPid(selectedPid, in: rows) != nil`。侧栏停在「已不在列表」时按钮 disabled，**不准**对失散旧 pid `terminate`。
-2. 捕获 `{ pid, kind, token = nextToken++ }`。`phase = quitting`，`presence = inRows`，`opportunity = open`。同一 pid 上已有 in-flight（`phase==quitting` 且 `opportunity==open`）则忽略连点（不排队、不开第二路 unstructured 无限 Task）。
-3. `forceTerminate` 仍先跑现成 `confirmForceQuit`。**取消不等于结算**：不删记录、不改别人的 token、不把先前的 `failed` 清掉。
-4. 跨 pid：看 B 时按钮 pid=B，绝不把 A 的 pid 送进 `ProcessActions`。A 若仍 in-flight，其 Task 继续；回包只对 A 的 token 生效。允许 B 再开自己的 in-flight（用户显式点的，不是队列）。禁止 Timer / 自动再点。
+只对**当前合法选中**发起（`acceptedPid` 非空）。缺席卡不能点旧 pid。每 pid 至多一条 record，**新的一次合法发起可以取代该条**；「至多一条」不是把旧 token 永久锁死的理由。匹配只看 **该 pid 当前 record 的 token**，不看此刻 `selectedPid`。
+
+**普通退出**（无确认框）：
+
+| 该 pid 当前 record | 再点 |
+| --- | --- |
+| `phase=quitting` 且 `opportunity=open` 且 `presence=inRows`（连续 in-flight，没有缺席后再出现） | 忽略。不换 token，不开第二路 `ProcessActions` |
+| 无记录、`failed`、或 `presence=currentReappearedUnconfirmed` | **新 token 取代该 pid 这一条**。`kind=terminate`，`phase=quitting`，`opportunity=open`，`presence=inRows`。只打这个当前合法 pid。此前 token 相对新 record 变旧，之后 ignore，不改选中、不改新 record |
+
+**强退**顺序是 `pendingForceConfirmation` → 现有 `confirmForceQuit` → 通过且目标仍合法才发起。确认未返回**不是**第四个产品可见 phase，侧栏仍投影确认前的记录。只承认最新一次未返回的确认代次；更早的 Alert 返回一律不发起。
+
+| 步 | 规则 |
+| --- | --- |
+| 点「强制退出…」 | 已有一次确认未返回则不再开第二个 `NSAlert`。捕获当时的合法 `selectedPid` 为 `targetPid`，以及本次确认代次。**不**写 `kind`，**不**把 `phase` 改成 `quitting`，**不**清旧 `failed`，**不**换 token |
+| 取消 | 记录原样。旧 `failed` 仍可手动重试。不得变成 `quitting`。其它 pid 的在途回包仍按各自 token |
+| 确认通过，但此刻 `selectedPid` 已不是 `targetPid`，或 `targetPid` 已不是当前合法选中 | **不发起**。不新造 `quitting`，不清旧 `failed`，不改现有记录。不改打现在的 B，也不对已失效的 pid 调用 `forceTerminate` |
+| 确认通过，且 `selectedPid` 仍是当初的 `targetPid` 且仍合法 | 这时才 `nextToken++` 写入该 pid：`kind=forceTerminate`，`phase=quitting`，`opportunity=open`，`presence=inRows`。请求只打这个 pid。确认前的 token 变旧 |
+
+确认通过后该 pid 已是 inRows 的 `quitting`：再点按上表忽略，不再开 Alert。禁止 Timer / 自动再点。`waitForExit` 仍只是这一次调用里的短等。
 
 ### 回包（只在 MainActor 对 token+pid）
 
 `ProcessActions` 返回后：
 
-- `token` 或 `pid` 与该 pid 当前 record 不一致 → **整包丢掉**。即使 `.exited` / `.notFound` 也 **ignore**：不结算、不重启、不改新流程、不写到新选中进程。旧 token 即使 pid 相同也走这条。
+- token **不是**该 pid **当前** record 的 token，或该 pid 没有 record → **整包丢掉**。这才是「旧回包」。切到别的 pid、清选、离表都**不**使原 token 变旧。匹配上则**只**改这一条 record，不改选中，不写另一个 pid。
 - 一致且 `.requestFailed` / `.stillRunning`，且该 token 尚未处理过 → `phase = failed`，`opportunity` 保持 `open`（未退出，保留 / 更新失败入口）。presence 不动。
 - 同一 token 的失败回包再到达 → **幂等**：仍是 `failed` + `open`，不另开一条、不改 token。
 - 一致且 `.exited` / `.notFound`，且 `opportunity` 仍 `open` → **只关本次机会**：`opportunity = closed`。**无旧失败卡、无重试卡、不新增成功态。** 不把 `presence` 改写成成功。若此时已缺席，整卡仍可标「已不在列表／上次记录」直到正确清理，但那是冻结观测，不是成功态，也不是失败卡。这不是「核证已死」。
 - 同一 token 的 `.exited` / `.notFound` 再到达 → **幂等**：保持 `closed`，不复活失败、不出横幅。
-- 旧 token（即使 pid 相同）→ **丢掉**。不得结算新 token，不得改新流程。
 
-当前选择变化、重新选中、pid 离开 `rows`、新采样、点 x、切 Tab、`confirmForceQuit` 取消：**都没有**权利替原 operation 结算，也**不得替换**这条回包所绑定的 token+pid。
+切选、清选、离表、新采样、取消强退确认都不结算，也不改该 pid 当前 token。A 在看 B 时，A 的 token 仍是 A 当前 record 的，回包只更新 A。
 
 ### 验收 A vs 验收 B（必须分开写、分开测）
 
@@ -3512,12 +3526,15 @@ Reducer 仍接收 `identityEvidence: Bool`，只为单测两支。`false`（生�
 
 | 事件 | 算不算操作终局 | reducer |
 | --- | --- | --- |
-| 当前合法选中上的新点击 | 新操作开始，不是上一笔的终局 | 新 token，`phase=quitting`，`opportunity=open` |
-| 同 pid 仍 `quitting` 时连点 | 否 | 忽略，不换 token |
-| 匹配 token 的 `.requestFailed` / `.stillRunning` | 失败终局（入口留着） | `phase=failed`，`opportunity` 仍 `open`。同 token 再来一次：幂等 |
-| 匹配 token 的 `.exited` / `.notFound` | **唯一**能关掉本次重试机会的终局 | `opportunity=closed`。无成功横幅。同 token 再来：幂等，不复活 |
-| 旧 token，哪怕 pid 相同 | 否 | 丢弃 |
-| 切选 / 重选 / 点 x / 取消强退确认 | 否 | 不改 token、不关机会、不清失败 |
+| 普通退出的合法新点击 | 新操作开始 | 新 token 取代该 pid 这一条。连续 inRows `quitting` 的连点除外 |
+| 强退确认未返回 / 取消 / 返回时目标已不是当初那个合法 pid | 否 | 不新造 `quitting`，不清旧 `failed`，不开第二个 Alert，不改打别的 pid |
+| 强退确认通过且目标仍是当初的合法 pid | 新操作开始 | 此时才写入新 token 并 `phase=quitting` |
+| 同 pid 仍是 inRows `quitting` 的连点 | 否 | 忽略，不换 token |
+| `currentReappearedUnconfirmed` 上的显式点击 | 新操作开始 | 新 token **取代**该 pid 的旧 record，只打当前合法 pid。旧 token 之后 ignore |
+| 匹配该 pid **当前** token 的 `.requestFailed` / `.stillRunning` | 失败终局（入口留着） | 只改这一条。同 token 再来：幂等 |
+| 匹配该 pid **当前** token 的 `.exited` / `.notFound` | **唯一**能关掉本次机会的终局 | 只改这一条：`opportunity=closed`。无成功横幅。不看 `selectedPid` |
+| 相对该 pid 当前 record 的 stale token | 否 | 整包 ignore。切走本身不制造 stale |
+| 切选 / 清选 / 点 x | 否 | 不撤 token，不把 A 的完成写到 B |
 | 成功帧里该 pid 离开 `rows` | 否（观测） | presence→缺席；整卡「已不在列表／上次记录」；`kind`+最近 `phase` 留着；不关机会；不称成功 |
 | 失败帧 / `processListFailed` / freshness 不足 | 否 | phase、opportunity、失败入口都不动 |
 | 同 pid 再现且无身份证据 | 否 | 当新进程实时详情；不自动露旧失败；不因 pid 数字留退出操作。之后的点击是当前合法选中上的**新**操作 |
@@ -3541,7 +3558,7 @@ Reducer 仍接收 `identityEvidence: Bool`，只为单测两支。`false`（生�
 | `applyRisingOnlySelection` 清选中 | didSet 会误清退出态 | 只清 List 选中；退出记录不动 |
 | 侧栏 x | `selectedPid = nil` → didSet 清退出态 | 空侧栏 + 保留 store |
 | `retrySampling` | 不清 selectedPid | 仍不清退出 store |
-| `confirmForceQuit` 取消 | `return`，phase 不动 | **保持**；单测钉「取消 ≠ 结算」 |
+| `confirmForceQuit` 取消 | `return`，phase 不动 | 确认前就不写 `quitting`。取消后旧 `failed` 还在且可再试。停在 `quitting` 又没有这次请求，即不合格 |
 
 ## UI（原侧栏原处，不新页面）
 
@@ -3595,8 +3612,8 @@ Linux 源码结构检查若刀②要做：必须标明「不是 VM 行为 / 不�
 **刀① Linux（必须实跑；这是状态转换，不是按钮 GUI）：**
 
 1. 跨 pid：A `failed` 后选 B；B 的投影无 A 的失败；对 B `click` 不写 A 的 pid。
-2. A in-flight 时切 B；A 的旧 `.exited` **ignore**；B 若已失败，不被结算、不被改成 A 的结果。
-3. 再对 A 新 click（A 仍 inRows）：新 token；之后旧 token `.exited` 仍 ignore。
+2. A in-flight（token 仍是 A 的当前 record）时切 B：A 的 `.exited` **只关 A**，不改 B、不改选中。B 自己的失败不动。若 A 的 token 已不是 A 当前 record（被合法新发起取代），那一包才 ignore。
+3. 同 pid 仍 inRows 且 `quitting` 再点：忽略，token 不变。缺席后再现为 `currentReappearedUnconfirmed` 后的显式点击：新 token 取代该 pid；旧 token 的 `.exited` ignore，不改新 record、不改选中。
 4. **失败 + 缺席**：inRows `failed` + `open` → 成功帧 pid 缺席 → `phase` 仍 `failed`，`opportunity` 仍 `open`，整卡「已不在列表／上次记录」，不是成功，失败历史没清，不能点旧 pid。
 5. **进行中 + 缺席**：`quitting` + 缺席 → 不再是「正在退出…」，整卡「已不在列表／上次记录」；`phase` 仍 `quitting`、机会仍 `open`。
 6. 验收 A：`processListFailed`、失败帧或 freshness 不足，即使 `rows=[]` → presence / phase / opportunity 不变，失败还在。
@@ -3608,7 +3625,7 @@ Linux 源码结构检查若刀②要做：必须标明「不是 VM 行为 / 不�
 11. 缺席后的 `.exited`（token 仍匹配）→ 关机会，**不是**成功横幅，**不是**把中性句改成「已成功」。同 token 再送一次 `.exited`：幂等。旧 token 即使同 pid：丢弃。
 12. **清选离开保留待确认**：点 x 且 pid 随后不在 `rows` → 侧栏可空，store 不结算、不称成功、失败历史还在。人从未离表时清选再选：仍是失败卡。已 `closed` 后再选或再现：没有旧失败卡。
 12b. **跨 pid**：A 进行中或失败时选 B；B 的按钮与投影都不是 A。A 的回包不写 B。B 的缺席不改 A 的 token。
-13. Cancel 强退：无 complete 调用；既有 `failed` 仍在。
+13. **取消强退**：点强退时不写 `quitting`。取消后仍不是 `quitting`，没有新 token，没有 `complete`；此前 `failed` 还在且可再试。停在 `quitting` 却没有这次请求即不合格。确认通过且 `selectedPid` 仍是当初那个合法 pid：record 里是新 token 且 `quitting`，请求只打它；确认前的回包 ignore。确认返回时已改选到 B 或目标不合法：不发请求，不打 B，A 的旧 `failed` 还在。
 14. 冻结：缺席后 `applyPresence` 再来带同 pid 的假曲线 → `frozenDetail` 点数不增。
 15. 禁词：新锁状态名不含泄漏 / 危险。
 16. 互斥四态反例 1–5（见上）必须失败于「用单枚 phase 冒充 presence」。
@@ -3616,7 +3633,7 @@ Linux 源码结构检查若刀②要做：必须标明「不是 VM 行为 / 不�
 **刀②（Linux 至多源码结构；Mac 才是实例）：**
 
 17. VM 不再在 `selectedPid` didSet 里无条件 `quitPhase=.idle`。
-18. `quitSelected` / `forceQuitSelected` 在 click 当下捕获 pid+token；`complete` 前比对。
+18. 普通退出在点击时写入 token。强退的 token 在确认通过且目标仍是当初的合法 pid 之后才写入。`complete` 只比对 **该 pid 当前 record 的 token**，不比对 `selectedPid`。
 19. 侧栏缺席投影禁用两按钮；`liveAsNewProcess` 不渲染旧失败句。
 20. 无新页面 / 无菜单栏 terminate / 无 `Timer` 自动重试 / 无 `sample()` cadence 改动。
 
@@ -3648,13 +3665,13 @@ Linux 源码结构检查若刀②要做：必须标明「不是 VM 行为 / 不�
 - [ ] Must5：Darwin-free 转换测试覆盖跨 pid、离开 / 再现、少样本 / 失败帧保留最近结果、重选；Mac 上 VM 真实 SwiftUI 按钮 / 真实退出 / GUI **标未验**；结构测试不冒操作验收
 - [ ] 退出发起后 rows 缺席（进行中或失败）：旧实时详情和曲线整卡冻结并标「已不在列表／上次记录」；不能停在「正在退出…」；不能点旧 pid；失败历史保留且不称成功
 - [ ] 验收 A 与验收 B 分开成立（见上）。采样缺席 / freshness 不足单独发生时，不得把失败改成成功或清掉失败
-- [ ] 只有同一 token+pid 的 `.exited` / `.notFound`（该次 `ProcessActions` 实际返回值）能关掉本次机会；切选、重选、离表、新采样不能换回包身份。同 token 重复到达幂等；旧 token 即使同 pid 也丢弃
+- [ ] 只有与该 pid **当前 record** 的 token 匹配的 `.exited` / `.notFound`（该次 `ProcessActions` 实际返回值）能关掉本次机会。切选不撤 token，完成只更新该 pid，不写另一个 pid、不改选中。旧回包 = 相对该 pid 当前 record 的 stale token。同 token 重复到达幂等
 - [ ] 终局关掉入口后：无旧失败卡、无重试卡、不新增成功态。后续 tick 不得把该次改回失败或复活该次按钮。同 pid 无证据再现仍无旧失败卡
 - [ ] 状态机至少覆盖：进行中缺席、进行中再现且身份不同、失败缺席、失败再现且身份不同、清选离开保留待确认、注入同身份证据才恢复且不抢选中、成功后再现无旧失败、跨 pid 隔离
 - [ ] 现模型不能确认实例身份。不新写身份采样或退出历史来当作已经确认。无证据不得把复活写成验收完成
 - [ ] 再试后又失败：失败卡 + 可再试（仅 inRows + 当前合法选中）。只有缺席、没有终局：机会仍 open，但缺席卡不能重试旧 pid；清侧栏 / 重选 / 再现之后才能对当时的当前合法选中新发起
 - [ ] `.notFound` 只用今日 `ProcessActions` 已返回的那一次；不新增「直到 notFound」的轮询，也不假定每次退出都会返回 `.notFound`
-- [ ] Cancel 强退不结算
+- [ ] 强退：确认通过且目标仍合法才写入 `quitting` 和新 token。取消或返回时目标已失效：不新造 `quitting`、不清旧 `failed`、不改打别的 pid。取消后旧失败仍可手动重试。连点不开多个 Alert
 - [ ] 现 `terminate` → `forceTerminate` 边界、cancellation、每 pid 最大 1 个 in-flight 不回退成无界任务
 - [ ] 十二至十五期、Sampler 周期、菜单栏、过滤空态、强退确认框不回退
 - [ ] 永不写「泄漏」/ leak / 「危险」；无成功横幅
