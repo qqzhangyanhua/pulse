@@ -4889,7 +4889,7 @@ VM 顺序不变：计划的门失败就返回；通过之后才是 filter 写入
 
 没有 `didSet`。没有第二份选中，没有历史数组，没有钉住的 sampler pid，也没有待重试队列。generation 存在这条命令里，不另做发布字段。属性留在 VM 内存中，被下一次显式定位替换。不写入 `navigation`、publication、偏好或采样。之后的样本、退出和再次点卡都不会把它当成持续覆盖 filter 的模式；filter 只在当次 `.replace` 时写一次。不把旧 filter 存下来做回退。
 
-这是 `@Published` 从 22 变成 23 的唯一一处。十五期 `MemoryPageFilterClearWiringSourceTests` 今天断言计数为 22、`didSet` 为 2、`@MainActor` 为 1，并断言 `clearMemoryPageFilters` 的语句就是 `filter = ""` 与 `risingOnlyFilter = false`。实现 PR 只把该计数改为 23，并点名 `topAppLocateReveal` 是唯一新增。`didSet` 仍是 2，`@MainActor` 仍是 1，清空方法的两条语句不改。VM 源码仍不含 `onChange` 这个词。`sortedRows` 不是新的 `@Published`。
+这是 `@Published` 从 22 变成 23 的唯一一处发布属性。十五期 `MemoryPageFilterClearWiringSourceTests` 当时已知断言计数为 22、`didSet` 为 2、`@MainActor` 为 1，并断言 `clearMemoryPageFilters` 的语句就是 `filter = ""` 与 `risingOnlyFilter = false`。实现期把这一 VM 总数改为 23，并点名 `topAppLocateReveal` 是唯一新增。同一总数的 22→23 还映射到另外四个既有源码测试，见文末勘误，不是第二处发布属性。`didSet` 仍是 2。`@MainActor` 仍是 1：计的是 `@MainActor` 属性字面出现次数；注释里的 `MainActor` 不是这条约束，也不新增属性。清空方法的两条语句不改。VM 源码仍不含 `onChange` 这个词。`sortedRows` 不是新的 `@Published`。
 
 `sortedRows` 今天是 `ProcessTablePane` 的私有计算属性，右值是 `vm.tableSort.ordered(vm.visibleRows)`。VM 上还没有这个名字。锁稿要的读取是 `vm.sortedRows`：同一条公式，不是完整 `rows`，也不是新存储。实现把它做成 VM 上的非发布计算属性，pane 里的 `List` 与 `visibleCount` 改为读它，避免两份公式。`@Published` 因此不会变成 24。
 
@@ -4958,7 +4958,12 @@ pid 有变化：`processListScrollTarget` 的现有 `onChange` 仍调用 `reveal
 | `Pulse/ViewModels/MemoryDashboardVM.swift` | 一处可选发布属性、`locateMemoryTopApp`，以及非发布的 `sortedRows` 计算属性（公式与今天 pane 上的那条相同） |
 | `Pulse/Views/OverviewSection.swift` | 唯一调用点。绑定一次 `leading`，闭包传 name 与 pid |
 | `Pulse/Views/ProcessTablePane.swift` | Top 的 `onChange` 只调用 `revealTopApp(request:proxy:)`。旧 `revealProcessListTarget` 仍只服务 scroll-target `onChange` 与 `onAppear` |
-| 十五期清空接线测试 | 只把 `@Published` 计数从 22 改为 23，并点名新属性 |
+| `Tests/SamplingCoreTests/MemoryPageFilterClearWiringSourceTests.swift` | 十五期清空。同一 VM `@Published` 总数 22→23，点名 `topAppLocateReveal`。清空两条语句不改 |
+| `Tests/SamplingCoreTests/MemoryDashboardVMSortWiringSourceTests.swift` 的 `testPhase19DiskHeadersAreLiteralColumnsAndThisIsNotGUI` | 十九期磁盘表头。同一总数 22→23。分列表头、比较器与 forbidden 不改 |
+| `Tests/SamplingCoreTests/MemoryDetailSidebarWiringSourceTests.swift` 的 `testFrozenGuardPidSwitchAndChartPlaceholderStayUntouched` | 十七期冻结侧栏。同一总数 22→23。`memoryGrowthSlot`、详情清空与采样曲线不改 |
+| `Tests/SamplingCoreTests/ProcessQuitSessionWiringSourceTests.swift` 的 `testVMHoldsOneQuitStoreAndDerivesPhaseFromTheSidebar` | 十六期退出。同一总数 22→23。单一 quit store 与 `didSet` 仍为 2 不改 |
+| `Tests/SamplingCoreTests/ResourceDetailPageSourceTests.swift` 的 `testNewModelsStayOutOfTheSamplerQuitStoreAndVMPublishedSurface` | 十八期资源详情。同一总数 22→23。投影不进入 sampler、quit store 或那些方法 |
+| `docs/TECH.md` | 文末勘误。只补源码事实，不扩行为 |
 | 新测试 | reducer 与源码接线分开，见下节 |
 
 `TopAppCard` 的手势结构可以不改。`CPUOverviewSection`、`NetworkOverviewSection`、`DiskOverviewSection` 不调用新方法。
@@ -4994,7 +4999,7 @@ Reducer 测试调用纯函数和现成 `ordered`，不编译 `MemoryDashboardVM`
 - CPU / 网络 / 磁盘总览源码不含 `locateMemoryTopApp`
 - `clearMemoryPageFilters` 语句仍是那两句。`@Published` 为 23，新属性没有 `didSet`，全文件 `didSet` 仍为 2
 
-既有清空、排序、上涨、退出测试的期望不放宽。十五期那条计数是上面写明的唯一数值更新。
+既有清空、排序、上涨、退出测试里，除这一 VM `@Published` 总数外的期望不放宽。原先写「十五期那条计数是唯一数值更新」漏列了同一字面总数还钉在另外四个既有测试里。22→23 是这一处属性的单值映射，不是五次行为变更。见文末「二十期实现期全量回归勘误」。
 
 ## 风险
 
@@ -5043,5 +5048,19 @@ Reducer 测试调用纯函数和现成 `ordered`，不编译 `MemoryDashboardVM`
 - 本设计 PR 没有 Mac 日志，也不做手势埋点
 
 实现等本设计合并 + Grok merge gate 后再写 Swift。本 PR 不写 Swift、不写测试、不合并。
+
+## 二十期实现期全量回归勘误
+
+上文「十五期那条计数是唯一数值更新」是开写时的源码事实漏列，不是第二处产品范围。`MemoryDashboardVM.swift` 上 `@Published` 的字面总数，在基线里同时被下面五份既有测试守护。二十期只新增 `topAppLocateReveal` 这一处发布属性，所以五处都是同一个 22→23，不是五次行为扩张，也不改各自原来的域断言。
+
+| 文件与方法 | 原来守护的域 | 本次数值 |
+| --- | --- | --- |
+| `MemoryPageFilterClearWiringSourceTests`（十五期清空；方法体仍只断言那两条清空语句） | 清空接线。`didSet` 仍为 2，清空语句不改 | 22→23 |
+| `MemoryDashboardVMSortWiringSourceTests.testPhase19DiskHeadersAreLiteralColumnsAndThisIsNotGUI` | 十九期磁盘读/写分列。表头、比较器、磁盘字段不得变成发布属性 | 22→23 |
+| `MemoryDetailSidebarWiringSourceTests.testFrozenGuardPidSwitchAndChartPlaceholderStayUntouched` | 十七期冻结侧栏。`memoryGrowthSlot` 门、选中时 `detail = nil`、采样曲线不改 | 22→23 |
+| `ProcessQuitSessionWiringSourceTests.testVMHoldsOneQuitStoreAndDerivesPhaseFromTheSidebar` | 十六期退出。quit store 仍是一份，`didSet` 仍为 2 | 22→23 |
+| `ResourceDetailPageSourceTests.testNewModelsStayOutOfTheSamplerQuitStoreAndVMPublishedSurface` | 十八期资源详情。投影不进入 sampler、quit store，也不进入 `selectPage` / `applySample` / `applyRisingOnlySelection` | 22→23 |
+
+`@MainActor` 仍为 1。这个 1 是 `@MainActor` 属性字面出现次数，不是把注释里的 `MainActor` 字样算进同一条约束，也不是新加一个属性。注释里已有 “on the MainActor”，那不是 `@MainActor`。`didSet` 仍是两处。磁盘表头、退出 store、冻结采样、资源详情和采样免疫都维持原断言。
 
 
