@@ -3243,7 +3243,7 @@ Mac 冒烟（**仅**本设计已合并且实现合并后；不挡本文档审阅
 
 # Pulse 十六期技术设计（首包：退出结果按 pid 留存与原处重试）
 
-> 一期至十五期正文不改写。一期把退出锁成侧栏 `terminate()`，失败后再 `forceTerminate()` + 系统确认；十一期起侧栏仍读 `selectedPid`；十二至十五期只动过滤 / 空态 / 菜单栏排序，**没有**按 pid 留存退出结果——**本文只覆盖这条主窗侧栏缺口**：本会话内最近一次普通退出 / 强退的结果跟 pid 走，用户回到该 pid 原详情原按钮即可手动重试；切到别的进程不串请求、旧回包不盖新选择。不重开十二至十五期，不改 Sampler 周期，不改强退确认 / 权限，不做自动重试、退出历史、通知中心、批量终止、按名称串身份。GPU Tab、全表 ring、新 cadence、恐吓文案仍不做。
+> 一期至十五期正文不改写。一期把退出锁成侧栏 `terminate()`，失败后再 `forceTerminate()` + 系统确认；十一期起侧栏仍读 `selectedPid`；十二至十五期只动过滤 / 空态 / 菜单栏排序，**没有**按 pid 留存退出结果——**本文只覆盖这条主窗侧栏缺口**：本会话内最近一次普通退出 / 强退的结果跟 pid 走，用户回到该 pid 原详情原按钮即可手动重试；切到别的进程不串请求。A 的新发起才废弃 A 的上一 token；B 的选择或 B 的新动作不废弃 A 的有效 token，A 的回包只写 A。不重开十二至十五期，不改 Sampler 周期，不改强退确认 / 权限，不做自动重试、退出历史、通知中心、批量终止、按名称串身份。GPU Tab、全表 ring、新 cadence、恐吓文案仍不做。
 
 **已锁定**：十六期 = **退出结果按 pid 留存与原处重试**。谁：主窗侧栏刚点过「退出」或「强制退出…」、结果还没看清或想再试一次的人。情境：今日结果挂在**全局** `quitPhase` / `quitMessage` 上，一切选 / 一切 pid 离开 `rows` 就被清掉，失败像没发生过；旧 `async` 回包还会写到新选中的进程上。成功：侧栏只在**本会话**记录该 pid 最近一次发起类型（普通退出 | 强制退出）以及可投影的三类可见结果——**退出中**、**失败（未退出）**、**已不在列表**；失败按 pid 留着，清选再选**仍在 `rows` 的同一 pid** 仍能看见失败并走原按钮；进程已不在列表是保留的可见状态，**不等于已成功**；同 pid 号以后再出现、又没有实例代次证明是同一进程时，**先当新进程、直接实时详情，不自动复活旧失败卡**。成功结束本次机会 = 清掉这次失败 / 重试展示，**不**新增成功横幅、**不**新增第四类可见「成功」态。
 
@@ -3269,7 +3269,7 @@ Mac 冒烟（**仅**本设计已合并且实现合并后；不挡本文档审阅
 | 结果留存 | 切 `selectedPid` 即 `quitPhase = .idle`；pid 离开 `rows` 也清 | **做**：失败跟 pid 走；切选不串；采样不得把失败写成成功 |
 | 已不在列表 | 今日当「没了」：清选中、清详情、退出中还会被打成 idle | **做**：旧实时详情和曲线**整卡**冻结，标 **「已不在列表／上次记录」**；进行中与失败都如此；不能停在「正在退出…」；不能点旧 pid 重试；失败历史留着，不称成功 |
 | 同 pid 再出现 | 无此产品；pid 只是 `ProcessRow.id` | **终锁**：无实例代次 → **当新进程**，实时详情，**不**自动复活旧失败 / 重试卡。能确认同一身份才恢复失败卡与手动重试，且**不抢**当前选中 |
-| 重试 | 用户再点同一侧栏按钮；无 token，旧 `await` 可盖新选中 | **做**：显式点击；点击当下合法 `selectedPid`；operation token 隔离旧回包 |
+| 重试 | 用户再点同一侧栏按钮；无 token，回包写全局 phase | **做**：显式点击；按 pid 各自比对最新 token。同 pid 的新发起才废弃该 pid 的上一 token；别的 pid 的选择或新动作不废弃它 |
 | 自动重试 / 轮询终止 | 无（`waitForExit` 只是一次操作内的短等） | **仍不做**。不新 Timer、不把后台 tick 当终止轮询 |
 | 历史 / 通知 / 批量 / 跨启动 | 无 | **仍不做** |
 | Sampler / 过滤 / 菜单栏 / 十五期双清 | 既有 | **不重开、不改周期、不改布局** |
@@ -3326,7 +3326,7 @@ Mac 冒烟（**仅**本设计已合并且实现合并后；不挡本文档审阅
 **缺口（已核，不是采样缺口、不是「再做一个历史页」）：**
 
 1. 结果不是 per-pid：全局 `quitPhase` 在 `selectedPid` didSet、tick 离表、`applyQuit` 成功支三条路上被清。
-2. 无 operation token：`await` 回来后不比对发起时的 pid / 代数，旧回包可以写到新选择上（Must3 反面）。
+2. 无 operation token：回包写全局 phase，看起来像写进了新选中。Must3 的边界是 **按 pid 各自比对最新 token**：A 自己的新发起才废弃 A 的旧 token；B 的选择或 B 的新动作不废弃、不改写 A 的有效 token。
 3. pid 离开 `rows` 被当成「可以收摊」：退出中打 idle，失败被 didSet 清掉，侧栏回空态。产品要的是整卡冻结并标「已不在列表／上次记录」，进行中和失败都一样；不能停在「正在退出…」，不能点旧 pid，失败历史留着，不称成功。
 4. `.exited` / `.notFound` 被 `applyQuit` 当成 UI 成功清场。产品三态**无成功**；匹配 token 的终局只把 `opportunity` 关掉。采样帧无此权利。缺席中性句可以留到用户清侧栏，不得再被 tick 改回失败。
 5. 没有实例代次。同 pid 再出现**不能**声称同一进程。
@@ -3419,7 +3419,7 @@ Reducer 仍接收 `identityEvidence: Bool`，只为单测两支。`false`（生�
 2. **失败后离表**：互斥 `absent` 盖掉 `failed`。再要求「失败历史仍保留」只能靠猜。正交：`phase=failed`、`opportunity=open` 不动，presence 变；整卡「已不在列表／上次记录」，不称成功。
 3. **失败后同号再现、无代次**：互斥若写成 `failed` 会错误复活失败卡；写成新 idle 又把内存里的失败结算掉（采样无权结算）。正交：`phase=failed` 可留在内存，`presence=currentReappearedUnconfirmed`，UI **liveAsNewProcess、不露失败**。
 4. **失败帧空表**：互斥若 `rows.isEmpty ⇒ absent/success` 会把 enumerator 失败当成全体死光。正交：`processListFailed == true` 的帧**禁止**改 presence、禁止结算。
-5. **切到 B 时 A 的 `.exited` 才回来**：互斥全局 phase 会把 B 打成成功/空。正交：token+pid 对不上就 ignore；B 的记录不动。
+5. **切到 B 时 A 的 `.exited` 才回来**：互斥全局 phase 会把 B 打成成功或清空。切选**不是** ignore 的理由。A 的 token 仍是 A 当前 record 时，完成只写 A 的 store（可关 A 的机会）；B 的 record、phase、选中都不变。只有 A 之后又合法开了新 token，旧 token 才 ignore。
 
 ### 列表选中 vs 失败卡（终锁关联规则）
 
@@ -3471,7 +3471,7 @@ Reducer 仍接收 `identityEvidence: Bool`，只为单测两支。`false`（生�
 - 一致且 `.exited` / `.notFound`，且 `opportunity` 仍 `open` → **只关本次机会**：`opportunity = closed`。**无旧失败卡、无重试卡、不新增成功态。** 不把 `presence` 改写成成功。若此时已缺席，整卡仍可标「已不在列表／上次记录」直到正确清理，但那是冻结观测，不是成功态，也不是失败卡。这不是「核证已死」。
 - 同一 token 的 `.exited` / `.notFound` 再到达 → **幂等**：保持 `closed`，不复活失败、不出横幅。
 
-切选、清选、离表、新采样、取消强退确认都不结算，也不改该 pid 当前 token。A 在看 B 时，A 的 token 仍是 A 当前 record 的，回包只更新 A。
+切选、清选、离表、新采样、取消强退确认都不结算，也不改该 pid 当前 token。B 的选择或 B 的新发起**不**废弃 A 的有效 token。A 的回包只更新 A。只有 A 自己的新发起才使 A 的上一 token 失配。
 
 ### 验收 A vs 验收 B（必须分开写、分开测）
 
@@ -3612,8 +3612,8 @@ Linux 源码结构检查若刀②要做：必须标明「不是 VM 行为 / 不�
 **刀① Linux（必须实跑；这是状态转换，不是按钮 GUI）：**
 
 1. 跨 pid：A `failed` 后选 B；B 的投影无 A 的失败；对 B `click` 不写 A 的 pid。
-2. A in-flight（token 仍是 A 的当前 record）时切 B：A 的 `.exited` **只关 A**，不改 B、不改选中。B 自己的失败不动。若 A 的 token 已不是 A 当前 record（被合法新发起取代），那一包才 ignore。
-3. 同 pid 仍 inRows 且 `quitting` 再点：忽略，token 不变。缺席后再现为 `currentReappearedUnconfirmed` 后的显式点击：新 token 取代该 pid；旧 token 的 `.exited` ignore，不改新 record、不改选中。
+2. A in-flight 时**只切选到 B**（A 没有新 token）：A 的 `.exited` / `.notFound` **关闭 A 自己的机会并只写 A**。不改变 B 的选择、投影、record 或 phase。这一包不叫旧包。
+3. 同 pid 仍 inRows 且 `quitting` 再点：忽略，token 不变。A 后来新开 token（含缺席后再现为 `currentReappearedUnconfirmed` 后的显式点击）才取代 A 的 record；**那时** A 的旧 token 即使同 pid 也 ignore，不改新 record、不改选中。B 的新点击不造成这件事。
 4. **失败 + 缺席**：inRows `failed` + `open` → 成功帧 pid 缺席 → `phase` 仍 `failed`，`opportunity` 仍 `open`，整卡「已不在列表／上次记录」，不是成功，失败历史没清，不能点旧 pid。
 5. **进行中 + 缺席**：`quitting` + 缺席 → 不再是「正在退出…」，整卡「已不在列表／上次记录」；`phase` 仍 `quitting`、机会仍 `open`。
 6. 验收 A：`processListFailed`、失败帧或 freshness 不足，即使 `rows=[]` → presence / phase / opportunity 不变，失败还在。
@@ -3624,7 +3624,7 @@ Linux 源码结构检查若刀②要做：必须标明「不是 VM 行为 / 不�
 10. 验收 B：匹配 token 的 `.stillRunning` / `.requestFailed` → `failed` 且 `open`；若当时缺席，仍是中性缺席投影，store 里失败入口还在，但缺席卡上不能点重试。同 token 再送一次失败：幂等。
 11. 缺席后的 `.exited`（token 仍匹配）→ 关机会，**不是**成功横幅，**不是**把中性句改成「已成功」。同 token 再送一次 `.exited`：幂等。旧 token 即使同 pid：丢弃。
 12. **清选离开保留待确认**：点 x 且 pid 随后不在 `rows` → 侧栏可空，store 不结算、不称成功、失败历史还在。人从未离表时清选再选：仍是失败卡。已 `closed` 后再选或再现：没有旧失败卡。
-12b. **跨 pid**：A 进行中或失败时选 B；B 的按钮与投影都不是 A。A 的回包不写 B。B 的缺席不改 A 的 token。
+12b. **跨 pid**：A 进行中或失败时选 B；B 的按钮与投影都不是 A。A 的匹配回包仍只写 A，不写 B 的 record / phase / 选中。B 的缺席或 B 的新点击不改 A 的 token。
 13. **取消强退**：点强退时不写 `quitting`。取消后仍不是 `quitting`，没有新 token，没有 `complete`；此前 `failed` 还在且可再试。停在 `quitting` 却没有这次请求即不合格。确认通过且 `selectedPid` 仍是当初那个合法 pid：record 里是新 token 且 `quitting`，请求只打它；确认前的回包 ignore。确认返回时已改选到 B 或目标不合法：不发请求，不打 B，A 的旧 `failed` 还在。
 14. 冻结：缺席后 `applyPresence` 再来带同 pid 的假曲线 → `frozenDetail` 点数不增。
 15. 禁词：新锁状态名不含泄漏 / 危险。
@@ -3647,7 +3647,7 @@ Linux 源码结构检查若刀②要做：必须标明「不是 VM 行为 / 不�
 | 互斥 enum 丢掉 in-flight 或 failure | 正交字段 + 反例 1–5 |
 | 同 pid 复现自动露失败卡 | 无证据 → `liveAsNewProcess`；`true` 只许单测注入，且不抢选中 |
 | 用 name/path 冒充同实例 | Won't；identity 节写死 |
-| 旧 await 盖新选中 | token+pid；不匹配 ignore |
+| 把切选当成 A 的回包失效，或让 A 的回包写 B | 只按该 pid 当前 token 比对；切选不撤 token；失配只来自同 pid 的新发起 |
 | didSet / tick 继续清失败 | 重置路径表；刀②验收 |
 | `processListFailed` 空表当全体缺席 | 验收 A 钉失败帧不动 presence |
 | 把 `waitForExit` 当成自动重试 | 范围表：它是一次操作内短等 |
@@ -3660,7 +3660,7 @@ Linux 源码结构检查若刀②要做：必须标明「不是 VM 行为 / 不�
 
 - [ ] Must1：本会话侧栏能呈现最近一次普通退出或强退的发起类型，以及投影后的退出中 / 失败（未退出）/ 已不在列表；会外动作或后续采样不得把失败覆盖成已成功
 - [ ] Must2：失败按 pid 留存。清选再选**仍在 rows** 的同 pid，侧栏能看到此前失败，可对**当前合法选中**走原按钮普通退出、必要时强退（现确认不改）。不强制为失踪 pid 恢复列表行选中
-- [ ] Must3：A 有退出中 / 失败 / 结果时，B 的按钮不向 A 发请求；新动作与旧回包用 token 隔离
+- [ ] Must3：A 有退出中 / 失败 / 结果时，B 的按钮不向 A 发请求。token 隔离是 **同 pid 的操作代次**：A 的新发起废弃 A 的旧 token；B 的选择或 B 的新动作永不废弃、不改写 A 的有效 token。各 pid 的 record 只跟自己的最新 token 比
 - [ ] Must4：已不在列表不提供旧 pid 重试、不暗示仍存活。同 pid 再现且**不能**确认身份：当新进程、实时详情、不自动复活旧失败 / 重试卡，可对当前合法选中发起新操作，绝不把上次过程宣称成功
 - [ ] Must5：Darwin-free 转换测试覆盖跨 pid、离开 / 再现、少样本 / 失败帧保留最近结果、重选；Mac 上 VM 真实 SwiftUI 按钮 / 真实退出 / GUI **标未验**；结构测试不冒操作验收
 - [ ] 退出发起后 rows 缺席（进行中或失败）：旧实时详情和曲线整卡冻结并标「已不在列表／上次记录」；不能停在「正在退出…」；不能点旧 pid；失败历史保留且不称成功
