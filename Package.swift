@@ -40,6 +40,7 @@ let package = Package(
                 "Models/MemoryGrowthRisingFilter.swift",
                 "Models/MemoryTablePhase.swift",
                 "Models/ProcessSelection.swift",
+                "Models/ProcessQuitOutcome.swift",
                 "Models/CPUPage.swift",
                 "Models/MemoryPageSortPublication.swift",
                 "Models/NetworkPage.swift",
