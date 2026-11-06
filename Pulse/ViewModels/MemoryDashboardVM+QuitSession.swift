@@ -134,4 +134,26 @@ extension MemoryDashboardVM {
             sidebarSubjectPid = effect.sidebarSubjectPid
         }
     }
+
+    /// ON selects the heaviest pid of the current name. OFF keeps the current pid.
+    func applyGroupedByAppSelection() {
+        let next = AppGroupProjection.selectedPid(
+            current: selectedPid,
+            rows: visibleRows,
+            grouped: groupedByApp && selectedPage == .memory
+        )
+        guard next != selectedPid else { return }
+        let effect = ProcessQuitSession.risingOnlySelection(
+            nextListPid: next,
+            sidebarSubjectPid: sidebarSubjectPid,
+            rows: rows,
+            store: quitOutcome
+        )
+        if selectedPid != effect.listSelectedPid {
+            selectedPid = effect.listSelectedPid
+        }
+        if sidebarSubjectPid != effect.sidebarSubjectPid {
+            sidebarSubjectPid = effect.sidebarSubjectPid
+        }
+    }
 }

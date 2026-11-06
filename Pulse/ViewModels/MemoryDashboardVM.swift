@@ -47,6 +47,13 @@ final class MemoryDashboardVM: ObservableObject {
             applyWindowedOnlySelection()
         }
     }
+    /// Memory-tab display. Default OFF. Groups the current visible rows by name.
+    @Published var groupedByApp = false {
+        didSet {
+            guard oldValue != groupedByApp else { return }
+            applyGroupedByAppSelection()
+        }
+    }
     /// One-shot memory Top card reveal. The next locate replaces it.
     @Published var topAppLocateReveal: TopAppLocation.Reveal?
     @Published private(set) var navigation = DashboardNavigation()
@@ -111,7 +118,9 @@ final class MemoryDashboardVM: ObservableObject {
 
     /// Visible rows in the current table sort. Not stored and not published.
     var sortedRows: [ProcessRow] {
-        tableSort.ordered(visibleRows)
+        tableSort.ordered(
+            AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && selectedPage == .memory)
+        )
     }
 
     /// Strip B. Unfiltered `rows` ordered by the published memory-page sort.
