@@ -32,6 +32,8 @@ final class MemoryDashboardVM: ObservableObject {
         }
     }
     @Published private(set) var navigation = DashboardNavigation()
+    /// Last memory-page sort, readable on the MainActor. Not a second published sort field.
+    private var publication = MemoryPageSortPublication()
 
     @Published var selectedPid: Int32? {
         didSet {
@@ -62,14 +64,16 @@ final class MemoryDashboardVM: ObservableObject {
         )
     }
 
-    /// Strip B. Full memory-ordered `rows`, never the filtered table or its header sort.
+    /// Strip B. Unfiltered `rows` ordered by the published memory-page sort.
+    /// Does not read the name query, rising-only keep, or a resource-tab live `tableSort`.
     var menuBarPopover: MenuBarPopoverSnapshot {
         MenuBarPopoverSnapshot.project(
             pressure: snapshot?.pressure,
             usedBytes: snapshot?.usedBytes,
             samplingFailed: samplingFailed,
             rows: rows,
-            processListFailed: processListFailed
+            processListFailed: processListFailed,
+            sort: publication.sort
         )
     }
 
@@ -228,11 +232,16 @@ final class MemoryDashboardVM: ObservableObject {
         selectedPid = next
     }
 
-    /// Only the memory-page sort drives Top 5. Other tabs keep the last memory sort.
+    /// Only the memory-page sort drives Top 5 and the menu bar. Other tabs keep
+    /// the last memory sort. Writes publication first, then forwards the same
+    /// sort to Sampler without awaiting it for UI.
     private func publishMemoryPageSort() {
-        guard selectedPage == .memory else { return }
-        let sort = tableSort
-        Task { await sampler.setMemoryPageSort(sort) }
+        switch publication.publishMemoryPageSort(tableSort, selectedPage: selectedPage) {
+        case .notifySampler(let sort):
+            Task { await sampler.setMemoryPageSort(sort) }
+        case .skip:
+            break
+        }
     }
 
     private func finishSamplingLoop() {
