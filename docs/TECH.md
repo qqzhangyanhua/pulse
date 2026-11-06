@@ -5237,7 +5237,7 @@ private func directedHistoryNote(title: String, current: Double?, sampleCount: I
 - 该侧 current 为真实 `0` 或其它非 `nil`，或该侧样本数是 0 或 1：该侧 `annotation` 为 `nil`，label 里不出现该侧的「标题 · note」。另一侧是否命中不影响这一侧。
 - 仅下行命中：label 含「下行 · 历史曲线 · 当前值暂不可用」，不含「上行 · 历史曲线 · 当前值暂不可用」。仅读取命中时同理，只有读取那一条。
 - 仅上行或仅写入命中：只有该侧这一条。
-- 两侧都命中：两条都在。下行在上行前，读取在写入前。这是「方向标题 + 同一条 annotation」，不是把无方向的 note 重复两遍。
+- 两侧都命中：按下行然后上行（读取然后写入）各追加一条带标题的片段，例如「下行 · 历史曲线 · 当前值暂不可用」然后「上行 · 历史曲线 · 当前值暂不可用」。方向已经写在标题里。这不是未决项，也不是把无方向的 note 原样重复两遍。
 - 图表 overlay 仍是每张卡自己的裸 note。父级 `HStack` 不另画字。
 
 分隔符用现有 sampling 标签里的全角逗号 `，`。
@@ -5322,8 +5322,8 @@ CPU（默认 `limit` 90，除非某条要显式写另一个 limit；下面的 90
 - `project.pbxproj` 里 `HistoryCurvePresentation.swift` 出现在 PBXBuildFile、PBXFileReference、Models group、Sources。不为 `HistoryAnnotatedChart.swift` 新增文件引用。
 - 源码断言分开取 `struct HistoryAnnotatedChart` 的类型正文和 `struct SparklineChart` 的类型正文。禁止对整个 `SharedUI.swift` 断言「没有 `opacity`」：`PulsePalette.hairline`（22 行）和 `ResourceTabs`（86 行）等处已经有 `Color.white.opacity`。`SparklineChart` 正文保持现有的 `tint.opacity(0.42)`、`tint.opacity(0.02)`、轴标签 `Color.white.opacity(0.42)`、网格 `Color.white.opacity(0.06)`，轴标记 `chartXAxis` / `chartYAxis` 仍留在这个正文里，并且这个正文不含 `annotation` 与 `HistoryCurvePresentation`。`HistoryAnnotatedChart` 正文含 `overlay(alignment: .topLeading)`、`.font(.caption2)`、`.foregroundStyle(.secondary)`、`.lineLimit(1)`、`.truncationMode(.tail)`、`.padding(.top, 5)`、`.padding(.leading, 5)`。这个正文不含 `chartXAxis`、`chartYAxis`、`accessibilityLabel`、`allowsHitTesting`、`animation`、`transition`，也不给 content 加 `.opacity`。`disabledTab` 已有 `.allowsHitTesting(false)`（123 行），`ResourceTabs` 也已有 `accessibilityLabel`（114、124 行），这两条缺失断言同样不能扫整个文件。
 - CPU 文件：`HistoryAnnotatedChart` 一处，位于 `chart` 的 `else`。该处 `annotation(current: vm.systemCpuPercent, sampleCount: vm.cpuHistory.samples.count)`，其内 `SparklineChart` 的 `samples` 仍是 `vm.cpuHistory.samples`。`count < 2` 分支仍是 `ChartPlaceholder(text: "曲线采集中")`，且该分支不含 wrapper。`samplingBody` 与 `failureBody` 不含这两个新类型。ready 仍是 `children: .ignore`。ready 标签在 note 为 `nil` 时走 `overviewLine`，非 `nil` 时拼接 `，` 与这条 note，不加第二套方向前缀。
-- 网络文件：`readyBody` 仍把 `inboundBytesPerSecond` 配 `networkHistory.inbound.samples`、`outboundBytesPerSecond` 配 `networkHistory.outbound.samples`。`NetworkRateCard` 正文不含 `hostNetworkRates` 与 `networkHistory`；它的 `else` 只有一处裸的 `annotation(current: rate, sampleCount: samples.count)` 和一处 `HistoryAnnotatedChart`，overlay 不加 `inboundTitle`。`readyBody` 不含 `HistoryAnnotatedChart`。placeholder 仍是 `NetworkPageCopy.chartCollecting`。父级 label 的投影按下行、上行各调用一次：`annotation(current: vm.hostNetworkRates.inboundBytesPerSecond, sampleCount: vm.networkHistory.inbound.samples.count)` 配 `inboundTitle`，然后才是 `annotation(current: vm.hostNetworkRates.outboundBytesPerSecond, sampleCount: vm.networkHistory.outbound.samples.count)` 配 `outboundTitle`。命中片段是 `"\(title) · \(note)"`。没有命中则标签等于 `overviewLine`。禁止用「历史曲线 · 当前值暂不可用」出现 1 次或 2 次代替方向验收。要能看出单侧只有该侧标题接在 note 前，双侧是下行片段然后上行片段。sampling / failed 不含新类型。`children: .ignore` 仍在父级。
-- 磁盘文件：`DiskRateCard` 的 `else` 仍是裸的 `annotation(current: rate, sampleCount: samples.count)`，`readyBody` 不含 `HistoryAnnotatedChart`。父级传入仍是 `readBytesPerSecond` 配 `diskHistory.read.samples`、`writeBytesPerSecond` 配 `diskHistory.write.samples`。placeholder 仍是 `DiskPageCopy.chartCollecting`。父级 label 先 `annotation(current: vm.hostDiskRates.readBytesPerSecond, sampleCount: vm.diskHistory.read.samples.count)` 配 `readTitle`，再 `annotation(current: vm.hostDiskRates.writeBytesPerSecond, sampleCount: vm.diskHistory.write.samples.count)` 配 `writeTitle`。命中片段同样是 `"\(title) · \(note)"`。同样禁止用 note 的出现次数代替方向。`children: .ignore` 仍在父级。
+- 网络文件：`readyBody` 仍把 `inboundBytesPerSecond` 配 `networkHistory.inbound.samples`、`outboundBytesPerSecond` 配 `networkHistory.outbound.samples`。`NetworkRateCard` 正文不含 `hostNetworkRates` 与 `networkHistory`；它的 `else` 只有一处裸的 `annotation(current: rate, sampleCount: samples.count)` 和一处 `HistoryAnnotatedChart`，overlay 不加 `inboundTitle`。`readyBody` 不含 `HistoryAnnotatedChart`。placeholder 仍是 `NetworkPageCopy.chartCollecting`。父级 label 的投影按下行、上行各调用一次：`annotation(current: vm.hostNetworkRates.inboundBytesPerSecond, sampleCount: vm.networkHistory.inbound.samples.count)` 配 `inboundTitle`，然后才是 `annotation(current: vm.hostNetworkRates.outboundBytesPerSecond, sampleCount: vm.networkHistory.outbound.samples.count)` 配 `outboundTitle`。命中片段是 `"\(title) · \(note)"`。没有命中则标签等于 `overviewLine`。禁止用「历史曲线 · 当前值暂不可用」出现 1 次或 2 次代替方向验收，也不要把「双 nil 是否重复无方向的同一句」留成开放断言。单侧只有该侧标题接在 note 前；双侧是「下行 · note」然后「上行 · note」。sampling / failed 不含新类型。`children: .ignore` 仍在父级。
+- 磁盘文件：`DiskRateCard` 的 `else` 仍是裸的 `annotation(current: rate, sampleCount: samples.count)`，`readyBody` 不含 `HistoryAnnotatedChart`。父级传入仍是 `readBytesPerSecond` 配 `diskHistory.read.samples`、`writeBytesPerSecond` 配 `diskHistory.write.samples`。placeholder 仍是 `DiskPageCopy.chartCollecting`。父级 label 先 `annotation(current: vm.hostDiskRates.readBytesPerSecond, sampleCount: vm.diskHistory.read.samples.count)` 配 `readTitle`，再 `annotation(current: vm.hostDiskRates.writeBytesPerSecond, sampleCount: vm.diskHistory.write.samples.count)` 配 `writeTitle`。命中片段同样是 `"\(title) · \(note)"`。单侧只有「读取 · note」或「写入 · note」；双侧是读取然后写入。禁止用 note 的出现次数代替方向，也不把双 nil 留成无方向重复。`children: .ignore` 仍在父级。
 - `OverviewCards.swift`、`ProcessDetailSidebar.swift`、`OverviewSection.swift`、`ProcessTablePane.swift`、`MemoryDashboardVM.swift`、`TopAppLocation.swift`、`ResourceDetailPageProjection.swift` 不含 `HistoryCurvePresentation`、`HistoryAnnotatedChart` 和完整句 `历史曲线 · 当前值暂不可用`。侧栏 `seriesBlock` 里的调用仍是 `SparklineChart(samples: samples, tint: tint, domain: domain, formatY: formatY)`。
 - `MemoryDashboardVM.swift` 的 `@Published` 仍是 23，`didSet` 仍是 2，`@MainActor` 仍是 1。`sortedRows` 那一行无 `@Published`，函数体仍是 `tableSort.ordered(visibleRows)`。`locateMemoryTopApp` 仍在 `guard let plan` 之后写 filter（仅 replace）、`risingOnlyFilter = false`、`selectPidIfPresent`、`topAppLocateReveal`。上述六份已经写着 23 的源码测试不要改期望值。
 - `ProcessTablePane` 仍有 `cpuPhase`，其函数体仍含 `CPUPagePhaseResolver.resolve`，`resourceTableBody` 仍 `switch cpuPhase`。不要用「出现 `cpuPhase`」或子串「暂不可用」判定二十一期漏标或误标。进程表的判据是类型名 `HistoryCurvePresentation` 不出现。`row.networkAvailability.label` 保持原样。
@@ -5335,7 +5335,7 @@ CPU（默认 `limit` 90，除非某条要显式写另一个 limit；下面的 90
 | --- | --- |
 | 给 `SparklineChart` 加一个默认 `annotation: nil`，内存和进程曲线被静默接上 | 不改该类型的参数。只有五条 `else` 显式包 wrapper |
 | 在父级 `HStack` 上按「任一侧 nil」画一句，或两句叠在同一张图上 | 图的 overlay 在每张卡自己的 `chart` `else`，文字是裸 note。父级仍是原来那一个 `children: .ignore`，label 里命中侧才追加「标题 · note」 |
-| 父级 label 只重复无方向的 note，或靠「—」反推方向 | 下行 / 上行、读取 / 写入各自接同一次 `annotation` 的返回值。一侧一条，双侧按原顺序两条 |
+| 父级 label 只重复无方向的 note，或把「双 nil 是否重复同一句」留成未决 | 每一侧先独立 `annotation(current:sampleCount:)`，只收集非 nil 的方向。一侧是「下行 · note」或「读取 · note」。双侧按下行→上行或读取→写入各一条，标题不同。真实 `0` 不进入 |
 | 拆掉父级 ignore，或给 presenter 加 `unavailableCaption` | 不拆无障碍结构。方向只在视图私有投影里拼。`annotation` 的返回值不变 |
 | 一侧 `nil` 把对侧 `0` 也标上，或对侧 `0` 把本侧说明吃掉 | 两次独立的 `annotation` 调用。`0` 不是 `nil` |
 | 样本 0/1 仍画火花线，或在 placeholder 上写这句 | `count < 2` 分支不改。函数在 count `< 2` 时返回 `nil` |
@@ -5356,7 +5356,7 @@ CPU（默认 `limit` 90，除非某条要显式写另一个 limit；下面的 90
 - [ ] 样本 0/1 仍是原来的 `ChartPlaceholder` 文案（CPU 与网络是「曲线采集中」，磁盘是「正在采样…」）。不画假线
 - [ ] wrapper 只包这五条曲线的 ready 图表 `else`：CPU 一处源码，`NetworkRateCard.chart` 一处源码（下行、上行各实例化一次），`DiskRateCard.chart` 一处源码（读取、写入同样）。父级 `HStack` 不再包一层图。`SparklineChart` 仍是原来的四参数，samples 实参不变。`domain`、轴、`formatY`、大数和副行不改
 - [ ] 视觉是原图帧内的小字：左上 5pt、`.caption2`、`.secondary`、`.lineLimit(1)`、`.truncationMode(.tail)`。左侧读数在另一栏，不在图 frame 里。overlay 不挪火花线，轴与 `domain` 不变。不预留新布局，不加 `allowsHitTesting`。不承诺小字不会挡住轴或曲线。Mac 上的 overlay 未验
-- [ ] ready 的 `children: .ignore` 仍在原处，不拆子卡 label。CPU 在 annotation 非 nil 时仍是 `overviewLine` 加同一条 note。网络和磁盘在该侧 annotation 非 nil 时追加该方向标题加同一条 annotation：`下行 · note` / `上行 · note`，`读取 · note` / `写入 · note`。一侧只追加该侧一条；双侧按下行→上行或读取→写入追加两条。真实 `0` 不追加。0/1 点不追加。sampling / failed 不追加。视觉 overlay 仍是无方向的 note
+- [ ] ready 的 `children: .ignore` 仍在原处，不拆子卡 label。CPU 在 annotation 非 nil 时仍是 `overviewLine` 加一条 note。网络和磁盘先对每一侧独立 `annotation(current: 该侧 rate, sampleCount: 该侧 samples.count)`，只把非 nil 的方向写入父级 label：一侧是「下行 · 历史曲线 · 当前值暂不可用」或「读取 · 历史曲线 · 当前值暂不可用」；双侧按下行→上行或读取→写入各一条，标题不同。真实 `0` 和其它非 nil 不进入。不靠 `overviewLine` 的「—」推断，也不因任一侧 nil 就把两侧都标上。0/1 点不追加。sampling / failed 不追加。视觉 overlay 仍是无方向的 note
 - [ ] `record` 的 nil 跳过、同日期跳过、默认 90 环不改。标注不 append。失败与未接受的 flight 仍不 `record`、不 `reset`
 - [ ] `@Published` 仍是 23，`didSet` 仍是 2，`@MainActor` 仍是 1。`sortedRows`、`locateMemoryTopApp`、过滤、菜单栏、`cpuPhase`、退出、冻结、资源侧栏和其它火花线无新注解、无新参数
 - [ ] 实现 PR 先有编译失败的模型红，再有源码接线红，然后有 Linux 上这两类测试和全量 `swift test` 的真实日志。这些日志不是 SwiftUI 运行，也不是 Xcode 已编译
@@ -5388,6 +5388,8 @@ CPU（默认 `limit` 90，除非某条要显式写另一个 limit；下面的 90
 
 ## 未决
 
-5pt 不再留 4pt / 6pt 的选择。父级 label 也不再留「无方向句子重复两遍」或「合成一句」的选择：一侧是该方向标题加同一条 annotation，双侧按下行→上行或读取→写入两条。
+5pt 与父级 label 的方向都已经写死，不在这里再选。
 
-仍不在本期改口的是：同一 `capturedAt` 只更新当前值、`record` 不 append 时，不为这个状态另写文案。根 `README.md` 的期次索引不加二十一期。Mac 上小字是否压住轴或曲线、VoiceOver 是否真读出方向句，是未验，不是待选布局。
+方向的做法是：网络、磁盘每一侧先独立调用同一个 `annotation(current: 该侧 rate, sampleCount: 该侧 samples.count)`，只收集返回非 nil 的方向。一侧命中写成「下行 · 历史曲线 · 当前值暂不可用」（磁盘是「读取 · 历史曲线 · 当前值暂不可用」）。双侧命中按下行然后上行（读取然后写入）各写一条，标题不同。真实 `0` 和其它非 nil 不进入这份列表。不读取 `overviewLine` 里的「—」来决定，也不因为任一侧是 nil 就把两侧都标上。CPU 仍是 `overviewLine` 加一条 note。ready 父级保持 `children: .ignore`，不拆成子卡。没有新的发布属性，也没有时间语义。
+
+仍不在本期改口的是：同一 `capturedAt` 只更新当前值、`record` 不 append 时，不为这个状态另写文案。根 `README.md` 的期次索引不加二十一期。Mac 上小字是否压住轴或曲线、VoiceOver 是否真读出这些带方向的句子，是未验，不是文案还没选定。
