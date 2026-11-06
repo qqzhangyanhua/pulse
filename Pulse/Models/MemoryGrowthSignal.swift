@@ -55,6 +55,8 @@ enum MemoryGrowthCopy {
     static let title = "内存趋势"
     static let rising = "近几分钟持续上涨"
     static let insufficient = "样本不足，暂不判断"
+    /// Filled when the resident-basis sentence lands. Empty keeps the lock red.
+    static let basis = ""
 
     static func caption(for signal: MemoryGrowthSignal) -> String? {
         switch signal {
@@ -66,12 +68,22 @@ enum MemoryGrowthCopy {
             return nil
         }
     }
+
+    /// No basis is attached yet. `.insufficient` and `.none` stay nil after the lock too.
+    static func basis(for signal: MemoryGrowthSignal) -> String? {
+        switch signal {
+        case .rising, .insufficient, .none:
+            return nil
+        }
+    }
 }
 
 /// One visible sidebar slot. Absence means the view renders nothing.
 struct MemoryGrowthSlot: Equatable, Sendable {
     let title: String
     let caption: String
+    /// Side note for a live `.rising` detail slot. Nil until `slot` fills it.
+    let basis: String? = nil
 }
 
 /// Memory-page detail sidebar only. CPU and the other pages stay silent.

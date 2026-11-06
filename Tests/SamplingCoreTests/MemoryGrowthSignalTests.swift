@@ -83,6 +83,35 @@ final class MemoryGrowthSignalTests: XCTestCase {
         XCTAssertEqual(MemoryGrowthSignal.evaluate(samples), .none)
     }
 
+    /// Real downward steps inside a full window still rise when net and the 3/5 floor hold.
+    /// `evaluate` is not changed for this case.
+    func testWindowWithRealDownticksStillRisesWhenThresholdsHold() {
+        let count = MemoryGrowthSignal.minSamples
+        XCTAssertGreaterThanOrEqual(count, 80)
+        let upSteps = 60
+        let downSteps = count - 1 - upSteps
+        XCTAssertGreaterThan(downSteps, 0)
+
+        var values = [baseline]
+        for index in 0..<(count - 1) {
+            let delta = index < upSteps ? 1_048_576.0 : -4_096.0
+            values.append(values[values.count - 1] + delta)
+        }
+        let series = samples(values)
+        XCTAssertEqual(series.count, count)
+
+        var downs = 0
+        var ups = 0
+        for index in 1..<series.count {
+            if series[index].value < series[index - 1].value { downs += 1 }
+            if series[index].value > series[index - 1].value { ups += 1 }
+        }
+        XCTAssertEqual(ups, upSteps)
+        XCTAssertEqual(downs, downSteps)
+        XCTAssertGreaterThan(series.last!.value - series.first!.value, MemoryGrowthSignal.deltaThreshold)
+        XCTAssertEqual(MemoryGrowthSignal.evaluate(series), .rising)
+    }
+
     func testANewSeriesDoesNotKeepThePreviousRisingResult() {
         let earlier = series(count: MemoryGrowthSignal.minSamples, step: 1_048_576)
         XCTAssertEqual(MemoryGrowthSignal.evaluate(earlier), .rising)
