@@ -47,6 +47,8 @@ let package = Package(
                 "Sampling/HostNetwork.swift",
                 "Sampling/HostDisk.swift",
                 "Sampling/SamplingPace.swift",
+                "Sampling/SamplingRequestGate.swift",
+                "Sampling/SamplingRetryChrome.swift",
                 "MenuBar/MenuBarStatus.swift",
             ]
         ),
