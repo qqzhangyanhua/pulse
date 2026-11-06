@@ -51,7 +51,8 @@ final class ResourceDetailPageSourceTests: XCTestCase {
         let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
         let network = try functionBody(named: "networkResourceDetail", in: sidebar)
         XCTAssertTrue(network.contains("ResourceDetailPageProjection.processNetworkUnavailable"))
-        XCTAssertFalse(network.contains("NetworkPageCopy"))
+        XCTAssertTrue(network.contains(".help(NetworkPageCopy.processRateHelp)"))
+        XCTAssertEqual(occurrenceCount(of: "NetworkPageCopy", in: network), 1)
         for word in ["hostNetworkRates", "networkHistory", "cpuChart", "inbound", "0 字节", "DiskRateText"] {
             XCTAssertFalse(network.contains(word), word)
         }
@@ -152,7 +153,7 @@ final class ResourceDetailPageSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("path = LastLiveTotalReducer.swift;"))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 24, "phase26 adds thermalNotice")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 25, "phase26 adds thermalNotice")
         for name in ["selectPage", "applySample", "applyRisingOnlySelection"] {
             let source = try functionBody(named: name, in: vm)
             XCTAssertFalse(source.contains("ResourceDetailPageProjection"), name)

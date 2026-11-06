@@ -358,6 +358,7 @@ private struct ProcessLine: View {
                 .frame(width: ProcessColumn.memory, alignment: .trailing)
             if showsNetwork {
                 Text(row.networkAvailability.label)
+                    .help(NetworkPageCopy.processRateHelp)
                     .foregroundStyle(selected ? Color.white.opacity(0.82) : Color.secondary)
                     .frame(width: ProcessColumn.network, alignment: .trailing)
             }

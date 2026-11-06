@@ -50,6 +50,8 @@ enum NetworkPageCopy {
     static let outboundTitle = "上行"
     static let columnTitle = "网络"
     static let processNetworkUnavailable = ProcessNetworkAvailability.unavailable.label
+    /// Tooltip only. The cells stay 「暂不可用」 / the detail sentence.
+    static let processRateHelp = "没有进程速率。主机下行和上行在总览。"
     static let chartCollecting = "曲线采集中"
 
     /// Overview slot. Missing host rates stay 「—」, never 「0 字节/秒」.

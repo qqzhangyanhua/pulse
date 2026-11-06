@@ -218,6 +218,7 @@ struct ProcessDetailSidebar: View {
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+                .help(NetworkPageCopy.processRateHelp)
         }
         HStack(alignment: .top, spacing: 10) {
             cpuMetric(cpuPercent: network.cpuPercent)

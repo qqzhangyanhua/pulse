@@ -15,6 +15,46 @@ final class CPUPageTests: XCTestCase {
         XCTAssertNotEqual(CPUPercentText.string(nil), CPUPercentText.string(0))
     }
 
+    func testBusiestCoreLineKeepsMissingAndRealZeroApart() {
+        XCTAssertEqual(CPUPageCopy.busiestCoreLine(percent: nil), "最忙的一核 · —")
+        XCTAssertFalse(CPUPageCopy.busiestCoreLine(percent: nil).contains("0"))
+        XCTAssertEqual(CPUPageCopy.busiestCoreLine(percent: 0), "最忙的一核 · 0.0%")
+        XCTAssertEqual(CPUPageCopy.busiestCoreLine(percent: 12.5), "最忙的一核 · 12.5%")
+        XCTAssertNotEqual(
+            CPUPageCopy.busiestCoreLine(percent: nil),
+            CPUPageCopy.busiestCoreLine(percent: 0)
+        )
+    }
+
+    func testBusiestCoreLineIsReadyOnlyAndDoesNotFeedCPUHistory() throws {
+        let sentence = "最忙的一核 · "
+        let model = try repoText("Pulse/Models/CPUPage.swift")
+        XCTAssertEqual(occurrenceCount(of: sentence, in: model), 1)
+
+        let view = try repoText("Pulse/Views/CPUOverviewSection.swift")
+        XCTAssertFalse(view.contains(sentence))
+        XCTAssertEqual(occurrenceCount(of: "CPUPageCopy.busiestCoreLine(percent: vm.busiestCorePercent)", in: view), 2)
+        let sampling = try slice(from: "private var samplingBody", until: "private var failureBody", in: view)
+        let failure = try slice(from: "private var failureBody", until: "private var readyBody", in: view)
+        let ready = try slice(from: "private var readyBody", until: "private var readyAccessibilityLabel", in: view)
+        XCTAssertFalse(sampling.contains("busiestCoreLine"))
+        XCTAssertFalse(failure.contains("busiestCoreLine"))
+        XCTAssertTrue(ready.contains("CPUPageCopy.busiestCoreLine(percent: vm.busiestCorePercent)"))
+        XCTAssertTrue(view.contains("let core = CPUPageCopy.busiestCoreLine(percent: vm.busiestCorePercent)"))
+
+        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        XCTAssertTrue(vm.contains("busiestCorePercent = frame.busiestCorePercent"))
+        XCTAssertTrue(vm.contains("nextCPU.record(percent: frame.systemCpuPercent, at: frame.snapshot.capturedAt)"))
+        XCTAssertFalse(vm.contains("record(percent: frame.busiestCorePercent"))
+        XCTAssertFalse(vm.contains("record(percent: vm.busiestCorePercent"))
+        XCTAssertFalse(vm.contains("cpuHistory.record"))
+
+        let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
+        XCTAssertTrue(sampler.contains("HostCPUReader.readCores()"))
+        XCTAssertTrue(sampler.contains("BusiestCoreLoad.advance"))
+        XCTAssertFalse(sampler.contains("cpuHistory"))
+    }
+
     func testStatusCopyMatchesTheCPUPage() {
         XCTAssertEqual(CPUPageCopy.sampling, "正在采样…")
         XCTAssertEqual(CPUPageCopy.emptyTitle, "还没有进程数据")
@@ -291,5 +331,30 @@ final class CPUPageTests: XCTestCase {
             memoryBytes: memory,
             threadCount: 1
         )
+    }
+
+    private func repoText(_ relative: String) throws -> String {
+        try String(contentsOf: repoRoot().appendingPathComponent(relative), encoding: .utf8)
+    }
+
+    private func repoRoot() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
+    private func occurrenceCount(of needle: String, in haystack: String) -> Int {
+        haystack.components(separatedBy: needle).count - 1
+    }
+
+    private func slice(from start: String, until end: String, in source: String) throws -> String {
+        guard let startRange = source.range(of: start),
+              let endRange = source.range(of: end, range: startRange.upperBound..<source.endIndex)
+        else {
+            XCTFail("missing slice \(start)")
+            return ""
+        }
+        return String(source[startRange.lowerBound..<endRange.lowerBound])
     }
 }

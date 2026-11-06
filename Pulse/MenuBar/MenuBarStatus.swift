@@ -74,6 +74,8 @@ enum MenuBarCopy {
     static let quitTitle = "退出 Pulse"
     static let openPulseTitle = "打开 Pulse"
     static let processesEmpty = "暂无进程"
+    /// Static Top3 note. Not a projection, and not a filtered-list claim.
+    static let topProcessesNote = "按内存页表头、完整列表前 3，不含当前过滤。"
 }
 
 struct MenuBarDot: Equatable, Sendable {

@@ -6,6 +6,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var loadState: LoadState = .sampling
     @Published private(set) var snapshot: MemorySnapshot?
     @Published private(set) var systemCpuPercent: Double?
+    /// Busiest core for the latest accepted frame. Nil is missing, not zero. Failure does not clear it.
+    @Published private(set) var busiestCorePercent: Double?
     @Published private(set) var hostNetworkRates = HostNetworkRates.missing
     @Published private(set) var hostDiskRates = HostDiskRates.missing
     @Published private(set) var rows: [ProcessRow] = []
@@ -339,6 +341,7 @@ final class MemoryDashboardVM: ObservableObject {
                     samplingFailed = applied.samplingFailed
                     snapshot = frame.snapshot
                     systemCpuPercent = frame.systemCpuPercent
+                    busiestCorePercent = frame.busiestCorePercent
                     hostNetworkRates = frame.hostNetworkRates
                     hostDiskRates = frame.hostDiskRates
                     var nextUsage = usageHistory

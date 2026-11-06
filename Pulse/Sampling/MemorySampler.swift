@@ -12,6 +12,7 @@ actor MemorySampler {
     private var cpuTicks: [Int32: CPUTick] = [:]
     private var diskTicks: [Int32: DiskTick] = [:]
     private var previousHostCPU: HostCPUTicks?
+    private var previousCoreCPU: [HostCPUTicks]?
     private var previousHostNetwork: HostNetworkSnapshot?
     private var previousHostDisk: HostDiskSnapshot?
     private var identityCache: [Int32: ProcessIdentity] = [:]
@@ -62,6 +63,7 @@ actor MemorySampler {
             capturedAt: capturedAt
         )
         let systemCpuPercent = consumeSystemCPU()
+        let busiestCorePercent = consumeBusiestCore()
         let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
         let hostDiskRates = consumeSystemDisk(at: capturedAt)
 
@@ -77,7 +79,8 @@ actor MemorySampler {
                     systemCpuPercent: systemCpuPercent,
                     hostNetworkRates: hostNetworkRates,
                     hostDiskRates: hostDiskRates,
-                    topMemorySeries: topMemoryStore.seriesByPid
+                    topMemorySeries: topMemoryStore.seriesByPid,
+                    busiestCorePercent: busiestCorePercent
                 )
             )
         }
@@ -167,7 +170,8 @@ actor MemorySampler {
                 systemCpuPercent: systemCpuPercent,
                 hostNetworkRates: hostNetworkRates,
                 hostDiskRates: hostDiskRates,
-                topMemorySeries: topMemoryStore.seriesByPid
+                topMemorySeries: topMemoryStore.seriesByPid,
+                busiestCorePercent: busiestCorePercent
             )
         )
     }
@@ -175,6 +179,15 @@ actor MemorySampler {
     private func consumeSystemCPU() -> Double? {
         let advanced = SystemCPULoad.advance(previous: previousHostCPU, reading: HostCPUReader.read())
         previousHostCPU = advanced.baseline
+        return advanced.percent
+    }
+
+    private func consumeBusiestCore() -> Double? {
+        let advanced = BusiestCoreLoad.advance(
+            previous: previousCoreCPU,
+            reading: HostCPUReader.readCores()
+        )
+        previousCoreCPU = advanced.baseline
         return advanced.percent
     }
 

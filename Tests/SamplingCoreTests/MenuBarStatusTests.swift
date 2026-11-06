@@ -157,4 +157,62 @@ final class MenuBarStatusTests: XCTestCase {
         XCTAssertFalse(MenuBarCopy.openPulseTitle.contains("结束"))
         XCTAssertFalse(MenuBarCopy.openPulseTitle.contains("立即处理"))
     }
+
+    func testTopProcessesNoteIsStaticCopyAndNotASecondLiteralInTheView() throws {
+        let sentence = "按内存页表头、完整列表前 3，不含当前过滤。"
+        XCTAssertEqual(MenuBarCopy.topProcessesNote, sentence)
+        XCTAssertFalse(sentence.contains("过滤后前三"))
+
+        let model = try repoText("Pulse/MenuBar/MenuBarStatus.swift")
+        XCTAssertEqual(occurrenceCount(of: sentence, in: model), 1)
+        let project = try slice(from: "static func project(", until: "static func topProcesses(", in: model)
+        XCTAssertFalse(project.contains("topProcessesNote"))
+        XCTAssertFalse(project.contains(sentence))
+        XCTAssertFalse(project.contains("visibleRows"))
+        XCTAssertFalse(project.contains("risingOnlyFilter"))
+
+        let view = try repoText("Pulse/MenuBar/MenuBarPopoverView.swift")
+        XCTAssertEqual(occurrenceCount(of: "MenuBarCopy.topProcessesNote", in: view), 1)
+        XCTAssertFalse(view.contains(sentence))
+        XCTAssertFalse(view.contains("过滤后前三"))
+        XCTAssertFalse(view.contains("filter"))
+        XCTAssertFalse(view.contains("visibleRows"))
+        XCTAssertFalse(view.contains("risingOnlyFilter"))
+        XCTAssertTrue(view.contains(".frame(width: 248, alignment: .topLeading)"))
+        XCTAssertTrue(view.contains("strip.processesEmptyCopy"))
+        let noteAt = try index(of: "MenuBarCopy.topProcessesNote", in: view)
+        let emptyAt = try index(of: "strip.processesEmptyCopy", in: view)
+        XCTAssertLessThan(noteAt, emptyAt)
+    }
+
+    private func repoText(_ relative: String) throws -> String {
+        try String(contentsOf: repoRoot().appendingPathComponent(relative), encoding: .utf8)
+    }
+
+    private func repoRoot() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
+    private func occurrenceCount(of needle: String, in haystack: String) -> Int {
+        haystack.components(separatedBy: needle).count - 1
+    }
+
+    private func index(of needle: String, in haystack: String) throws -> Int {
+        guard let range = haystack.range(of: needle) else {
+            XCTFail("missing \(needle)")
+            return 0
+        }
+        return haystack.distance(from: haystack.startIndex, to: range.lowerBound)
+    }
+
+    private func slice(from start: String, until end: String, in source: String) throws -> String {
+        guard let startRange = source.range(of: start), let endRange = source.range(of: end, range: startRange.upperBound..<source.endIndex) else {
+            XCTFail("missing slice \(start)")
+            return ""
+        }
+        return String(source[startRange.lowerBound..<endRange.lowerBound])
+    }
 }

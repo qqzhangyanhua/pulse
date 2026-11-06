@@ -30,6 +30,10 @@ enum CPUPageCopy {
     static func overviewLine(systemCpuPercent: Double?) -> String {
         "CPU · \(CPUPercentText.string(systemCpuPercent))"
     }
+
+    static func busiestCoreLine(percent: Double?) -> String {
+        "最忙的一核 · \(CPUPercentText.string(percent))"
+    }
 }
 
 enum CPUPagePhase: Equatable, Sendable {

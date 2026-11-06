@@ -73,6 +73,10 @@ struct CPUOverviewSection: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                    Text(CPUPageCopy.busiestCoreLine(percent: vm.busiestCorePercent))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                     if let notice = vm.thermalNotice {
                         ThermalNoticeLine(text: notice)
                     }
@@ -84,16 +88,17 @@ struct CPUOverviewSection: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(height: 150)
+        .frame(height: 172)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(readyAccessibilityLabel)
     }
 
     private var readyAccessibilityLabel: String {
+        let core = CPUPageCopy.busiestCoreLine(percent: vm.busiestCorePercent)
         if let note = HistoryCurvePresentation.annotation(current: vm.systemCpuPercent, sampleCount: vm.cpuHistory.samples.count) {
-            return "\(overviewLine)，\(note)"
+            return "\(overviewLine)，\(note)" + "，\(core)"
         }
-        return overviewLine
+        return overviewLine + "，\(core)"
     }
 
     private var cpuLabel: some View {

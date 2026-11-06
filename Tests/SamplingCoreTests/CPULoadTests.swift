@@ -111,6 +111,10 @@ final class SampledFrameCPUTests: XCTestCase {
 
         let measured = makeFrame(systemCpuPercent: 12.5)
         XCTAssertEqual(measured.systemCpuPercent ?? -1, 12.5, accuracy: 0.000_001)
+        XCTAssertNil(measured.busiestCorePercent)
+
+        let core = makeFrame(systemCpuPercent: nil, busiestCorePercent: 0)
+        XCTAssertEqual(core.busiestCorePercent ?? -1, 0, accuracy: 0.000_001)
     }
 
     func testMissingProcessCPUSortsBelowRealValuesWithoutUsingZero() {
@@ -128,7 +132,7 @@ final class SampledFrameCPUTests: XCTestCase {
         XCTAssertLessThan(row.cpuSortKey, 0)
     }
 
-    private func makeFrame(systemCpuPercent: Double?) -> SampledFrame {
+    private func makeFrame(systemCpuPercent: Double?, busiestCorePercent: Double? = nil) -> SampledFrame {
         let now = Date(timeIntervalSince1970: 0)
         let snapshot = MemorySnapshot(
             usedBytes: 1,
@@ -151,7 +155,114 @@ final class SampledFrameCPUTests: XCTestCase {
             processListFailed: false,
             systemCpuPercent: systemCpuPercent,
             hostNetworkRates: .missing,
-            hostDiskRates: .missing
+            hostDiskRates: .missing,
+            busiestCorePercent: busiestCorePercent
         )
+    }
+}
+
+final class BusiestCoreLoadTests: XCTestCase {
+    func testFirstFrameIsNilAndBecomesTheBaseline() {
+        let reading = [core(user: 1, idle: 1)]
+        let sample = BusiestCoreLoad.advance(previous: nil, reading: reading)
+        XCTAssertNil(sample.percent)
+        XCTAssertEqual(sample.baseline, reading)
+    }
+
+    func testRealZeroStaysZero() {
+        let previous = [core(idle: 10), core(user: 4, idle: 4)]
+        let current = [core(idle: 20), core(user: 4, idle: 14)]
+        let sample = BusiestCoreLoad.advance(previous: previous, reading: current)
+        XCTAssertEqual(sample.percent ?? -1, 0, accuracy: 0.000_001)
+        XCTAssertNotEqual(sample.percent, nil)
+    }
+
+    func testTieKeepsTheEarlierCore() throws {
+        let previous = [core(), core(), core()]
+        let current = [
+            core(user: 40, idle: 60),
+            core(user: 40, idle: 60),
+            core(user: 10, idle: 90),
+        ]
+        let sample = BusiestCoreLoad.advance(previous: previous, reading: current)
+        XCTAssertEqual(sample.percent ?? -1, 40, accuracy: 0.000_001)
+
+        let laterWins = BusiestCoreLoad.advance(
+            previous: [core(), core()],
+            reading: [core(user: 10, idle: 90), core(user: 70, idle: 30)]
+        )
+        XCTAssertEqual(laterWins.percent ?? -1, 70, accuracy: 0.000_001)
+
+        let source = try repoText("Pulse/Sampling/CPULoad.swift")
+        let body = try slice(from: "enum BusiestCoreLoad", until: "return BusiestCoreSample(percent: best", in: source)
+        XCTAssertTrue(body.contains("percent <= best"))
+        XCTAssertFalse(body.contains("percent < best"))
+    }
+
+    func testInvalidCoreIsSkippedAndNotStoredAsZero() {
+        let previous = [core(user: 100), core()]
+        let current = [core(user: 1, idle: 1), core(user: 25, idle: 75)]
+        let sample = BusiestCoreLoad.advance(previous: previous, reading: current)
+        XCTAssertEqual(sample.percent ?? -1, 25, accuracy: 0.000_001)
+
+        let allInvalid = BusiestCoreLoad.advance(
+            previous: [core(user: 100), core(user: 80)],
+            reading: [core(user: 1, idle: 1), core(user: 1, idle: 1)]
+        )
+        XCTAssertNil(allInvalid.percent)
+        XCTAssertEqual(allInvalid.baseline, [core(user: 1, idle: 1), core(user: 1, idle: 1)])
+    }
+
+    func testFailedReadKeepsBaselineAndPercentStaysNil() {
+        let baseline = [core(user: 3, idle: 7)]
+        let failed = BusiestCoreLoad.advance(previous: baseline, reading: nil)
+        XCTAssertNil(failed.percent)
+        XCTAssertEqual(failed.baseline, baseline)
+
+        let recovered = BusiestCoreLoad.advance(
+            previous: failed.baseline,
+            reading: [core(user: 13, idle: 17)]
+        )
+        XCTAssertEqual(recovered.percent ?? -1, 50, accuracy: 0.000_001)
+        XCTAssertEqual(recovered.baseline, [core(user: 13, idle: 17)])
+    }
+
+    func testCoreCountChangeIsAFirstFrame() {
+        let previous = [core(), core()]
+        let reading = [core(user: 10, idle: 10)]
+        let sample = BusiestCoreLoad.advance(previous: previous, reading: reading)
+        XCTAssertNil(sample.percent)
+        XCTAssertEqual(sample.baseline, reading)
+
+        let second = BusiestCoreLoad.advance(
+            previous: sample.baseline,
+            reading: [core(user: 20, idle: 20)]
+        )
+        XCTAssertEqual(second.percent ?? -1, 50, accuracy: 0.000_001)
+    }
+
+    private func core(user: UInt64 = 0, system: UInt64 = 0, idle: UInt64 = 0, nice: UInt64 = 0) -> HostCPUTicks {
+        HostCPUTicks(user: user, system: system, idle: idle, nice: nice)
+    }
+
+    private func repoText(_ relative: String) throws -> String {
+        try String(contentsOf: repoRoot().appendingPathComponent(relative), encoding: .utf8)
+    }
+
+    private func repoRoot() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
+    private func slice(from start: String, until end: String, in source: String) throws -> String {
+        guard let startRange = source.range(of: start),
+              let endRange = source.range(of: end, range: startRange.upperBound..<source.endIndex)
+        else {
+            XCTFail("missing slice \(start)")
+            return ""
+        }
+        return String(source[startRange.lowerBound..<endRange.lowerBound])
     }
 }

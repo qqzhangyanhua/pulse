@@ -67,3 +67,33 @@ enum SystemCPULoad {
         )
     }
 }
+
+struct BusiestCoreSample: Sendable, Equatable {
+    let percent: Double?
+    let baseline: [HostCPUTicks]?
+}
+
+/// Same ratio as `SystemCPULoad.percent`, over reader-ordered cores.
+/// A missed core is skipped, not stored as 0. Ties keep the earlier core.
+/// The chosen index is not part of the sample.
+enum BusiestCoreLoad {
+    static func advance(previous: [HostCPUTicks]?, reading: [HostCPUTicks]?) -> BusiestCoreSample {
+        guard let reading else {
+            return BusiestCoreSample(percent: nil, baseline: previous)
+        }
+        guard let previous, previous.count == reading.count, !reading.isEmpty else {
+            return BusiestCoreSample(percent: nil, baseline: reading)
+        }
+        var best: Double?
+        for index in reading.indices {
+            guard let percent = SystemCPULoad.percent(previous: previous[index], current: reading[index]) else {
+                continue
+            }
+            if let best, percent <= best {
+                continue
+            }
+            best = percent
+        }
+        return BusiestCoreSample(percent: best, baseline: reading)
+    }
+}

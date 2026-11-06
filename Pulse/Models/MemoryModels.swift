@@ -169,6 +169,8 @@ struct SampledFrame: Sendable {
     let processListFailed: Bool
     /// Host CPU for this tick. Nil on the first sample or when the host read fails.
     let systemCpuPercent: Double?
+    /// Busiest core this tick. Nil is missing, not zero: first frame, missed per-core read, or a core-count change.
+    let busiestCorePercent: Double?
     /// Host inbound/outbound rates for this tick. Nil insides on first frame, failure, or wrap.
     let hostNetworkRates: HostNetworkRates
     /// Host disk read/write rates for this tick. Nil insides on first frame, failure, or wrap.
@@ -184,7 +186,8 @@ struct SampledFrame: Sendable {
         systemCpuPercent: Double?,
         hostNetworkRates: HostNetworkRates,
         hostDiskRates: HostDiskRates,
-        topMemorySeries: [Int32: [ChartSample]] = [:]
+        topMemorySeries: [Int32: [ChartSample]] = [:],
+        busiestCorePercent: Double? = nil
     ) {
         self.snapshot = snapshot
         self.rows = rows
@@ -194,5 +197,6 @@ struct SampledFrame: Sendable {
         self.hostNetworkRates = hostNetworkRates
         self.hostDiskRates = hostDiskRates
         self.topMemorySeries = topMemorySeries
+        self.busiestCorePercent = busiestCorePercent
     }
 }

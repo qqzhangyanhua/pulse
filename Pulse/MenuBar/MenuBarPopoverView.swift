@@ -63,42 +63,53 @@ struct MenuBarPopoverView: View {
 
     @ViewBuilder
     private var topProcessesSlot: some View {
-        if let empty = strip.processesEmptyCopy {
-            Text(empty)
-                .font(.callout)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(MenuBarCopy.topProcessesNote)
+                .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityLabel("占用最多的进程")
-                .accessibilityValue(empty)
-        } else {
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(strip.processes) { process in
-                    Button {
-                        onSelectProcess(process.pid)
-                    } label: {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text(process.name)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                            Spacer(minLength: 8)
-                            Text(ByteFormat.memory(process.memoryBytes))
-                                .monospacedDigit()
-                        }
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(process.name)
-                    .accessibilityValue(ByteFormat.memory(process.memoryBytes))
-                    .accessibilityAddTraits(.isButton)
-                }
+            if let empty = strip.processesEmptyCopy {
+                Text(empty)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityLabel("占用最多的进程")
+                    .accessibilityValue(empty)
+            } else {
+                processRows
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel("占用最多的进程")
         }
+    }
+
+    private var processRows: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(strip.processes) { process in
+                Button {
+                    onSelectProcess(process.pid)
+                } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(process.name)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        Spacer(minLength: 8)
+                        Text(ByteFormat.memory(process.memoryBytes))
+                            .monospacedDigit()
+                    }
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(process.name)
+                .accessibilityValue(ByteFormat.memory(process.memoryBytes))
+                .accessibilityAddTraits(.isButton)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("占用最多的进程")
     }
 }

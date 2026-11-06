@@ -75,7 +75,7 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         XCTAssertFalse(source.contains("onChange"), "VM gains no onChange")
         XCTAssertEqual(
             occurrenceCount(of: "@Published", in: source),
-            24,
+            25,
             "phase26 adds thermalNotice"
         )
         XCTAssertEqual(

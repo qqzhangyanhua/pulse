@@ -34,6 +34,32 @@ final class NetworkPageTests: XCTestCase {
         XCTAssertEqual(NetworkPageCopy.retry, "重试")
         XCTAssertEqual(NetworkPageCopy.sidebarEmpty, "选一个进程看详情")
         XCTAssertEqual(NetworkPageCopy.processNetworkUnavailable, "暂不可用")
+        XCTAssertEqual(NetworkPageCopy.processRateHelp, "没有进程速率。主机下行和上行在总览。")
+    }
+
+    func testProcessRateHelpIsOneConstantAndTwoHelpModifiers() throws {
+        let sentence = "没有进程速率。主机下行和上行在总览。"
+        XCTAssertEqual(NetworkPageCopy.processRateHelp, sentence)
+        let model = try repoText("Pulse/Models/NetworkPage.swift")
+        XCTAssertEqual(occurrenceCount(of: sentence, in: model), 1)
+
+        let call = ".help(NetworkPageCopy.processRateHelp)"
+        let table = try repoText("Pulse/Views/ProcessTablePane.swift")
+        let sidebar = try repoText("Pulse/Views/ProcessDetailSidebar.swift")
+        XCTAssertEqual(occurrenceCount(of: call, in: table), 1)
+        XCTAssertEqual(occurrenceCount(of: call, in: sidebar), 1)
+        XCTAssertFalse(table.contains(sentence))
+        XCTAssertFalse(sidebar.contains(sentence))
+        XCTAssertTrue(table.contains("Text(row.networkAvailability.label)"))
+        XCTAssertTrue(table.contains("\"网络 \\(row.networkAvailability.label)\""))
+        XCTAssertFalse(table.contains("网络 \\(row.networkAvailability.label)。\(NetworkPageCopy.processRateHelp)"))
+        XCTAssertTrue(table.contains("staticHeader(ProcessColumnTitle.network)"))
+        XCTAssertFalse(table.contains("sortHeader(ProcessColumnTitle.network"))
+        XCTAssertTrue(sidebar.contains("Text(ResourceDetailPageProjection.processNetworkUnavailable)"))
+
+        let projection = try repoText("Pulse/Models/ResourceDetailPageProjection.swift")
+        XCTAssertFalse(projection.contains(sentence))
+        XCTAssertTrue(projection.contains("static let processNetworkUnavailable = \"当前进程网络暂不可用\""))
     }
 
     func testNetworkCopyStaysCalm() {
@@ -189,5 +215,20 @@ final class NetworkPageTests: XCTestCase {
             memoryBytes: memory,
             threadCount: 1
         )
+    }
+
+    private func repoText(_ relative: String) throws -> String {
+        try String(contentsOf: repoRoot().appendingPathComponent(relative), encoding: .utf8)
+    }
+
+    private func repoRoot() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
+    private func occurrenceCount(of needle: String, in haystack: String) -> Int {
+        haystack.components(separatedBy: needle).count - 1
     }
 }
