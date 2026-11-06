@@ -14,7 +14,7 @@ final class ResourceDetailPageSourceTests: XCTestCase {
         XCTAssertFalse(field.contains("FrozenMemory"))
         XCTAssertFalse(field.contains("ResourceDetail"))
 
-        let sidebar = try repoText("Pulse/Views/ProcessDetailSidebar.swift")
+        let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
         XCTAssertEqual(occurrenceCount(of: "DisclosureGroup(", in: sidebar), 1)
         let cpuChart = try functionBody(named: "cpuChart", in: sidebar)
         XCTAssertTrue(cpuChart.contains("title: \"CPU\""))
@@ -48,7 +48,7 @@ final class ResourceDetailPageSourceTests: XCTestCase {
     }
 
     func testResourceBranchesDoNotBorrowHostSeriesOrQuitState() throws {
-        let sidebar = try repoText("Pulse/Views/ProcessDetailSidebar.swift")
+        let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
         let network = try functionBody(named: "networkResourceDetail", in: sidebar)
         XCTAssertTrue(network.contains("ResourceDetailPageProjection.processNetworkUnavailable"))
         XCTAssertFalse(network.contains("NetworkPageCopy"))
@@ -76,7 +76,7 @@ final class ResourceDetailPageSourceTests: XCTestCase {
     }
 
     func testLastLiveWritesStayOnTheSidebarCallbacks() throws {
-        let sidebar = try repoText("Pulse/Views/ProcessDetailSidebar.swift")
+        let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
         let body = try functionBody(named: "body", in: sidebar)
         XCTAssertFalse(body.contains("lastLiveTotal ="))
         XCTAssertTrue(body.contains(".onAppear(perform: acceptCurrentSidebarLiveTotal)"))
@@ -151,7 +151,7 @@ final class ResourceDetailPageSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("LastLiveTotalReducer.swift in Sources"))
         XCTAssertTrue(project.contains("path = LastLiveTotalReducer.swift;"))
 
-        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 23, "phase20 adds only topAppLocateReveal")
         for name in ["selectPage", "applySample", "applyRisingOnlySelection"] {
             let source = try functionBody(named: name, in: vm)

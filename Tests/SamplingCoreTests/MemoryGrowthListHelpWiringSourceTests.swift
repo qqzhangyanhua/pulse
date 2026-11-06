@@ -103,7 +103,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
     }
 
     func testDashboardVMDoesNotOwnTheHelpSentence() throws {
-        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         XCTAssertFalse(vm.contains(sentence))
         XCTAssertFalse(vm.contains("MemoryGrowthListCopy"))
         XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 23)

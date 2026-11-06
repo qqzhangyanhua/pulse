@@ -161,7 +161,7 @@ final class MemoryDashboardVMSortWiringSourceTests: XCTestCase {
     }
 
     private func vmSource() throws -> String {
-        try String(contentsOf: repoFile("Pulse/ViewModels/MemoryDashboardVM.swift"), encoding: .utf8)
+        try WiringSourceText.text(for: "MemoryDashboardVM")
     }
 
     private func repoFile(_ relative: String) -> URL {

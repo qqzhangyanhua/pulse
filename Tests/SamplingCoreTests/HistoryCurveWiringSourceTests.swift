@@ -171,13 +171,13 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
             "Pulse/Models/TopAppLocation.swift",
             "Pulse/Models/ResourceDetailPageProjection.swift",
         ] {
-            let text = try repoText(relative)
+            let text = try forbiddenSurfaceText(relative)
             XCTAssertFalse(text.contains("HistoryCurvePresentation"), relative)
             XCTAssertFalse(text.contains("HistoryAnnotatedChart"), relative)
             XCTAssertFalse(text.contains(sentence), relative)
         }
 
-        let sidebar = try repoText("Pulse/Views/ProcessDetailSidebar.swift")
+        let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
         let series = try functionBody(named: "seriesBlock", in: sidebar)
         XCTAssertTrue(series.contains("SparklineChart(samples: samples, tint: tint, domain: domain, formatY: formatY)"))
 
@@ -185,7 +185,7 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(occurrenceCount(of: "SparklineChart(", in: cards), 2)
         XCTAssertFalse(cards.contains("annotation:"))
 
-        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 23)
         XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 2)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: vm), 1)
@@ -309,6 +309,17 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         XCTAssertFalse(failure.contains("HistoryAnnotatedChart"), file)
         XCTAssertFalse(failure.contains("HistoryCurvePresentation"), file)
         XCTAssertTrue(sampling.contains(".accessibilityElement(children: .combine)"), file)
+    }
+
+    private func forbiddenSurfaceText(_ relative: String) throws -> String {
+        switch relative {
+        case "Pulse/Views/ProcessDetailSidebar.swift":
+            return try WiringSourceText.text(for: "ProcessDetailSidebar")
+        case "Pulse/ViewModels/MemoryDashboardVM.swift":
+            return try WiringSourceText.text(for: "MemoryDashboardVM")
+        default:
+            return try repoText(relative)
+        }
     }
 
     private func repoText(_ relative: String) throws -> String {

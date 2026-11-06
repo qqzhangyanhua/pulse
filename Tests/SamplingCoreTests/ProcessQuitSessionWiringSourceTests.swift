@@ -148,7 +148,7 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
     }
 
     func testSidebarReadsTheProjectionAndKeepsTheExistingControls() throws {
-        let sidebar = try repoText("Pulse/Views/ProcessDetailSidebar.swift")
+        let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
         XCTAssertTrue(sidebar.contains("vm.sidebar"))
         XCTAssertTrue(sidebar.contains("sidebar.detail"))
         XCTAssertTrue(sidebar.contains("sidebar.absentLabel"))
@@ -241,7 +241,7 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
     }
 
     private func vmSource() throws -> String {
-        try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        try WiringSourceText.text(for: "MemoryDashboardVM")
     }
 
     private func repoText(_ relative: String) throws -> String {
