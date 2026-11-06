@@ -5063,4 +5063,259 @@ Reducer 测试调用纯函数和现成 `ordered`，不编译 `MemoryDashboardVM`
 
 `@MainActor` 仍为 1。这个 1 是 `@MainActor` 属性字面出现次数，不是把注释里的 `MainActor` 字样算进同一条约束，也不是新加一个属性。注释里已有 “on the MainActor”，那不是 `@MainActor`。`didSet` 仍是两处。磁盘表头、退出 store、冻结采样、资源详情和采样免疫都维持原断言。
 
+# Pulse 二十一期技术设计（首包：主机 Overview 历史曲线的当前值提示）
+
+> 一期至二十期正文不改写。本节只覆盖 CPU、网络、磁盘三页 **ready** 总览里已经存在的五条主机曲线：当前读数为 nil、且这一条序列的 `samples.count >= 2` 时，在该图区加一句轻量提示，避免留下的历史点被看成仍在更新。不新采样、不新 VM 状态、不改环、不改内存页与进程曲线。
+
+**已锁定**：提示只在「本卡 current 为 nil 且本序列样本不少于 2」时出现。五张卡各自判断。文案只有一句，图上是「历史曲线 · 当前值暂不可用」。图区左上，内边距取 4、5、6 pt 里的一个共享值，单行截断，`.caption2` 加 `.secondary`。不遮左侧大号「—」，不把曲线或其他主图变淡。每张卡一个提示，恢复即撤，无动画。读屏在同一条件下追加「，历史曲线，当前值暂不可用」，每张 ready 卡只读一次。
+
+来源：二十一期主控已锁的提示契约；对照 `c28923f42ae67db7ad8395a4b75e5fa79d501e09`（`origin/main`，二十期实现 #64）。本节开写前读过的是这份树上的源码。二十期把 `@Published` 从 22 调到 23 已经落地。本节的基线是 23，不再搬「22」。
+
+本 PR 只追加本节，并在根 `README.md` 的期次索引里加半句导航。不写 Swift、不写测试、不跑 `swift test`、不打开 Xcode、不合并、不改 `Package.swift` 与生产代码。下面的红绿步骤是将来实现 PR 的设计，不是本 PR 的执行结果。本文合并也不构成开工授权；没有单独的实现授权时，不启动实现。
+
+## 已读源码（本 SHA）
+
+| 位置 | 今天的事实 |
+| --- | --- |
+| `MemoryDashboardView` | `.cpu` / `.network` / `.disk` 分别创建三个 Overview；`default` 才是内存 `OverviewSection()` |
+| `CPUOverviewSection` | `loadState` 三支：`.sampling` → `samplingBody`，`.failed` → `failureBody`，`.ready` → `readyBody`。ready 大号是 `CPUPercentText.string(vm.systemCpuPercent)`，副标题是 `CPUPageCopy.overviewLine`。`chart`：`vm.cpuHistory.samples.count < 2` 时 `ChartPlaceholder(text: "曲线采集中")`，否则 `SparklineChart(samples:tint:domain:formatY:)` |
+| CPU ready 读屏 | `readyBody` 是 `.accessibilityElement(children: .ignore)` 加 `.accessibilityLabel(overviewLine)`。采样支是 `.combine`，标签为 overview 再接采样句。失败支不走这套 |
+| `NetworkOverviewSection` | ready 两张 `NetworkRateCard`。下行 `rate` 来自 `vm.hostNetworkRates.inboundBytesPerSecond`，`samples` 来自 `vm.networkHistory.inbound.samples`。上行对 `outboundBytesPerSecond` 与 `networkHistory.outbound.samples`。卡内 `chart` 用自己的 `samples.count < 2` 决定 `NetworkPageCopy.chartCollecting` 或 `SparklineChart` |
+| 网络 ready 读屏 | 两张卡的父 `HStack` 一对 `.ignore` + `.accessibilityLabel(overviewLine)`。`overviewLine` 把下行和上行写进同一句。单张 `NetworkRateCard` 没有自己的读屏修饰。采样支仍是父级 `.combine` |
+| `DiskOverviewSection` | 与网络同形。读取：`vm.hostDiskRates.readBytesPerSecond` 与 `vm.diskHistory.read.samples`。写入：`writeBytesPerSecond` 与 `diskHistory.write.samples`。不足两样本用 `DiskPageCopy.chartCollecting` |
+| 磁盘 ready 读屏 | 同样是父 `HStack` 的一句 `overviewLine`，两张 `DiskRateCard` 自己不设 label |
+| `SparklineChart` | 在 `SharedUI.swift`。参数只有 `samples`、`tint`、`domain`、`formatY`。面积与线用现有 `catmullRom`，Y 轴在右侧，时间轴在底部。调用点还有内存 `MemoryHeroCard`、`PressureCurveCard`，以及 `ProcessDetailSidebar.seriesBlock` |
+| `MemoryDashboardVM` 的 `@Published` | 23 处，源码顺序：`loadState`、`snapshot`、`systemCpuPercent`、`hostNetworkRates`、`hostDiskRates`、`rows`、`processListFailed`、`detail`、`topMemorySeries`、`machineLabel`、`quitOutcome`、`sidebarSubjectPid`、`samplingFailed`、`isRetrying`、`usageHistory`、`cpuHistory`、`networkHistory`、`diskHistory`、`filter`、`risingOnlyFilter`、`topAppLocateReveal`、`navigation`、`selectedPid`。`didSet` 两处（上涨开关、`selectedPid`）。类上 `@MainActor` 一处。`publication` 不是 `@Published` |
+| `applySample` 接受且成功 | 写入 `systemCpuPercent`、`hostNetworkRates`、`hostDiskRates`，再 `record` 进 `cpuHistory`、`networkHistory`、`diskHistory`。失败支只改 `samplingFailed` 与 `loadState`（以及既有退出观察），不改这三份 current、不改这三条 history。未接受的 flight 不写模型 |
+| `SystemCPUHistory.record` | `percent` 或 `date` 为 nil 则直接返回。与最后一点同日期则返回。否则入环，`nextID` 加一，超过 `limit`（默认 90）则 `removeFirst`。`reset` 清空并把 `nextID` 置 1。nil 不写成 0 |
+| 网络 / 磁盘 history | `SystemNetworkHistory` / `SystemDiskHistory` 各持两份 `SystemCPUHistory`。`record(rates:at:)` 把每一侧的 `Double?` 交给对应环的 `record`。一侧 nil 只跳过这一侧 |
+| 主机 advance | `SystemCPULoad.advance`、`HostNetworkLoad.advance`、`HostDiskLoad.advance`：读失败保持上一基线并给出 nil；读成功替换基线。`MemorySampler` 在同一次成功快照里调用这三者。`HostNetworkLoad.rates` 与 `HostDiskLoad.rates` 今天要么两路都 nil，要么两路都是数 |
+| `SamplingRetryApply.loadState` | 接受且样本成功 → `.ready`。接受但样本失败：已有快照则仍 `.ready`，否则 `.failed`。总览只按 `loadState` 分支，不按 `samplingFailed` 换成另一套空态 |
+| `Package.swift` | SamplingCore `sources` 是显式清单，并排除 `Views/`、`ViewModels/` 与 `MemorySampler.swift`。`project.pbxproj` 按文件引用登记模型。`SharedUI.swift` 已在 App 目标里 |
+| 现有动画修饰 | `Pulse/` 下没有 `withAnimation`、`.animation(`、`.transition(` |
+
+内存用量序列是 `vm.usageHistory.samples`，交给 `MemoryHeroCard`。压力曲线读 `snapshot.pressureSeries`。进程侧栏的内存主曲线与 CPU 辅曲线走 `seriesBlock`。这三处都用 `SparklineChart`，都不是本节的五条主机 Overview 曲线。`MemoryDetailPresentation.missingTotalHelp` 是驻留占比缺总量，GPU 页仍不可选。两处都不进本节。
+
+## 今天的缺口
+
+ready 且样本不少于 2 时，图始终画环里留下的点。随后一帧接受成功的快照可以把该路 current 写成 nil：`record` 跳过，旧点还在，大号变成「—」，图却仍是一条实线。读屏只念现有 overview，不说明这些点不是当前值。网络和磁盘的 ready 读屏还把两张卡收成一句，无法只说明其中一侧。
+
+样本不足 2 时已经是「曲线采集中」或该页自己的 `chartCollecting`，不是这个缺口。整页 `.sampling` / `.failed` 也不是这个缺口。
+
+## 范围
+
+| 项 | 今天 | 二十一期首包 |
+| --- | --- | --- |
+| 五条 ready 曲线 | 样本不少于 2 就画 `SparklineChart`，不区分 current 是否为 nil | **加** 仅在该卡 current 为 nil 且 `samples.count >= 2` 时显示固定提示 |
+| current 为 0 或正数 | 大号是真实读数，图照常 | **保持**。提示不出现，已出现的立即撤 |
+| 样本 0 或 1 | 原 placeholder | **保持**。不显示本节提示 |
+| `.sampling` / `.failed` | 现有 `samplingBody` / `failureBody` | **保持**。不把提示穿透成整页不可用 |
+| 内存用量、压力、进程曲线、Top 定位 | 各自现实现 | **不贴** 本节提示 |
+| `@Published` | 23 | **保持 23**。不新发布「提示是否显示」 |
+
+## 五路接线
+
+判断和传参都在视图。current 与 samples 必须是同一条序列，不读另一张卡，不读整页 VM 的其它 rate。
+
+| 卡 | 构造位置 | current | samples |
+| --- | --- | --- | --- |
+| CPU | `CPUOverviewSection` 的 ready `chart` | `vm.systemCpuPercent` | `vm.cpuHistory.samples` |
+| 下行 | `NetworkOverviewSection.readyBody` 第一张 `NetworkRateCard` | `vm.hostNetworkRates.inboundBytesPerSecond`，卡内用自己的 `rate` | `vm.networkHistory.inbound.samples`，卡内用自己的 `samples` |
+| 上行 | 同文件第二张 `NetworkRateCard` | `outboundBytesPerSecond`，卡内 `rate` | `networkHistory.outbound.samples`，卡内 `samples` |
+| 读取 | `DiskOverviewSection.readyBody` 第一张 `DiskRateCard` | `vm.hostDiskRates.readBytesPerSecond`，卡内 `rate` | `vm.diskHistory.read.samples`，卡内 `samples` |
+| 写入 | 同文件第二张 `DiskRateCard` | `writeBytesPerSecond`，卡内 `rate` | `diskHistory.write.samples`，卡内 `samples` |
+
+`samples.count < 2` 仍走原来的 placeholder，分支里不放提示。只有 `>= 2` 的分支创建现有 `SparklineChart`，并把这一卡的 current 与 `samples.count` 交给下面的纯函数。`SparklineChart` 的四个参数保持各卡今天的 `samples`、`tint`、`domain`、`formatY`。domain 公式不改。副标题不改：CPU 仍是 `overviewLine`，网络/磁盘卡仍是 `"\(title) · \(速率文案)"`。大号格式化不改，nil 仍是「—」，真实 0 仍是今天的 0 文案。
+
+下行 nil、上行 0：只有下行出现提示。上行 nil、下行 0：只有上行。读/写同样。两路都 nil 且各自样本不少于 2：两张卡都出现，仍是各一次，不是合成一句。
+
+`SparklineChart` 不加 `current` 参数，也不在内部默认「样本不少于 2 就显示主机提示」。内存和进程曲线继续直接调用它。
+
+## 纯函数
+
+新文件 `Pulse/Models/HistoryCurvePresentation.swift`，名字与 `MemoryDetailPresentation` 并列。实现 PR 不另起第二个同义类型。本 PR 不添加这个文件。
+
+接口只有这三个成员，无存储、无日期、无 VM：
+
+| 成员 | 形 | 契约 |
+| --- | --- | --- |
+| `unavailableText` | `String` 常量 | 恰好「历史曲线 · 当前值暂不可用」 |
+| `accessibilitySuffix` | `String` 常量 | 恰好「，历史曲线，当前值暂不可用」 |
+| `unavailableCaption(current:sampleCount:)` | `(Double?, Int) -> String?` | 下表。非 nil 时返回 `unavailableText` 这个常量本身 |
+
+| current | sampleCount | 返回 |
+| --- | --- | --- |
+| nil | 0 | nil |
+| nil | 1 | nil |
+| nil | ≥ 2，含 2 与满窗 90 | `unavailableText`，多次调用是同一份 |
+| 非 nil，含真实 0 与正数 | 任意，含 0、1、2、90 | nil |
+
+不把 nil 当成 0，不把 `sampleCount` 当成 current，不读 peer rate，不读 `nextID`、日期或环的内容。NaN 与负数若作为非 nil 的 `Double` 传入，与其它非 nil 一样返回 nil；不另立「非法数值」文案。
+
+视图侧每条序列只构造一次：`let caption = HistoryCurvePresentation.unavailableCaption(current:sampleCount:)`。CPU 用上一表的两个 `vm` 字段。网络/磁盘卡用自己的 `rate` 与 `samples.count`。`caption` 同时驱动图上的标记和读屏后缀，避免两套实参。
+
+图上的标记是 `SharedUI.swift` 里一个只接收 `String?` 的无状态视图（建议名 `HistoryCurveUnavailableMark`）。nil 则不产出文字。非 nil 则把传入字符串画出来，标记自己不调用纯函数，也不内嵌这两句字面量。五处 ready 的 Sparkline 分支各自放一个标记；placeholder 分支不放。
+
+### 同形的 Bool 方案（不采用）
+
+同输入可以做成 `showsUnavailable(current:sampleCount:) -> Bool`，真值表与上表相同。Bool 不携带句子，五张卡或标记仍可能各写一遍文案，读屏后缀也可能改用另一句。`String?` 让「出不出现」和可见句子是同一个返回值，后缀只在返回非 nil 时拼接。实现采用 `unavailableCaption`，不再并行一个 Bool。
+
+### 将来登记（本 PR 不改包）
+
+实现 PR 把 `"Models/HistoryCurvePresentation.swift"` 加入 `Package.swift` 的 SamplingCore `sources`。继续排除 `Views/`、`ViewModels/`、`MemorySampler.swift`。不把 `SharedUI.swift`、三个 Overview、`MemoryDashboardVM.swift` 收进该 target。`project.pbxproj` 按 `TopAppLocation.swift` 的方式登记这个新模型（文件引用、组、Sources）。只改 `SharedUI.swift` 不必动 `pbxproj`，它已经在 App 目标里。本 PR 对 `Package.swift` 与 `pbxproj` 的 diff 必须是 0。
+
+## 图上的提示
+
+标记放在该卡 **图区** 内、左上，不放进左侧 200 pt（CPU）或 168 pt（网络/磁盘）的读数列。用 overlay 或等价的不参与布局的叠层，对齐 topLeading，避免把 Sparkline 挤小。曲线左上角可以压住少量像素，这是位置，不是把线或面积变淡，也不是挡住左侧大号「—」。
+
+- 共享内边距是一个字面量，取 4、5 或 6。五卡共用标记，不各写一个数。建议 4：它在已锁区间内，离右侧数值轴和底部时间轴最远。Mac 窄窗若裁切，只改这个共享字面量，仍须落在 4...6。不必再问产品。
+- `.font(.caption2)`、`.foregroundStyle(.secondary)`、`.lineLimit(1)`、`.truncationMode(.tail)`。窄窗截断的是这一句的显示，不换成更短的产品句，不换行。
+- 无背景、无材质、无额外符号。不按 sample 复制。不挂到某个点的 chart annotation。
+- 不给标记或这五处 Sparkline 增加 `withAnimation`、`.animation`、`.transition`，也不给曲线加新的 `.opacity`。`SparklineChart` 里已有的渐变透明度保持原样。
+- `caption` 从非 nil 再变 nil（current 变为 0 或正数，或样本跌破 2）时，标记离开视图，不留透明度 0 的占位，不播动画。连续多个 nil 帧且样本仍不少于 2：每次返回同一个 `unavailableText`，不换句子，不设 `@State` 闩锁。
+
+## 无障碍
+
+主控只要求与可见提示同步。这里把同步写成每张卡一句，避免靠读序把大号「—」和副标题拼成另一句。
+
+同一 `caption`：nil 时不追加；非 nil 时，在该卡唯一的 `accessibilityLabel` 末尾拼接 `accessibilitySuffix`。图上的字与 `SparklineChart` 不再各自带 `accessibilityLabel`。`children: .ignore` 保持，使标记和 Chart 不会再被读出第二遍。
+
+| 卡 | 唯一标签的基句 | 条件成立时 |
+| --- | --- | --- |
+| CPU ready | 保持今天的 `overviewLine` | `overviewLine` + `accessibilitySuffix` |
+| 每张网络 ready 卡 | 该卡已经显示的副标题表达式 `"\(title) · \(NetworkRateText.string(rate))"` | 基句 + `accessibilitySuffix` |
+| 每张磁盘 ready 卡 | `"\(title) · \(DiskRateText.string(rate))"` | 基句 + `accessibilitySuffix` |
+
+CPU 的 `.ignore` 留在 `readyBody`。网络和磁盘今天把 `.ignore` 与一句合并 `overviewLine` 放在两张卡的父 `HStack` 上，单侧 nil 无法只说明一侧，父级若留着还会和子卡各读一次。ready 父级去掉这对修饰，改到每张 `NetworkRateCard` / `DiskRateCard` 外层：每张卡恰好一对 `.ignore` 和一个 label。父级不再设 `accessibilityElement`。可见的合并 `overviewLine` 函数不改，采样支仍用它。
+
+不追加后缀的情况：current 非 nil（含真实 0）、该卡样本不足 2、`.sampling`、`.failed`。采样支保持今天的 `.combine` 与「overview，正在采样…」。失败支不改。样本不足 2 的 ready 卡仍只读基句，即使大号已是「—」。
+
+因此 healthy 的网络/磁盘 ready 会从「父子一句」变成「每张卡一句」。这是五张卡各读一次的结果，不是新文案。基句里的「—」来自现有速率格式化，是这一句的当前值，不是把两个可见 Text 交给读序再拼。
+
+## 为何不必新发布属性
+
+五路 current 与三条 history 都在同一次 accepted success 里写入。下一次 accepted success 若该路变成 0 或正数，现有属性就会换成那个数。视图重新调用 `unavailableCaption` 即得 nil。不需要新的 `@Published`，也不需要 TTL、日期新鲜度、stale 标志或注入的「空洞模式」。
+
+`record` 遇到 nil 保持旧样本。旧点可以跨过被跳过的帧，之后的新点可以再入环。跨帧时采样仍是现有 advance：读失败保持上一基线，读成功替换基线。本期不改这条，也不把 `catmullRom` 连线说成每个旧点都连续，或这些点永不过期。满 90 仍按现有 `removeFirst` 丢掉最旧点。提示只表示「图上是历史曲线，当前值暂不可用」。
+
+提示看的是本帧 current 与 `samples.count`，不是「最后一个 sample 等于 current」。同日期守卫可能丢掉一个真实 0，但 current 已经写成 0 时，提示必须撤。不要为了让这个 0 入环而改守卫。
+
+`HostNetworkLoad.rates` 与 `HostDiskLoad.rates` 今天不会单独让一侧为 nil。真机上两张卡通常一起出现提示，或一起没有。类型仍是两个独立 `Double?`，卡必须按自己的字段判断。测试夹具里的 `(nil, 0)` 只证明纯函数和既有 `record`，不冒充一次真实读失败，也不要求 reader 开始制造单侧 nil。
+
+整页样本 `.failure` 且已有快照时，`loadState` 可以仍是 `.ready`，但失败支不改写 current 与 history。提示不会因为 `samplingFailed` 单独出现；它只跟随已经发布的那一个 current。不把这种 ready 改成整页失败、花式错误或 `recording.gap`。
+
+## 明确不做
+
+- 不增删 `MemoryDashboardVM` 的 `@Published`，保持 23，顺序与现有 `didSet` 两处、`@MainActor` 一处不改。不改 `selectedPid` 的 `didSet`、其中的 `Task { await sampler.setSelectedPid(pid) }`、`loopTask`、`setMemoryPageSort` 的任务、`quitOutcome` / `ProcessQuitSession` 路径。
+- 不改 `MemorySampler` 的快照组装，不改 `SampledFrame` 字段，不改 `HostCPUReader`、`HostNetworkReader`、`HostDiskReader`，不改三份 `advance` 与基线。
+- 不改 `SystemCPUHistory` 的 `reset`、`nextID`、同日期守卫、90 上限与入环。不改 `SystemNetworkHistory` / `SystemDiskHistory` 的转发。不把 nil 写成 0，不清环，不重写环，不加第 91 个点的特殊文案。
+- 不改 `usageHistory`、`MemoryHeroCard`、`PressureCurveCard`、`ProcessDetailSidebar` 的 Sparkline，不把「没有物理内存总量」或 GPU 画成这句提示。不改进程网络「暂不可用」。
+- 不改过滤、排序、上涨、冻结、退出、Top 定位。不改现有曲线插值。不新增动画修饰。
+- 不新增 TTL、新鲜度、stale、注入的 VM 状态或测试模式。不改 placeholder 文案，不把三页采集句统一成一句。
+- 本 PR 不新增文件，不改 `Package.swift`，不改 `project.pbxproj`。
+
+## 实施时的文件
+
+将来获授权的实现 PR 才动这些文件。本 PR 一个都不动。
+
+| 文件 | 动作 |
+| --- | --- |
+| `Pulse/Models/HistoryCurvePresentation.swift` | 新的纯模型。进 SamplingCore `sources`，并写入 `pbxproj` |
+| `Pulse/Views/SharedUI.swift` | 只增加接收 `String?` 的标记。`SparklineChart` 的参数与函数体不改 |
+| `Pulse/Views/CPUOverviewSection.swift` | ready 且样本不少于 2 的分支：一次 `unavailableCaption(vm.systemCpuPercent, vm.cpuHistory.samples.count)`，一个标记；`readyBody` 的唯一 label 按该结果决定是否接后缀 |
+| `Pulse/Views/NetworkOverviewSection.swift` | 两张卡各用自己的 `rate` 与 `samples.count` 调用一次。ready 父级去掉合并读屏，每张卡一对 `.ignore` 与一个 label |
+| `Pulse/Views/DiskOverviewSection.swift` | 与网络相同，字段换成读/写 |
+| 新的 SamplingCore 测试 | 谓词全表，以及下面的真实 history 夹具。不新增 VM 状态 |
+| 新的源码结构测试 | 只读 UTF-8。见测试矩阵 |
+
+`MemoryDashboardVM.swift`、`MemorySampler.swift`、三个 Reader、三个 history 类型、`OverviewCards.swift`、`OverviewSection.swift`、`ProcessDetailSidebar.swift` 不在改动面里。
+
+## 测试矩阵（设计；本 PR 不写、不跑）
+
+实现 PR 的红必须是真的失败。本环境没有执行 `swift test`，没有 Xcode，没有 CI 状态，也不记载 Swift 版本。不要把本节写成已经绿了。
+
+**红：** 生产还没有 `HistoryCurvePresentation` 时，测试直接调用 `unavailableCaption(current:sampleCount:)`。失败应是编译错误。禁止用 `XCTFail`、在测试里复制一份假类型、或放宽「`@Published` 为 23」的既有断言来伪装红。接线测试在三份 Overview 还没有这次调用时断言失败。
+
+**绿：** 补上纯模型与五处 opt-in 之后，同一批测试通过，再跑全量 `swift test`。实现 PR 留下真实日志。本设计 PR 没有这些数字。
+
+纯模型测试建议类型名 `HistoryCurvePresentationTests`，只链接 SamplingCore，不编译 App，不实例化 VM。谓词全表至少覆盖：nil 配 0、1、2、90；真实 0 配这四个 count；一个正数配这四个 count。nil 且 count 为 2 与 90 的返回值等于 `unavailableText`，并且两次调用相等。任一非 nil 返回 nil。
+
+另外用真实 history，不注入模式：
+
+- `SystemCPUHistory`：nil 不入环、真实 0 入环、`limit: 90` 装满后再 `record` nil 则 count 仍为 90。把该环的 `samples.count` 传给 `unavailableCaption`。nil 配满窗得到同一句；随后 current 用 0 或正数调用则得到 nil。既有「nil 跳过、不把 nil 画成 0、reset、同日期」测试不改期望。
+- `SystemNetworkHistory.record` 一帧 `inboundBytesPerSecond: nil`、`outboundBytesPerSecond: 0`（在已有至少两个上行/下行样本之后）。下行环不增加，上行环收下这个 0。对下行 `(nil, inbound.samples.count)` 得到句子，对上行 `(0, outbound.samples.count)` 得到 nil。反向一帧只让上行得到句子。
+- `SystemDiskHistory` 用读 nil / 写 0，以及写 nil / 读 0，同样只让缺的一侧得到句子。
+
+这些 `(nil, 0)` 是测试自己构造的 `HostNetworkRates` / `HostDiskRates`，再交给既有 `record`。不断言 `HostNetworkLoad.rates` 或 `HostDiskLoad.rates` 会返回这种不对称，也不调用 Reader。
+
+源码结构测试建议类型名 `HistoryCurveWiringSourceTests`。它按 `TopAppLocationWiringSourceTests` 的方式 `String(contentsOf:encoding: .utf8)` 读文件，只做结构断言。它约束的是 Mac 视图源码，**不是** Linux 运行时，也不是界面或读屏已经跑过。即使某个 Linux 进程读到了这些 UTF-8，结论也只能写成结构检查。不要为了让 Linux 编译视图而把 `Views/` 收进 SamplingCore。
+
+结构断言：
+
+- 五路实参一一对应上一节的表：CPU 文件恰好一处 `unavailableCaption`，实参是 `systemCpuPercent` 与 `cpuHistory.samples`；网络文件恰好一处，卡内实参是 `rate` 与 `samples.count`，`readyBody` 把 inbound 只配 `networkHistory.inbound`、outbound 只配 `outbound`；磁盘同样，read 对 read、write 对 write。
+- 两句字面量只出现在 `HistoryCurvePresentation.swift`。三个 Overview 引用 `unavailableCaption` 与 `accessibilitySuffix`，不粘贴字面量。`SharedUI.swift` 的标记只接收 `String?`，不调用纯函数，也不出现这两句字面量或 `accessibilitySuffix`。
+- 标记只出现在三文件里样本不少于 2 的 Sparkline 分支，每支一个。placeholder 分支、`samplingBody`、`failureBody` 不含标记与 `unavailableCaption`。
+- 标记含 `.caption2`、`.secondary`、`.lineLimit(1)`、尾部截断，以及一个属于 {4, 5, 6} 的 padding 字面量；不含 `withAnimation`、`.animation`、`.transition`、背景材质，也不给 Sparkline 加 `.opacity`。
+- CPU `readyBody` 仍是一对 `.ignore` 与一个 `accessibilityLabel`，后缀表达式依赖这次 caption。网络/磁盘 ready 父级不再有 `accessibilityLabel`；每张 Rate 卡一对 `.ignore` 与一个 label，后缀使用同一个 caption。采样支仍是 `.combine`。
+- `SparklineChart` 的声明仍是四个参数。`OverviewCards.swift`、`OverviewSection.swift`、`ProcessDetailSidebar.swift` 不含 `HistoryCurvePresentation`、标记名和那两句字面量。
+- `Package.swift` 的 sources 含新模型路径，仍排除 `ViewModels` 与 `Views`，不含 `MemoryDashboardVM.swift`。`pbxproj` 含新文件的 Sources 条目。`MemoryDashboardVM.swift` 不含该类型名，`@Published` 仍为 23。
+
+既有把 `@Published` 钉在 23 的测试保持 23：`MemoryPageFilterClearWiringSourceTests`、`MemoryDashboardVMSortWiringSourceTests`、`MemoryDetailSidebarWiringSourceTests`、`ProcessQuitSessionWiringSourceTests`、`ResourceDetailPageSourceTests`，以及二十期的 `TopAppLocationWiringSourceTests`。不把它们改成 24。
+
+源码断言通过不等于 ViewInspector 跑过，不等于 VM 在 MainActor 上跑过，不等于读屏或窄窗看过。
+
+Mac 上与仓库既有单测同一入口，没有另写脚本。实现 PR 可以执行：
+
+- `swift test --filter HistoryCurvePresentationTests`
+- `swift test --filter HistoryCurveWiringSourceTests`
+
+第二条是 Mac 视图的结构约束。本设计 PR 没有执行这两条，也没有全量 `swift test`。
+
+## 风险
+
+| 风险 | 应对 |
+| --- | --- |
+| 在 `SparklineChart` 内默认显示这句 | 声明仍是 `samples`、`tint`、`domain`、`formatY` 四个参数。标记 opt-in，内存与进程调用点不引用 |
+| 五卡各写条件和句子 | 字面量只在纯模型。每卡一次函数调用，标记只接收 `String?` |
+| 把 nil 画成 0，或清掉环来「消除误导」 | 不改 `record`。提示是叠层 |
+| 父级 overview 与子卡 label 各读一次 | ready 父级去掉读屏修饰；卡内 `children: .ignore`，标记与 Chart 无自己的 label |
+| 合并 overview 末尾加后缀，单侧 nil 却两路都被说成历史 | 后缀接在该卡自己的基句上。下行 nil、上行 0 只有下行为非 nil caption |
+| 用最后一个 sample 是否等于 current 来撤提示 | 同日期守卫可以丢掉刚写入的 0。撤提示只看 current 非 nil |
+| 为跨帧连线改 baseline，或宣称旧点连续、永不过期 | advance 与 90 上限不动。文案不作这两种承诺 |
+| 把夹具 `(nil, 0)` 写成真实读失败 | 夹具只打 history 与纯函数。不改 `rates(previous:current:)` |
+| 样本不足 2 或失败/采样页也叠这句 | 调用只在 ready 的 Sparkline 分支 |
+| 新 `@Published` 或 `@State` 记住提示 | 23 不变。无闩锁。下一帧 current 非 nil，视图重算即撤 |
+| 源码测试被说成 Linux 界面已过或 Mac 已读屏 | 下节 |
+
+## 验收
+
+- [ ] 五路 current/samples 与上表一致，卡内只用自己的 `rate` 与 `samples.count`。下行 nil 且上行 0 时只有下行有提示；读/写同样
+- [ ] nil 且 count 为 0 或 1：原 placeholder，无提示，读屏不追加后缀。nil 且 count 为 2 或 90（含环已满）：图上是同一句「历史曲线 · 当前值暂不可用」，读屏基句追加「，历史曲线，当前值暂不可用」
+- [ ] 连续 nil 仍是这一句。current 变为真实 0 或正数：标记与后缀在同一次视图更新消失，无动画。大号、副标题、domain、曲线透明度保持今天的实现
+- [ ] 图区左上，共享内边距是 4、5、6 之一，`.caption2` + `.secondary`，单行尾部截断，每卡一个，无背景、无新符号。不遮左侧大号「—」，不把主图变淡
+- [ ] 每张 ready 卡一个 `.ignore` 与一个 label，标记和 Chart 不另读。采样与失败不追加。网络/磁盘 ready 父级不再持有合并 label
+- [ ] `@Published` 仍是列出的 23 个。history 的 nil 跳过、不写 0、同日期、90 与 reset，以及三份 advance / Reader / Sampler 不改
+- [ ] `MemoryHeroCard`、`PressureCurveCard`、`ProcessDetailSidebar` 的 Sparkline 无此提示。缺内存总量与 GPU 不纳入
+- [ ] 实现 PR 有真实编译失败的红，以及纯模型与源码结构的日志。这些日志不是 Mac 窄窗，也不是读屏
+
+## Linux 可测与 Mac 剩余
+
+本 PR 不跑测试。将来的实现 PR 里，Linux 能编译并执行的是 SamplingCore 中的 `unavailableCaption`，以及 `SystemCPUHistory` / `SystemNetworkHistory` / `SystemDiskHistory` 的既有 `record`。VM、SwiftUI、Accessibility 不在这个目标里。
+
+Linux 不能编译 macOS App，不能渲染这些 Overview，不能跑读屏。源码结构测试即使在 Linux 上读到文件，也只证明文本，不证明 caption2 的字号、单行是否被裁、有没有挡住「—」或坐标轴、读屏是否只读一次、Tab 离开再回来是否仍跟数据。
+
+留给 Mac、Xcode 构建后的界面验收，本设计不勾成已过：
+
+- 窄窗下共享内边距仍在 4...6，caption2 单行，截断而不换行
+- 提示不盖住左侧大号「—」，不盖住底部时间轴和右侧数值轴
+- 读屏每张 ready 卡一句；非 nil、样本不足 2、采样、失败都不多出历史句；标记与图不双读
+- Tab 切走再回来，提示只跟当前 current 与样本数，不粘住
+- 真机上一次当前值为 nil、环里已有至少两点，能看见提示；下一次当前值为 0 或正数，提示消失。这不是夹具 `(nil, 0)` 的替代说明
+
+夹具纯模型不冒充真实读取缺失。本设计 PR 没有 Mac 日志，没有 `swift test` 日志，没有 Xcode 构建。
+
+## 工期
+
+若另行获授权，改动面是一个纯模型、一个标记、三份 ready 接线，以及谓词与源码结构测试。粗量级大约半天到一天。这是量级，不是承诺，也不包括窄窗或读屏返工里尚未看见的调整。那些调整仍须留在已锁文案和 4...6 pt 内。没有硬伤就不必把采样或环改成第二刀。
+
 
