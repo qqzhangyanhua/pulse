@@ -4,6 +4,8 @@ struct ProcessDetailSidebar: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
     /// Sampling-window disclosure. View-local, collapsed. Not stored on the VM.
     @State private var samplingWindowExpanded = false
+    /// Last positive physical total for the sidebar subject, plus the locked freeze.
+    @State private var lastLiveTotal = LastLiveTotalState.empty
 
     var body: some View {
         let sidebar = vm.sidebar
@@ -18,6 +20,57 @@ struct ProcessDetailSidebar: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(PulsePalette.sidebar)
+        .onAppear(perform: acceptCurrentSidebarLiveTotal)
+        .task { acceptCurrentSidebarLiveTotal() }
+        .onChange(of: vm.snapshot) { _, _ in
+            acceptSnapshotTotal()
+        }
+        .onChange(of: sidebarSubjectBeat) { previous, current in
+            acceptSidebarBeat(previous: previous, current: current)
+        }
+    }
+
+    private var sidebarSubjectBeat: SidebarSubjectBeat {
+        let detail = vm.sidebar.detail
+        return SidebarSubjectBeat(
+            subjectPid: vm.sidebarSubjectPid,
+            showsAbsentRecord: vm.sidebar.showsAbsentRecord,
+            sidebarDetailPid: detail?.row.pid,
+            sidebarDetailMemoryBytes: detail?.row.memoryBytes,
+            hasSidebarDetail: detail != nil,
+            liveDetailPid: vm.detail?.row.pid,
+            listSelectedPid: vm.selectedPid,
+            sidebarSeriesEmpty: detail.map { $0.memorySeries.isEmpty && $0.cpuSeries.isEmpty } ?? false
+        )
+    }
+
+    private func currentLiveGate() -> SidebarLiveGate {
+        SidebarLiveGate(beat: sidebarSubjectBeat, snapshotTotalBytes: vm.snapshot?.totalBytes)
+    }
+
+    private func acceptCurrentSidebarLiveTotal() {
+        guard let event = LastLiveTotalReducer.eventForCurrentSidebar(currentLiveGate()) else { return }
+        reduceLastLive([event])
+    }
+
+    private func acceptSnapshotTotal() {
+        acceptCurrentSidebarLiveTotal()
+    }
+
+    private func acceptSidebarBeat(previous: SidebarSubjectBeat, current: SidebarSubjectBeat) {
+        reduceLastLive(
+            LastLiveTotalReducer.eventsForSidebar(
+                previous: previous,
+                current: current,
+                snapshotTotalBytes: vm.snapshot?.totalBytes
+            )
+        )
+    }
+
+    private func reduceLastLive(_ events: [LastLiveTotalEvent]) {
+        for event in events {
+            lastLiveTotal = LastLiveTotalReducer.step(lastLiveTotal, event)
+        }
     }
 
     private var emptyPrompt: String {
@@ -98,20 +151,32 @@ struct ProcessDetailSidebar: View {
     }
 
     private func detailBody(_ detail: ProcessDetail) -> some View {
-        ScrollView {
+        let projection = displayedProjection(detail)
+        return ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 header(detail)
-                metrics(detail)
-                if let slot = vm.memoryGrowthSlot {
-                    memoryTrend(slot)
+                switch projection {
+                case .memoryExisting:
+                    metrics(detail)
+                    if let slot = vm.memoryGrowthSlot {
+                        memoryTrend(slot)
+                    }
+                    if vm.sidebar.showsLiveTrend && vm.selectedPage == .memory {
+                        samplingWindowDisclosure
+                    }
+                    memoryChart(detail)
+                        .frame(height: 168)
+                    cpuChart(detail)
+                        .frame(height: 124)
+                case .cpu(let cpu):
+                    cpuResourceDetail(detail, cpu: cpu)
+                case .network(let network):
+                    networkResourceDetail(detail, network: network)
+                case .disk(let disk):
+                    diskResourceDetail(detail, disk: disk)
+                case .noResourceUpgrade:
+                    noResourceUpgradeDetail(detail)
                 }
-                if vm.sidebar.showsLiveTrend && vm.selectedPage == .memory {
-                    samplingWindowDisclosure
-                }
-                memoryChart(detail)
-                    .frame(height: 168)
-                cpuChart(detail)
-                    .frame(height: 124)
             }
             .padding(16)
         }
@@ -119,6 +184,102 @@ struct ProcessDetailSidebar: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             footer
         }
+    }
+
+    private func displayedProjection(_ detail: ProcessDetail) -> ResourceDetailProjection {
+        ResourceDetailPageProjection.project(
+            page: vm.selectedPage,
+            detail: detail,
+            physicalTotalBytes: vm.snapshot?.totalBytes,
+            frozen: LastLiveTotalReducer.frozenSemanticsForProjection(
+                showsAbsentRecord: vm.sidebar.showsAbsentRecord,
+                state: lastLiveTotal,
+                detailPid: detail.row.pid,
+                detailMemoryBytes: detail.row.memoryBytes
+            )
+        )
+    }
+
+    @ViewBuilder
+    private func cpuResourceDetail(_ detail: ProcessDetail, cpu: CPUDetailProjection) -> some View {
+        cpuMetric(cpuPercent: cpu.cpuPercent)
+        cpuChart(detail)
+            .frame(height: 124)
+        memoryMetric(cpu.memory, bytes: cpu.memoryBytes)
+        memoryChart(detail)
+            .frame(height: 168)
+    }
+
+    @ViewBuilder
+    private func networkResourceDetail(_ detail: ProcessDetail, network: NetworkDetailProjection) -> some View {
+        switch network.notice {
+        case .unavailable:
+            Text(ResourceDetailPageProjection.processNetworkUnavailable)
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        HStack(alignment: .top, spacing: 10) {
+            cpuMetric(cpuPercent: network.cpuPercent)
+            memoryMetric(network.memory, bytes: network.memoryBytes)
+        }
+        memoryChart(detail)
+            .frame(height: 168)
+    }
+
+    @ViewBuilder
+    private func diskResourceDetail(_ detail: ProcessDetail, disk: DiskDetailProjection) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            diskRateMetric(title: DiskPageCopy.readTitle, bytesPerSecond: disk.readBytesPerSecond)
+            diskRateMetric(title: DiskPageCopy.writeTitle, bytesPerSecond: disk.writeBytesPerSecond)
+        }
+        HStack(alignment: .top, spacing: 10) {
+            cpuMetric(cpuPercent: disk.cpuPercent)
+            memoryMetric(disk.memory, bytes: disk.memoryBytes)
+        }
+        memoryChart(detail)
+            .frame(height: 168)
+    }
+
+    @ViewBuilder
+    private func noResourceUpgradeDetail(_ detail: ProcessDetail) -> some View {
+        metrics(detail)
+        memoryChart(detail)
+            .frame(height: 168)
+    }
+
+    private func cpuMetric(cpuPercent: Double?) -> some View {
+        SidebarMetric(
+            systemImage: "cpu",
+            title: "CPU",
+            tint: PulsePalette.chartCPU,
+            value: ByteFormat.cpu(cpuPercent),
+            caption: ByteFormat.coreLoad(
+                cpuPercent: cpuPercent,
+                processorCount: MachineInfo.processorCount
+            )
+        )
+    }
+
+    private func memoryMetric(_ memory: MemoryDetailFieldCopy, bytes: UInt64) -> some View {
+        SidebarMetric(
+            systemImage: "memorychip",
+            title: memory.title,
+            tint: PulsePalette.accent,
+            value: ByteFormat.memory(bytes),
+            caption: memory.caption,
+            help: memory.help
+        )
+    }
+
+    private func diskRateMetric(title: String, bytesPerSecond: Double?) -> some View {
+        SidebarMetric(
+            systemImage: "internaldrive",
+            title: title,
+            tint: PulsePalette.chartDisk,
+            value: DiskRateText.string(bytesPerSecond),
+            caption: ""
+        )
     }
 
     private func header(_ detail: ProcessDetail) -> some View {
@@ -198,10 +359,20 @@ struct ProcessDetailSidebar: View {
     }
 
     private func memoryField(_ row: ProcessRow) -> MemoryDetailFieldCopy {
-        MemoryDetailPresentation.field(
+        let frozen = LastLiveTotalReducer.frozenSemanticsForProjection(
+            showsAbsentRecord: vm.sidebar.showsAbsentRecord,
+            state: lastLiveTotal,
+            detailPid: row.pid,
+            detailMemoryBytes: row.memoryBytes
+        )
+        return MemoryDetailPresentation.field(
             page: vm.selectedPage,
             part: row.memoryBytes,
-            total: vm.snapshot?.totalBytes
+            total: ResourceDetailPageProjection.memoryTotal(
+                detailPid: row.pid,
+                physicalTotalBytes: vm.snapshot?.totalBytes,
+                frozen: frozen
+            )
         )
     }
 
