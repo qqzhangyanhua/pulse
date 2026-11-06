@@ -59,7 +59,7 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         XCTAssertFalse(source.contains("Timer"))
         XCTAssertFalse(source.contains("NSAlert"))
         XCTAssertEqual(occurrenceCount(of: "ProcessQuitSession.applySample", in: source), 1)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 22)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 23, "phase20 adds only topAppLocateReveal")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 2)
     }
 

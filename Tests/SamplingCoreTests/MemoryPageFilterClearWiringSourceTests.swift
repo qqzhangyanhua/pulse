@@ -73,7 +73,16 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         XCTAssertFalse(filterLine.contains("didSet"), "do not add didSet on filter")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 2, "no new didSet")
         XCTAssertFalse(source.contains("onChange"), "VM gains no onChange")
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 22, "no new published phase")
+        XCTAssertEqual(
+            occurrenceCount(of: "@Published", in: source),
+            23,
+            "topAppLocateReveal is the only added published property"
+        )
+        XCTAssertEqual(
+            try lineContaining("var topAppLocateReveal", in: source).trimmingCharacters(in: .whitespaces),
+            "@Published private(set) var topAppLocateReveal: TopAppLocation.Reveal?"
+        )
+        XCTAssertFalse(try lineContaining("var topAppLocateReveal", in: source).contains("didSet"))
 
         let risingObserver = try braceBody(after: "@Published var risingOnlyFilter", in: source)
         XCTAssertTrue(risingObserver.contains("didSet"))

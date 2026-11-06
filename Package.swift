@@ -43,6 +43,7 @@ let package = Package(
                 "Models/MemoryGrowthRisingFilter.swift",
                 "Models/MemoryTablePhase.swift",
                 "Models/ProcessSelection.swift",
+                "Models/TopAppLocation.swift",
                 "Models/ProcessQuitOutcome.swift",
                 "Models/ProcessQuitSession.swift",
                 "Models/CPUPage.swift",

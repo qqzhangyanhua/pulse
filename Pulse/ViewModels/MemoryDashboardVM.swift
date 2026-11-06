@@ -34,6 +34,8 @@ final class MemoryDashboardVM: ObservableObject {
             applyRisingOnlySelection()
         }
     }
+    /// One-shot memory Top card reveal. The next locate replaces it.
+    @Published private(set) var topAppLocateReveal: TopAppLocation.Reveal?
     @Published private(set) var navigation = DashboardNavigation()
     /// Last memory-page sort, readable on the MainActor. Not a second published sort field.
     private var publication = MemoryPageSortPublication()
@@ -75,6 +77,11 @@ final class MemoryDashboardVM: ObservableObject {
             risingOnly: risingOnlyFilter,
             seriesByPid: topMemorySeries
         )
+    }
+
+    /// Visible rows in the current table sort. Not stored and not published.
+    var sortedRows: [ProcessRow] {
+        tableSort.ordered(visibleRows)
     }
 
     /// Strip B. Unfiltered `rows` ordered by the published memory-page sort.
@@ -147,6 +154,25 @@ final class MemoryDashboardVM: ObservableObject {
     func selectPidIfPresent(_ pid: Int32) {
         guard let accepted = ProcessSelection.acceptedPid(pid, in: rows) else { return }
         selectedPid = accepted
+    }
+
+    /// Memory Top card. A nil plan writes nothing.
+    func locateMemoryTopApp(name: String, pid: Int32) {
+        guard let plan = TopAppLocation.plan(
+            name: name,
+            pid: pid,
+            rows: rows,
+            page: selectedPage,
+            currentFilter: filter,
+            currentRisingOnly: risingOnlyFilter,
+            previousReveal: topAppLocateReveal
+        ) else { return }
+        if case .replace(let nextName) = plan.nameFilter {
+            filter = nextName
+        }
+        risingOnlyFilter = false
+        selectPidIfPresent(plan.acceptedPid)
+        topAppLocateReveal = plan.reveal
     }
 
     /// Process-list identity to reveal. Nil when nothing is selected or the pid left `rows`.

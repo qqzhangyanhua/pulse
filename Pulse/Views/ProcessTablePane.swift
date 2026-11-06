@@ -25,10 +25,6 @@ struct ProcessTablePane: View {
         !vm.rows.isEmpty
     }
 
-    private var sortedRows: [ProcessRow] {
-        vm.tableSort.ordered(vm.visibleRows)
-    }
-
     private var cpuPhase: CPUPagePhase {
         CPUPagePhaseResolver.resolve(
             loadState: vm.loadState,
@@ -114,7 +110,7 @@ struct ProcessTablePane: View {
             page: vm.selectedPage,
             loadState: vm.loadState,
             processCount: vm.rows.count,
-            visibleCount: sortedRows.count,
+            visibleCount: vm.sortedRows.count,
             hasActiveNameFilter: vm.hasActiveFilter,
             risingOnly: vm.risingOnlyFilter,
             processListFailed: vm.processListFailed
@@ -250,7 +246,7 @@ struct ProcessTablePane: View {
 
     private var processList: some View {
         ScrollViewReader { proxy in
-            List(sortedRows, selection: $vm.selectedPid) { row in
+            List(vm.sortedRows, selection: $vm.selectedPid) { row in
                 ProcessLine(
                     row: row,
                     selected: vm.selectedPid == row.pid,
@@ -270,6 +266,10 @@ struct ProcessTablePane: View {
             .onChange(of: vm.processListScrollTarget) { _, _ in
                 revealProcessListTarget(proxy)
             }
+            .onChange(of: vm.topAppLocateReveal) { _, request in
+                guard let request else { return }
+                revealTopApp(request: request, proxy: proxy)
+            }
         }
     }
 
@@ -278,6 +278,13 @@ struct ProcessTablePane: View {
         guard let target = vm.processListScrollTarget else { return }
         DispatchQueue.main.async {
             proxy.scrollTo(target, anchor: .center)
+        }
+    }
+
+    private func revealTopApp(request: TopAppLocation.Reveal, proxy: ScrollViewProxy) {
+        guard vm.sortedRows.contains(where: { $0.pid == request.pid }) else { return }
+        DispatchQueue.main.async {
+            proxy.scrollTo(request.pid, anchor: .center)
         }
     }
 

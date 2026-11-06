@@ -122,6 +122,7 @@ struct OverviewSection: View {
         let available = snapshot.totalBytes > snapshot.usedBytes
             ? snapshot.totalBytes - snapshot.usedBytes
             : 0
+        let consumer = TopConsumer.leading(in: vm.rows)
 
         return VStack(spacing: 12) {
             HStack(spacing: 12) {
@@ -154,8 +155,9 @@ struct OverviewSection: View {
                     caption: "未采样",
                     iconColor: .secondary
                 )
-                TopAppCard(consumer: TopConsumer.leading(in: vm.rows)) { pid in
-                    vm.selectedPid = pid
+                TopAppCard(consumer: consumer) { pid in
+                    guard let consumer else { return }
+                    vm.locateMemoryTopApp(name: consumer.name, pid: pid)
                 }
             }
             .frame(height: 104)
