@@ -192,7 +192,8 @@ struct MenuBarPopoverSnapshot: Equatable, Sendable {
     let pressure: PressureLevel?
     /// Nil when there is no snapshot or the latest sample failed. Never a fake 0.
     let usedBytes: UInt64?
-    /// At most `MenuBarPopoverShell.maxProcessRows`, memory descending. Empty — never padded.
+    /// At most `MenuBarPopoverShell.maxProcessRows` from the published memory-page sort.
+    /// Empty — never padded. Rows still show name + memory, not PID.
     let processes: [MenuBarPopoverProcess]
 
     static let empty = MenuBarPopoverSnapshot(pressure: nil, usedBytes: nil, processes: [])
@@ -235,12 +236,13 @@ struct MenuBarPopoverSnapshot: Equatable, Sendable {
         usedBytes: UInt64?,
         samplingFailed: Bool,
         rows: [ProcessRow],
-        processListFailed: Bool
+        processListFailed: Bool,
+        sort: ProcessTableSort = ProcessTableSort.defaultSort(for: .memory)
     ) -> MenuBarPopoverSnapshot {
         let hostReadable = !samplingFailed
         let resolvedPressure = hostReadable ? pressure : nil
         let resolvedUsedBytes = hostReadable ? usedBytes : nil
-        let processes = processListFailed ? [] : topProcesses(from: rows)
+        let processes = processListFailed ? [] : topProcesses(from: rows, sort: sort)
         return MenuBarPopoverSnapshot(
             pressure: resolvedPressure,
             usedBytes: resolvedUsedBytes,
@@ -248,20 +250,15 @@ struct MenuBarPopoverSnapshot: Equatable, Sendable {
         )
     }
 
-    /// Sampler already sorts this way; the projection repeats it so a caller cannot
-    /// accidentally feed the main-window table sort or a filtered slice.
-    static func topProcesses(from rows: [ProcessRow]) -> [MenuBarPopoverProcess] {
-        rows
-            .sorted { lhs, rhs in
-                if lhs.memoryBytes != rhs.memoryBytes {
-                    return lhs.memoryBytes > rhs.memoryBytes
-                }
-                return lhs.pid < rhs.pid
-            }
-            .prefix(MenuBarPopoverShell.maxProcessRows)
-            .map { row in
-                MenuBarPopoverProcess(pid: row.pid, name: row.name, memoryBytes: row.memoryBytes)
-            }
+    /// Same `ProcessTableSort.ordered` as the memory-page table, then `prefix(3)`.
+    /// Callers pass unfiltered `rows`; this does not read a name or rising-only filter.
+    static func topProcesses(
+        from rows: [ProcessRow],
+        sort: ProcessTableSort
+    ) -> [MenuBarPopoverProcess] {
+        Array(sort.ordered(rows).prefix(MenuBarPopoverShell.maxProcessRows)).map { row in
+            MenuBarPopoverProcess(pid: row.pid, name: row.name, memoryBytes: row.memoryBytes)
+        }
     }
 }
 

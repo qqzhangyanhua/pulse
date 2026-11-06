@@ -109,12 +109,16 @@ struct ProcessTableSort: Equatable, Sendable {
         return ProcessTableSort(column: column, descending: column != .name)
     }
 
+    /// Primary column follows `descending`. Equal primary keys break ties by pid
+    /// ascending, which is not flipped by `descending`. There is no PID column.
     func ordered(_ rows: [ProcessRow]) -> [ProcessRow] {
         rows.sorted { lhs, rhs in
             let relation = compare(lhs, rhs)
-            if relation == .orderedSame { return false }
-            let lhsFirst = relation == .orderedAscending
-            return descending ? !lhsFirst : lhsFirst
+            if relation != .orderedSame {
+                let lhsFirst = relation == .orderedAscending
+                return descending ? !lhsFirst : lhsFirst
+            }
+            return lhs.pid < rhs.pid
         }
     }
 
