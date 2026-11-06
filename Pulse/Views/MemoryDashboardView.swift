@@ -37,6 +37,7 @@ struct MemoryDashboardView: View {
                     Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)
                         .toggleStyle(.switch)
                         .controlSize(.small)
+                        .help(MemoryGrowthListCopy.help)
                 }
                 AppFilterField(text: $vm.filter)
             }
