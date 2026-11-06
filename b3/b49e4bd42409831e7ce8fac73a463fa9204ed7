@@ -1,0 +1,70 @@
+Tests/SamplingCoreTests/TopAppLocationWiringSourceTests.swift
+  s_d2968d807ef52f::t_1a5c79c1fd5889 72
+Tests/SamplingCoreTests/ResourceDetailPageSourceTests.swift
+  s_d2968d807ef52f::t_4a9abe039537bb 156
+  s_d2968d807ef52f::t_1961c1a97ed188 54-55
+Tests/SamplingCoreTests/HistoryCurveWiringSourceTests.swift
+  s_d2968d807ef52f::t_40daadc26d22d3 189
+Tests/SamplingCoreTests/MemoryDetailSidebarWiringSourceTests.swift
+  s_d2968d807ef52f::t_ad9ea63b5504d0 99
+Pulse/Models/MemoryModels.swift
+  s_d2968d807ef52f::t_9bf0790fe098e8 172-173,189-190,200
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_d2968d807ef52f::t_add5e195348e99 109
+Tests/SamplingCoreTests/CPULoadTests.swift
+  s_d2968d807ef52f::t_23386d15c6ee2e 114-117,135,158-210,212-266
+Tests/SamplingCoreTests/CPUPageTests.swift
+  s_d2968d807ef52f::t_1ea69449c41526 335-359
+  s_d2968d807ef52f::t_b6eb72ce9d8460 18-57
+Pulse/Models/CPUPage.swift
+  s_d2968d807ef52f::t_b165b16741b730 33-36
+Tests/SamplingCoreTests/MenuBarStatusTests.swift
+  s_d2968d807ef52f::t_abe3c52e892351 160-217
+Pulse/Views/CPUOverviewSection.swift
+  s_d2968d807ef52f::t_1791794330ff7d 76-79,91,97,99,101
+Pulse/Views/ProcessDetailSidebar.swift
+  s_d2968d807ef52f::t_723b3d93c0a7cc 221
+Pulse/Models/NetworkPage.swift
+  s_d2968d807ef52f::t_4d59c9aa37e78d 53-54
+Pulse/ViewModels/MemoryDashboardVM.swift
+  s_d2968d807ef52f::t_a48bc20a724d19 9-10,344
+Pulse/Views/ProcessTablePane.swift
+  s_d2968d807ef52f::t_23e57959528da1 361
+Tests/SamplingCoreTests/MemoryDashboardVMSortWiringSourceTests.swift
+  s_d2968d807ef52f::t_a5cfe9351b31d7 123
+Tests/SamplingCoreTests/MemoryPageFilterClearWiringSourceTests.swift
+  s_d2968d807ef52f::t_26d21a621cf5e6 78
+Tests/SamplingCoreTests/NetworkPageTests.swift
+  s_d2968d807ef52f::t_30e785d4194be0 37-54,56-62
+  s_d2968d807ef52f::t_ed4b5ce7408b75 55,219-233
+Pulse/MenuBar/MenuBarStatus.swift
+  s_d2968d807ef52f::t_9f8d7e970c550a 77-78
+Pulse/MenuBar/MenuBarPopoverView.swift
+  s_d2968d807ef52f::t_d5687ab92c8e92 88-97,99-102,104-108,111-113
+  s_d2968d807ef52f::t_382b8e795d949d 66-68,70,72-87
+Pulse/Sampling/CPULoad.swift
+  s_d2968d807ef52f::t_e7152ea0f040ea 70-99
+Pulse/Sampling/MemorySampler.swift
+  s_d2968d807ef52f::t_1e646462c4fdb3 15,66,82-83,173-174,185-190
+  s_d2968d807ef52f::t_fe6ce28ca98acb 191-193
+Tests/SamplingCoreTests/ProcessQuitSessionWiringSourceTests.swift
+  s_d2968d807ef52f::t_c1bdbe7d1be63b 62,214
+Pulse/Sampling/HostCPUReader.swift
+  s_d2968d807ef52f::t_996f10f1cafa35 26-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "b3b49e4bd42409831e7ce8fac73a463fa9204ed7",
+  "prompts": {},
+  "sessions": {
+    "s_d2968d807ef52f": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b13b-2176-7551-b008-0c98a1bbcaec",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
