@@ -22,7 +22,7 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var networkHistory = SystemNetworkHistory()
     @Published private(set) var diskHistory = SystemDiskHistory()
     @Published var filter = ""
-    /// Memory-tab only. Default OFF. Next knife binds the toolbar toggle; this knife is projection.
+    /// Memory-tab only. Default OFF. Session-scoped; not a Sampler or preference write.
     @Published var risingOnlyFilter = false {
         didSet {
             guard oldValue != risingOnlyFilter else { return }
