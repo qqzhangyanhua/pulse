@@ -4,20 +4,18 @@ struct ProcessDetailSidebar: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
 
     var body: some View {
+        let sidebar = vm.sidebar
         Group {
-            if let detail = vm.detail ?? selectedFallback {
+            if let detail = sidebar.detail {
                 detailBody(detail)
+            } else if sidebar.showsAbsentRecord {
+                absentRecordBody
             } else {
                 emptyBody
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(PulsePalette.sidebar)
-    }
-
-    private var selectedFallback: ProcessDetail? {
-        guard let row = vm.selectedRow else { return nil }
-        return ProcessDetail(row: row, memorySeries: [], cpuSeries: [])
     }
 
     private var emptyPrompt: String {
@@ -65,7 +63,36 @@ struct ProcessDetailSidebar: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(24)
+            .padding(24)
+    }
+
+    private var absentRecordBody: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                closeButton
+            }
+            .padding(16)
+            Spacer(minLength: 0)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            footer
+        }
+    }
+
+    private var closeButton: some View {
+        Button {
+            vm.dismissSidebar()
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.secondary)
+                .frame(width: 22, height: 22)
+                .background(Color.white.opacity(0.06), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("关闭详情")
+        .help("关闭详情")
     }
 
     private func detailBody(_ detail: ProcessDetail) -> some View {
@@ -105,18 +132,7 @@ struct ProcessDetailSidebar: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
-            Button {
-                vm.selectedPid = nil
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 22, height: 22)
-                    .background(Color.white.opacity(0.06), in: Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("关闭详情")
-            .help("关闭详情")
+            closeButton
         }
     }
 
@@ -235,14 +251,21 @@ struct ProcessDetailSidebar: View {
     }
 
     private var footer: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let quitMessage = vm.quitMessage {
+        let sidebar = vm.sidebar
+        return VStack(alignment: .leading, spacing: 8) {
+            if let absentLabel = sidebar.absentLabel {
+                Text(absentLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let quitMessage = sidebar.quitMessage {
                 Text(quitMessage)
                     .font(.caption)
                     .foregroundStyle(PulsePalette.pressureElevated)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if vm.quitPhase == .quitting {
+            if sidebar.showsQuittingSpinner {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
@@ -262,7 +285,7 @@ struct ProcessDetailSidebar: View {
                 .buttonStyle(.bordered)
                 .tint(PulsePalette.destructive)
                 .controlSize(.large)
-                .disabled(vm.quitPhase == .quitting)
+                .disabled(!sidebar.buttonsEnabled)
 
                 Button {
                     Task { await vm.quitSelected() }
@@ -273,7 +296,7 @@ struct ProcessDetailSidebar: View {
                 .buttonStyle(.borderedProminent)
                 .tint(PulsePalette.action)
                 .controlSize(.large)
-                .disabled(vm.quitPhase == .quitting)
+                .disabled(!sidebar.buttonsEnabled)
             }
         }
         .padding(16)

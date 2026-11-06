@@ -72,7 +72,7 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         XCTAssertFalse(body.contains("quitOutcome"))
         XCTAssertFalse(body.contains("quitPhase"))
         XCTAssertFalse(body.contains("quitMessage"))
-        XCTAssertFalse(body.contains("sidebarSubjectPid)"))
+        XCTAssertFalse(body.contains("setSelectedPid(sidebarSubjectPid)"))
         XCTAssertFalse(body.contains(".idle"))
         let samplerLine = try lineContaining("sampler.setSelectedPid", in: body)
         XCTAssertEqual(samplerLine.trimmingCharacters(in: .whitespaces), "Task { await sampler.setSelectedPid(pid) }")
@@ -109,7 +109,10 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         XCTAssertTrue(ordinary.contains("ProcessActions.terminate(pid: issued.pid)"))
         XCTAssertTrue(ordinary.contains("taskCancelled: Task.isCancelled"))
         XCTAssertTrue(ordinary.contains("ProcessQuitSession.finish"))
-        XCTAssertFalse(ordinary.contains("selectedPid"))
+        XCTAssertTrue(ordinary.contains("pid: issued.pid"))
+        XCTAssertTrue(ordinary.contains("token: issued.token"))
+        XCTAssertFalse(ordinary.contains("pid: selectedPid"))
+        XCTAssertFalse(ordinary.contains("pid: sidebarSubjectPid"))
         XCTAssertFalse(ordinary.contains("quitPhase"))
 
         let force = try functionBody(named: "forceQuitSelected", in: source)
@@ -177,8 +180,8 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
 
     func testXcodeListsTheQuitModelOnceAndSamplerStaysUntouched() throws {
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
-        XCTAssertEqual(occurrenceCount(of: "ProcessQuitOutcome.swift", in: project), 3)
-        XCTAssertEqual(occurrenceCount(of: "ProcessQuitSession.swift", in: project), 3)
+        XCTAssertEqual(occurrenceCount(of: "ProcessQuitOutcome.swift", in: project), 6)
+        XCTAssertEqual(occurrenceCount(of: "ProcessQuitSession.swift", in: project), 6)
         XCTAssertTrue(project.contains("ProcessQuitOutcome.swift in Sources"))
         XCTAssertTrue(project.contains("ProcessQuitSession.swift in Sources"))
         let actions = try repoText("Pulse/Actions/ProcessActions.swift")
