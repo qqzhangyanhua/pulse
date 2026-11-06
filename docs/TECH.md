@@ -5399,15 +5399,19 @@ CPU（默认 `limit` 90，除非某条要显式写另一个 limit；下面的 90
 
 # Pulse 二十二期技术设计（首包：Top5 近期上涨趋势的同一份短说明）
 
-> 一期至二十一期正文不改写。本节只给内存页两处已有表面补**同一份**短说明：工具栏「仅上涨」开关的 tooltip，以及列表行内上涨徽标的 `help`。说明的含义是：先按**当前内存页表头**对**完整进程列表**排序，取前 5，再对这些 pid 的驻留序列做现有近期趋势判断。六期 / 九期把徽标 help 锁成「近期内存持续上涨」，十二期把开关标签锁成「仅上涨」。那些是历史锁词，**不是**本期对说明句的批准。
+> 一期至二十一期正文不改写。本节只把内存页「仅上涨」开关的 tooltip 与列表徽标 `help` 收成同一个 `MemoryGrowthListCopy.help`。`title` 仍是「上涨」。开关标签仍是「仅上涨」。六期 / 九期的 help「近期内存持续上涨」由下面这句替换。
 
-**结论：** 生产文案只有一处静态属性 `MemoryGrowthListCopy.help`。`MemoryGrowthListBadge` 仍是 `title: String` 与 `help: String` 两字段，`title` 保持「上涨」。徽标工厂继续把这个静态属性写入 `help`。开关只在现有 `Toggle` 上追加 `.help(MemoryGrowthListCopy.help)`。行内 `.help(badge.help)` 和父行 `parts.append(growthBadge.help)` 继续读徽标实例上的 `help`。算法、Top5、表头、采样、排序、过滤、退出、二十一期曲线说明都不改。
+**已锁帮助句**（完整替换 `MemoryGrowthListCopy.help`，不得改字、拆句或另写第二句）：
 
-候选说明句见「候选文案」。它**不是**产品 final lock。锁句到达之前，不得把候选句写进生产代码，也不得开实现 PR。本 PR 只追加本节。
+> 完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。
 
-来源：二十二期技术候选。对照 `f374478d465b21763e0cf08e9e9896ce0e6b9c4d`（`origin/main`，二十一期实现 #67；本代理启动时的 HEAD 与 `origin/main` 同为此 SHA）。本节开写前读过的是这份树上的源码。这不是实现授权，也不是 Mac 上的 tooltip / VoiceOver 终验。
+来源：产品 COMMENT [PRR 5798959320](https://github.com/qqzhangyanhua/pulse/pull/68#pullrequestreview-5798959320)。该评论是 scope / design + copy 的 final PASS，**只对应** head `b91c98b7d7ee6df93b16e5ff7315ecfe893adc3a`。它不覆盖本次文档修订后的新 head。新 head 要产品独立复核，并过主控 full gate。把该 PASS 复述成新 head 已审，或当成运行 PASS，都不成立。
 
-本 PR 不改 `README.md`，不写 Swift，不改 `Package.swift` / `project.pbxproj`，不写测试，不跑 `swift test`，不合并。下面的红绿步骤是实现 PR 的设计，不是本 PR 的执行结果。
+**结论：** 生产文案只有这一处静态属性。`MemoryGrowthListBadge` 仍是 `title: String` 与 `help: String`。徽标工厂继续 `help: MemoryGrowthListCopy.help`。开关只在现有 `Toggle` 上追加 `.help(MemoryGrowthListCopy.help)`。行内 `.help(badge.help)` 和父行 `parts.append(growthBadge.help)` 继续读徽标字段。算法说明不是这句文案。Top5、表头、采样、排序、过滤、退出、二十一期曲线说明都不改。
+
+代码事实对照 `f374478d465b21763e0cf08e9e9896ce0e6b9c4d`（`origin/main`，二十一期实现 #67）。本节开写前读过的是那份树上的源码。这不是实现授权，也不是 Mac 上的 tooltip / VoiceOver 终验。
+
+产品对旧 head 的 scope / design + copy PASS 已经发生。实现仍须等本设计合并，以及用户后续明确的实现委托或主控 gate。本 PR 不改 `README.md`，不写 Swift，不改 `Package.swift` / `project.pbxproj`，不写测试，不跑 `swift test`，不合并，不开实现。下面的红绿步骤是实现 PR 的设计，不是本 PR 的执行结果。
 
 ## 已读源码（本 SHA）
 
@@ -5422,7 +5426,7 @@ CPU（默认 `limit` 90，除非某条要显式写另一个 limit；下面的 90
 | VM 排序交接 | `tableSort` 是 `navigation.sort`（`MemoryDashboardVM.swift` 110 行）。`publishMemoryPageSort()` 只在 `selectedPage == .memory` 时把**这一份** `tableSort` 交给 `sampler.setMemoryPageSort(sort)`（355–361 行）。资源页的当场 `tableSort` 走 `.skip`，不改 Top5。已有源码测试锁的是 `await sampler.setMemoryPageSort(sort)`，并禁止 `setMemoryPageSort(tableSort)` 与 `setMemoryPageSort(publication.sort)` 这两种字面调用 |
 | VM 列表数据 | 接受且成功的帧里 `rows = frame.rows`、`topMemorySeries = frame.topMemorySeries`（467–469 行）。`visibleRows` 是 `MemoryGrowthRisingFilter.apply(rows:nameQuery:page:risingOnly:seriesByPid:)`（72–79 行）。`sortedRows` 是 `tableSort.ordered(visibleRows)`（82–85 行），无 `@Published`。Top5 **不**读 `visibleRows` / `sortedRows` |
 | `memoryGrowthListBadge(for:)` | 调用 `MemoryGrowthList.badge(page: selectedPage, rowPid:, seriesByPid: topMemorySeries)`（135–140 行）。选中不是门控 |
-| `MemoryGrowthSignal.evaluate` | `count < minSamples`（80）→ `.insufficient`（31–33 行）。`count >= 80` 就用**当前序列整段**：首尾 `netIncrease > deltaThreshold`（`8 * 1024 * 1024`，相等为 `.none`），相邻步严格 `>`，比较是 `positiveSteps * 5 >= stepCount * 3`（22、28–29、36–48 行），`riseFloor` 常量是 `0.6`。两道都过才 `.rising`。90 只是环上限，不是第二道门；已有 90 点也不从下标 90 再等下一点。没有泄漏 case |
+| `MemoryGrowthSignal.evaluate` | `count < minSamples`（80）→ `.insufficient`（31–33 行）。`count >= 80` 就用**当前序列整段**：首尾 `netIncrease > deltaThreshold`（`8 * 1024 * 1024`，相等为 `.none`），相邻步严格 `>`，比较是 `positiveSteps * 5 >= stepCount * 3`（22、28–29、36–48 行），`riseFloor` 常量是 `0.6`。两道都过才 `.rising`。结果只有 `.insufficient` / `.rising` / `.none`。90 只是环上限，不是第二道门；已有 90 点也不从下标 90 再等下一点。这些是算法事实，不是帮助句 |
 | `MemoryGrowthListCopy` | `title` 为「上涨」，`help` 为「近期内存持续上涨」（114–117 行）。这是今天徽标 help 的**唯一**生产字面量 |
 | `MemoryGrowthListBadge` / `MemoryGrowthList.badge` | 结构体只有 `title`、`help`（120–123 行）。`page == .memory` 且 `seriesByPid[rowPid]` 存在且 `evaluate == .rising` 才返回 `MemoryGrowthListBadge(title: MemoryGrowthListCopy.title, help: MemoryGrowthListCopy.help)`（130–138 行）。缺 pid、不足、`.none`、其它页都是 `nil` |
 | 开关 | `MemoryRisingOnlyChrome.toggleTitle` 为「仅上涨」；`showsToggle` 仅 `page == .memory`（`MemoryTablePhase.swift` 4–10 行）。`MemoryDashboardView` 36–39 行：`Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter).toggleStyle(.switch).controlSize(.small)`。这条链上**没有** `.help`。开关在 `if showsToggle` 内，位于 `AppFilterField` 之前 |
@@ -5435,11 +5439,9 @@ CPU（默认 `limit` 90，除非某条要显式写另一个 limit；下面的 90
 
 ## 今天的缺口
 
-徽标 help 仍是「近期内存持续上涨」。这句话没有说明前 5 来自当前表头下的完整列表，也没有说明这不是先按上涨过滤再取前 5，也没有说明这不是对全部进程的泄漏判断。
+徽标 help 仍是「近期内存持续上涨」。开关只有标签「仅上涨」，没有 `.help`。终稿整句替换这一个 help 字面量，开关改为引用同一个静态属性。
 
-「仅上涨」开关只有标签，没有 `.help`。开关打开后表里留下的是已有徽标行（Top5 序列里 `evaluate == .rising` 的行，再被名称过滤收一次），用户从控件上看不到这个范围。
-
-两处如果各写一遍新句子，会变成两份字面量。本期要求的是**一个**静态属性被两处引用。
+`MemoryGrowthList.badge` 只对传入的那个 `rowPid` 调用 `evaluate`。表的「仅上涨」是 `MemoryGrowthRisingFilter.apply`：名称过滤之后留下 `badge != nil` 的行，不再 `prefix(5)`。两处界面读同一句，不各写一份字面量。
 
 ## 范围
 
@@ -5455,13 +5457,13 @@ CPU（默认 `limit` 90，除非某条要显式写另一个 limit；下面的 90
 | 二十一期五条曲线说明 | 已合入 | **不重开** |
 | `Package.swift` / `project.pbxproj` | 模型文件已登记 | **零 diff**。若实现发现必须改 pbx，停下交审，不要顺手登记 |
 
-一二至二十一期验收不因本文重开。实现还要等本设计合并、产品把说明句标成 final lock、以及 Grok merge gate。三件事缺一件，就不要改 `static let help`。
+一二至二十一期验收不因本文重开。帮助句已由产品在 `b91c98b` 上锁死。实现还要等本设计合并，以及用户后续明确的实现委托或主控 gate。产品的 scope PASS 不代替这道门，也不代替运行 PASS。缺一就不要改 `static let help`。
 
 ## 共享字段
 
 复核后选用已有的 `MemoryGrowthListCopy.help`，不另起名字。
 
-徽标工厂已经只从这里取 help。父行和徽标 tooltip 读的是 `MemoryGrowthListBadge.help`，而这个字段的赋值来自同一个静态属性。开关今天没有帮助文本，直接引用这个静态属性即可。`MemoryRisingOnlyChrome` 只负责标签「仅上涨」和「哪一页画开关」，不负责趋势说明。把句子搬到新静态属性上，会让徽标、父行和现有相等断言再改一次标识符；产品要锁的是句子，不是新类型。
+徽标工厂已经只从这里取 help。父行和徽标 tooltip 读的是 `MemoryGrowthListBadge.help`，而这个字段的赋值来自同一个静态属性。开关今天没有帮助文本，直接引用这个静态属性。`MemoryRisingOnlyChrome` 只负责标签「仅上涨」和「哪一页画开关」。不把终稿搬到新静态属性上。
 
 同源指下面这一条，而不是两处字符串碰巧相等：
 
@@ -5472,30 +5474,25 @@ CPU（默认 `limit` 90，除非某条要显式写另一个 limit；下面的 90
 
 `MemoryGrowthListBadge` 不加第三字段。`title` 继续是 `MemoryGrowthListCopy.title`。
 
-## 候选文案
+## 已锁帮助句
 
-仍是**一条**候选，产品锁门不变。技术不改生产文案，也不代产品定稿。下面是候选措辞建议，**不是** final lock。锁句到达之前，不得改 `MemoryGrowthListCopy.help`，不得开实现 PR。正文最终采用的句子以产品 / 设计锁句为准；锁句可以就是这句，也可以整句改写，但仍然只有一个字符串。
+`MemoryGrowthListCopy.help` 的右值就是这一整句，开关和徽标共用它：
 
-> 当前表头对完整列表排序后取前5；按各进程近期驻留内存序列判断上涨。不是过滤后再取前5，也不是全量进程泄漏判断。
+> 完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。
 
-前半句只说明前 5 怎么来。后半句是按**各进程自己的**近期驻留序列判断上涨，避免读成「这 5 个进程都在上涨」。`MemoryGrowthList.badge` 只对传入的那个 `rowPid` 做 `evaluate`：同一张 Top5 图里可以有的是 `.rising`，有的是 `.none` 或不足。表上的「仅上涨」是另一条投影，`MemoryGrowthRisingFilter.apply` 在名称过滤之后留下 `badge != nil` 的行；它不再取前 5，也不表示前 5 名全体上涨。
+生产 Swift 里这句字面量只出现这一次。视图不再写一遍。不得改字，不得拆成两句，不得为开关和徽标各写一句。80、8MiB、60%、90、百分比不进入这句。上面「已读源码」里的 `evaluate` 是算法，不是这句文案。
 
-这句同时给开关和徽标用。不写 80、8MiB、60%、90、百分比、诊断步骤或另一套序列长度。
+`MemoryGrowthList.badge` 只对传入的那个 `rowPid` 调用 `evaluate`。同一张 Top5 图里可以同时有 `.rising`、`.none` 和不足。表的「仅上涨」是 `MemoryGrowthRisingFilter.apply` 留下 `badge != nil` 的行。这是调用关系，不是第二句文案。
 
-产品改写仍要覆盖这三件事：完整列表按当前表头排序后取前 5；上涨按各进程自己的序列判断；先过滤再取前 5，以及全量进程泄漏判断，都不是这条路径。不要为开关和徽标各锁一句。
-
-历史禁词地板会碰到这句。今天下面三处把 `MemoryGrowthListCopy.help` 放进 blob，断言 blob 不含子串「泄漏」「泄露」「危险」「告警」，也不含大小写不敏感的 `leak`：
+三处禁词测试原样保留，不改断言，不把 help 从 blob 拆出，不加豁免：
 
 - `MemoryGrowthListBadgeTests.testCopyDoesNotClaimALeakOrDanger`
 - `MemoryGrowthTopSeriesTests.testCopyDoesNotClaimALeakOrDanger`
-- `MemoryDetailPresentationTests.testNewDetailCopyOmitsBannedWords`（blob 还含侧栏与详情文案，禁词更多）
+- `MemoryDetailPresentationTests.testNewDetailCopyOmitsBannedWords`
 
-候选句里的「泄漏」用来写明「不是全量进程泄漏判断」。它会让上述子串断言失败。产品 lock 时二选一，实现按锁句执行，技术不代选：
+前两处仍要求 `title` 与 `help` 的 blob 不含「泄漏」「泄露」「危险」「告警」，也不含大小写不敏感的 `leak`。第三处把 `MemoryGrowthListCopy.help` 留在原 blob 里，禁词表保持「泄漏」「泄露」「leak」「危险」，以及「异常」「独占」「可释放」「活动监视器」「真实占用」「footprint」「分钟」「稳定」「正常」「每点都在涨」。终稿不含这些子串，所以这些地板继续覆盖 help。十七期 Disclosure 的精确文案，以及该文案里已有的否定字串，不在本期重开。
 
-- 锁句保留这种否定里的「泄漏」：相等断言改成锁句。上述三处把 **help** 从「不得出现子串」的 blob 里拆出，改为 `help` 等于锁句。`title`、`MemoryGrowthCopy`、空态两行、信号 case 名仍走原来的禁词断言。`help` 仍不得出现「危险」「告警」「泄露」和 `leak`。不要删掉整段禁词测试来放行肯定式泄漏结论。
-- 锁句不含这些子串：只改下面「旧字面量」两处测试里的期望句子。三处禁词测试保持原样。
-
-锁句必须仍然不等于 `MemoryGrowthCopy.rising`（「近期驻留内存上涨」），也不等于徽标 `title`。现有 `XCTAssertNotEqual(MemoryGrowthListCopy.help, "近期驻留内存上涨")` 与侧栏 caption 不等于 list help 的断言保持。
+`help` 仍不等于 `MemoryGrowthCopy.rising`（「近期驻留内存上涨」），也不等于徽标 `title`（「上涨」）。现有 `XCTAssertNotEqual(MemoryGrowthListCopy.help, "近期驻留内存上涨")` 与侧栏 caption 不等于 list help 的断言保持，不改期望。
 
 ## 视图接线
 
@@ -5542,7 +5539,7 @@ Linux 上可执行的证明用下面已有测试，调用真实的 `pids` / `eva
 - `MemoryDetailPresentationTests.testEightyPointBoundariesStayOnEvaluate`：80 点、步长 1MiB（`step: 1_048_576`）为 `.rising`；80 点且首尾净增恰好等于 8MiB 为 `.none`；同一长度净增 `deltaThreshold + 1` 为 `.rising`；79 点、步长 8MiB 为 `.insufficient`。80 点已经可以判断。
 - 序列不足 80 点，即使每步都在涨，也是 `.insufficient`，徽标 `nil`（`MemoryGrowthSignalTests.testShortSeriesStaysInsufficientEvenWhenEveryStepClimbs`；`MemoryGrowthListBadgeTests.testInsufficientAndNoneOmitTheBadge`）。两点大增量同样不足，不得点亮徽标（`MemoryGrowthTopSeriesTests.testBadgeUsesEvaluateAndDoesNotInventASecondRise`）。
 - `testFullFlatWindowIsNone` 用 90 点、步长 0，得到 `.none`，徽标 `nil`。90 是这条夹具的点数，也是环上限，不是「必须 90 点才判断」。净增不够在 80 点时同样是 `.none`：`testNetIncreaseMustBeStrictlyAboveTheThreshold` 的夹具长度就是 `minSamples`（80），首尾净增**等于** 8MiB 为 `.none`，严格大于才可能上涨。
-- 达到 80 点的当前序列里向上步只有 1、末点抬高 64MiB，是 `.none`（`testEndHighWithFewUpStepsIsNone`）。代码里没有泄漏态，这个边界不是告警分类。
+- 达到 80 点的当前序列里向上步只有 1、末点抬高 64MiB，是 `.none`（`testEndHighWithFewUpStepsIsNone`）。这仍是现有三态里的 `.none`，不新加信号。
 - 相邻向上步按 3/5 取整比较。`testRiseFloorBoundaryIsExact` 的夹具是 80 **步**（81 点）：48 步向上为 `.rising`，47 步向上且净增已超过 8MiB 为 `.none`。81 是为了让步数成 80，方便和 3/5 对齐，不是把门槛从 80 点改成 81 点。
 - 达到至少 80 点的当前序列里可以有真实下降步；净增与 3/5 都成立时仍是 `.rising`（`testWindowWithRealDownticksStillRisesWhenThresholdsHold`，长度是 `minSamples`）。近期上涨不是「每一步都上升」。
 - Top5 图里同时有上涨、平坦、不足时，只有上涨 pid 有徽标；图外 pid 即使被选中也是 `nil`（`MemoryGrowthListBadgeTests.testListWiringLightsEachTopFiveRisingRowNotOnlyTheSelection`、`testSelectionAloneIsNotEnoughForTheBadge`）。离开 Top5 后 `retain` 丢掉序列，徽标变为 `nil`（`MemoryGrowthTopSeriesTests.testSortChurnDropsTheFallenPidSeriesImmediately`）。
@@ -5552,7 +5549,7 @@ Linux 上可执行的证明用下面已有测试，调用真实的 `pids` / `eva
 
 ## 明确不做
 
-- 不改 `minSamples = 80`、8MiB、60% / 3/5、`seriesLimit = 90`、Top5。80 仍是 `>=` 才对当前序列判断；90 仍只是环上限。不把 `evaluate` 改成必须收满 90，也不在已有 90 点时从下标 90 再等。不改比较式，不把上升改成「每一步都升」，不新增泄漏、告警或稳定分类。
+- 不改 `minSamples = 80`、8MiB、60% / 3/5、`seriesLimit = 90`、Top5。80 仍是 `>=` 才对当前序列判断；90 仍只是环上限。不把 `evaluate` 改成必须收满 90，也不在已有 90 点时从下标 90 再等。不改比较式，不把上升改成「每一步都升」，不新增第四种信号。
 - 不把名称过滤或「仅上涨」的输出送进 `pids(from:)`。不在 `MemoryGrowthRisingFilter` 上再 `prefix(5)`。不改 `apply` 的「名称在前、上涨保留在后」。
 - 不改表头点击、`ProcessTableSort`、`MemoryPageSortPublication`、采样器 `sample()` / `setMemoryPageSort`、环、`adopt`、选中定位、退出、侧栏 `MemoryGrowthCopy`。
 - 不改开关的开关行为：不在该 Toggle 的修饰链上加 `.disabled`，不改 `isOn`、样式、尺寸和位置。不改 `risingOnlyFilter` 的默认值和 `didSet`。
@@ -5565,15 +5562,15 @@ Linux 上可执行的证明用下面已有测试，调用真实的 `pids` / `eva
 
 ## 实施时的文件
 
-实现 PR 才动这些文件，而且要在产品 final lock 之后。本设计 PR 不动。
+实现 PR 才动这些文件，而且要在本设计合并、以及用户后续明确的实现委托或主控 gate 之后。本设计 PR 不动。
 
 | 文件 | 改动 |
 | --- | --- |
-| `Pulse/Models/MemoryGrowthSignal.swift` | 只把 `MemoryGrowthListCopy.help` 的右值改成锁句。`title`、`badge` 的返回行、`evaluate` 不动 |
+| `Pulse/Models/MemoryGrowthSignal.swift` | 只把 `MemoryGrowthListCopy.help` 的右值改成终稿整句。`title`、`badge` 的返回行、`evaluate` 不动 |
 | `Pulse/Views/MemoryDashboardView.swift` | 现有 `Toggle` 链追加 `.help(MemoryGrowthListCopy.help)` |
-| `Tests/SamplingCoreTests/MemoryGrowthListBadgeTests.swift` | 红步把 `testLockedCopyIsShortBadgeAndCalmHelp` 的 help 期望从旧句改成候选句，保留失败输出。生产右值最终等于锁句。禁词 blob 若要拆，单独一刀 |
-| `Tests/SamplingCoreTests/MemoryDetailPresentationTests.swift` | 红步把 `testListBadgeCopyAndIndependentRingStayPut` 里两处「近期内存持续上涨」改成候选句，保留失败输出。`testNewDetailCopyOmitsBannedWords` 不进这一刀 |
-| `Tests/SamplingCoreTests/MemoryGrowthTopSeriesTests.swift` | 排序、环、阈值断言不动。help 的禁词 blob 只在产品选定保留「泄漏」之后单独调整 |
+| `Tests/SamplingCoreTests/MemoryGrowthListBadgeTests.swift` | 红步把 `testLockedCopyIsShortBadgeAndCalmHelp` 的 help 期望改成终稿整句，先跑失败并保留 stdout。`testCopyDoesNotClaimALeakOrDanger` 不改 |
+| `Tests/SamplingCoreTests/MemoryDetailPresentationTests.swift` | 红步把 `testListBadgeCopyAndIndependentRingStayPut` 里两处「近期内存持续上涨」都改成同一终稿整句，先跑失败并保留 stdout。`testNewDetailCopyOmitsBannedWords` 不改 |
+| `Tests/SamplingCoreTests/MemoryGrowthTopSeriesTests.swift` | 排序、环、阈值、`testCopyDoesNotClaimALeakOrDanger` 都不改 |
 | 新的源码接线测试 | 见下节。放在已有 `Tests/SamplingCoreTests/`，不进 App target，不改 `Package.swift` |
 
 `ProcessTablePane.swift`、`MemoryDashboardVM.swift`、`MemorySampler.swift`、`MemoryGrowthTopSeries.swift`、`MemoryGrowthRisingFilter.swift`、`MemoryTablePhase.swift` 不改。
@@ -5582,13 +5579,16 @@ Linux 上可执行的证明用下面已有测试，调用真实的 `pids` / `eva
 
 实现 PR 的红必须是改生产代码之前、针对当前源码真实跑出来的失败。保存该次命令的完整 stdout。本环境没有这些日志。源码阅读断言通过，也不等于 tooltip、SwiftUI 或 VoiceOver 已经跑过。
 
-**红（copy 字面量，先于任何生产改动）：** 只把两处旧字面量「近期内存持续上涨」改成上一节的候选句，然后跑 focused，保留失败的完整 stdout。两处是 `MemoryGrowthListBadgeTests.testLockedCopyIsShortBadgeAndCalmHelp`，以及 `MemoryDetailPresentationTests.testListBadgeCopyAndIndependentRingStayPut`。此时 `MemoryGrowthListCopy.help` 仍是旧句，所以失败。禁止在测试里复制一份 `MemoryGrowthListCopy`，禁止 `XCTFail` 占位。这一刀不改三处禁词 blob。生产右值最终写成产品 / 设计锁句；锁句若与候选不同，再把这两处期望改成锁句，那次失败输出同样保留。
+**红（先于任何生产改动）：** 把帮助句期望改成终稿整句，并断言开关引用 `MemoryGrowthListCopy.help`。然后跑 focused，保留失败的完整 stdout。期望改动只在：
 
-**红（接线，与 copy 红分开即可）：** 新增 `MemoryGrowthListHelpWiringSourceTests`。它读仓库文件，风格与 `TopAppLocationWiringSourceTests` 的 `repoText` 相同。断言 `MemoryDashboardView.swift` 含 `.help(MemoryGrowthListCopy.help)`。今天的开关没有这句，测试失败。
+- `MemoryGrowthListBadgeTests.testLockedCopyIsShortBadgeAndCalmHelp`：`MemoryGrowthListCopy.help` 等于「完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。」
+- `MemoryDetailPresentationTests.testListBadgeCopyAndIndependentRingStayPut`：该测试里两处「近期内存持续上涨」都改成同一整句。一处是 `MemoryGrowthListCopy.help` 的相等断言，一处是 `MemoryGrowthListBadge(title: "上涨", help:)` 的字面量。
 
-**禁词 blob（若锁句保留「泄漏」，再单独一刀）：** 红绿与 copy 字面量的红绿分开。拆法仍是上一节那两支，技术不代选。锁句不含这些子串时，三处 blob 保持原样。
+此时生产 `help` 仍是「近期内存持续上涨」，所以这两处失败。`MemoryGrowthListHelpWiringSourceTests` 读仓库文件，风格与 `TopAppLocationWiringSourceTests` 的 `repoText` 相同，断言 `MemoryDashboardView.swift` 含 `.help(MemoryGrowthListCopy.help)`。今天的开关没有这句，这一处也失败。禁止在测试里复制一份 `MemoryGrowthListCopy`，禁止 `XCTFail` 占位。
 
-**绿：** 生产右值改为锁句；开关加上那一个修饰；copy 字面量的 focused 转绿。禁词 blob 若要拆，用它自己的红绿。然后跑不带 `--filter` 的 `swift test`。实现 PR 贴每条命令、exit code，以及 stdout 里的测试计数。不要手写一个看起来像通过的数字。
+三处禁词测试不进入这刀，不改、不拆。`MemoryGrowthSignalTests` 与其它阈值断言不改。
+
+**绿：** 把 `MemoryGrowthListCopy.help` 的右值改成终稿整句，并在现有 `Toggle` 上追加 `.help(MemoryGrowthListCopy.help)`。然后同一组 focused 通过，再跑不带 `--filter` 的 `swift test`。实现 PR 贴每条命令、exit code，以及 stdout 里的测试计数。不要手写一个看起来像通过的数字。本设计 PR 没有这些日志。
 
 建议的 focused 过滤器（实现按实际 `swift test --filter` 的正则写进 PR，原样贴出）：
 
@@ -5600,12 +5600,12 @@ Linux 上可执行的证明用下面已有测试，调用真实的 `pids` / `eva
 
 接线测试只读文本，并且要证明**标识符同源**，而不是两段字面量相等：
 
-- `MemoryGrowthSignal.swift` 里，锁句字面量出现一次，位置是 `static let help` 的右值。`badge` 函数体仍含 `help: MemoryGrowthListCopy.help`，且含 `title: MemoryGrowthListCopy.title`。`title` 的右值仍是「上涨」。
-- `MemoryDashboardView.swift` 含 `.help(MemoryGrowthListCopy.help)` 一次。`Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)`、`.toggleStyle(.switch)`、`.controlSize(.small)`、`showsToggle(page: vm.selectedPage)` 仍在。该文件不含锁句字面量，不含 `risingOnlyFilter = false`。`.disabled` 只查**该 Toggle 的修饰链**：从这一次 `Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)` 到它的 `.help(...)`，链上有 `.toggleStyle(.switch)` 和 `.controlSize(.small)`，链上没有 `.disabled`。不要对整个文件断言不存在 `.disabled`，以免文件里别的 `Toggle` 撞上。开关的 `range` 仍在 `AppFilterField(text: $vm.filter)` 之前（现有 `MemoryPageFilterClearWiringSourceTests.testToolbarAndAppFilterFieldStayNameOnlyClear` 继续成立）。
-- `ProcessTablePane.swift` 的 `MemoryGrowthRisingBadge` 正文仍含 `.help(badge.help)` 与 `.accessibilityHidden(true)`。`accessibilityLabel` 仍含 `parts.append(growthBadge.help)`。父行仍含 `.accessibilityElement(children: .ignore)`。该文件不含锁句字面量，不含 `MemoryGrowthListCopy.help`。
-- `MemoryDashboardVM.swift` 不含锁句，不含 `MemoryGrowthListCopy`。`@Published` 仍是 23，`didSet` 仍是 2，`@MainActor` 仍是 1。`memoryGrowthListBadge` 仍把 `topMemorySeries` 传给 `MemoryGrowthList.badge`。`sortedRows` 仍是 `tableSort.ordered(visibleRows)`。
+- `MemoryGrowthSignal.swift` 里，终稿整句出现一次，位置是 `static let help` 的右值。`badge` 函数体仍含 `help: MemoryGrowthListCopy.help`，且含 `title: MemoryGrowthListCopy.title`。`title` 的右值仍是「上涨」。
+- `MemoryDashboardView.swift` 含 `.help(MemoryGrowthListCopy.help)` 一次。`Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)`、`.toggleStyle(.switch)`、`.controlSize(.small)`、`showsToggle(page: vm.selectedPage)` 仍在。该文件不含终稿整句，不含 `risingOnlyFilter = false`。`.disabled` 只查**该 Toggle 的修饰链**：从这一次 `Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)` 到它的 `.help(...)`，链上有 `.toggleStyle(.switch)` 和 `.controlSize(.small)`，链上没有 `.disabled`。不要对整个文件断言不存在 `.disabled`，以免文件里别的 `Toggle` 撞上。开关的 `range` 仍在 `AppFilterField(text: $vm.filter)` 之前（现有 `MemoryPageFilterClearWiringSourceTests.testToolbarAndAppFilterFieldStayNameOnlyClear` 继续成立）。
+- `ProcessTablePane.swift` 的 `MemoryGrowthRisingBadge` 正文仍含 `.help(badge.help)` 与 `.accessibilityHidden(true)`。`accessibilityLabel` 仍含 `parts.append(growthBadge.help)`。父行仍含 `.accessibilityElement(children: .ignore)`。该文件不含终稿整句，不含 `MemoryGrowthListCopy.help`。
+- `MemoryDashboardVM.swift` 不含终稿整句，不含 `MemoryGrowthListCopy`。`@Published` 仍是 23，`didSet` 仍是 2，`@MainActor` 仍是 1。`memoryGrowthListBadge` 仍把 `topMemorySeries` 传给 `MemoryGrowthList.badge`。`sortedRows` 仍是 `tableSort.ordered(visibleRows)`。
 - `Package.swift` 与 `project.pbxproj` 相对基线无 diff。`MemoryGrowthSignal.swift` 原有的四处登记还在。没有新的 `PBXBuildFile`。
-- 视图文件里的 `.help(badge.help)` 不得被改成 `.help("锁句")` 或 `.help(MemoryGrowthListCopy.help)` 以外的第二来源。父行继续读 `growthBadge.help`，这样有徽标时父行文本与 tooltip 用的是同一个实例字段。
+- 视图文件里的 `.help(badge.help)` 不得被改成 `.help("完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。")`。父行继续读 `growthBadge.help`。开关的实参是标识符 `MemoryGrowthListCopy.help`，不是第二份字面量。
 
 下列断言保持原样，包括数字和 pid 数组：`MemoryGrowthSignalTests` 的阈值与边界、`MemoryGrowthTopSeriesTests` 的 `[2, 3, 4, 5, 6]` 与 `[2, 4, 5, 6, 3]`、`MemoryGrowthRisingFilterTests.testTopFiveAndMenuBarStillEatTheUnfilteredRows` 的 `[1, 2]` 对 `[1, 6, 2, 3, 4]`、`MemoryGrowthListBadgeTests` 里不足 / `.none` / 缺 pid / 其它页为 `nil`。不要求新的 Sampling VM 测试。`MemorySampler` 不在 Linux 目标里；VM 交接沿用已有源码测试，本期不重写。
 
@@ -5613,25 +5613,24 @@ Linux 上可执行的证明用下面已有测试，调用真实的 `pids` / `eva
 
 | 风险 | 应对 |
 | --- | --- |
-| 开关和徽标各写一遍锁句 | 视图不含字面量。生产字面量只有 `static let help` |
+| 开关和徽标各写一遍终稿 | 视图不含字面量。生产字面量只有 `static let help` |
 | 用「两段文字相等」代替同源 | 接线测试断言标识符 `MemoryGrowthListCopy.help` 与 `badge.help` / `growthBadge.help` |
-| 未等产品 lock 就把候选句提交进生产 | 实现 PR 的前置是锁句。本设计里的候选不能当 final copy |
-| 为了写上「泄漏」而删掉整段禁词测试 | 只把 help 从 blob 拆出，或改用一个不含该子串的锁句。title 与侧栏禁词不动 |
-| 帮助句写上 80 / 8MiB / 90 / 百分比 | 候选与锁句都不带这些数。阈值测试的期望值不动 |
+| 改字、拆句，或把算法说明写成帮助句 | 右值与两处测试期望都是终稿整句。`evaluate` 的 80 / 90 不写进这句 |
+| 改禁词测试，或把 help 从 blob 拆出 | 三处禁词测试保持原断言。终稿不含那些子串 |
 | 把「仅上涨」的可见行再截成前 5，或让 `pids` 改吃 `visibleRows` | 现有 pid 数组测试不改期望。VM 与采样器文件本期不改 |
 | 给开关加 `.disabled`，或改 `isOn` / 样式 / 尺寸 | 接线测试只锁该 Toggle 的修饰链：原有三件修饰仍在，这条链没有 `.disabled`。不扫整个文件 |
 | 为了 tooltip 去改父行结构，或让不足也读出 help | `children: .ignore`、`accessibilityHidden(true)`、`badge == nil` 不追加，都保持 |
 | 顺手改侧栏句或空态句 | 那些字面量的测试不改期望。list help 仍不等于「近期驻留内存上涨」 |
 | 新模型文件带出 `Package.swift` 或 pbx | 不新文件。若必须改 pbx，停下交审 |
-| 把源码接线说成已经悬停、已经朗读 | 下节 |
+| 把旧 head 的 scope PASS 当成新 head 已审，或当成运行 PASS | 下节。本 PR 不跑测试，不开实现 |
 
 ## 验收
 
 - [ ] `MemoryGrowthListBadge` 仍只有 `title` 与 `help`。`title` 仍是「上涨」。开关标签仍是「仅上涨」
-- [ ] 锁句的生产字面量只在 `MemoryGrowthListCopy.help`。开关、徽标工厂、徽标 tooltip、父行 label 都从这一处来到界面上。徽标工厂与开关写的是标识符；tooltip 与父行写的是徽标字段
+- [ ] `MemoryGrowthListCopy.help` 的生产字面量只有「完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。」开关、徽标工厂、徽标 tooltip、父行 label 都从这一处来到界面上。徽标工厂与开关写的是标识符；tooltip 与父行写的是徽标字段
 - [ ] 开关只多了 `.help(MemoryGrowthListCopy.help)`。`isOn`、`.switch`、`.small`、位置、`showsToggle` 不变。其它页没有这个开关，也没有这句 help
 - [ ] 有徽标的父行 label 仍追加 `growthBadge.help`；无徽标不追加。离开 Top5 后序列被丢掉，该行徽标回到 `nil`
-- [ ] 内存降序前 5 的现成期望仍是 `[2, 3, 4, 5, 6]`；名称升序前 5 仍是 `[2, 4, 5, 6, 3]`；名称过滤与「仅上涨」都不把 Top5 输入换成过滤后的前 5。上涨仍只在对应序列上 `evaluate`，不足、平坦、大净增但向上步不够，都不是 `.rising`，也不是泄漏分类
+- [ ] 内存降序前 5 的现成期望仍是 `[2, 3, 4, 5, 6]`；名称升序前 5 仍是 `[2, 4, 5, 6, 3]`；名称过滤与「仅上涨」都不把 Top5 输入换成过滤后的前 5。`badge` 仍只对对应 pid 的当前序列 `evaluate`。不足、平坦、大净增但向上步不够，仍是现有 `.insufficient` 或 `.none`
 - [ ] `count >= 80` 仍对当前序列做首尾与相邻步判断；`seriesLimit` 仍是 90 的环上限，不是必须收满的门槛，已满 90 也不另等下一点。8MiB、3/5、N=5、过滤顺序、表头、采样、环、选中定位、退出、侧栏句、空态句、二十一期曲线说明无行为变化。样例里的 80 / 81 / 90 点不升成新门槛
 - [ ] 无新模型、无 `Package.swift` / pbx diff、无新的 `@Published`
 - [ ] 实现 PR 有改生产代码之前的 focused 失败全文，以及之后的 focused 与全量 `swift test` 的命令、exit code 和计数。这些日志不是 Mac tooltip，也不是 VoiceOver
@@ -5651,20 +5650,19 @@ Linux 上可执行的证明用下面已有测试，调用真实的 `pids` / `eva
 
 本设计 PR 没有 Mac 日志，也没有 Linux `swift test` 日志。
 
-实现等本设计合并、产品 final lock、Grok merge gate 之后再写 Swift。本 PR 不写 Swift、不写测试、不合并。
+实现等本设计合并，以及用户后续明确的实现委托或主控 gate，之后再写 Swift。产品对 `b91c98b` 的 scope / design + copy PASS 不授权实现，也不是运行 PASS。本 PR 不写 Swift、不写测试、不合并。
 
-## 设计候选、产品锁、技术 PASS
+## 产品锁、本 head、技术 PASS
 
-三件事分开。本文只完成第一件的书面候选：
-
-| | 本文 | 还没发生 |
-| --- | --- | --- |
-| 设计候选 | 共享字段定为现有 `MemoryGrowthListCopy.help`；开关只加 `.help(该字段)`；徽标与父行继续读徽标 `help`；上节那句候选说明 | — |
-| 产品 final lock | 未发生。候选句不是用户已批准的 final copy | 产品确认或改写那一句，并确认「泄漏」子串走哪一分支 |
-| 技术 PASS | 未发生。没有 `swift test` 计数，没有 Xcode 构建，没有 tooltip 或 VoiceOver 记录 | 实现 PR 的红绿日志，以及未验清单里的 Mac 项 |
+| | 状态 |
+| --- | --- |
+| 帮助句 | 已锁。整句是「完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。」来源是 PRR 5798959320，只审过 `b91c98b7d7ee6df93b16e5ff7315ecfe893adc3a` |
+| 本 head | 尚未经产品独立复核，也尚未过主控 full gate。不得把旧 head 的 PASS 复述到本 head |
+| 技术 / 运行 PASS | 未发生。没有 `swift test` 计数，没有 Xcode 构建，没有 tooltip 或 VoiceOver 记录 |
+| 实现 | 未委托。等本设计合并，以及用户后续明确的实现委托或主控 gate |
 
 ## 未决
 
-只剩两件，技术不代产品选：说明句的 final lock；锁句若保留「泄漏」，禁词测试是把 help 从 blob 拆出，还是改成一句不含该子串的锁词。
+帮助句没有第二句，禁词测试也不再拆分。还没发生的是：产品对本 head 的独立复核、主控 full gate、实现委托。Mac 上的 tooltip 与 VoiceOver 仍未验。
 
-已经定下来的是：一个静态属性、两字段徽标、`title` 仍为「上涨」、开关行为不改、Top5 仍是完整列表按当前内存页表头排序后的前 5、`badge` 按该 pid 的当前序列 `evaluate`、表的「仅上涨」只是 `badge != nil` 的投影。`count >= 80` 就判断，90 只是环上限。根 `README.md` 不加二十二期。Mac 上的 tooltip 与 VoiceOver 是未验，不是文案还没选定。
+已经定下来的是：一个静态属性、两字段徽标、`title` 仍为「上涨」、开关行为不改、Top5 仍是完整列表按当前内存页表头排序后取前 5、`badge` 按该 pid 的当前序列 `evaluate`、表的「仅上涨」只是 `badge != nil` 的投影。`count >= 80` 就判断，90 只是环上限。三处禁词测试保持原断言。根 `README.md` 不加二十二期。
