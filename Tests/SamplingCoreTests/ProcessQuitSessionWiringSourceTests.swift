@@ -162,7 +162,14 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         XCTAssertTrue(sidebar.contains("memoryChart(detail)"))
         XCTAssertTrue(sidebar.contains("cpuChart(detail)"))
         XCTAssertTrue(sidebar.contains("vm.memoryGrowthSlot"))
-        XCTAssertFalse(sidebar.contains("vm.detail"))
+        // Phase 18: normal live is sidebar.detail.pid == vm.detail.pid.
+        // The card is still sidebar.detail. The one vm.detail read is that pid gate,
+        // so a row-only placeholder is not treated as live. It is not a second detail source.
+        XCTAssertEqual(occurrenceCount(of: "vm.detail", in: sidebar), 1)
+        XCTAssertTrue(sidebar.contains("liveDetailPid: vm.detail?.row.pid"))
+        XCTAssertFalse(sidebar.contains("detailBody(vm.detail"))
+        XCTAssertFalse(sidebar.contains("vm.detail.memory"))
+        XCTAssertFalse(sidebar.contains("vm.detail.cpu"))
         XCTAssertFalse(sidebar.contains("selectedFallback"))
         XCTAssertFalse(sidebar.contains("vm.quitPhase"))
         XCTAssertFalse(sidebar.contains("vm.quitMessage"))
