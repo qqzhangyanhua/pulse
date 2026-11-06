@@ -74,6 +74,63 @@ struct ProcessQuitOutcome: Equatable, Sendable {
         }
     }
 
+    /// Nil means this attempt never estimates. A later frame cannot fill it in.
+    mutating func captureReleaseBaseline(usedBytes: UInt64?, pid: Int32, token: UInt64) {
+        guard let usedBytes else { return }
+        guard var record = records[pid], record.token == token else { return }
+        record.releaseBaseline = usedBytes
+        records[pid] = record
+    }
+
+    /// Sample 1 is the first successful frame that no longer lists the pid.
+    /// A failed frame before the note settles voids that record for good.
+    /// A non-nil subject voids every other pid, including a settled note.
+    /// A nil subject does not.
+    mutating func advanceReleaseEstimate(
+        subjectPid: Int32?,
+        frame: ProcessQuitPresenceFrame,
+        usedBytes: UInt64?
+    ) {
+        voidReleaseEstimates(except: subjectPid)
+        if !frame.isSuccessfulProcessList {
+            voidUnsettledReleaseEstimates()
+            return
+        }
+        guard let usedBytes else { return }
+        for pid in Array(records.keys) {
+            guard var record = records[pid] else { continue }
+            guard let baseline = record.releaseBaseline, record.releaseNote == nil, !record.releaseVoided else {
+                continue
+            }
+            guard !frame.rows.contains(where: { $0.pid == pid }) else { continue }
+            record.releaseAbsenceCount += 1
+            if record.releaseAbsenceCount == 3 {
+                record.releaseNote = ProcessQuitSessionCopy.releaseNote(baseline: baseline, current: usedBytes)
+            }
+            records[pid] = record
+        }
+    }
+
+    private mutating func voidReleaseEstimates(except subjectPid: Int32?) {
+        guard let subjectPid else { return }
+        for pid in Array(records.keys) where pid != subjectPid {
+            guard var record = records[pid], record.releaseBaseline != nil else { continue }
+            if record.releaseVoided && record.releaseNote == nil { continue }
+            record.releaseVoided = true
+            record.releaseNote = nil
+            records[pid] = record
+        }
+    }
+
+    private mutating func voidUnsettledReleaseEstimates() {
+        for pid in Array(records.keys) {
+            guard var record = records[pid] else { continue }
+            guard record.releaseBaseline != nil, record.releaseNote == nil, !record.releaseVoided else { continue }
+            record.releaseVoided = true
+            records[pid] = record
+        }
+    }
+
     mutating func complete(pid: Int32, token: UInt64, result: ProcessActionResult) {
         guard var record = records[pid], record.token == token else { return }
         switch result {
@@ -258,6 +315,11 @@ struct ProcessQuitRecord: Equatable, Sendable {
     /// Value copy of the detail frame from the first absence. Later frames do not append.
     var frozenDetail: ProcessDetail?
     var presence: ProcessQuitPresence
+    /// Nil baseline never estimates. Count is successful absence frames with a reading.
+    var releaseBaseline: UInt64?
+    var releaseAbsenceCount: Int = 0
+    var releaseNote: String?
+    var releaseVoided: Bool = false
 }
 
 enum ProcessQuitKind: Equatable, Sendable {

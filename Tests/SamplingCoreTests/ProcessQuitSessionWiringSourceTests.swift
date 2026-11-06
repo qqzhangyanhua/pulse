@@ -207,6 +207,36 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         XCTAssertFalse(menu.contains("forceTerminate"))
     }
 
+    func testApplySamplePassesFrameUsedBytesAndSamplerStaysFreeOfQuitWords() throws {
+        let source = try vmSource()
+        let apply = try functionBody(named: "applySample", in: source)
+        XCTAssertEqual(occurrenceCount(of: "usedBytes: frame.snapshot.usedBytes", in: apply), 1)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 23)
+        XCTAssertTrue(source.contains("guard snapshot != nil, samplingFailed == false else { return nil }"))
+        XCTAssertTrue(source.contains("return snapshot?.usedBytes"))
+        let ordinary = try functionBody(named: "quitSelected", in: source)
+        XCTAssertTrue(ordinary.contains("usedBytes: quitReleaseBaseline"))
+        let force = try functionBody(named: "forceQuitSelected", in: source)
+        XCTAssertLessThan(
+            try index(of: "ProcessQuitSession.requestForce", in: force),
+            try index(of: "usedBytes: quitReleaseBaseline", in: force)
+        )
+        XCTAssertLessThan(
+            try index(of: "ProcessQuitSession.confirmForce", in: force),
+            try index(of: "usedBytes: quitReleaseBaseline", in: force)
+        )
+        XCTAssertEqual(occurrenceCount(of: "usedBytes: quitReleaseBaseline", in: force), 1)
+        let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
+        XCTAssertFalse(sampler.contains("ProcessQuit"))
+        XCTAssertFalse(sampler.contains("releaseNote"))
+        XCTAssertFalse(sampler.contains("已用内存"))
+        let menu = try repoText("Pulse/MenuBar/MenuBarStatus.swift")
+        XCTAssertFalse(menu.contains("releaseNote"))
+        XCTAssertFalse(menu.contains("quitSelected"))
+        let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
+        XCTAssertEqual(occurrenceCount(of: "sidebar.releaseNote", in: sidebar), 1)
+    }
+
     /// Source shape only. Not a VM instance, not NSAlert, not MainActor, not a real quit.
     func testClosedConfirmHelperIsGenerationScopedAndWrittenBack() throws {
         let session = try repoText("Pulse/Models/ProcessQuitSession.swift")

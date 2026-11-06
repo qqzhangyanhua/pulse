@@ -1,4 +1,10 @@
 extension MemoryDashboardVM {
+    /// Baseline for a quit estimate. A failed or missing frame never estimates.
+    private var quitReleaseBaseline: UInt64? {
+        guard snapshot != nil, samplingFailed == false else { return nil }
+        return snapshot?.usedBytes
+    }
+
     /// Close the sidebar. The quit store stays unsettled.
     func dismissSidebar() {
         let effect = ProcessQuitSession.dismissSidebar()
@@ -16,7 +22,8 @@ extension MemoryDashboardVM {
             store: &store,
             listSelectedPid: selectedPid,
             sidebarSubjectPid: sidebarSubjectPid,
-            rows: rows
+            rows: rows,
+            usedBytes: quitReleaseBaseline
         )
         quitOutcome = store
         guard let issued else { return }
@@ -54,7 +61,8 @@ extension MemoryDashboardVM {
             store: &confirming,
             generation: request.generation,
             listSelectedPid: selectedPid,
-            rows: rows
+            rows: rows,
+            usedBytes: quitReleaseBaseline
         )
         if issued == nil {
             ProcessQuitSession.releaseClosedForceConfirmation(

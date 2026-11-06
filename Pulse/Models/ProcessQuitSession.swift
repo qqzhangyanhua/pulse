@@ -8,6 +8,16 @@ import Foundation
 enum ProcessQuitSessionCopy {
     static let terminateFailed = "未能退出。可以请系统立即结束该进程。"
     static let forceFailed = "系统未能结束该进程。"
+    static let usedMemoryReducedPrefix = "已用内存约减少 "
+    static let usedMemoryInsignificant = "已用内存变化不明显"
+
+    /// Delta is baseline − current. Below 50 MiB, or an increase, stays the quiet line.
+    static func releaseNote(baseline: UInt64, current: UInt64) -> String {
+        guard current < baseline else { return usedMemoryInsignificant }
+        let delta = baseline - current
+        guard delta >= 50 * 1024 * 1024 else { return usedMemoryInsignificant }
+        return usedMemoryReducedPrefix + ByteFormat.memory(delta)
+    }
 }
 
 enum ProcessQuitSession {
@@ -33,6 +43,7 @@ enum ProcessQuitSession {
         var viewState: ProcessQuitViewState
         /// Legal list pid a button may address. Nil means do not call terminate.
         var actionPid: Int32?
+        var releaseNote: String?
     }
 
     struct Observation: Equatable, Sendable {
@@ -42,6 +53,7 @@ enum ProcessQuitSession {
         var processListFailed: Bool = false
         var samplingFailed: Bool = false
         var freshnessInsufficient: Bool = false
+        var usedBytes: UInt64? = nil
     }
 
     struct SampleEffect: Equatable, Sendable {
@@ -102,7 +114,8 @@ enum ProcessQuitSession {
             showsSuccessBanner: false,
             showsLiveTrend: showsLiveTrend,
             viewState: projected.viewState,
-            actionPid: actionPid
+            actionPid: actionPid,
+            releaseNote: displayedReleaseNote(record)
         )
     }
 
@@ -119,6 +132,11 @@ enum ProcessQuitSession {
             samplingFailed: observation.samplingFailed,
             freshnessInsufficient: observation.freshnessInsufficient,
             detail: observation.detailToFreeze
+        )
+        store.advanceReleaseEstimate(
+            subjectPid: sidebarSubjectPid,
+            frame: frame,
+            usedBytes: observation.usedBytes
         )
         store.applyPresenceFromRows(frame)
         guard frame.isSuccessfulProcessList else {
@@ -198,7 +216,8 @@ enum ProcessQuitSession {
         store: inout ProcessQuitOutcome,
         listSelectedPid: Int32?,
         sidebarSubjectPid: Int32?,
-        rows: [ProcessRow]
+        rows: [ProcessRow],
+        usedBytes: UInt64? = nil
     ) -> ProcessQuitIssued? {
         let side = sidebar(
             store,
@@ -210,7 +229,9 @@ enum ProcessQuitSession {
             )
         )
         guard let pid = side.actionPid, pid == listSelectedPid else { return nil }
-        return store.click(.terminate, selectedPid: pid, rows: rows)
+        guard let issued = store.click(.terminate, selectedPid: pid, rows: rows) else { return nil }
+        store.captureReleaseBaseline(usedBytes: usedBytes, pid: issued.pid, token: issued.token)
+        return issued
     }
 
     static func requestForce(
@@ -247,9 +268,16 @@ enum ProcessQuitSession {
         store: inout ProcessQuitOutcome,
         generation: UInt64,
         listSelectedPid: Int32?,
-        rows: [ProcessRow]
+        rows: [ProcessRow],
+        usedBytes: UInt64? = nil
     ) -> ProcessQuitIssued? {
-        store.click(.confirmForce(generation: generation), selectedPid: listSelectedPid, rows: rows)
+        guard let issued = store.click(
+            .confirmForce(generation: generation),
+            selectedPid: listSelectedPid,
+            rows: rows
+        ) else { return nil }
+        store.captureReleaseBaseline(usedBytes: usedBytes, pid: issued.pid, token: issued.token)
+        return issued
     }
 
     /// A closed confirmation returned without an issued quit. Consume that
@@ -273,6 +301,11 @@ enum ProcessQuitSession {
     ) {
         guard !taskCancelled else { return }
         store.complete(pid: pid, token: token, result: result)
+    }
+
+    private static func displayedReleaseNote(_ record: ProcessQuitRecord?) -> String? {
+        guard let record, !record.releaseVoided else { return nil }
+        return record.releaseNote
     }
 
     private static func failureMessage(

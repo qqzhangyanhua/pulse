@@ -1776,6 +1776,314 @@ final class ProcessQuitSessionTests: XCTestCase {
         XCTAssertNil(issuedStore.record(for: 2))
     }
 
+    func testReleaseNoteAppearsOnTheThirdAbsenceSampleAfterALargeDrop() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let baseline = UInt64(128 * 1_048_576)
+        let current = baseline - UInt64(64 * 1_048_576)
+        _ = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows,
+                usedBytes: baseline
+            )
+        )
+        for _ in 0..<3 {
+            feedReleaseSample(store: &store, subject: 1, rows: rows, usedBytes: current)
+            XCTAssertNil(shownReleaseNote(store, subject: 1, rows: rows, list: 1))
+        }
+        let gone = [row(2, "B")]
+        feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+        XCTAssertNil(shownReleaseNote(store, subject: 1, rows: gone))
+        feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+        XCTAssertNil(shownReleaseNote(store, subject: 1, rows: gone))
+        feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+        let note = shownReleaseNote(store, subject: 1, rows: gone)
+        XCTAssertEqual(note, "已用内存约减少 64 MB")
+        XCTAssertFalse(note?.contains("释放失败") ?? true)
+        XCTAssertFalse(note?.contains("泄漏") ?? true)
+        XCTAssertFalse(note?.contains("危险") ?? true)
+    }
+
+    func testFailureFrameVoidsAnUnsettledReleaseNote() throws {
+        let failures: [(samplingFailed: Bool, processListFailed: Bool, freshnessInsufficient: Bool)] = [
+            (true, false, false),
+            (false, true, false),
+            (false, false, true),
+        ]
+        for failure in failures {
+            var store = ProcessQuitOutcome()
+            let rows = [row(1, "A"), row(2, "B")]
+            let baseline = UInt64(200 * 1_048_576)
+            let current = baseline - UInt64(64 * 1_048_576)
+            _ = try XCTUnwrap(
+                ProcessQuitSession.ordinaryTerminate(
+                    store: &store,
+                    listSelectedPid: 1,
+                    sidebarSubjectPid: 1,
+                    rows: rows,
+                    usedBytes: baseline
+                )
+            )
+            let gone = [row(2, "B")]
+            feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+            XCTAssertNil(shownReleaseNote(store, subject: 1, rows: gone))
+            feedReleaseSample(
+                store: &store,
+                subject: 1,
+                rows: gone,
+                usedBytes: current,
+                samplingFailed: failure.samplingFailed,
+                processListFailed: failure.processListFailed,
+                freshnessInsufficient: failure.freshnessInsufficient
+            )
+            for _ in 0..<4 {
+                feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+                XCTAssertNil(shownReleaseNote(store, subject: 1, rows: gone))
+            }
+        }
+    }
+
+    func testSwitchingSidebarSubjectVoidsTheReleaseNote() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let baseline = UInt64(128 * 1_048_576)
+        let current = baseline - UInt64(64 * 1_048_576)
+        _ = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows,
+                usedBytes: baseline
+            )
+        )
+        let gone = [row(2, "B")]
+        for _ in 0..<3 {
+            feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+        }
+        XCTAssertEqual(shownReleaseNote(store, subject: 1, rows: gone), "已用内存约减少 64 MB")
+        let moved = ProcessQuitSession.followListSelection(
+            listSelectedPid: 2,
+            sidebarSubjectPid: 1,
+            rows: gone
+        )
+        XCTAssertEqual(moved.sidebarSubjectPid, 2)
+        feedReleaseSample(store: &store, subject: moved.sidebarSubjectPid ?? 2, rows: gone, usedBytes: current)
+        XCTAssertNil(shownReleaseNote(store, subject: 1, rows: gone))
+        for _ in 0..<3 {
+            feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+            XCTAssertNil(shownReleaseNote(store, subject: 1, rows: gone))
+        }
+    }
+
+    func testForceConfirmShowsTheSameReleaseNote() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "Alpha"), row(2, "Beta")]
+        let baseline = UInt64(90 * 1_048_576)
+        let current = baseline - UInt64(50 * 1_048_576)
+        let request = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        feedReleaseSample(store: &store, subject: 1, rows: [row(2, "Beta")], usedBytes: current)
+        XCTAssertNil(shownReleaseNote(store, subject: 1, rows: [row(2, "Beta")]))
+        _ = try XCTUnwrap(
+            ProcessQuitSession.confirmForce(
+                store: &store,
+                generation: request.generation,
+                listSelectedPid: 1,
+                rows: rows,
+                usedBytes: baseline
+            )
+        )
+        let gone = [row(2, "Beta")]
+        feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+        XCTAssertNil(shownReleaseNote(store, subject: 1, rows: gone))
+        feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+        XCTAssertNil(shownReleaseNote(store, subject: 1, rows: gone))
+        feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+        XCTAssertEqual(shownReleaseNote(store, subject: 1, rows: gone), "已用内存约减少 50 MB")
+    }
+
+    func testReleaseNoteStaysQuietBelowFiftyMebibytesOrWhenUsedMemoryRises() throws {
+        let exact = settledReleaseNote(drop: 50 * 1_048_576)
+        let quiet = settledReleaseNote(drop: 49 * 1_048_576)
+        let rose = settledReleaseNote(rise: 80 * 1_048_576)
+        XCTAssertEqual(exact, "已用内存约减少 50 MB")
+        XCTAssertEqual(quiet, "已用内存变化不明显")
+        XCTAssertEqual(rose, "已用内存变化不明显")
+        for note in [exact, quiet, rose] {
+            XCTAssertFalse(note?.contains("释放失败") ?? true)
+            XCTAssertFalse(note?.contains("泄漏") ?? true)
+            XCTAssertFalse(note?.contains("危险") ?? true)
+        }
+    }
+
+    func testSettledReleaseNoteDoesNotChangeOnLaterFrames() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let baseline = UInt64(400 * 1_048_576)
+        let current = baseline - UInt64(64 * 1_048_576)
+        _ = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows,
+                usedBytes: baseline
+            )
+        )
+        let gone = [row(2, "B")]
+        for _ in 0..<3 {
+            feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+        }
+        XCTAssertEqual(shownReleaseNote(store, subject: 1, rows: gone), "已用内存约减少 64 MB")
+        feedReleaseSample(
+            store: &store,
+            subject: 1,
+            rows: gone,
+            usedBytes: baseline - UInt64(200 * 1_048_576)
+        )
+        XCTAssertEqual(shownReleaseNote(store, subject: 1, rows: gone), "已用内存约减少 64 MB")
+        feedReleaseSample(
+            store: &store,
+            subject: 1,
+            rows: gone,
+            usedBytes: baseline + UInt64(10 * 1_048_576),
+            samplingFailed: true
+        )
+        XCTAssertEqual(shownReleaseNote(store, subject: 1, rows: gone), "已用内存约减少 64 MB")
+        feedReleaseSample(
+            store: &store,
+            subject: 1,
+            rows: gone,
+            usedBytes: baseline + UInt64(30 * 1_048_576)
+        )
+        XCTAssertEqual(shownReleaseNote(store, subject: 1, rows: gone), "已用内存约减少 64 MB")
+    }
+
+    func testDismissingTheSidebarDoesNotVoidTheReleaseNote() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let baseline = UInt64(128 * 1_048_576)
+        let current = baseline - UInt64(64 * 1_048_576)
+        _ = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows,
+                usedBytes: baseline
+            )
+        )
+        let gone = [row(2, "B")]
+        for _ in 0..<3 {
+            feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+        }
+        let dismissed = ProcessQuitSession.dismissSidebar()
+        XCTAssertNil(dismissed.sidebarSubjectPid)
+        feedReleaseSample(store: &store, subject: dismissed.sidebarSubjectPid, rows: gone, usedBytes: current)
+        XCTAssertEqual(shownReleaseNote(store, subject: 1, rows: gone), "已用内存约减少 64 MB")
+    }
+
+    func testQuitAgainReplacesTheReleaseNote() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let baseline = UInt64(128 * 1_048_576)
+        let current = baseline - UInt64(64 * 1_048_576)
+        _ = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows,
+                usedBytes: baseline
+            )
+        )
+        let gone = [row(2, "B")]
+        for _ in 0..<3 {
+            feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+        }
+        XCTAssertEqual(shownReleaseNote(store, subject: 1, rows: gone), "已用内存约减少 64 MB")
+        let back = [row(1, "A"), row(2, "B")]
+        feedReleaseSample(store: &store, subject: 1, rows: back, usedBytes: current)
+        XCTAssertEqual(shownReleaseNote(store, subject: 1, rows: back, list: 1), "已用内存约减少 64 MB")
+        let nextBaseline = UInt64(80 * 1_048_576)
+        let nextCurrent = nextBaseline - UInt64(50 * 1_048_576)
+        _ = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: back,
+                usedBytes: nextBaseline
+            )
+        )
+        XCTAssertNil(shownReleaseNote(store, subject: 1, rows: back, list: 1))
+        feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: nextCurrent)
+        XCTAssertNil(shownReleaseNote(store, subject: 1, rows: gone))
+        feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: nextCurrent)
+        XCTAssertNil(shownReleaseNote(store, subject: 1, rows: gone))
+        feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: nextCurrent)
+        XCTAssertEqual(shownReleaseNote(store, subject: 1, rows: gone), "已用内存约减少 50 MB")
+    }
+
+    func testStillRunningQuitDoesNotShowAReleaseNote() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let baseline = UInt64(128 * 1_048_576)
+        let current = baseline - UInt64(64 * 1_048_576)
+        let issued = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows,
+                usedBytes: baseline
+            )
+        )
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: issued.pid,
+            token: issued.token,
+            result: .stillRunning,
+            taskCancelled: false
+        )
+        for _ in 0..<5 {
+            feedReleaseSample(store: &store, subject: 1, rows: rows, usedBytes: current)
+            XCTAssertNil(shownReleaseNote(store, subject: 1, rows: rows, list: 1))
+        }
+    }
+
+    func testMissingBaselineNeverShowsAReleaseNote() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        _ = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        let gone = [row(2, "B")]
+        let current = UInt64(64 * 1_048_576)
+        for _ in 0..<3 {
+            feedReleaseSample(store: &store, subject: 1, rows: rows, usedBytes: current)
+        }
+        for _ in 0..<4 {
+            feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+            XCTAssertNil(shownReleaseNote(store, subject: 1, rows: gone))
+        }
+    }
+
     func testNoQuitRecordUsesTheLiveRowAndEnablesAFreshClick() throws {
         let store = ProcessQuitOutcome()
         let rows = [row(15, "Plain", memory: 12)]
@@ -1789,6 +2097,59 @@ final class ProcessQuitSessionTests: XCTestCase {
         XCTAssertEqual(side.detail?.memorySeries.count, 0)
         XCTAssertFalse(side.frozen)
         XCTAssertFalse(side.showsSuccessBanner)
+    }
+
+    private func settledReleaseNote(drop: UInt64 = 0, rise: UInt64 = 0) -> String? {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let baseline = UInt64(300 * 1_048_576)
+        let current = rise > 0 ? baseline + rise : baseline - drop
+        _ = ProcessQuitSession.ordinaryTerminate(
+            store: &store,
+            listSelectedPid: 1,
+            sidebarSubjectPid: 1,
+            rows: rows,
+            usedBytes: baseline
+        )
+        let gone = [row(2, "B")]
+        for _ in 0..<3 {
+            feedReleaseSample(store: &store, subject: 1, rows: gone, usedBytes: current)
+        }
+        return shownReleaseNote(store, subject: 1, rows: gone)
+    }
+
+    private func shownReleaseNote(
+        _ store: ProcessQuitOutcome,
+        subject: Int32,
+        rows: [ProcessRow],
+        list: Int32? = nil
+    ) -> String? {
+        project(store, list: list, subject: subject, rows: rows, live: nil).releaseNote
+    }
+
+    private func feedReleaseSample(
+        store: inout ProcessQuitOutcome,
+        subject: Int32?,
+        rows: [ProcessRow],
+        usedBytes: UInt64?,
+        list: Int32? = nil,
+        samplingFailed: Bool = false,
+        processListFailed: Bool = false,
+        freshnessInsufficient: Bool = false
+    ) {
+        _ = ProcessQuitSession.applySample(
+            store: &store,
+            listSelectedPid: list,
+            sidebarSubjectPid: subject,
+            currentLiveDetail: nil,
+            observation: ProcessQuitSession.Observation(
+                rows: rows,
+                processListFailed: processListFailed,
+                samplingFailed: samplingFailed,
+                freshnessInsufficient: freshnessInsufficient,
+                usedBytes: usedBytes
+            )
+        )
     }
 
     private func project(
