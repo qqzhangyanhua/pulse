@@ -41,6 +41,7 @@ let package = Package(
                 "Models/MemoryTablePhase.swift",
                 "Models/ProcessSelection.swift",
                 "Models/ProcessQuitOutcome.swift",
+                "Models/ProcessQuitSession.swift",
                 "Models/CPUPage.swift",
                 "Models/MemoryPageSortPublication.swift",
                 "Models/NetworkPage.swift",
