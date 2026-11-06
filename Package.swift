@@ -38,6 +38,7 @@ let package = Package(
                 "Models/MemoryGrowthSignal.swift",
                 "Models/MemoryGrowthTopSeries.swift",
                 "Models/MemoryGrowthRisingFilter.swift",
+                "Models/MemoryTablePhase.swift",
                 "Models/ProcessSelection.swift",
                 "Models/CPUPage.swift",
                 "Models/NetworkPage.swift",

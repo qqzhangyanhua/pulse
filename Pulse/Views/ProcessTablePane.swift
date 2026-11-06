@@ -112,11 +112,24 @@ struct ProcessTablePane: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private var memoryPhase: MemoryTablePhase {
+        MemoryTablePhaseResolver.resolve(
+            page: vm.selectedPage,
+            loadState: vm.loadState,
+            processCount: vm.rows.count,
+            visibleCount: sortedRows.count,
+            hasActiveNameFilter: vm.hasActiveFilter,
+            risingOnly: vm.risingOnlyFilter,
+            processListFailed: vm.processListFailed
+        )
+    }
+
     private var memoryTableBody: some View {
         Group {
-            if vm.loadState == .sampling, vm.rows.isEmpty {
+            switch memoryPhase {
+            case .sampling:
                 samplingPlaceholder(status: "采样中…")
-            } else if vm.processListFailed, vm.rows.isEmpty {
+            case .processListFailed:
                 AppEmptyState(
                     systemImage: "list.bullet.rectangle",
                     title: "暂时无法列出进程",
@@ -124,7 +137,7 @@ struct ProcessTablePane: View {
                     retryTitle: "重新采样",
                     onRetry: vm.retrySampling
                 )
-            } else if vm.loadState == .failed, vm.rows.isEmpty {
+            case .failed:
                 AppEmptyState(
                     systemImage: "waveform.path.ecg",
                     title: "进程列表还没有数据",
@@ -132,18 +145,32 @@ struct ProcessTablePane: View {
                     retryTitle: "重新采样",
                     onRetry: vm.retrySampling
                 )
-            } else if sortedRows.isEmpty, vm.hasActiveFilter {
+            case .nameFilterEmpty:
                 filterEmpty
-            } else if sortedRows.isEmpty {
+            case .risingOnlyEmpty:
+                risingOnlyEmpty
+            case .empty:
                 AppEmptyState(
                     systemImage: "list.bullet.rectangle",
                     title: "没有可显示的进程",
                     message: "这一帧没有进程可显示。"
                 )
-            } else {
+            case .ready:
                 processList
             }
         }
+    }
+
+    private var risingOnlyEmpty: some View {
+        VStack(spacing: 8) {
+            Text(MemoryGrowthRisingFilterCopy.emptyTitle)
+                .font(.headline)
+            Text(MemoryGrowthRisingFilterCopy.emptyMessage)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(24)
     }
 
     @ViewBuilder

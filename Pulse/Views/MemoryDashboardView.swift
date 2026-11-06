@@ -32,7 +32,12 @@ struct MemoryDashboardView: View {
             ToolbarItem(placement: .principal) {
                 ResourceTabs()
             }
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+                if MemoryRisingOnlyChrome.showsToggle(page: vm.selectedPage) {
+                    Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                }
                 AppFilterField(text: $vm.filter)
             }
         }
