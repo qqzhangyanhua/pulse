@@ -1,0 +1,33 @@
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_d52672109540a0::t_58a8dc8077e9dd 130
+Pulse.xcodeproj/project.pbxproj
+  s_d52672109540a0::t_37fe2b27d72a53 52-53,109-110,212-213,380-381
+Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift
+  s_d52672109540a0::t_0ba6fe3e8db546 1-104
+Pulse/ViewModels/MemoryDashboardVM+TopAppLocation.swift
+  s_d52672109540a0::t_f22e37f87f01b4 1-20
+Pulse/ViewModels/MemoryDashboardVM.swift
+  s_d52672109540a0::t_07f3a40f7ac1c5 18-19,38
+Tests/SamplingCoreTests/MemoryPageFilterClearWiringSourceTests.swift
+  s_d52672109540a0::t_db0faa4dc61a1a 83
+Tests/SamplingCoreTests/ProcessQuitSessionWiringSourceTests.swift
+  s_d52672109540a0::t_bd5c04c3874c77 41-42
+Tests/SamplingCoreTests/TopAppLocationWiringSourceTests.swift
+  s_d52672109540a0::t_8b290140074809 84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "3291b2e2c9a977ca3eddf6e7f095579e1d88af8d",
+  "prompts": {},
+  "sessions": {
+    "s_d52672109540a0": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b0e1-7216-77d0-b3c1-2b028fa7d68a",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
