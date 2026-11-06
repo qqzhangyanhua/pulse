@@ -38,8 +38,8 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         let source = try vmSource()
         XCTAssertEqual(occurrenceCount(of: "ProcessQuitOutcome()", in: source), 1)
         XCTAssertEqual(occurrenceCount(of: "var quitOutcome", in: source), 1)
-        XCTAssertTrue(source.contains("@Published private var quitOutcome = ProcessQuitOutcome()"))
-        XCTAssertTrue(source.contains("@Published private(set) var sidebarSubjectPid: Int32?"))
+        XCTAssertTrue(source.contains("@Published var quitOutcome = ProcessQuitOutcome()"))
+        XCTAssertTrue(source.contains("@Published var sidebarSubjectPid: Int32?"))
         XCTAssertEqual(
             try lineContaining("var quitPhase", in: source),
             "    var quitPhase: QuitPhase { sidebar.quitPhase }"
@@ -148,7 +148,7 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
     }
 
     func testSidebarReadsTheProjectionAndKeepsTheExistingControls() throws {
-        let sidebar = try repoText("Pulse/Views/ProcessDetailSidebar.swift")
+        let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
         XCTAssertTrue(sidebar.contains("vm.sidebar"))
         XCTAssertTrue(sidebar.contains("sidebar.detail"))
         XCTAssertTrue(sidebar.contains("sidebar.absentLabel"))
@@ -241,7 +241,7 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
     }
 
     private func vmSource() throws -> String {
-        try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        try WiringSourceText.text(for: "MemoryDashboardVM")
     }
 
     private func repoText(_ relative: String) throws -> String {

@@ -103,7 +103,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
     }
 
     func testDashboardVMDoesNotOwnTheHelpSentence() throws {
-        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         XCTAssertFalse(vm.contains(sentence))
         XCTAssertFalse(vm.contains("MemoryGrowthListCopy"))
         XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 23)
@@ -127,7 +127,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         XCTAssertFalse(package.contains("MemoryDashboardVM.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
-        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 51)
+        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 54)
         let build = try markedSection("PBXBuildFile", in: project)
         let refs = try markedSection("PBXFileReference", in: project)
         let models = try modelsGroup(in: project)

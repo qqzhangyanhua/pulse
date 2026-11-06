@@ -81,7 +81,7 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
         let revealLine = try lineContaining("var topAppLocateReveal", in: source)
         XCTAssertEqual(
             revealLine.trimmingCharacters(in: .whitespaces),
-            "@Published private(set) var topAppLocateReveal: TopAppLocation.Reveal?"
+            "@Published var topAppLocateReveal: TopAppLocation.Reveal?"
         )
         XCTAssertFalse(revealLine.contains("didSet"))
 
@@ -252,7 +252,7 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
     }
 
     private func vmSource() throws -> String {
-        try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        try WiringSourceText.text(for: "MemoryDashboardVM")
     }
 
     private func paneSource() throws -> String {

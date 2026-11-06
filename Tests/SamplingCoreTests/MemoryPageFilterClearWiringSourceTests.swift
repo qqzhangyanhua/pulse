@@ -80,7 +80,7 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         )
         XCTAssertEqual(
             try lineContaining("var topAppLocateReveal", in: source).trimmingCharacters(in: .whitespaces),
-            "@Published private(set) var topAppLocateReveal: TopAppLocation.Reveal?"
+            "@Published var topAppLocateReveal: TopAppLocation.Reveal?"
         )
         XCTAssertFalse(try lineContaining("var topAppLocateReveal", in: source).contains("didSet"))
 
@@ -294,7 +294,7 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
     }
 
     private func vmSource() throws -> String {
-        try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        try WiringSourceText.text(for: "MemoryDashboardVM")
     }
 
     private func paneSource() throws -> String {

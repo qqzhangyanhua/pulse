@@ -27,7 +27,7 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
     }
 
     func testSidebarUsesPageGatedTitlesAndOneCollapsedDisclosure() throws {
-        let sidebar = try repoText("Pulse/Views/ProcessDetailSidebar.swift")
+        let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
         XCTAssertEqual(occurrenceCount(of: "DisclosureGroup(", in: sidebar), 1)
         XCTAssertEqual(occurrenceCount(of: "@State private var samplingWindowExpanded = false", in: sidebar), 1)
         XCTAssertFalse(sidebar.contains("@Published"))
@@ -83,7 +83,7 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
     /// Already-held call paths. Not the resident-copy red.
     /// Source text only: not a VM instance, not SwiftUI, not a real pid switch.
     func testFrozenGuardPidSwitchAndChartPlaceholderStayUntouched() throws {
-        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         let slot = try functionBody(named: "memoryGrowthSlot", in: vm)
         XCTAssertTrue(slot.contains("guard sidebar.showsLiveTrend else { return nil }"))
         XCTAssertLessThan(
@@ -139,7 +139,7 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
         XCTAssertFalse(list.contains("memoryGrowthSlot"))
         XCTAssertTrue(list.contains("seriesByPid[rowPid]"))
 
-        let sidebar = try repoText("Pulse/Views/ProcessDetailSidebar.swift")
+        let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
         let absent = try functionBody(named: "absentRecordBody", in: sidebar)
         XCTAssertFalse(absent.contains("DisclosureGroup"))
         XCTAssertFalse(absent.contains("samplingWindow"))

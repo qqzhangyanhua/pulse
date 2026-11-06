@@ -49,11 +49,14 @@
 		B00000000000000000000006 /* MachineInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000006 /* MachineInfo.swift */; };
 		B00000000000000000000007 /* ProcessActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000007 /* ProcessActions.swift */; };
 		B00000000000000000000008 /* MemoryDashboardVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000008 /* MemoryDashboardVM.swift */; };
+		B00000000000000000000037 /* MemoryDashboardVM+QuitSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000037 /* MemoryDashboardVM+QuitSession.swift */; };
+		B00000000000000000000038 /* MemoryDashboardVM+TopAppLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000038 /* MemoryDashboardVM+TopAppLocation.swift */; };
 		B00000000000000000000009 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000009 /* ContentView.swift */; };
 		B0000000000000000000000A /* MemoryDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000A /* MemoryDashboardView.swift */; };
 		B0000000000000000000000B /* OverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000B /* OverviewSection.swift */; };
 		B0000000000000000000000C /* ProcessTablePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000C /* ProcessTablePane.swift */; };
 		B0000000000000000000000D /* ProcessDetailSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000D /* ProcessDetailSidebar.swift */; };
+		B00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */; };
 		B0000000000000000000000E /* SharedUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000E /* SharedUI.swift */; };
 		B00000000000000000000013 /* OverviewCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* OverviewCards.swift */; };
 		B0000000000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000F /* Assets.xcassets */; };
@@ -103,11 +106,14 @@
 		A00000000000000000000006 /* MachineInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineInfo.swift; sourceTree = "<group>"; };
 		A00000000000000000000007 /* ProcessActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessActions.swift; sourceTree = "<group>"; };
 		A00000000000000000000008 /* MemoryDashboardVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDashboardVM.swift; sourceTree = "<group>"; };
+		A00000000000000000000037 /* MemoryDashboardVM+QuitSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+QuitSession.swift"; sourceTree = "<group>"; };
+		A00000000000000000000038 /* MemoryDashboardVM+TopAppLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+TopAppLocation.swift"; sourceTree = "<group>"; };
 		A00000000000000000000009 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A0000000000000000000000A /* MemoryDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDashboardView.swift; sourceTree = "<group>"; };
 		A0000000000000000000000B /* OverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewSection.swift; sourceTree = "<group>"; };
 		A0000000000000000000000C /* ProcessTablePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessTablePane.swift; sourceTree = "<group>"; };
 		A0000000000000000000000D /* ProcessDetailSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessDetailSidebar.swift; sourceTree = "<group>"; };
+		A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessDetailSidebarQuitControls.swift; sourceTree = "<group>"; };
 		A0000000000000000000000E /* SharedUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUI.swift; sourceTree = "<group>"; };
 		A00000000000000000000013 /* OverviewCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewCards.swift; sourceTree = "<group>"; };
 		A0000000000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -203,6 +209,8 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000008 /* MemoryDashboardVM.swift */,
+				A00000000000000000000037 /* MemoryDashboardVM+QuitSession.swift */,
+				A00000000000000000000038 /* MemoryDashboardVM+TopAppLocation.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -231,6 +239,7 @@
 				A00000000000000000000013 /* OverviewCards.swift */,
 				A0000000000000000000000C /* ProcessTablePane.swift */,
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
+				A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */,
 				A0000000000000000000000E /* SharedUI.swift */,
 			);
 			path = Views;
@@ -368,12 +377,15 @@
 				B00000000000000000000006 /* MachineInfo.swift in Sources */,
 				B00000000000000000000007 /* ProcessActions.swift in Sources */,
 				B00000000000000000000008 /* MemoryDashboardVM.swift in Sources */,
+				B00000000000000000000037 /* MemoryDashboardVM+QuitSession.swift in Sources */,
+				B00000000000000000000038 /* MemoryDashboardVM+TopAppLocation.swift in Sources */,
 				B00000000000000000000009 /* ContentView.swift in Sources */,
 				B0000000000000000000000A /* MemoryDashboardView.swift in Sources */,
 				B0000000000000000000000B /* OverviewSection.swift in Sources */,
 				B00000000000000000000013 /* OverviewCards.swift in Sources */,
 				B0000000000000000000000C /* ProcessTablePane.swift in Sources */,
 				B0000000000000000000000D /* ProcessDetailSidebar.swift in Sources */,
+				B00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift in Sources */,
 				B0000000000000000000000E /* SharedUI.swift in Sources */,
 				B00000000000000000000017 /* MenuBarStatus.swift in Sources */,
 				B00000000000000000000018 /* MenuBarController.swift in Sources */,
