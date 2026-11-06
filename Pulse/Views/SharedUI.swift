@@ -125,8 +125,29 @@ struct ResourceTabs: View {
     }
 }
 
+private struct FocusNameFilterKey: FocusedValueKey {
+    typealias Value = () -> Void
+}
+
+private struct NameFilterFocusedKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var focusNameFilter: (() -> Void)? {
+        get { self[FocusNameFilterKey.self] }
+        set { self[FocusNameFilterKey.self] = newValue }
+    }
+
+    var nameFilterFocused: Bool? {
+        get { self[NameFilterFocusedKey.self] }
+        set { self[NameFilterFocusedKey.self] = newValue }
+    }
+}
+
 struct AppFilterField: View {
     @Binding var text: String
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         HStack(spacing: 6) {
@@ -136,6 +157,7 @@ struct AppFilterField: View {
             TextField("过滤 App", text: $text)
                 .textFieldStyle(.plain)
                 .font(.callout)
+                .focused($isFocused)
             if !text.isEmpty {
                 Button {
                     text = ""
@@ -155,6 +177,8 @@ struct AppFilterField: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .strokeBorder(PulsePalette.hairline, lineWidth: 1)
         }
+        .focusedSceneValue(\.focusNameFilter) { isFocused = true }
+        .focusedSceneValue(\.nameFilterFocused, isFocused)
     }
 }
 
