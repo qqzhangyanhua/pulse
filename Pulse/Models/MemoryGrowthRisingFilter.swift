@@ -10,9 +10,9 @@ enum MemoryGrowthRisingFilterCopy {
 /// Memory-tab "rising only" table projection.
 ///
 /// Pipeline: `rows` → name filter → (memory page AND ON) keep `badge != nil` →
-/// hard-cap `MemoryGrowthTopSeries.pidLimit` → caller sorts last.
-/// The keep predicate is the existing list badge, not a second growth math
-/// and not the selected-pid detail ring.
+/// caller sorts last. The keep predicate is the existing list badge, whose
+/// `seriesByPid` keys are the TopStore map (Sampler already caps N=5). This
+/// type does not `prefix(5)` after the user's header sort.
 enum MemoryGrowthRisingFilter {
     /// Name filter first. Rising keep is memory-page + ON only.
     static func apply(
@@ -24,18 +24,16 @@ enum MemoryGrowthRisingFilter {
     ) -> [ProcessRow] {
         let named = ProcessNameFilter.apply(rows, query: nameQuery)
         guard risingOnly, page == .memory else { return named }
-        let rising = named.filter { row in
+        return named.filter { row in
             MemoryGrowthList.badge(
                 page: page,
                 rowPid: row.pid,
                 seriesByPid: seriesByPid
             ) != nil
         }
-        return Array(rising.prefix(MemoryGrowthTopSeries.pidLimit))
     }
 
-    /// Same keep as `apply`, then the caller's table-header sort.
-    /// ON + memory still caps at Top N=5 after sort so extra rising series cannot leak.
+    /// Same keep as `apply`, then the caller's table-header sort. No second cap.
     static func ordered(
         rows: [ProcessRow],
         nameQuery: String,
@@ -44,16 +42,15 @@ enum MemoryGrowthRisingFilter {
         seriesByPid: [Int32: [ChartSample]],
         sort: ProcessTableSort
     ) -> [ProcessRow] {
-        let projected = apply(
-            rows: rows,
-            nameQuery: nameQuery,
-            page: page,
-            risingOnly: risingOnly,
-            seriesByPid: seriesByPid
+        sort.ordered(
+            apply(
+                rows: rows,
+                nameQuery: nameQuery,
+                page: page,
+                risingOnly: risingOnly,
+                seriesByPid: seriesByPid
+            )
         )
-        let sorted = sort.ordered(projected)
-        guard risingOnly, page == .memory else { return sorted }
-        return Array(sorted.prefix(MemoryGrowthTopSeries.pidLimit))
     }
 
     /// Next-knife empty gate. Sampling / name-filter empties stay on their own paths.
@@ -65,8 +62,8 @@ enum MemoryGrowthRisingFilter {
         page == .memory && risingOnly && projectedCount == 0
     }
 
-    /// ON + memory hides a selected pid that the list badge would not light.
-    /// Name-filter hiding does not go through this path and keeps `current`.
+    /// ON + memory clears only when the current pid has no list badge.
+    /// Name-filter hide of a rising pid keeps `current` (quit still targets full `rows`).
     /// OFF does not resurrect a pid this switch already cleared.
     static func selectedPid(
         current: Int32?,
@@ -76,20 +73,16 @@ enum MemoryGrowthRisingFilter {
         risingOnly: Bool,
         seriesByPid: [Int32: [ChartSample]]
     ) -> Int32? {
-        // Name filter is part of the table pipeline, not this clear. Callers
-        // still pass it so the VM beat matches `visibleRows`.
-        _ = nameQuery
+        // Table projection still name-filters first. Selection does not:
+        // a rising pid hidden only by `nameQuery` stays selected.
+        _ = (rows, nameQuery)
         guard let current else { return nil }
-        // Name-filter hide keeps `current` (existing quit-against-full-rows).
-        // Only this switch, on the memory page, may clear a hidden pid.
         guard risingOnly, page == .memory else { return current }
-        let projected = apply(
-            rows: rows,
-            nameQuery: "",
+        let hasBadge = MemoryGrowthList.badge(
             page: page,
-            risingOnly: true,
+            rowPid: current,
             seriesByPid: seriesByPid
-        )
-        return projected.contains(where: { $0.pid == current }) ? current : nil
+        ) != nil
+        return hasBadge ? current : nil
     }
 }

@@ -128,24 +128,40 @@ final class MemoryGrowthRisingFilterTests: XCTestCase {
         )
     }
 
-    func testOnCapsAtFiveEvenWhenMoreSeriesAreRising() {
+    /// 0–5 is the TopStore contract, not a second `prefix` on the table projection.
+    /// Passing six pids into `advance` still leaves five keys; the filter only sees that map.
+    func testRisingOnlyBoundComesFromTopStoreNotASecondPrefix() {
+        XCTAssertEqual(MemoryGrowthTopSeries.pidLimit, 5)
+
+        var store = MemoryGrowthTopStore()
+        fill(store: &store, pids: Array(Int32(1)...6), count: MemoryGrowthSignal.minSamples, step: 1_048_576)
+        XCTAssertEqual(store.seriesByPid.count, 5)
+        XCTAssertNil(store.series(for: 6), "TopStore.advance hard-caps; pid 6 never becomes a badge source")
+        XCTAssertEqual(Set(store.seriesByPid.keys), Set(Array(Int32(1)...5)))
+
         let rows = (1...8).map { process(pid: Int32($0), name: "P\($0)", memory: UInt64(90 - $0)) }
-        var seriesByPid: [Int32: [ChartSample]] = [:]
-        for pid in Int32(1)...8 {
-            seriesByPid[pid] = risingSeries()
-        }
+        XCTAssertEqual(
+            MemoryGrowthTopSeries.pids(from: rows, sort: memorySort).count,
+            MemoryGrowthTopSeries.pidLimit
+        )
 
         let on = MemoryGrowthRisingFilter.ordered(
             rows: rows,
             nameQuery: "",
             page: .memory,
             risingOnly: true,
-            seriesByPid: seriesByPid,
-            sort: memorySort
+            seriesByPid: store.seriesByPid,
+            sort: nameSort
         )
-        XCTAssertEqual(on.count, MemoryGrowthTopSeries.pidLimit)
+        XCTAssertEqual(Set(on.map(\.pid)), Set(store.seriesByPid.keys))
         XCTAssertEqual(on.count, 5)
-        XCTAssertEqual(on.map(\.pid), [1, 2, 3, 4, 5])
+        XCTAssertEqual(on.map(\.name), ["P1", "P2", "P3", "P4", "P5"])
+        XCTAssertFalse(on.contains(where: { $0.pid == 6 }))
+        for pid in on.map(\.pid) {
+            XCTAssertNotNil(
+                MemoryGrowthList.badge(page: .memory, rowPid: pid, seriesByPid: store.seriesByPid)
+            )
+        }
     }
 
     func testOnEmptyTableWhenNothingIsRising() {
@@ -199,7 +215,7 @@ final class MemoryGrowthRisingFilterTests: XCTestCase {
         XCTAssertEqual(namedOn.map(\.pid), [1])
         XCTAssertFalse(namedOn.contains(where: { $0.pid == 2 }), "rising Helper is hidden by the name filter")
 
-        let selected = MemoryGrowthRisingFilter.selectedPid(
+        let selectedOff = MemoryGrowthRisingFilter.selectedPid(
             current: 6,
             rows: rows,
             nameQuery: "Nope",
@@ -207,9 +223,34 @@ final class MemoryGrowthRisingFilterTests: XCTestCase {
             risingOnly: false,
             seriesByPid: seriesByPid
         )
-        XCTAssertEqual(selected, 6, "name-filter hide must keep selectedPid against the full rows")
+        XCTAssertEqual(selectedOff, 6, "name-filter hide must keep selectedPid against the full rows")
         XCTAssertEqual(ProcessSelection.acceptedPid(6, in: rows), 6)
         XCTAssertNil(ProcessNameFilter.apply(rows, query: "Nope").first { $0.pid == 6 })
+
+        XCTAssertEqual(
+            MemoryGrowthList.badge(page: .memory, rowPid: 1, seriesByPid: seriesByPid)?.title,
+            MemoryGrowthListCopy.title
+        )
+        let namedTable = MemoryGrowthRisingFilter.apply(
+            rows: rows,
+            nameQuery: "Nope",
+            page: .memory,
+            risingOnly: true,
+            seriesByPid: seriesByPid
+        )
+        XCTAssertTrue(namedTable.isEmpty, "name filter runs first and can hide a rising row")
+
+        let selectedOn = MemoryGrowthRisingFilter.selectedPid(
+            current: 1,
+            rows: rows,
+            nameQuery: "Nope",
+            page: .memory,
+            risingOnly: true,
+            seriesByPid: seriesByPid
+        )
+        XCTAssertEqual(selectedOn, 1, "ON + name-hide of a rising pid must keep selectedPid")
+        XCTAssertEqual(ProcessSelection.acceptedPid(1, in: rows), 1)
+        XCTAssertEqual(ProcessSelection.scrollTarget(selectedPid: selectedOn, rows: rows), 1)
     }
 
     func testSortStillAppliesAfterTheRisingKeep() {
@@ -362,6 +403,44 @@ final class MemoryGrowthRisingFilterTests: XCTestCase {
         XCTAssertNil(insufficientPid)
     }
 
+    func testOnClearsWhenThePidLeavesTheTopStoreMap() {
+        let rows = fixtureRows()
+        var store = MemoryGrowthTopStore()
+        fill(store: &store, pids: [1, 2, 3, 4, 5], count: MemoryGrowthSignal.minSamples, step: 1_048_576)
+        XCTAssertNotNil(
+            MemoryGrowthList.badge(page: .memory, rowPid: 1, seriesByPid: store.seriesByPid)
+        )
+        XCTAssertEqual(
+            MemoryGrowthRisingFilter.selectedPid(
+                current: 1,
+                rows: rows,
+                nameQuery: "",
+                page: .memory,
+                risingOnly: true,
+                seriesByPid: store.seriesByPid
+            ),
+            1
+        )
+
+        store.retain(only: [2, 3, 4, 5, 8])
+        XCTAssertNil(store.series(for: 1))
+        XCTAssertNil(
+            MemoryGrowthList.badge(page: .memory, rowPid: 1, seriesByPid: store.seriesByPid)
+        )
+        XCTAssertNil(
+            MemoryGrowthRisingFilter.selectedPid(
+                current: 1,
+                rows: rows,
+                nameQuery: "",
+                page: .memory,
+                risingOnly: true,
+                seriesByPid: store.seriesByPid
+            ),
+            "falling out of TopStore drops the badge and must clear selectedPid"
+        )
+        XCTAssertNil(ProcessSelection.scrollTarget(selectedPid: nil, rows: rows))
+    }
+
     func testRemainingRisingRowsStaySelectableAndQuittable() {
         let rows = fixtureRows()
         let seriesByPid = mixedSeriesByPid()
@@ -474,6 +553,29 @@ final class MemoryGrowthRisingFilterTests: XCTestCase {
             4: shortSeries(),
             5: risingSeries(),
         ]
+    }
+
+    private func fill(
+        store: inout MemoryGrowthTopStore,
+        pids: [Int32],
+        count: Int,
+        step: Double
+    ) {
+        var nextID: UInt64 = 1
+        let baseline = 200_000_000.0
+        let tick = Date(timeIntervalSince1970: 1_700_000_000)
+        for index in 0..<count {
+            var values: [Int32: Double] = [:]
+            for pid in pids {
+                values[pid] = baseline + Double(index) * step
+            }
+            store.advance(
+                values: values,
+                topPids: pids,
+                at: tick.addingTimeInterval(Double(index) * 1.5),
+                nextSampleID: &nextID
+            )
+        }
     }
 
     private func risingSeries() -> [ChartSample] {
