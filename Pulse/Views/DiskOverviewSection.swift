@@ -22,7 +22,11 @@ struct DiskOverviewSection: View {
 
     private var samplingBody: some View {
         HStack(spacing: 12) {
-            samplingCard(title: DiskPageCopy.readTitle, symbol: "arrow.down")
+            samplingCard(
+                title: DiskPageCopy.readTitle,
+                symbol: "arrow.down",
+                thermalNotice: vm.thermalNotice
+            )
             samplingCard(title: DiskPageCopy.writeTitle, symbol: "arrow.up")
         }
         .frame(height: 150)
@@ -52,7 +56,8 @@ struct DiskOverviewSection: View {
                 title: DiskPageCopy.readTitle,
                 symbol: "arrow.down",
                 rate: vm.hostDiskRates.readBytesPerSecond,
-                samples: vm.diskHistory.read.samples
+                samples: vm.diskHistory.read.samples,
+                thermalNotice: vm.thermalNotice
             )
             DiskRateCard(
                 title: DiskPageCopy.writeTitle,
@@ -92,7 +97,7 @@ struct DiskOverviewSection: View {
         return "\(title) · \(note)"
     }
 
-    private func samplingCard(title: String, symbol: String) -> some View {
+    private func samplingCard(title: String, symbol: String, thermalNotice: String? = nil) -> some View {
         PulseCard {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 10) {
@@ -101,6 +106,9 @@ struct DiskOverviewSection: View {
                     Text(DiskPageCopy.sampling)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if let thermalNotice {
+                        ThermalNoticeLine(text: thermalNotice)
+                    }
                     Spacer(minLength: 0)
                 }
                 .frame(width: 168, alignment: .leading)
@@ -130,6 +138,7 @@ private struct DiskRateCard: View {
     let symbol: String
     let rate: Double?
     let samples: [ChartSample]
+    var thermalNotice: String? = nil
 
     var body: some View {
         PulseCard {
@@ -145,6 +154,9 @@ private struct DiskRateCard: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                    if let thermalNotice {
+                        ThermalNoticeLine(text: thermalNotice)
+                    }
                     Spacer(minLength: 0)
                 }
                 .frame(width: 168, alignment: .leading)

@@ -50,6 +50,7 @@ struct TopConsumer: Equatable {
 struct MemoryHeroCard: View {
     let snapshot: MemorySnapshot
     let usedSeries: [ChartSample]
+    var thermalNotice: String? = nil
 
     var body: some View {
         PulseCard {
@@ -76,6 +77,9 @@ struct MemoryHeroCard: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                    if let thermalNotice {
+                        ThermalNoticeLine(text: thermalNotice)
+                    }
                     Spacer(minLength: 0)
                 }
                 .frame(width: 168, alignment: .leading)

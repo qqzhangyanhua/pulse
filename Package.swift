@@ -45,6 +45,7 @@ let package = Package(
                 "Models/ProcessSelection.swift",
                 "Models/TopAppLocation.swift",
                 "Models/HistoryCurvePresentation.swift",
+                "Models/ThermalNotice.swift",
                 "Models/ProcessQuitOutcome.swift",
                 "Models/ProcessQuitSession.swift",
                 "Models/CPUPage.swift",

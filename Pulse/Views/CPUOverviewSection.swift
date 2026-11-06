@@ -29,6 +29,9 @@ struct CPUOverviewSection: View {
                     Text(CPUPageCopy.sampling)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if let notice = vm.thermalNotice {
+                        ThermalNoticeLine(text: notice)
+                    }
                     Spacer(minLength: 0)
                 }
                 .frame(width: 200, alignment: .leading)
@@ -70,6 +73,9 @@ struct CPUOverviewSection: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                    if let notice = vm.thermalNotice {
+                        ThermalNoticeLine(text: notice)
+                    }
                     Spacer(minLength: 0)
                 }
                 .frame(width: 200, alignment: .leading)

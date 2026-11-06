@@ -26,6 +26,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var cpuHistory = SystemCPUHistory()
     @Published private(set) var networkHistory = SystemNetworkHistory()
     @Published private(set) var diskHistory = SystemDiskHistory()
+    /// Nil unless the system is serious or critical. Overviews read this; the menu bar does not.
+    @Published private(set) var thermalNotice: String?
     @Published var filter = ""
     /// Memory-tab only. Default OFF. Session-scoped; not a Sampler or preference write.
     @Published var risingOnlyFilter = false {
@@ -68,6 +70,15 @@ final class MemoryDashboardVM: ObservableObject {
     private var samplingSession = SamplingSession()
     private var samplingClock = SamplingClock()
     private var samplingGate = SamplingRequestGate()
+    private var thermalObserver: NSObjectProtocol?
+
+    init() {
+        beginThermalWatch()
+    }
+
+    isolated deinit {
+        endThermalWatch()
+    }
 
     var visibleRows: [ProcessRow] {
         MemoryGrowthRisingFilter.apply(
@@ -393,6 +404,49 @@ final class MemoryDashboardVM: ObservableObject {
         }
         if applyRisingOnly {
             applyRisingOnlySelection()
+        }
+    }
+}
+
+private extension MemoryDashboardVM {
+    func beginThermalWatch() {
+        applyThermalState(ProcessInfo.processInfo.thermalState)
+        thermalObserver = NotificationCenter.default.addObserver(
+            forName: ProcessInfo.thermalStateDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.applyThermalState(ProcessInfo.processInfo.thermalState)
+            }
+        }
+    }
+
+    func endThermalWatch() {
+        if let thermalObserver {
+            NotificationCenter.default.removeObserver(thermalObserver)
+            self.thermalObserver = nil
+        }
+    }
+
+    func applyThermalState(_ state: ProcessInfo.ThermalState) {
+        thermalNotice = ThermalNotice.message(for: ThermalCondition(state))
+    }
+}
+
+private extension ThermalCondition {
+    init(_ state: ProcessInfo.ThermalState) {
+        switch state {
+        case .nominal:
+            self = .nominal
+        case .fair:
+            self = .fair
+        case .serious:
+            self = .serious
+        case .critical:
+            self = .critical
+        @unknown default:
+            self = .unknown
         }
     }
 }

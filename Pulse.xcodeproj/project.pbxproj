@@ -22,6 +22,7 @@
 		B00000000000000000000029 /* ProcessSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000029 /* ProcessSelection.swift */; };
 		B00000000000000000000034 /* TopAppLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000034 /* TopAppLocation.swift */; };
 		B00000000000000000000035 /* HistoryCurvePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000035 /* HistoryCurvePresentation.swift */; };
+		B00000000000000000000039 /* ThermalNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000039 /* ThermalNotice.swift */; };
 		B0000000000000000000002F /* ProcessQuitOutcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002F /* ProcessQuitOutcome.swift */; };
 		B00000000000000000000030 /* ProcessQuitSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000030 /* ProcessQuitSession.swift */; };
 		B0000000000000000000001C /* CPUOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001C /* CPUOverviewSection.swift */; };
@@ -79,6 +80,7 @@
 		A00000000000000000000029 /* ProcessSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessSelection.swift; sourceTree = "<group>"; };
 		A00000000000000000000034 /* TopAppLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopAppLocation.swift; sourceTree = "<group>"; };
 		A00000000000000000000035 /* HistoryCurvePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCurvePresentation.swift; sourceTree = "<group>"; };
+		A00000000000000000000039 /* ThermalNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalNotice.swift; sourceTree = "<group>"; };
 		A0000000000000000000002F /* ProcessQuitOutcome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessQuitOutcome.swift; sourceTree = "<group>"; };
 		A00000000000000000000030 /* ProcessQuitSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessQuitSession.swift; sourceTree = "<group>"; };
 		A0000000000000000000001C /* CPUOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUOverviewSection.swift; sourceTree = "<group>"; };
@@ -167,6 +169,7 @@
 				A00000000000000000000029 /* ProcessSelection.swift */,
 				A00000000000000000000034 /* TopAppLocation.swift */,
 				A00000000000000000000035 /* HistoryCurvePresentation.swift */,
+				A00000000000000000000039 /* ThermalNotice.swift */,
 				A0000000000000000000002F /* ProcessQuitOutcome.swift */,
 				A00000000000000000000030 /* ProcessQuitSession.swift */,
 				A0000000000000000000001B /* CPUPage.swift */,
@@ -353,6 +356,7 @@
 				B00000000000000000000029 /* ProcessSelection.swift in Sources */,
 				B00000000000000000000034 /* TopAppLocation.swift in Sources */,
 				B00000000000000000000035 /* HistoryCurvePresentation.swift in Sources */,
+				B00000000000000000000039 /* ThermalNotice.swift in Sources */,
 				B0000000000000000000002F /* ProcessQuitOutcome.swift in Sources */,
 				B00000000000000000000030 /* ProcessQuitSession.swift in Sources */,
 				B0000000000000000000001B /* CPUPage.swift in Sources */,

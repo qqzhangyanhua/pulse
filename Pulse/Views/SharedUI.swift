@@ -411,6 +411,18 @@ struct SparklineChart: View {
     }
 }
 
+struct ThermalNoticeLine: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+    }
+}
+
 struct HistoryAnnotatedChart<Content: View>: View {
     let annotation: String?
     @ViewBuilder var content: () -> Content

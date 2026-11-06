@@ -53,6 +53,9 @@ struct OverviewSection: View {
                         .foregroundStyle(.secondary)
                     SkeletonBlock(width: 120, height: 28)
                     SkeletonBlock(width: 96, height: 10)
+                    if let notice = vm.thermalNotice {
+                        ThermalNoticeLine(text: notice)
+                    }
                     Spacer(minLength: 0)
                 }
                 .frame(width: 168, alignment: .leading)
@@ -126,7 +129,11 @@ struct OverviewSection: View {
 
         return VStack(spacing: 12) {
             HStack(spacing: 12) {
-                MemoryHeroCard(snapshot: snapshot, usedSeries: vm.usageHistory.samples)
+                MemoryHeroCard(
+                    snapshot: snapshot,
+                    usedSeries: vm.usageHistory.samples,
+                    thermalNotice: vm.thermalNotice
+                )
                 CompositionCard(breakdown: snapshot.breakdown, totalBytes: snapshot.totalBytes)
                     .frame(width: 300)
             }
