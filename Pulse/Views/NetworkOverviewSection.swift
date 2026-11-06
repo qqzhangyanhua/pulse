@@ -63,7 +63,33 @@ struct NetworkOverviewSection: View {
         }
         .frame(height: 150)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(overviewLine)
+        .accessibilityLabel(readyAccessibilityLabel)
+    }
+
+    private var readyAccessibilityLabel: String {
+        let notes = [
+            directedHistoryNote(
+                title: NetworkPageCopy.inboundTitle,
+                note: HistoryCurvePresentation.annotation(
+                    current: vm.hostNetworkRates.inboundBytesPerSecond,
+                    sampleCount: vm.networkHistory.inbound.samples.count
+                )
+            ),
+            directedHistoryNote(
+                title: NetworkPageCopy.outboundTitle,
+                note: HistoryCurvePresentation.annotation(
+                    current: vm.hostNetworkRates.outboundBytesPerSecond,
+                    sampleCount: vm.networkHistory.outbound.samples.count
+                )
+            ),
+        ].compactMap { $0 }
+        guard !notes.isEmpty else { return overviewLine }
+        return ([overviewLine] + notes).joined(separator: "，")
+    }
+
+    private func directedHistoryNote(title: String, note: String?) -> String? {
+        guard let note else { return nil }
+        return "\(title) · \(note)"
     }
 
     private func samplingCard(title: String, symbol: String) -> some View {
@@ -149,12 +175,16 @@ private struct NetworkRateCard: View {
         if samples.count < 2 {
             ChartPlaceholder(text: NetworkPageCopy.chartCollecting)
         } else {
-            SparklineChart(
-                samples: samples,
-                tint: PulsePalette.chartNetwork,
-                domain: domain,
-                formatY: { NetworkRateText.string($0) }
-            )
+            HistoryAnnotatedChart(
+                annotation: HistoryCurvePresentation.annotation(current: rate, sampleCount: samples.count)
+            ) {
+                SparklineChart(
+                    samples: samples,
+                    tint: PulsePalette.chartNetwork,
+                    domain: domain,
+                    formatY: { NetworkRateText.string($0) }
+                )
+            }
         }
     }
 

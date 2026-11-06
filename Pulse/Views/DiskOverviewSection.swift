@@ -63,7 +63,33 @@ struct DiskOverviewSection: View {
         }
         .frame(height: 150)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(overviewLine)
+        .accessibilityLabel(readyAccessibilityLabel)
+    }
+
+    private var readyAccessibilityLabel: String {
+        let notes = [
+            directedHistoryNote(
+                title: DiskPageCopy.readTitle,
+                note: HistoryCurvePresentation.annotation(
+                    current: vm.hostDiskRates.readBytesPerSecond,
+                    sampleCount: vm.diskHistory.read.samples.count
+                )
+            ),
+            directedHistoryNote(
+                title: DiskPageCopy.writeTitle,
+                note: HistoryCurvePresentation.annotation(
+                    current: vm.hostDiskRates.writeBytesPerSecond,
+                    sampleCount: vm.diskHistory.write.samples.count
+                )
+            ),
+        ].compactMap { $0 }
+        guard !notes.isEmpty else { return overviewLine }
+        return ([overviewLine] + notes).joined(separator: "，")
+    }
+
+    private func directedHistoryNote(title: String, note: String?) -> String? {
+        guard let note else { return nil }
+        return "\(title) · \(note)"
     }
 
     private func samplingCard(title: String, symbol: String) -> some View {
@@ -149,12 +175,16 @@ private struct DiskRateCard: View {
         if samples.count < 2 {
             ChartPlaceholder(text: DiskPageCopy.chartCollecting)
         } else {
-            SparklineChart(
-                samples: samples,
-                tint: PulsePalette.chartDisk,
-                domain: domain,
-                formatY: { DiskRateText.string($0) }
-            )
+            HistoryAnnotatedChart(
+                annotation: HistoryCurvePresentation.annotation(current: rate, sampleCount: samples.count)
+            ) {
+                SparklineChart(
+                    samples: samples,
+                    tint: PulsePalette.chartDisk,
+                    domain: domain,
+                    formatY: { DiskRateText.string($0) }
+                )
+            }
         }
     }
 
