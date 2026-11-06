@@ -198,6 +198,219 @@ final class DiskPageTests: XCTestCase {
         XCTAssertEqual(disk.selecting(.name), ProcessTableSort(column: .name, descending: false))
     }
 
+    /// Phase 19 focused checks on SamplingCore. They do not click a Mac header,
+    /// do not look at chevrons, and do not instantiate `MemoryDashboardVM`.
+    /// Header literals are a source read in `MemoryDashboardVMSortWiringSourceTests`.
+    func testPhase19DefaultDiskSortStaysCombinedDescendingForTheLockedTriple() {
+        let rows = phase19CombinedTriple()
+        let sort = ProcessTableSort.defaultSort(for: .disk)
+        XCTAssertEqual(sort, ProcessTableSort(column: .disk, descending: true))
+        XCTAssertNotEqual(sort.column, .diskRead)
+        XCTAssertNotEqual(sort.column, .diskWrite)
+        XCTAssertEqual(rows.map(\.diskSortKey), [0, 100, 90])
+        XCTAssertEqual(sort.ordered(rows).map(\.pid), [1, 2, 3])
+    }
+
+    func testPhase19SelectingWriteThenReadStartsEachMetricDescending() {
+        let rows = phase19CombinedTriple()
+        let baseline = ProcessTableSort.defaultSort(for: .disk)
+
+        let writeDescending = baseline.selecting(.diskWrite)
+        XCTAssertEqual(writeDescending, ProcessTableSort(column: .diskWrite, descending: true))
+        XCTAssertEqual(writeDescending.ordered(rows).map(\.pid), [1, 2, 3])
+
+        let writeAscending = writeDescending.selecting(.diskWrite)
+        XCTAssertEqual(writeAscending, ProcessTableSort(column: .diskWrite, descending: false))
+        XCTAssertEqual(writeAscending.ordered(rows).map(\.pid), [3, 2, 1])
+
+        let readDescending = writeAscending.selecting(.diskRead)
+        XCTAssertEqual(readDescending, ProcessTableSort(column: .diskRead, descending: true))
+        XCTAssertEqual(readDescending.ordered(rows).map(\.pid), [2, 1, 3])
+
+        let readAscending = readDescending.selecting(.diskRead)
+        XCTAssertEqual(readAscending, ProcessTableSort(column: .diskRead, descending: false))
+        XCTAssertEqual(readAscending.ordered(rows).map(\.pid), [1, 3, 2])
+
+        let directRead = baseline.selecting(.diskRead)
+        XCTAssertEqual(directRead, ProcessTableSort(column: .diskRead, descending: true))
+        XCTAssertEqual(directRead.ordered(rows).map(\.pid), [2, 1, 3])
+    }
+
+    func testPhase19MissingReadAndIndependentMissingWriteKeepNilAndRealZero() {
+        let readRows = [
+            process(pid: 3, name: "P3", read: 0, write: 0, memory: 1),
+            process(pid: 1, name: "P1", read: nil, write: 50, memory: 1),
+            process(pid: 2, name: "P2", read: 0, write: 20, memory: 1),
+        ]
+        XCTAssertEqual(readRows.map(\.diskSortKey), [0, -1, 20])
+        XCTAssertEqual(DiskRateText.string(nil), "—")
+        XCTAssertEqual(DiskRateText.string(0), "0 字节/秒")
+        XCTAssertEqual(DiskRateText.string(50), "50 字节/秒")
+        XCTAssertEqual(DiskRateText.string(20), "20 字节/秒")
+        XCTAssertNotEqual(DiskRateText.string(50), "—")
+        XCTAssertNotEqual(DiskRateText.string(50), "0 字节/秒")
+
+        let readDescending = ProcessTableSort(column: .diskRead, descending: true)
+        let readAscending = ProcessTableSort(column: .diskRead, descending: false)
+        XCTAssertEqual(readDescending.ordered(readRows).map(\.pid), [2, 3, 1])
+        XCTAssertEqual(readAscending.ordered(readRows).map(\.pid), [1, 2, 3])
+
+        let writeDescending = ProcessTableSort(column: .diskWrite, descending: true)
+        let writeAscending = ProcessTableSort(column: .diskWrite, descending: false)
+        XCTAssertEqual(writeDescending.ordered(readRows).map(\.pid), [1, 2, 3])
+        XCTAssertEqual(writeAscending.ordered(readRows).map(\.pid), [3, 2, 1])
+
+        let missingRead = readDescending.ordered(readRows).first { $0.pid == 1 }
+        XCTAssertNil(missingRead?.diskReadBytesPerSecond)
+        XCTAssertEqual(missingRead?.diskWriteBytesPerSecond, 50)
+        XCTAssertEqual(DiskRateText.string(missingRead?.diskReadBytesPerSecond), "—")
+        XCTAssertEqual(DiskRateText.string(missingRead?.diskWriteBytesPerSecond), "50 字节/秒")
+        XCTAssertEqual(readRows.map(\.diskReadBytesPerSecond), [Optional(0), nil, Optional(0)])
+        XCTAssertEqual(readRows.map(\.diskWriteBytesPerSecond), [Optional(0), Optional(50), Optional(20)])
+
+        let writeRows = [
+            process(pid: 7, name: "P7", read: 0, write: 0, memory: 1),
+            process(pid: 4, name: "P4", read: 0, write: nil, memory: 1),
+            process(pid: 6, name: "P6", read: 0, write: 10, memory: 1),
+            process(pid: 5, name: "P5", read: 0, write: 0, memory: 1),
+        ]
+        XCTAssertEqual(DiskRateText.string(10), "10 字节/秒")
+        XCTAssertEqual(writeDescending.ordered(writeRows).map(\.pid), [6, 5, 7, 4])
+        XCTAssertEqual(writeAscending.ordered(writeRows).map(\.pid), [4, 5, 7, 6])
+
+        let missingWrite = writeAscending.ordered(writeRows).first { $0.pid == 4 }
+        XCTAssertEqual(missingWrite?.diskReadBytesPerSecond, 0)
+        XCTAssertNil(missingWrite?.diskWriteBytesPerSecond)
+        XCTAssertEqual(DiskRateText.string(missingWrite?.diskReadBytesPerSecond), "0 字节/秒")
+        XCTAssertEqual(DiskRateText.string(missingWrite?.diskWriteBytesPerSecond), "—")
+        XCTAssertEqual(
+            writeDescending.ordered(writeRows).map(\.diskWriteBytesPerSecond),
+            [Optional(10), Optional(0), Optional(0), nil]
+        )
+        XCTAssertEqual(writeRows.map(\.diskWriteBytesPerSecond), [Optional(0), nil, Optional(10), Optional(0)])
+    }
+
+    func testPhase19FilterPrecedesOrderedAndSortLeavesRatesUntouched() {
+        let rows = phase19CombinedTriple()
+        let named = ProcessNameFilter.apply(rows, query: "b")
+        XCTAssertEqual(named.map(\.pid), [2])
+        XCTAssertEqual(ProcessTableSort.defaultSort(for: .disk).ordered(named).map(\.pid), [2])
+
+        let blank = MemoryGrowthRisingFilter.apply(
+            rows: rows,
+            nameQuery: "  ",
+            page: .disk,
+            risingOnly: false,
+            seriesByPid: [:]
+        )
+        XCTAssertEqual(ProcessTableSort.defaultSort(for: .disk).ordered(blank).map(\.pid), [1, 2, 3])
+
+        let diskRising = MemoryGrowthRisingFilter.apply(
+            rows: rows,
+            nameQuery: "",
+            page: .disk,
+            risingOnly: true,
+            seriesByPid: [:]
+        )
+        XCTAssertEqual(diskRising.map(\.pid), rows.map(\.pid))
+        XCTAssertEqual(
+            ProcessTableSort(column: .diskRead, descending: true).ordered(diskRising).map(\.pid),
+            [2, 1, 3]
+        )
+
+        let memoryRising = MemoryGrowthRisingFilter.apply(
+            rows: rows,
+            nameQuery: "",
+            page: .memory,
+            risingOnly: true,
+            seriesByPid: [:]
+        )
+        XCTAssertTrue(memoryRising.isEmpty)
+
+        let before = rows
+        let ordered = ProcessTableSort(column: .diskWrite, descending: false).ordered(rows)
+        XCTAssertEqual(rows, before)
+        XCTAssertEqual(ordered.map(\.pid), [3, 2, 1])
+        XCTAssertEqual(ordered.map(\.diskReadBytesPerSecond), [Optional(0), Optional(60), Optional(0)])
+        XCTAssertEqual(ordered.map(\.diskWriteBytesPerSecond), [Optional(0), Optional(30), Optional(100)])
+    }
+
+    func testPhase19DiskSortDoesNotWriteMemoryPublicationOrMenuBarTop() {
+        var publication = MemoryPageSortPublication()
+        let memory = ProcessTableSort(column: .memory, descending: true)
+        XCTAssertEqual(
+            publication.publishMemoryPageSort(memory, selectedPage: .memory),
+            .notifySampler(memory)
+        )
+
+        let rows = [
+            process(pid: 1, name: "aaa", read: 0, write: 100, memory: 10),
+            process(pid: 2, name: "bbb", read: 60, write: 0, memory: 30),
+            process(pid: 3, name: "ccc", read: 0, write: 50, memory: 20),
+        ]
+        let diskWrite = ProcessTableSort(column: .diskWrite, descending: true)
+        XCTAssertEqual(diskWrite.ordered(rows).map(\.pid), [1, 3, 2])
+        XCTAssertEqual(
+            publication.publishMemoryPageSort(diskWrite, selectedPage: .disk),
+            .skip
+        )
+        let diskRead = ProcessTableSort(column: .diskRead, descending: false)
+        XCTAssertEqual(
+            publication.publishMemoryPageSort(diskRead, selectedPage: .disk),
+            .skip
+        )
+        XCTAssertEqual(publication.sort, memory)
+
+        let projected = MenuBarPopoverSnapshot.project(
+            pressure: .normal,
+            usedBytes: nil,
+            samplingFailed: false,
+            rows: rows,
+            processListFailed: false,
+            sort: publication.sort
+        )
+        XCTAssertEqual(projected.processes.map(\.pid), [2, 3, 1])
+        XCTAssertNotEqual(projected.processes.map(\.pid), diskWrite.ordered(rows).map(\.pid))
+        XCTAssertEqual(
+            Array(publication.sort.ordered(rows).prefix(MenuBarPopoverShell.maxProcessRows).map(\.pid)),
+            projected.processes.map(\.pid)
+        )
+    }
+
+    func testPhase19ReselectingDiskKeepsHandPickedReadOrWriteSort() {
+        var navigation = DashboardNavigation()
+        navigation.select(.disk)
+        XCTAssertEqual(navigation.sort, ProcessTableSort(column: .disk, descending: true))
+
+        let write = navigation.sort.selecting(.diskWrite)
+        navigation.updateSort(write)
+        navigation.select(.disk)
+        XCTAssertEqual(navigation.selectedPage, .disk)
+        XCTAssertEqual(navigation.sort, ProcessTableSort(column: .diskWrite, descending: true))
+
+        let read = navigation.sort.selecting(.diskRead)
+        navigation.updateSort(read)
+        navigation.select(.disk)
+        XCTAssertEqual(navigation.sort, ProcessTableSort(column: .diskRead, descending: true))
+
+        navigation.select(.gpu)
+        XCTAssertEqual(navigation.selectedPage, .disk)
+        XCTAssertEqual(navigation.sort.column, .diskRead)
+
+        navigation.focusMemoryPage()
+        XCTAssertEqual(navigation.selectedPage, .memory)
+        XCTAssertEqual(navigation.sort, ProcessTableSort.defaultSort(for: .memory))
+    }
+
+    /// Locked triple, deliberately not pre-sorted. Names `aaa` / `bbb` / `ccc` feed the filter case.
+    private func phase19CombinedTriple() -> [ProcessRow] {
+        [
+            process(pid: 3, name: "ccc", read: 0, write: 0, memory: 1),
+            process(pid: 1, name: "aaa", read: 0, write: 100, memory: 1),
+            process(pid: 2, name: "bbb", read: 60, write: 30, memory: 1),
+        ]
+    }
+
     private func process(
         pid: Int32,
         name: String,

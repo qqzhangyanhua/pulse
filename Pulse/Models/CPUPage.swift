@@ -90,6 +90,8 @@ enum ProcessSortColumn: Equatable, Sendable {
     case memory
     case threads
     case disk
+    case diskRead
+    case diskWrite
 }
 
 struct ProcessTableSort: Equatable, Sendable {
@@ -142,6 +144,10 @@ struct ProcessTableSort: Equatable, Sendable {
             return .orderedSame
         case .disk:
             return compareDoubles(lhs.diskSortKey, rhs.diskSortKey)
+        case .diskRead:
+            return compareDoubles(lhs.diskReadBytesPerSecond ?? -1, rhs.diskReadBytesPerSecond ?? -1)
+        case .diskWrite:
+            return compareDoubles(lhs.diskWriteBytesPerSecond ?? -1, rhs.diskWriteBytesPerSecond ?? -1)
         }
     }
 

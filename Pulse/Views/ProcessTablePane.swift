@@ -60,9 +60,9 @@ struct ProcessTablePane: View {
                     .frame(width: ProcessColumn.network, alignment: .trailing)
             }
             if showsDiskColumns {
-                sortHeader(ProcessColumnTitle.diskRead, column: .disk, trailing: true)
+                sortHeader(ProcessColumnTitle.diskRead, column: .diskRead, trailing: true)
                     .frame(width: ProcessColumn.disk, alignment: .trailing)
-                sortHeader(ProcessColumnTitle.diskWrite, column: .disk, trailing: true)
+                sortHeader(ProcessColumnTitle.diskWrite, column: .diskWrite, trailing: true)
                     .frame(width: ProcessColumn.disk, alignment: .trailing)
             }
             sortHeader(ProcessColumnTitle.threads, column: .threads, trailing: true)
