@@ -277,6 +277,13 @@ final class MemoryDashboardVM: ObservableObject {
             listSelectedPid: selectedPid,
             rows: rows
         )
+        if issued == nil {
+            ProcessQuitSession.releaseClosedForceConfirmation(
+                store: &confirming,
+                generation: request.generation,
+                issued: issued
+            )
+        }
         quitOutcome = confirming
         guard let issued else { return }
         let result = await ProcessActions.forceTerminate(pid: issued.pid)
