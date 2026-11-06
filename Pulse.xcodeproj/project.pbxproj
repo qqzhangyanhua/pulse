@@ -106,8 +106,8 @@
 		A00000000000000000000006 /* MachineInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineInfo.swift; sourceTree = "<group>"; };
 		A00000000000000000000007 /* ProcessActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessActions.swift; sourceTree = "<group>"; };
 		A00000000000000000000008 /* MemoryDashboardVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDashboardVM.swift; sourceTree = "<group>"; };
-		A00000000000000000000037 /* MemoryDashboardVM+QuitSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDashboardVM+QuitSession.swift; sourceTree = "<group>"; };
-		A00000000000000000000038 /* MemoryDashboardVM+TopAppLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDashboardVM+TopAppLocation.swift; sourceTree = "<group>"; };
+		A00000000000000000000037 /* MemoryDashboardVM+QuitSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+QuitSession.swift"; sourceTree = "<group>"; };
+		A00000000000000000000038 /* MemoryDashboardVM+TopAppLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+TopAppLocation.swift"; sourceTree = "<group>"; };
 		A00000000000000000000009 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A0000000000000000000000A /* MemoryDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDashboardView.swift; sourceTree = "<group>"; };
 		A0000000000000000000000B /* OverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewSection.swift; sourceTree = "<group>"; };
