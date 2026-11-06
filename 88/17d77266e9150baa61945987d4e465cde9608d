@@ -1,0 +1,55 @@
+Tests/SamplingCoreTests/HistoryCurveWiringSourceTests.swift
+  s_fc42d2408e89a4::t_d9e94a003edf5f 189
+Tests/SamplingCoreTests/MemoryDashboardVMSortWiringSourceTests.swift
+  s_fc42d2408e89a4::t_f666a6284be454 123
+Tests/SamplingCoreTests/ProcessQuitSessionWiringSourceTests.swift
+  s_fc42d2408e89a4::t_4cdf5d76b2b6d4 214
+  s_fc42d2408e89a4::t_f00292128b0302 62
+Pulse/Views/CPUOverviewSection.swift
+  s_fc42d2408e89a4::t_466bc3ec8de96e 32-34,76-78
+Tests/SamplingCoreTests/ResourceDetailPageSourceTests.swift
+  s_fc42d2408e89a4::t_f63477d4c7a88d 155
+Tests/SamplingCoreTests/MemoryDetailSidebarWiringSourceTests.swift
+  s_fc42d2408e89a4::t_08e797b6993614 99
+Package.swift
+  s_fc42d2408e89a4::t_789fc501598c36 48
+Tests/SamplingCoreTests/TopAppLocationWiringSourceTests.swift
+  s_fc42d2408e89a4::t_2d30f9a0a819e0 72
+Tests/SamplingCoreTests/MemoryPageFilterClearWiringSourceTests.swift
+  s_fc42d2408e89a4::t_ee4cb2747ad78e 78-79
+Pulse/Views/SharedUI.swift
+  s_fc42d2408e89a4::t_7086c43a36944e 414-425
+Pulse/Views/NetworkOverviewSection.swift
+  s_fc42d2408e89a4::t_a08db6c2bd4e16 109-111,141,157-159
+  s_fc42d2408e89a4::t_b09e0b37361276 25-29,59-60,100
+Pulse/Views/DiskOverviewSection.swift
+  s_fc42d2408e89a4::t_f71d4a3a7d4d47 25-29,59-60,100,109-111,141,157-159
+Pulse.xcodeproj/project.pbxproj
+  s_fc42d2408e89a4::t_af2ed748dad5a2 25,83,172,359
+Pulse/Views/OverviewCards.swift
+  s_fc42d2408e89a4::t_2954b9bd52b46a 53,80-82
+Pulse/Views/OverviewSection.swift
+  s_fc42d2408e89a4::t_99e111e9402cb0 56-58,132-136
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_fc42d2408e89a4::t_5804327bea4b33 130
+  s_fc42d2408e89a4::t_07d7ee7fd438de 109
+Pulse/ViewModels/MemoryDashboardVM.swift
+  s_fc42d2408e89a4::t_514cfc17919ea3 79
+  s_fc42d2408e89a4::t_3ea8f0c56c6a2a 29-30,73-78,80-81,410-452
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "8817d77266e9150baa61945987d4e465cde9608d",
+  "prompts": {},
+  "sessions": {
+    "s_fc42d2408e89a4": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b128-30fe-7392-bf93-adb16d085987",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
