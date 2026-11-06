@@ -1204,6 +1204,291 @@ final class ProcessQuitSessionTests: XCTestCase {
         XCTAssertNotEqual(store.record(for: 2)?.token, aAfterConfirm.token)
     }
 
+    /// Pure store timing. Not an NSAlert and not a VM button.
+    /// B's force request must not clear A's generation. A's confirm then issues only A.
+    /// A second force request does not mint a generation: knife 1 keeps the same pending.
+    func testBForceRequestLeavesAPendingSoConfirmIssuesOnlyA() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let failed = try fail(1, rows: rows, store: &store)
+        let clock = store.nextToken
+        let request = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        let pending = try XCTUnwrap(store.pendingForceConfirmation)
+        XCTAssertEqual(pending.generation, request.generation)
+        XCTAssertEqual(pending.targetPid, 1)
+        XCTAssertEqual(store.nextToken, clock)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+
+        XCTAssertNil(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 2,
+                sidebarSubjectPid: 2,
+                rows: rows
+            )
+        )
+        XCTAssertNil(store.click(.requestForce, selectedPid: 2, rows: rows))
+        XCTAssertNil(store.click(.requestForce, selectedPid: 1, rows: rows))
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+        XCTAssertEqual(store.nextToken, clock)
+        XCTAssertNil(store.record(for: 2))
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+
+        let issued = try XCTUnwrap(
+            ProcessQuitSession.confirmForce(
+                store: &store,
+                generation: request.generation,
+                listSelectedPid: 1,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(issued.pid, 1)
+        XCTAssertEqual(issued.kind, .forceTerminate)
+        XCTAssertNotEqual(issued.pid, 2)
+        XCTAssertNil(store.record(for: 2))
+        XCTAssertEqual(store.record(for: 1)?.token, issued.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertNil(store.pendingForceConfirmation)
+        XCTAssertNil(
+            ProcessQuitSession.confirmForce(
+                store: &store,
+                generation: request.generation,
+                listSelectedPid: 1,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(store.record(for: 1)?.token, issued.token)
+    }
+
+    /// Same-pid ordinary replace consumes that pid's pending. The old generation cannot issue.
+    /// A different pid is not involved. This is the knife-1 supersede, through the session helper.
+    func testSamePidOrdinaryReplaceMakesTheOldConfirmUnableToIssue() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A")]
+        let failed = try fail(1, rows: rows, store: &store)
+        let request = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        let pending = try XCTUnwrap(store.pendingForceConfirmation)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+        let replaced = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(replaced.pid, 1)
+        XCTAssertEqual(replaced.kind, .terminate)
+        XCTAssertNotEqual(replaced.token, failed.token)
+        XCTAssertNil(store.pendingForceConfirmation)
+        XCTAssertNil(
+            ProcessQuitSession.confirmForce(
+                store: &store,
+                generation: request.generation,
+                listSelectedPid: 1,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(pending.targetPid, 1)
+        XCTAssertEqual(store.record(for: 1)?.token, replaced.token)
+        XCTAssertEqual(store.record(for: 1)?.kind, .terminate)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertNotEqual(store.record(for: 1)?.kind, .forceTerminate)
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: failed.pid,
+            token: failed.token,
+            result: .exited,
+            taskCancelled: false
+        )
+        XCTAssertEqual(store.record(for: 1)?.token, replaced.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertNotEqual(store.record(for: 1)?.opportunity, .closed)
+    }
+
+    /// A pending, B's terminate, then A's ordinary click replaces A's own pending.
+    /// The old generation must not quit B, must not write B a quitting record or a token,
+    /// and must not replace A's new token. B's own completion stays on B's token.
+    /// Not an NSAlert. Linux does not run the MainActor alert callback.
+    func testStaleForceConfirmAfterAReplacesDoesNotQuitB() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let failed = try fail(1, rows: rows, store: &store)
+        let request = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        let pending = try XCTUnwrap(store.pendingForceConfirmation)
+        XCTAssertEqual(pending.targetPid, 1)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+
+        let bIssued = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 2,
+                sidebarSubjectPid: 2,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(bIssued.pid, 2)
+        XCTAssertEqual(bIssued.kind, .terminate)
+        XCTAssertEqual(store.record(for: 2)?.phase, .quitting)
+        XCTAssertEqual(store.record(for: 2)?.token, bIssued.token)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(
+            store.pendingForceConfirmation,
+            pending,
+            "B's terminate must leave A's force generation in place"
+        )
+
+        let replaced = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(replaced.pid, 1)
+        XCTAssertEqual(replaced.kind, .terminate)
+        XCTAssertNotEqual(replaced.token, failed.token)
+        XCTAssertNotEqual(replaced.token, bIssued.token)
+        XCTAssertNil(store.pendingForceConfirmation)
+        XCTAssertEqual(store.record(for: 1)?.token, replaced.token)
+        XCTAssertEqual(store.record(for: 2)?.token, bIssued.token)
+        XCTAssertEqual(store.record(for: 2)?.phase, .quitting)
+
+        let stale = ProcessQuitSession.confirmForce(
+            store: &store,
+            generation: request.generation,
+            listSelectedPid: 1,
+            rows: rows
+        )
+        XCTAssertNil(stale)
+        XCTAssertNil(store.pendingForceConfirmation)
+        XCTAssertEqual(store.record(for: 1)?.pid, 1)
+        XCTAssertEqual(store.record(for: 1)?.token, replaced.token)
+        XCTAssertEqual(store.record(for: 1)?.kind, .terminate)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertNotEqual(store.record(for: 1)?.kind, .forceTerminate)
+        XCTAssertEqual(store.record(for: 2)?.pid, 2)
+        XCTAssertEqual(store.record(for: 2)?.token, bIssued.token)
+        XCTAssertEqual(store.record(for: 2)?.kind, .terminate)
+        XCTAssertEqual(store.record(for: 2)?.phase, .quitting)
+        XCTAssertNotEqual(store.record(for: 2)?.token, replaced.token)
+
+        let bBeforePacket = try XCTUnwrap(store.record(for: 2))
+        let aBeforePacket = try XCTUnwrap(store.record(for: 1))
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: bIssued.pid,
+            token: bIssued.token,
+            result: .stillRunning,
+            taskCancelled: false
+        )
+        XCTAssertEqual(store.record(for: 2)?.token, bIssued.token)
+        XCTAssertEqual(store.record(for: 2)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 2)?.opportunity, .open)
+        XCTAssertNotEqual(store.record(for: 2)?.phase, .quitting)
+        XCTAssertEqual(try XCTUnwrap(store.record(for: 1)), aBeforePacket)
+        XCTAssertNotEqual(store.record(for: 1)?.token, bBeforePacket.token)
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: failed.pid,
+            token: failed.token,
+            result: .exited,
+            taskCancelled: false
+        )
+        XCTAssertEqual(store.record(for: 1)?.token, replaced.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertEqual(store.record(for: 2)?.token, bIssued.token)
+        XCTAssertEqual(store.record(for: 2)?.phase, .failed)
+    }
+
+    /// Absence still keeps the pending generation. Another pid's terminate must not clear it,
+    /// and confirm while absent still returns nil without entering quitting.
+    /// No identityEvidence injection.
+    func testOtherPidTerminateDoesNotClearAnAbsentForcePending() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let failed = try fail(1, rows: rows, store: &store)
+        let request = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        let pending = try XCTUnwrap(store.pendingForceConfirmation)
+        _ = ProcessQuitSession.applySample(
+            store: &store,
+            listSelectedPid: 1,
+            sidebarSubjectPid: 1,
+            currentLiveDetail: nil,
+            observation: ProcessQuitSession.Observation(rows: [row(2, "B")])
+        )
+        XCTAssertEqual(store.record(for: 1)?.presence, .absentAndUnknown)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+
+        let bIssued = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 2,
+                sidebarSubjectPid: 2,
+                rows: [row(2, "B")]
+            )
+        )
+        XCTAssertEqual(bIssued.pid, 2)
+        XCTAssertEqual(
+            store.pendingForceConfirmation,
+            pending,
+            "B's terminate must not clear A's absent force generation"
+        )
+        XCTAssertEqual(store.record(for: 1)?.presence, .absentAndUnknown)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+        XCTAssertNil(
+            ProcessQuitSession.confirmForce(
+                store: &store,
+                generation: request.generation,
+                listSelectedPid: 1,
+                rows: [row(2, "B")]
+            )
+        )
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertNotEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertEqual(store.record(for: 2)?.token, bIssued.token)
+        XCTAssertEqual(store.record(for: 2)?.phase, .quitting)
+        XCTAssertNotEqual(store.record(for: 2)?.pid, pending.targetPid)
+    }
+
     func testNoQuitRecordUsesTheLiveRowAndEnablesAFreshClick() throws {
         let store = ProcessQuitOutcome()
         let rows = [row(15, "Plain", memory: 12)]
