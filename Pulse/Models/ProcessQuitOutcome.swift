@@ -1,11 +1,15 @@
 import Foundation
 
-/// Session store for the latest quit attempt of each pid.
+/// Latest quit attempt for each pid in this session.
 ///
-/// Names are local to this file. There is no existing per-pid store to stay
-/// compatible with: `QuitPhase` stays the untouched global enum and is not a
-/// second copy of this record. Scaffold only — transitions are filled in after
-/// the red tests exist.
+/// There is no existing per-pid store to stay compatible with. `QuitPhase`
+/// stays the untouched global enum and is not a second copy of these records.
+/// `phase` is only `.quitting` or `.failed`. Presence and opportunity are
+/// separate fields, so leaving the list does not settle the attempt.
+///
+/// `identityEvidence` defaults to false. This model has no start time.
+/// `true` is a caller-supplied injection for tests; it does not mean the
+/// process list can prove the pid is the same instance.
 struct ProcessQuitOutcome: Equatable, Sendable {
     static let productionIdentityEvidence = false
 
@@ -20,6 +24,7 @@ struct ProcessQuitOutcome: Equatable, Sendable {
 
     var trackedCount: Int { records.count }
 
+    /// A vanished pid is not a new legal list selection.
     static func legalListSelection(_ pid: Int32?, in rows: [ProcessRow]) -> Int32? {
         guard let pid else { return nil }
         return ProcessSelection.acceptedPid(pid, in: rows)
@@ -31,16 +36,55 @@ struct ProcessQuitOutcome: Equatable, Sendable {
         selectedPid: Int32?,
         rows: [ProcessRow]
     ) -> ProcessQuitIssued? {
-        _ = (action, selectedPid, rows, nextForceGeneration)
-        return nil
+        switch action {
+        case .terminate:
+            return beginTerminate(selectedPid: selectedPid, rows: rows)
+        case .requestForce:
+            beginForceConfirmation(selectedPid: selectedPid, rows: rows)
+            return nil
+        case .cancelForce(let generation):
+            cancelForceConfirmation(generation: generation)
+            return nil
+        case .confirmForce(let generation):
+            return confirmForce(generation: generation, selectedPid: selectedPid, rows: rows)
+        }
     }
 
     mutating func applyPresenceFromRows(_ frame: ProcessQuitPresenceFrame) {
-        _ = frame
+        guard frame.isSuccessfulProcessList else { return }
+        for pid in Array(records.keys) {
+            guard var record = records[pid] else { continue }
+            let present = frame.rows.contains(where: { $0.pid == pid })
+            if present {
+                switch record.presence {
+                case .inRows:
+                    break
+                case .absentAndUnknown, .currentReappearedUnconfirmed:
+                    record.presence = frame.identityEvidence
+                        ? .inRows
+                        : .currentReappearedUnconfirmed
+                }
+            } else if record.presence != .absentAndUnknown {
+                if let detail = frame.detail, detail.row.pid == pid {
+                    record.frozenDetail = detail
+                }
+                record.presence = .absentAndUnknown
+            }
+            records[pid] = record
+        }
     }
 
     mutating func complete(pid: Int32, token: UInt64, result: ProcessActionResult) {
-        _ = (pid, token, result)
+        guard var record = records[pid], record.token == token else { return }
+        switch result {
+        case .requestFailed, .stillRunning:
+            guard record.opportunity == .open else { return }
+            record.phase = .failed
+        case .exited, .notFound:
+            guard record.opportunity == .open else { return }
+            record.opportunity = .closed
+        }
+        records[pid] = record
     }
 
     func project(
@@ -48,16 +92,149 @@ struct ProcessQuitOutcome: Equatable, Sendable {
         sidebarSubjectPid: Int32?,
         rows: [ProcessRow]
     ) -> ProcessQuitProjection {
-        _ = (listSelectedPid, sidebarSubjectPid, rows, records, nextToken, pendingForceConfirmation)
+        guard let subject = sidebarSubjectPid else {
+            return ProcessQuitProjection(
+                viewState: .none,
+                canRetry: false,
+                allowsFreshOperation: false,
+                showsQuittingSpinner: false,
+                showsFailureCard: false,
+                showsAbsentRecord: false,
+                absentLabel: nil
+            )
+        }
+        let legalSelf = listSelectedPid == subject
+            && Self.legalListSelection(subject, in: rows) != nil
+        guard let record = records[subject] else {
+            return ProcessQuitProjection(
+                viewState: .none,
+                canRetry: false,
+                allowsFreshOperation: legalSelf,
+                showsQuittingSpinner: false,
+                showsFailureCard: false,
+                showsAbsentRecord: false,
+                absentLabel: nil
+            )
+        }
+
+        if record.presence == .currentReappearedUnconfirmed {
+            return ProcessQuitProjection(
+                viewState: .liveAsNewProcess,
+                canRetry: false,
+                allowsFreshOperation: legalSelf,
+                showsQuittingSpinner: false,
+                showsFailureCard: false,
+                showsAbsentRecord: false,
+                absentLabel: nil
+            )
+        }
+        if record.presence == .absentAndUnknown {
+            return ProcessQuitProjection(
+                viewState: .absentFromList,
+                canRetry: false,
+                allowsFreshOperation: false,
+                showsQuittingSpinner: false,
+                showsFailureCard: false,
+                showsAbsentRecord: true,
+                absentLabel: ProcessQuitOutcomeCopy.absentRecordLabel
+            )
+        }
+        if record.opportunity == .closed && record.presence == .inRows {
+            return ProcessQuitProjection(
+                viewState: .settledInRows,
+                canRetry: false,
+                allowsFreshOperation: legalSelf,
+                showsQuittingSpinner: false,
+                showsFailureCard: false,
+                showsAbsentRecord: false,
+                absentLabel: nil
+            )
+        }
+        if record.opportunity == .open && record.phase == .failed && record.presence == .inRows {
+            return ProcessQuitProjection(
+                viewState: .failedStillPresent,
+                canRetry: legalSelf,
+                allowsFreshOperation: false,
+                showsQuittingSpinner: false,
+                showsFailureCard: true,
+                showsAbsentRecord: false,
+                absentLabel: nil
+            )
+        }
         return ProcessQuitProjection(
-            viewState: .none,
+            viewState: .quitting,
             canRetry: false,
             allowsFreshOperation: false,
-            showsQuittingSpinner: false,
+            showsQuittingSpinner: true,
             showsFailureCard: false,
             showsAbsentRecord: false,
             absentLabel: nil
         )
+    }
+
+    private func isInFlight(_ record: ProcessQuitRecord) -> Bool {
+        record.phase == .quitting
+            && record.opportunity == .open
+            && record.presence == .inRows
+    }
+
+    private mutating func beginTerminate(selectedPid: Int32?, rows: [ProcessRow]) -> ProcessQuitIssued? {
+        guard let pid = Self.legalListSelection(selectedPid, in: rows) else { return nil }
+        if let existing = records[pid], isInFlight(existing) {
+            return nil
+        }
+        pendingForceConfirmation = nil
+        return replaceWithQuitting(pid: pid, kind: .terminate)
+    }
+
+    private mutating func beginForceConfirmation(selectedPid: Int32?, rows: [ProcessRow]) {
+        guard pendingForceConfirmation == nil else { return }
+        guard let pid = Self.legalListSelection(selectedPid, in: rows) else { return }
+        if let existing = records[pid], isInFlight(existing) {
+            return
+        }
+        let generation = nextForceGeneration
+        nextForceGeneration &+= 1
+        pendingForceConfirmation = ProcessQuitForcePending(generation: generation, targetPid: pid)
+    }
+
+    private mutating func cancelForceConfirmation(generation: UInt64) {
+        guard pendingForceConfirmation?.generation == generation else { return }
+        pendingForceConfirmation = nil
+    }
+
+    private mutating func confirmForce(
+        generation: UInt64,
+        selectedPid: Int32?,
+        rows: [ProcessRow]
+    ) -> ProcessQuitIssued? {
+        guard let pending = pendingForceConfirmation, pending.generation == generation else {
+            return nil
+        }
+        pendingForceConfirmation = nil
+        let target = pending.targetPid
+        guard selectedPid == target, Self.legalListSelection(target, in: rows) != nil else {
+            return nil
+        }
+        if let existing = records[target], isInFlight(existing) {
+            return nil
+        }
+        return replaceWithQuitting(pid: target, kind: .forceTerminate)
+    }
+
+    private mutating func replaceWithQuitting(pid: Int32, kind: ProcessQuitKind) -> ProcessQuitIssued {
+        let token = nextToken
+        nextToken &+= 1
+        records[pid] = ProcessQuitRecord(
+            pid: pid,
+            kind: kind,
+            phase: .quitting,
+            token: token,
+            opportunity: .open,
+            frozenDetail: nil,
+            presence: .inRows
+        )
+        return ProcessQuitIssued(pid: pid, token: token, kind: kind)
     }
 }
 
@@ -67,6 +244,7 @@ struct ProcessQuitRecord: Equatable, Sendable {
     var phase: ProcessQuitPhase
     var token: UInt64
     var opportunity: ProcessQuitOpportunity
+    /// Value copy of the detail frame from the first absence. Later frames do not append.
     var frozenDetail: ProcessDetail?
     var presence: ProcessQuitPresence
 }
