@@ -4392,9 +4392,9 @@ struct NoResourceUpgradeProjection {
 
 > 一期至十八期正文不改写。五期磁盘 Tab 的默认合计降序、缺值用 `-1`、格子「—」不装 0，以及十八期「列表排序不在本刀 / 不改进程表」都保持原文。**本节只覆盖磁盘进程表两个已有表头的手动排序。** 不新采样、不新列、不新 VM 状态。
 
-**已锁定**：进磁盘页、以及从其它页回到磁盘页，仍走现成 `DashboardNavigation.select`。页真的换了才把排序重置为 `ProcessTableSort.defaultSort(for: .disk)`，也就是今天的 `.disk`、`descending: true`。`.disk` 继续用 `ProcessRow.diskSortKey`：读、写两个 `Double?` 都有值才是两者之和，否则 `-1`。这组默认语义原样保留。读取表头保持可点，不禁用、不改成 `staticHeader`。
+**已锁定**：进磁盘页、以及从其它页回到磁盘页，仍走现成 `DashboardNavigation.select`。页真的换了才把排序重置为 `ProcessTableSort.defaultSort(for: .disk)`，也就是今天的 `.disk`、`descending: true`。`.disk` 继续用 `ProcessRow.diskSortKey`：读、写两个 `Double?` 都有值才是两者之和，否则 `-1`。这组默认语义原样保留。默认合计没有自己的表头，两个磁盘表头在 `.disk` 时都不 active。
 
-手动排序只增加两个列身份：`.diskRead` 比 `diskReadBytesPerSecond`，`.diskWrite` 比 `diskWriteBytesPerSecond`。比较用的缺数哨兵是该字段 `?? -1`，与现有 CPU / 合计磁盘的缺数风格一致。哨兵只存在于比较，不写回行、不交给 `DiskRateText`、不算占比。格子仍是 `DiskRateText`：真实 nil →「—」，真实 0 →「0 字节/秒」。默认降序时，缺这一列的行在真实 0 之后；手动升序时，缺这一列的行在真实 0 之前。不引入「缺数永远沉底」，也不加新 tooltip。
+手动排序只增加两个列身份。读取表头的 column 实参是 `.diskRead`，比 `diskReadBytesPerSecond`。写入表头的 column 实参是 `.diskWrite`，比 `diskWriteBytesPerSecond`。两个实参都是字面量。点「写入」就按写入排序，点「读取」就按读取排序。比较用的缺数哨兵是该字段 `?? -1`，与现有 CPU / 合计磁盘的缺数风格一致。哨兵只存在于比较，不写回行、不交给 `DiskRateText`、不算占比。格子仍是 `DiskRateText`：真实 nil →「—」，真实 0 →「0 字节/秒」。默认降序时，缺这一列的行在真实 0 之后；手动升序时，缺这一列的行在真实 0 之前。不引入「缺数永远沉底」，也不加新 tooltip。
 
 `.name` / `.cpu` / `.memory` / `.threads` 的 `selecting` 与比较不改。菜单栏 Top3 与内存页 Top5 publication 仍走原来的内存页 sort，不读磁盘页的 live `tableSort`。
 
@@ -4439,7 +4439,7 @@ struct NoResourceUpgradeProjection {
 | 再次点已经打开的磁盘页 | 保留手选 sort（现有单测：改成 `.name` 后再 `select(.disk)` 仍是 `.name`） | **保持**。手选 `.diskRead` / `.diskWrite` 同样保留 |
 | 冷启动 | 内存页，内存默认降序 | **保持** |
 | 菜单栏 `focusMemoryPage` | 内存页 + 内存默认 sort | **保持** |
-| 读取 / 写入表头 | 两处都传 `.disk`，点哪一个都是合计比较 | **做**：写入链按下面的验收；读取表头进入 `.diskRead` |
+| 读取 / 写入表头 | 两处都传 `.disk`，点哪一个都是合计比较 | **做**：实参分别为 `.diskRead` / `.diskWrite`。点该表头就按该列排序 |
 | `.name` / `.cpu` / `.memory` / `.threads` | `selecting` + 现有比较 + pid tie-break | **不改** |
 | 网络列 | `staticHeader`，文案「暂不可用」 | **仍不可点** |
 | GPU | 不可选 | **仍不可选** |
@@ -4449,35 +4449,23 @@ struct NoResourceUpgradeProjection {
 
 一二至十八期验收不因本文重开。实现等本设计合并 + Grok merge gate 后再写 Swift。
 
-## `selecting` 与写入点击链
+## 表头实参
 
-`selecting` 不按「按钮标题」记状态，只看这次传入的列身份和当前 `ProcessTableSort`。今天两处表头传入的都是 `.disk`，所以在默认 `.disk` 降序上点「写入」，机械结果是**同一列翻转**，得到 `.disk` 升序，不是一个新列的降序。
+`ProcessTablePane` 只改两处调用：
 
-十九期把「第一次进入某列」定义成：生效列**变成** `.diskRead` 或 `.diskWrite` 的那一次。那一次是降序。同一列再点则翻转。换成另一列则按新列重新降序（`.name` 仍是第一次升序，这条原规则不动）。默认合计上对「写入」的第一次点击还没进入 `.diskWrite`，所以它仍是 `.disk` 升序。不要把「第一次点写入」写成永远 `.diskWrite` 降序。
+- 读取：`sortHeader(ProcessColumnTitle.diskRead, column: .diskRead, trailing: true)`
+- 写入：`sortHeader(ProcessColumnTitle.diskWrite, column: .diskWrite, trailing: true)`
 
-列实参（实现 PR 用同一套纯函数，让 Linux 能执行这条链；名字可改，结果不能改）：
+`sortHeader` 不改。它仍然调用 `setTableSort(tableSort.selecting(column))`，`active` 仍然是 `tableSort.column == column`。现有 `selecting` 因此就是：
 
-| 当前 sort | 写入表头这次交给 `selecting` 的列 | 结果 |
-| --- | --- | --- |
-| `.disk` 且 `descending == true` | `.disk` | `.disk` 升序。这是 write1 |
-| 其它任何 sort，含 `.disk` 升序、已经是 `.diskWrite`、以及 `.diskRead` | `.diskWrite` | 当前不是 `.diskWrite` 时进入该列并降序；已经是 `.diskWrite` 时翻转 |
+- 从默认 `.disk` 降序第一次点「写入」这个表头：传入 `.diskWrite`，列身份不同，结果是 `.diskWrite` 降序。
+- 从默认 `.disk` 降序第一次点「读取」这个表头：传入 `.diskRead`，结果是 `.diskRead` 降序。
+- 再点同一个表头：列身份相同，`descending` 翻转。
+- 换到另一个表头：新的 metric 从降序开始。`.name` 仍是第一次升序，这条原规则不动。
 
-读取表头每次交给 `selecting` 的列都是 `.diskRead`。从其它列进来是降序；已经是 `.diskRead` 则翻转。读取表头不走 write1 那种合计 toggle。从默认 `.disk` 降序直接点「读取」就是进入 `.diskRead` 降序，按钮不能禁用。这句只属于读取表头，不能抄到写入表头的第一次点击上。
+「第一次」指该表头。默认的 `.disk` 不是这两个表头的列。不存在表头第一次只把合计 `.disk` 翻转的行为。不增加纯函数，不增加存储，不记点击次数。
 
-不新增状态机。上面两列实参都是当前 `ProcessTableSort` 的纯函数。不新加 `@Published`，也不记「已经点过写入几次」。
-
-### 箭头
-
-`sortHeader` 继续用 `active = tableSort.column == column`，方向继续用已经生效的 `descending`：`true` → `chevron.down`，`false` → `chevron.up`。读取和写入不能同时 active。
-
-按上一节的列实参：
-
-- 默认 `.disk` 降序：写入表头传入 `.disk`，只有写入 active，箭头向下。读取传入 `.diskRead`，不 active。这表示合计排序，不是两个表头各排各的。
-- write1（`.disk` 升序）：写入表头改传 `.diskWrite`，与当前 `.disk` 不相等；读取传入的 `.diskRead` 也不相等。单靠 `==` 时两个磁盘表头都不 active。
-- 若实现要在这个「旧列仍是 `.disk`」的 write1 上把箭头放到「读取」，只允许这一处，方向必须是 `chevron.up`，与已经生效的 `.disk` 升序一致。它不表示比较键已经换成 `diskReadBytesPerSecond`。写入表头这时不能再 active。
-- 生效列是 `.diskRead`：只有读取 active。生效列是 `.diskWrite`：只有写入 active。
-
-不改 `sortHeader` 的 chevron 资源，不加 tooltip，不增加 PID 列，不让两个磁盘表头一起亮。
+默认 `.disk` 时，两个磁盘表头的 `column ==` 都是假，所以都不 active。生效列变成 `.diskRead` 后只有读取 active；变成 `.diskWrite` 后只有写入 active。不新增合计表头。
 
 ## 数字验收
 
@@ -4495,23 +4483,18 @@ struct NoResourceUpgradeProjection {
 
 `.disk` 降序按 100、90、0，pid 顺序 **1, 2, 3**。三行两路都有值，没有 `-1`。这就是 `defaultSort(for: .disk)` 对这三行的结果，也是进入磁盘页时的排序。
 
-### b. 写入点击链
+### b. 点「写入」和点「读取」
 
-同一组 P1 / P2 / P3。状态必须按这个顺序验收，不能把 write1 改成 `.diskWrite` 降序：
+同一组 P1 / P2 / P3。第一次点的是该表头，不是默认的 `.disk` 列。
 
 | 步骤 | 操作 | 生效 sort | 顺序依据 | pid 顺序 |
 | --- | --- | --- | --- | --- |
 | default | 进入磁盘页 | `.disk` 降序 | 合计 100、90、0 | **1, 2, 3** |
-| write1 | 第一次点「写入」 | `.disk` 升序（同一列 toggle） | 合计 0、90、100 | **3, 2, 1** |
-| write2 | 第二次点「写入」 | `.diskWrite` 降序（第一次进入该列） | 写 100、30、0 | **1, 2, 3** |
-| write3 | 第三次点「写入」 | `.diskWrite` 升序（同一列翻转） | 写 0、30、100 | **3, 2, 1** |
-| read1 | 接着点「读取」 | `.diskRead` 降序（换列，重新降序） | 读 60，然后两个真实 0 按 pid 1 再 3 | **2, 1, 3** |
+| 1 | 第一次点「写入」 | `.diskWrite` 降序 | 写 100、30、0 | **1, 2, 3** |
+| 2 | 再点「写入」 | `.diskWrite` 升序 | 写 0、30、100 | **3, 2, 1** |
+| 3 | 再点「读取」 | `.diskRead` 降序 | 读 60，然后两个真实 0 按 pid 1 再 3 | **2, 1, 3** |
 
-read1 的两个读 0 是 pid 1 与 pid 3。降序不把 tie-break 翻成 3 再 1。
-
-从 default 直接点「读取」（不经过写入链）是 `.diskRead` 降序，同一组 pid 顺序也是 **2, 1, 3**。这是读取表头进入新列，不是 write1。
-
-若只把两处 `sortHeader` 的实参从字面量 `.disk` 改成无条件 `.diskWrite` / `.diskRead`，`selecting` 会让第一次点「写入」直接成为 `.diskWrite` 降序，顺序 1, 2, 3。那一步**不是** write1。验收以本表为准。
+从 default 直接第一次点「读取」这个表头，也是 `.diskRead` 降序，pid 顺序 **2, 1, 3**。两个读 0 是 pid 1 与 pid 3，降序不把 tie-break 翻成 3 再 1。
 
 ### c. 读缺数，以及写缺数的独立组
 
@@ -4564,7 +4547,7 @@ P1 读 nil 只影响读排序键和合计 `diskSortKey`。它的写 50 照常参
 - 查询空白：三行都在。`.disk` 降序仍是 1, 2, 3。
 - 磁盘页即使 `risingOnly == true`，`apply` 也因 `page != .memory` 返回名称过滤结果，不按上涨徽标删行。内存页的上涨过滤不改。
 
-`setTableSort` 不写 `selectedPid`，不写 `detail`，不调用 `sampler.setSelectedPid`，不请求采样。选中 pid 2 时走完 b 的五步，选中仍是 pid 2。`ordered` 的入参行在调用后字段不变（含两个磁盘 Optional）。比较函数不接收 `ProcessDetail` / `frozenDetail`。冻结卡上的字节和速率不会因为比较器跑了一次而变。这条用源码约束核对，不是 GUI。
+`setTableSort` 不写 `selectedPid`，不写 `detail`，不调用 `sampler.setSelectedPid`，不请求采样。选中 pid 2 时走完 b 的点击，选中仍是 pid 2。`ordered` 的入参行在调用后字段不变（含两个磁盘 Optional）。比较函数不接收 `ProcessDetail` / `frozenDetail`。冻结卡上的字节和速率不会因为比较器跑了一次而变。这条用源码约束核对，不是 GUI。
 
 磁盘页上的 `publishMemoryPageSort` 仍是 `.skip`：publication 里的内存页 sort 不变，Sampler 的 `setMemoryPageSort` 不因磁盘表头点击而收到新值。菜单栏 Top3 仍是那份内存 sort 的 `prefix(3)`。内存页 Top5 的 publication 路径不改。
 
@@ -4590,16 +4573,14 @@ P1 读 nil 只影响读排序键和合计 `diskSortKey`。它的写 50 照常参
 - 不新增 VM `@Published`（现 22），不新增 `@Published lastMemorySort` 或其它排序状态机
 - 不改公证脚本与 entitlements
 
-## 实施指导（草图，验收链优先）
+## 实施指导
 
-草图不是第二套验收。和 b 表冲突时以 b 表为准。
+只做这两处，不另加纯函数或存储：
 
-1. 在现有 `ProcessSortColumn` 上增加 `.diskRead`、`.diskWrite`。不新增模型文件。`defaultSort(for: .disk)` 仍返回 `.disk` 降序。`.disk` 的 `compare` 分支仍调用 `diskSortKey`。
-2. 两个新分支各比自己的字段：`diskReadBytesPerSecond ?? -1`、`diskWriteBytesPerSecond ?? -1`，再交给现有 `compareDoubles`。可以写成计算属性，也可以就地 `??`。不必为了哨兵改 `ProcessRow` 的存储。不改 `diskSortKey` 的函数体。
-3. `ProcessTablePane` 只改两处磁盘 `sortHeader` 的 column 实参。`sortedRows` 与 `sortHeader` 的函数体复用：仍是 `ordered(visibleRows)`，仍是 `selecting(column)` 与现有 chevron。读取实参固定来自「永远 `.diskRead`」的纯函数。写入实参来自上一节那张表的纯函数。两个纯函数放在已有的 `ProcessTableSort`（`CPUPage.swift`，已列入 SamplingCore）上，这样 Linux 测试调用的是视图将要调用的同一份。
-4. 只改已有文件时，不改 `Package.swift` 的 `sources`，不改 `project.pbxproj` 的文件注册。`CPUPage.swift` 与 `DiskPageTests.swift` 都已经在对应目标里。没有必要就不要新增测试文件或模型文件。
+1. 在现有 `ProcessSortColumn` 上增加 `.diskRead`、`.diskWrite`。`defaultSort(for: .disk)` 仍返回 `.disk` 降序。`.disk` 的 `compare` 分支仍调用 `diskSortKey`，函数体不改。两个新分支就地比较 `diskReadBytesPerSecond ?? -1` 与 `diskWriteBytesPerSecond ?? -1`，交给现有 `compareDoubles`。不改 `ProcessRow` 的存储。
+2. `ProcessTablePane` 的读取表头实参改为 `.diskRead`，写入表头实参改为 `.diskWrite`。`sortedRows` 与 `sortHeader` 不改。`MemoryDashboardVM.setTableSort` 不改，`@Published` 仍是 22。
 
-`MemoryDashboardVM.setTableSort` 的函数体保持「更新 navigation + `publishMemoryPageSort()`」。磁盘页发布仍 `.skip`，所以不必为了「磁盘排序不通知 Sampler」再加分支。
+只改已有文件时，不改 `Package.swift` 的 `sources`，不改 `project.pbxproj` 的文件注册。`CPUPage.swift` 与 `DiskPageTests.swift` 都已经在对应目标里。没有必要就不要新增测试文件或模型文件。
 
 ## 测试矩阵（设计；本 PR 不写、不跑）
 
@@ -4607,12 +4588,12 @@ P1 读 nil 只影响读排序键和合计 `diskSortKey`。它的写 50 照常参
 
 **红：** 生产枚举还没有 `.diskRead` / `.diskWrite` 时，先在已有 `DiskPageTests.swift` 里加上面的 focused 断言，直接使用 `ProcessSortColumn.diskRead` / `.diskWrite` 和生产 `ProcessTableSort`。然后跑 focused。此时的失败应是编译错误（`ProcessSortColumn` 没有这两个成员）。这就是红。禁止用 `XCTFail`、测试里另造一份假枚举、`#if` 藏掉新 case、或改写一个已经通过的旧断言来伪装红。
 
-**绿：** 补上两个 case、`compare` 分支、以及两个列实参纯函数，使同一批 focused 编译并通过。视图两处表头改为调用这两个纯函数。然后再跑全量 `swift test`。实现 PR 要留下 focused 与全量各自的真实日志和通过计数。本设计 PR 没有这些数字。
+**绿：** 补上两个 case 和两个 `compare` 分支，并把两处表头实参改成 `.diskRead` / `.diskWrite`，使同一批 focused 编译并通过。然后再跑全量 `swift test`。实现 PR 要留下 focused 与全量各自的真实日志和通过计数。本设计 PR 没有这些数字。
 
 Focused 放在 `DiskPageTests`（或确有必要时的一个新测试文件；优先不要新文件）。至少覆盖：
 
 1. a 组 `.disk` 降序 pid 1, 2, 3，且 `defaultSort(for: .disk)` 仍是 `.disk` 降序。
-2. b 的五步：列身份、`descending`、pid 顺序都按表。写入第一步必须是 `.disk` 升序。另加一条从 default 直接点读取，得到 `.diskRead` 降序、pid 2, 1, 3。
+2. 从 default 调用 `selecting(.diskWrite)` 得到 `.diskWrite` 降序、pid 1, 2, 3；再 `selecting(.diskWrite)` 得到升序、pid 3, 2, 1；再 `selecting(.diskRead)` 得到降序、pid 2, 1, 3。从 default 直接 `selecting(.diskRead)` 也是降序、pid 2, 1, 3。
 3. c 的读缺数四条顺序，以及独立写缺数的降序 6, 5, 7, 4 与升序 4, 5, 7, 6。排序后 nil 行的 Optional 仍是 nil，`DiskRateText.string(nil)` 仍是「—」，`DiskRateText.string(0)` 仍是「0 字节/秒」。
 4. d 的真实 0：a 组读升序 1, 3, 2；c 组两个方向都是 pid 2 在 3 前；写缺数组两个方向都是 pid 5 在 7 前。
 5. e：`ProcessNameFilter` / `MemoryGrowthRisingFilter.apply` 之后再 `ordered`。查询 `b` 只剩 pid 2。磁盘页 `risingOnly == true` 仍不按徽标删行。`ordered` 不改行的磁盘字段。
@@ -4626,7 +4607,7 @@ Focused 放在 `DiskPageTests`（或确有必要时的一个新测试文件；�
 
 可以在这个源码测试里**加**精确断言，并写明它不是 GUI、也不实例化 VM：
 
-- `ProcessTablePane.swift` 的两处磁盘表头改为调用上述纯函数（或等价地，读取表头能到达 `.diskRead`，写入表头在默认 `.disk` 降序时仍到达 `.disk`，其后到达 `.diskWrite`）。两处不能再无条件同为字面量 `.disk`。
+- `ProcessTablePane.swift` 读取表头的实参是字面量 `.diskRead`，写入表头的实参是字面量 `.diskWrite`。两处都不再是 `.disk`。`sortHeader` 的函数体仍是 `selecting(column)` 与 `tableSort.column == column`。
 - 网络列仍是 `staticHeader`。
 - `setTableSort` 的函数体不含 `selectedPid` 赋值、不含 `setSelectedPid`、不含 `sample()`。
 - `MemoryDashboardVM.swift` 的 `@Published` 仍是 22 处，且没有新的排序 `@Published`。
@@ -4638,9 +4619,9 @@ Focused 放在 `DiskPageTests`（或确有必要时的一个新测试文件；�
 
 | 风险 | 应对 |
 | --- | --- |
-| 把第一次点「写入」写成 `.diskWrite` 降序 | b 表 write1 是 `.disk` 升序。无条件更换两个字面量会失败 |
-| 两个磁盘表头同时 active | 列实参按「箭头」一节。合计降序只亮写入；`.diskRead` / `.diskWrite` 各亮自己 |
-| write1 的箭头被说成「已经在排读取」 | 若箭头放在读取上，方向只跟随生效的 `.disk.descending` |
+| 写入表头仍传 `.disk`，第一次点「写入」变成合计升序 | 实参是字面量 `.diskWrite`。第一次点这个表头就是 `.diskWrite` 降序 |
+| 为默认合计另做表头，或让 `.disk` 时两个磁盘表头 active | 不新增合计表头。默认两个 `column ==` 都为假 |
+| 用纯函数或点击计数决定表头实参 | 两处实参是字面量。不增加纯函数或存储 |
 | 升序仍把 nil 排到真实 0 后面，或加一句「永远沉底」 | 哨兵 `-1`。降序在 0 后，升序在 0 前。不加 tooltip |
 | 用 `-1` 替换格子或删掉缺一路的行 | 格子仍 `DiskRateText`。P1 读 nil 仍以写 50 参加写排序。P4 写 nil 仍留在表里 |
 | 排序时过滤、改 `selectedPid`、请求采样 | `ordered(visibleRows)`。`setTableSort` 不写选中、不 `sample` |
@@ -4653,7 +4634,7 @@ Focused 放在 `DiskPageTests`（或确有必要时的一个新测试文件；�
 
 - [ ] 进入磁盘页和从其它页返回仍是 `.disk` 降序，合计键仍是 `diskSortKey`（两路都有值才相加，否则 `-1`）。冷启动仍是内存页。再次点当前磁盘页保留手选。`focusMemoryPage` 仍回内存默认。GPU 仍不可选
 - [ ] a 组 `.disk` 降序 pid 为 1, 2, 3。不用另一组合计相等的行代替
-- [ ] b 的五步顺序与列身份按表：default `.disk` 降序 1, 2, 3 → write1 `.disk` 升序 3, 2, 1 → write2 `.diskWrite` 降序 1, 2, 3 → write3 `.diskWrite` 升序 3, 2, 1 → read1 `.diskRead` 降序 2, 1, 3。读取表头可点；从 default 直接点读取是 `.diskRead` 降序 2, 1, 3，且这不是 write1
+- [ ] 读取表头实参是 `.diskRead`，写入表头实参是 `.diskWrite`。从 default 第一次点「写入」是 `.diskWrite` 降序 1, 2, 3；再点「写入」是升序 3, 2, 1；再点「读取」是 `.diskRead` 降序 2, 1, 3。从 default 第一次点「读取」也是 `.diskRead` 降序 2, 1, 3。默认 `.disk` 时两个磁盘表头都不 active。`sortHeader` 不改，不新增纯函数或状态
 - [ ] c：读缺数 `.diskRead` 降序 2, 3, 1、升序 1, 2, 3；`.diskWrite` 降序 1, 2, 3、升序 3, 2, 1。独立写缺数降序 6, 5, 7, 4、升序 4, 5, 7, 6。nil 格子「—」，真实 0 格子「0 字节/秒」。一路 nil 不删行
 - [ ] 真实 0 的 tie-break 为 pid 升序，降序不翻转。P1 的读 nil 不影响写 50
 - [ ] 名称过滤与内存页上涨过滤仍先于 `ordered`。磁盘页不因 `risingOnly` 删行。排序不改行、不写 `selectedPid`、不请求采样。冻结详情不因比较器变化
@@ -4662,11 +4643,11 @@ Focused 放在 `DiskPageTests`（或确有必要时的一个新测试文件；�
 
 ## Linux 已测与未验
 
-本 PR 不跑测试。实现 PR 在 Linux 上应能执行的是 SamplingCore：`ProcessTableSort`、`diskSortKey`、`DiskRateText`、`DashboardNavigation`、`MemoryGrowthRisingFilter`、`MemoryPageSortPublication`。`ProcessTablePane` 与 `MemoryDashboardVM` 不在这个目标里，表头接线用源码阅读断言，并让纯函数与视图调用同一份。
+本 PR 不跑测试。实现 PR 在 Linux 上应能执行的是 SamplingCore：`ProcessTableSort`、`diskSortKey`、`DiskRateText`、`DashboardNavigation`、`MemoryGrowthRisingFilter`、`MemoryPageSortPublication`。`selecting(.diskRead)` / `selecting(.diskWrite)` 就在这一层。`ProcessTablePane` 与 `MemoryDashboardVM` 不在这个目标里，两处字面量用源码阅读断言。
 
 未验，不挡本设计合并，实现 PR 在 Linux 上也不能把它们勾成已过：
 
-- Mac 上表头箭头画在哪一列、`chevron.down` / `chevron.up` 是否与生效 sort 一致、点击写入三次再点读取的肉眼顺序
+- Mac 上点「写入」「读取」以及表头箭头
 - Xcode 编译 App、`project.pbxproj` 下的实际运行
 - 本设计 PR 没有 CodeRabbit 结论。实现 PR 若见限流、skipped 或 neutral，不算审查通过
 
