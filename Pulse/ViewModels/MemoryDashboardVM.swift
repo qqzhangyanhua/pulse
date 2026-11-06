@@ -22,6 +22,13 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var networkHistory = SystemNetworkHistory()
     @Published private(set) var diskHistory = SystemDiskHistory()
     @Published var filter = ""
+    /// Memory-tab only. Default OFF. Next knife binds the toolbar toggle; this knife is projection.
+    @Published var risingOnlyFilter = false {
+        didSet {
+            guard oldValue != risingOnlyFilter else { return }
+            applyRisingOnlySelection()
+        }
+    }
     @Published private(set) var navigation = DashboardNavigation()
 
     @Published var selectedPid: Int32? {
@@ -42,7 +49,13 @@ final class MemoryDashboardVM: ObservableObject {
     private var samplingClock = SamplingClock()
 
     var visibleRows: [ProcessRow] {
-        ProcessNameFilter.apply(rows, query: filter)
+        MemoryGrowthRisingFilter.apply(
+            rows: rows,
+            nameQuery: filter,
+            page: selectedPage,
+            risingOnly: risingOnlyFilter,
+            seriesByPid: topMemorySeries
+        )
     }
 
     /// Strip B. Full memory-ordered `rows`, never the filtered table or its header sort.
@@ -94,6 +107,7 @@ final class MemoryDashboardVM: ObservableObject {
         next.focusMemoryPage()
         navigation = next
         publishMemoryPageSort()
+        applyRisingOnlySelection()
     }
 
     /// Select-if-present against the live `rows`. Missing / vanished pids are not written.
@@ -113,6 +127,7 @@ final class MemoryDashboardVM: ObservableObject {
         next.select(page)
         navigation = next
         publishMemoryPageSort()
+        applyRisingOnlySelection()
     }
 
     func setTableSort(_ sort: ProcessTableSort) {
@@ -199,6 +214,20 @@ final class MemoryDashboardVM: ObservableObject {
         }
     }
 
+    /// Same-beat clear when the rising-only keep hides `selectedPid`. OFF does not restore.
+    private func applyRisingOnlySelection() {
+        let next = MemoryGrowthRisingFilter.selectedPid(
+            current: selectedPid,
+            rows: rows,
+            nameQuery: filter,
+            page: selectedPage,
+            risingOnly: risingOnlyFilter,
+            seriesByPid: topMemorySeries
+        )
+        guard next != selectedPid else { return }
+        selectedPid = next
+    }
+
     /// Only the memory-page sort drives Top 5. Other tabs keep the last memory sort.
     private func publishMemoryPageSort() {
         guard selectedPage == .memory else { return }
@@ -240,6 +269,7 @@ final class MemoryDashboardVM: ObservableObject {
                     quitMessage = nil
                 }
             }
+            applyRisingOnlySelection()
             loadState = .ready
         case .failure:
             samplingFailed = true
