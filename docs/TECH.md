@@ -4042,4 +4042,262 @@ Mac 冒烟（**仅**设计与实现都合并之后；**不挡**本文档）：
 
 实现等本设计合并 + Grok merge gate 后再写 Swift。本 PR 不写 Swift、不合并。
 
+---
+
+# Pulse 十八期技术设计（首包：资源 Tab 详情按当前资源呈现主读数）
+
+> 一期至十七期正文不改写。十七期内存详情的现行文案以十七期那节和已合并的 #58 为准，**本节不改那些句子、算法、ring、Disclosure**。十六期退出存贮不重开。
+
+**已锁定**：侧栏仍是各 Tab 共用的一个 `ProcessDetailSidebar`。只按 `selectedPage` 重排**已经在 `ProcessDetail` 上的字段和曲线**。内存页布局与十七期逐项保持。CPU 页主位是该进程自己的 `cpuPercent` 和同一份 `cpuSeries`。网络页主位只声明当前进程网络不可用，不画网络曲线，不用主机速率或 0 冒充。磁盘页主位是该行自己的读/写速率，`nil` 为「—」，真实 0 仍格式化成 0，两路不交叉，不造磁盘曲线。冻结卡只改标签和顺序。
+
+来源：十八期主控已锁的详情主读数；对照 `f06175fd9cbb2992374b7d02b25108df5f84baa6`（#58 合并提交，即本文 base）。仓库里**没有** `networkMetricParts`，**没有** `detailCapability`，**没有**进程网络字节，**没有**进程磁盘曲线。`ProcessDetail.cpuSeries` 已经存在，不必为了把 CPU 曲线放到上面而新造序列 state。
+
+本 PR 只追加本节并在 README 加索引。不写 Swift、不写测试、不跑 `swift test`、不合并、不启动工程。下面的测试矩阵是刀①的设计，不是已执行结果。
+
+## 十七期现状（保持，不改文件）
+
+| PR | 合并提交 | 文件 |
+| --- | --- | --- |
+| #57 文档 | `3bc0c3a19edf90e5f1eb30c1e41eb829053e16a8` | 只改了 `docs/TECH.md`、`README.md` |
+| #58 实现 | `f06175fd9cbb2992374b7d02b25108df5f84baa6` | `MemoryDetailPresentation.swift`（新）、`MemoryGrowthSignal.swift`、`ProcessDetailSidebar.swift`、`Package.swift`、`project.pbxproj`、四处测试 |
+
+#58 落地后的内存详情文案，十八期一字不改：
+
+- 内存页字段和主曲线标题「驻留内存」；其它页标题「内存」（`MemoryDetailPresentation`）
+- 有总量：「占物理内存的 X%（按驻留内存计算）」，X% 仍是 `ByteFormat.share`；无总量：标签「占物理内存」，帮助「此数值为驻留内存。当前没有物理内存总量，不显示占比。」
+- 上涨「近期驻留内存上涨」；旁侧「当前进程近期趋势 · 基于现有驻留采样序列」；不足「样本不足，暂不判断」；`.none` 无槽
+- Disclosure summary「采样窗口与判断依据」，正文仍是 `MemoryDetailSamplingWindow.body`；`@State`，只在内存页且 `showsLiveTrend`
+- `evaluate` 的 80 / 90 / 8 MiB / 60%、选中 ring、Top5 共 ring、列表「上涨」都不动
+
+十七期冒烟里「切到 CPU / 网络 / 磁盘时内存标题回到『内存』」仍然成立：那一格和那条辅助曲线的可见标题继续是「内存」。十八期只改这三页的**主位和顺序**，不把标题改成「内存辅助」。
+
+## 范围
+
+| 项 | 既有 | 十八期首包 |
+| --- | --- | --- |
+| 内存页详情 | #58：驻留字段、占比、basis、Disclosure、内存曲线然后 CPU 曲线 | **整页保持**。投影对 `.memory` 返回 `.unchanged`，视图走今天的 `detailBody` |
+| CPU 页详情 | 与内存页同一套顺序，只是标题为「内存」 | 主位：`cpuPercent` + 现有 `cpuChart`。其下：内存指标 + 现有 `memoryChart`，角色为辅助 |
+| 网络页详情 | 侧栏不提网络；总览才是主机下行/上行 | 主位只有「当前进程网络暂不可用」。其下 CPU 与内存两个原名辅助指标，再一条内存辅助曲线。无网络曲线 |
+| 磁盘页详情 | 侧栏不提磁盘；列表已有读/写速率 | 主位两格「读取」「写入」，来自该行两个 `Double?`。其下 CPU 与内存辅助，再一条内存辅助曲线。无磁盘曲线 |
+| 进程网络数据 | `networkAvailability` 恒为 `.unavailable`，列表字是「暂不可用」 | **不新增字节、不探测**。列表短句不动。详情用上面那句长句，不复用列表短句当数字 |
+| 进程磁盘历史 | 只有两帧速率，没有 ring | **不造** |
+| 冻结 / 退出 / 选中 | 十六期 | **不改规则**。换 Tab 只重放投影 |
+| 总览、列表、菜单栏、GPU、Top5、主机合计 | 既有 | **不改** |
+
+一二至十七期验收不因本文重开。实现等本设计合并 + Grok merge gate 后再写 Swift。
+
+## 字段从哪来（当前源码）
+
+侧栏今天不看页：`detailBody` 一律是 `metrics`（内存格在左、CPU 格在右）、可选上涨槽、可选 Disclosure、`memoryChart`、`cpuChart`。空态文案才按页切换。总览曲线是主机的，不进侧栏。
+
+| 侧栏要显示的 | 真实字段 | 现在谁产生 | 缺失时 |
+| --- | --- | --- | --- |
+| CPU 百分数 | `ProcessRow.cpuPercent: Double?` | `ProcessCPUPercent.percent`：两帧 wall-clock。第一帧、回绕、`wallNs <= 0` 为 nil | `CPUPercentText` / `ByteFormat.cpu` → 「—」。真实计算得到的 0 是「0.0%」。不是磁盘那套 |
+| CPU 曲线 | `ProcessDetail.cpuSeries` | `MemorySampler.detailFrame`：仅当 `row.cpuPercent != nil` 才 append。nil **不** `removeAll` | 点数 `< 2` 仍是「正在采集 CPU 曲线」 |
+| 内存字节 | `ProcessRow.memoryBytes: UInt64` | `pti_resident_size`。不是 Optional | `ByteFormat.memory`：0 是「0 字节」 |
+| 内存曲线 | `ProcessDetail.memorySeries` | 选中 ring 或 Top5 `adopt`。成功帧会 append | 点数 `< 2` 仍是「正在采集内存曲线」 |
+| 内存标题 / 占比 | `MemoryDetailPresentation.field` | 十七期纯函数。分母是调用处的 `snapshot?.totalBytes` | 无总量不调用 `share` |
+| 磁盘读 / 写 | `diskReadBytesPerSecond` / `diskWriteBytesPerSecond` | 见下一节。**不是** `hostDiskRates`，**不是** `diskSortKey`（那是两路之和，缺一路就是 -1） | 各字段自己的 nil → `DiskRateText` → 「—」 |
+| 进程网络 | 无字节字段 | `networkAvailability` 计算属性，恒 `.unavailable`，label「暂不可用」 | 没有速率可以显示 |
+| 主机网络 | `MemoryDashboardVM.hostNetworkRates` + `networkHistory` | `NetworkOverviewSection`，标题「下行」「上行」 | 总览用「—」。**禁止**进进程详情 |
+| 主机磁盘 | `hostDiskRates` + `diskHistory` | `DiskOverviewSection` 的 `DiskRateCard`（带主机曲线） | 总览用「—」。**禁止**补进程详情的 nil |
+
+`cpuSeries` 不需要新 state，也不需要一个 normalizing 字段才能排序图表。CPU 页把现有 `cpuChart(detail)` 挪到内存曲线上面即可。序列元素的 `id` / `date` / `value` 原样传递。
+
+### 磁盘：解码失败、第一帧、真实 0（已读源码，不是猜测）
+
+`ProcessEnumerator.readDiskIO`：`proc_pid_rusage` 返回值不是 0 → 整个读数丢掉，`diskBytesRead` 与 `diskBytesWritten` **同时** nil。返回 0 → 两个 `UInt64` 都留下，**可以是 0**。没有「只解出一路」的分支。`ProcessEnumerator` 不在 SamplingCore 里，本文档 PR 没有、也不能在 Linux 上调用它。
+
+`MemorySampler` 只有两路计数都非 nil 才做成 `DiskTick`。然后 `ProcessDiskLoad.advance`：
+
+| 输入 | 速率 | baseline |
+| --- | --- | --- |
+| `reading == nil`（本帧解码失败） | 两路都 nil（`.missing`） | **留上一帧** |
+| 有 tick、`previous == nil`（成功计数的第一帧，字节可以是 0） | 两路都 nil | 存下这一帧 |
+| 两帧都在、未回绕、`seconds > 0`、增量为 0 | **两路都是 0** | 更新 |
+| 任一路回绕，或 `seconds <= 0` | 两路都 nil | 有 tick 时仍更新 |
+
+所以：第一帧 nil **就是** `ProcessDiskLoad` 的两帧差分，已有 `ProcessDiskLoadTests.testFirstFrameIsNil`。累计字节为 0 的第一帧也是 nil 速率，不是 0 B/s。真实 0 速率是 `testIdleDeltaIsRealZeroNotAPlaceholder`。解码失败是 `testEPERMOrFailedRusageIsNilAndKeepsBaseline`（`reading: nil` 不把速率写成 0）。这三支是已有测试，**本 PR 不跑、不改**。
+
+行类型上两个 `Double?` 仍然独立。活采样今天总是两路同 nil 或两路同有值。投影和测试必须允许「读 nil、写 0」这种手工行，并且不得把 nil 填成 0、不得把写速率画进读格。详情不用 `diskSortKey`。
+
+`DiskRateText.string` 已是：nil → 「—」；0 → 「0 字节/秒」。详情复用它，不另写格式化。
+
+### 网络：没有 per-process 来源
+
+当前树没有 `MemoryDashboardVM.networkMetricParts`。主机 label 就是 `NetworkPageCopy.inboundTitle` / `outboundTitle`（「下行」「上行」），数据是 `hostNetworkRates`。这和「只主机 label」一致。不要把这个名字补回来，也不要把它接到侧栏。
+
+进程行没有网络字节。`PROC_PIDTASKINFO` 不提供。详情主位是固定枚举，无关联值，不读取主机速率，也不因为 `memorySeries` 有点就把网络当成可用。列表列继续用「暂不可用」。详情长句单独放在新投影常量上，避免改到 `processNetworkUnavailable` 把列表一起改掉。
+
+不新增 capability 类型，不在 Sampler 里探测，不把内存曲线当成网络能力的 fallback。
+
+### 采样失败不清旧曲线（现状，投影不得加一条清）
+
+- 主机内存读取失败：`sample()` 在 append 之前 `return .failure`。VM 的失败支只改 `samplingFailed` / `loadState`，不替换 `detail`。
+- 进程列表失败或 freshness 不足：`isSuccessfulProcessList` 为假，`applySample` 把 `liveDetail` 留在 `currentLiveDetail`。Sampler 的两条选中序列不 `removeAll`。
+- 成功帧上 CPU 为 nil：不 append，也不清空 `selectedCPUSeries`。主位数字是本帧的 nil（「—」），曲线仍是旧点。投影不得用曲线最后一点填掉这个 nil，也不得因为 nil 丢掉曲线。
+- 磁盘没有序列。本帧 rusage 失败时**这一行**的速率是 nil。不要为了「留住上次速率」在投影里缓存上一帧。那会把未知画成一个数。
+
+`setSelectedPid` 只在 pid 真正变化时清空两条选中序列。换页不调用它。
+
+### 选中与冻结的入口（不改）
+
+`ProcessQuitSession.displayedDetail`：
+
+1. 无 `sidebarSubjectPid` → nil → 空侧栏。
+2. `showsAbsentRecord` → `frozenDetail`。nil 则没有详情。
+3. 否则 `liveDetail` 的 pid 相符就用它。
+4. 否则行还在、还没有 live detail → `ProcessDetail(row:memorySeries:[]、cpuSeries:[])`。
+
+`frozen = showsAbsentRecord`。`showsLiveTrend` 在冻结时为假，所以上涨槽和 Disclosure 已经进不了冻结卡。十八期不要加第二条路径对冻结序列 `evaluate`。
+
+`selectPage` 只改 `navigation`、发布内存排序、调用现有 `applyRisingOnlySelection`。它不写 `selectedPid`、不写 `quitOutcome`、不清 generation / token / pending。
+
+`MemoryGrowthRisingFilter.selectedPid`：只有 `risingOnly && page == .memory` 才可能把选中清掉；其它页 **return current**。因此内存 → CPU，即便「仅上涨」开着，也**不会**因为离页而清选中。这个方向保持。开着过滤再回到内存、且该 pid 没有角标时仍会清，也不要反过来。投影函数不接收、不写 `selectedPid`。
+
+offRows：侧栏拿到的已经是那份 `frozenDetail`。换 Tab 用**同一份值**再投影。字节、速率、曲线的 `date` 都不改，也不改成实时。`frozenDetail == nil` 时仍是 `absentRecordBody`（关闭 + 页脚），投影不准变出一张新卡。Quit、pending、store 不因投影重置。
+
+冻结卡上的内存占比分母仍是现有 `snapshot?.totalBytes`（十七期已如此）。本刀不把总量冻进 `ProcessDetail`，也不改这条。
+
+## 投影（刀①，Darwin-free，结构化）
+
+新文件建议 `Pulse/Models/ResourceDetailPageProjection.swift`。只 `import Foundation`。实现 PR 再把它列入 `Package.swift` 的 `sources` 和 `project.pbxproj`。本 PR 不添加该文件。
+
+输入只有三样：`page: DashboardPage`、`detail: ProcessDetail`、`physicalTotalBytes: UInt64?`（仅供现有 `MemoryDetailPresentation`）。**参数表里不准出现** `HostNetworkRates`、`HostDiskRates`、`networkHistory`、`diskHistory`、`systemCpuPercent`、`ProcessQuitOutcome`、sampler。
+
+输出是值类型枚举，不是字典，也不是「全是 String 的结果」：
+
+```text
+enum ResourceDetailProjection {
+  case unchanged
+  case cpu(CPUDetailProjection)
+  case network(NetworkDetailProjection)
+  case disk(DiskDetailProjection)
+}
+
+struct CPUDetailProjection {
+  pid: Int32
+  cpuPercent: Double?                 // detail.row.cpuPercent
+  cpuSeries: [ChartSample]            // detail.cpuSeries，元素相等
+  memory: MemoryDetailFieldCopy       // field(page: .cpu, part: memoryBytes, total:)
+  memoryBytes: UInt64
+  memorySeries: [ChartSample]
+}
+
+enum ProcessNetworkDetailNotice { case unavailable }  // 无关联值
+
+struct NetworkDetailProjection {
+  pid: Int32
+  notice: ProcessNetworkDetailNotice  // 永远 .unavailable
+  cpuPercent: Double?
+  memory: MemoryDetailFieldCopy       // page: .network，标题仍是「内存」
+  memoryBytes: UInt64
+  memorySeries: [ChartSample]
+}
+
+struct DiskDetailProjection {
+  pid: Int32
+  readBytesPerSecond: Double?         // 只来自 diskReadBytesPerSecond
+  writeBytesPerSecond: Double?        // 只来自 diskWriteBytesPerSecond
+  cpuPercent: Double?
+  memory: MemoryDetailFieldCopy       // page: .disk
+  memoryBytes: UInt64
+  memorySeries: [ChartSample]
+}
+```
+
+常量 `processNetworkUnavailable = "当前进程网络暂不可用"` 放在投影类型上。视图把 `.unavailable` 画成这一句。模型里不存速率、不存「0」。
+
+规则：
+
+- `.memory` 与 `.gpu` → `.unchanged`。`.gpu` 的 `isSelectable` 已是 false，不新做 GPU 详情。
+- `.cpu` / `.network` / `.disk` 只拷贝上表字段。网络投影**不带** `cpuSeries`（避免被画成网络曲线）。磁盘投影不带磁盘序列，因为源上没有。
+- 纯函数，无缓存、无 `inout`、不发 `objectWillChange`、不加 `@Published`。同一 `detail` 连续投影，输入前后 `==`。曲线 `date` 不变。
+- 同一 pid、同一 `detail`，三页的 `cpuPercent` 与 `memoryBytes` 相等；磁盘数只出现在 `.disk`；网络通知只出现在 `.network`。A、B 两个 pid 各投影各的，不得留上次的 pid。
+- 内存辅助的可见标题沿用 `MemoryDetailPresentation` 的「内存」。不新增「内存辅助」去替换它。位置在主位之下，所以它是辅助曲线，不能叫成网络或磁盘。
+- CPU 的「个内核」caption 仍由视图调用现有 `ByteFormat.coreLoad` + `MachineInfo.processorCount`。投影不调用 `MachineInfo`（那个文件不在 SamplingCore）。
+
+不新造「本资源缺数据」接收类型。磁盘未知就是 `Double?` 的 nil。网络不可用就是上面那个无载荷枚举。冻结缺席仍是十六期的 `showsAbsentRecord`。
+
+## 视图顺序（刀②，只重排）
+
+只改 `ProcessDetailSidebar`。`header`、`footer`、空态、`absentRecordBody`、`metrics`（内存页仍用它）、`cpuChart`、`memoryChart`、`seriesBlock` 的 `count < 2` 占位，都保持。不新卡片样式、不新颜色、不新 Tab。
+
+`detailBody` 里：`page` 为 `.cpu` / `.network` / `.disk` 时走投影分支；**else 里十七期那一段必须仍写在 `detailBody` 本体内**，且相对顺序不变：`memoryGrowthSlot` → `showsLiveTrend && selectedPage == .memory` → `samplingWindowDisclosure` → `memoryChart(detail)`，然后才是 `cpuChart(detail)`。这样 #58 的 `MemoryDetailSidebarWiringSourceTests` 不用改期望。不要为了十八期去放宽那些断言。
+
+| 页 | 自上而下 | 明确不画 |
+| --- | --- | --- |
+| 内存 / 投影 `.unchanged` | 今天的整段 | — |
+| CPU | 现有 CPU `SidebarMetric`（`ByteFormat.cpu` + `coreLoad`）→ `cpuChart(detail)` → 内存 `SidebarMetric` → `memoryChart(detail)` | 无 Disclosure、无上涨槽、无磁盘、无网络 |
+| 网络 | 长句文本（无数字）→ CPU 与内存两个原名 `SidebarMetric` → `memoryChart(detail)` | 无 `cpuChart`、无网络曲线、无主机下行/上行、无 `DiskRateText` |
+| 磁盘 | 同一行两格：`DiskPageCopy.readTitle` / `writeTitle`，值是 `DiskRateText.string` 各画各的 → CPU 与内存辅助 → `memoryChart(detail)` | 无 `cpuChart`、无 `DiskRateCard`（它带主机曲线）、无磁盘历史 |
+
+磁盘两格复用 `SidebarMetric`。符号用资源 Tab 已有的 `internaldrive`，tint 用已有 `PulsePalette.chartDisk`。不要用总览的 `arrow.down` / `arrow.up`。读格只绑 `readBytesPerSecond`，写格只绑 `writeBytesPerSecond`。
+
+网络主位是一行字，不是带假数字的新卡片。CPU / 内存辅助仍是原来的两个名字：「CPU」和「内存」。
+
+冻结与实时走同一个投影。区别只在于传入的 `detail` 已经是 `frozenDetail` 还是 live。投影不 append、不 `evaluate`、不读主机速率。
+
+## 明确不动
+
+- 不改 `MemoryDetailPresentation`、`MemoryGrowthSignal`、`MemoryDetailSamplingWindow`、列表角标
+- 不改 `ProcessQuitOutcome`、`ProcessQuitSession`、`ProcessActions`、token、generation、pending、`frozenDetail` 的写入点
+- 不改 `selectedPid` 的 `didSet`、`selectPage`、`applySample`、`applyRisingOnlySelection`、`MemorySampler`、`ProcessEnumerator`、采样周期
+- 不改 `CPUPageCopy`、`NetworkPageCopy.processNetworkUnavailable`（列表仍是「暂不可用」）、`DiskRateText`、总览、进程表、菜单栏
+- 不造 per-process 网络、磁盘历史/曲线、全表 CPU 序列、新 store、新算法
+- 不把失败帧清曲线，不把磁盘 nil 显示成 0，不把冻结详情改成实时趋势
+
+## 测试矩阵（设计；本 PR 不写、不跑）
+
+**刀①（实现 PR 才加，Linux `swift test`，纯投影）：**
+
+1. 同一 `detail` 投影 `.cpu` / `.network` / `.disk`：三页 `cpuPercent`、`memoryBytes` 都等于该行；`.cpu` 的 `cpuSeries` 与 `detail.cpuSeries` 相等（含 `date`）；网络和磁盘的 `memorySeries` 与 `detail.memorySeries` 相等。磁盘读/写只在 `.disk`，且分别等于两个行字段。
+2. pid A 与 pid B 交替投影，输出 pid 和 CPU 跟各自输入走，不留上一次。
+3. 投影前后输入 `detail ==` 原值。
+4. `.memory`、`.gpu` 为 `.unchanged`。
+5. 网络：`notice` 只有 `.unavailable`；常量等于「当前进程网络暂不可用」；不等于「暂不可用」、不等于「0 字节/秒」、不等于含「下行」的总览句。`memorySeries` 空或非空都是同一个 notice。类型上没有网络速率字段。
+6. 磁盘四支：读 nil / 写 0；读 0 / 写 nil；两路 nil；两路 0。`DiskRateText` 对 nil 是「—」、对 0 是「0 字节/秒」，左右不交换。
+7. `cpuPercent == nil` 且 `cpuSeries` 已有点：主位仍是 nil，序列点数不变，不被写成 0，也不被裁成空。
+8. 空序列保持 0 点，不补到 2 点。
+9. 非内存页的 `memory.title` 仍是「内存」。不改 `MemoryDetailPresentationTests` 的既有期望。
+10. 不改、不重跑 `ProcessDiskLoadTests`、`DiskPageTests`、`MemoryGrowthSignalTests`、十七期文案测试。那些已经锁住 nil/0 和 ring。十八期不把「再测一遍 ring」写成新代码。
+
+**刀②（源码约束，不是 GUI，Mac 未验）：**
+
+11. `detailBody` 的内存分支仍按第 10 条测试文件要求的顺序包含上涨槽、Disclosure 门、`memoryChart`。`DisclosureGroup` 仍只有一处。`metrics` 与 `cpuChart` 的标题字面量不改。VM 的 `@Published` 仍是 22 处。`selectPage` / `selectedPid` 的 `didSet` 源码不出现投影类型。
+12. 网络分支源码不含 `hostNetworkRates`、`networkHistory`、`cpuChart`、`inbound`。磁盘分支不含 `hostDiskRates`、`diskHistory`、`DiskRateCard`、`cpuChart`。侧栏不给 `frozenDetail`、`quitOutcome`、`selectedPid` 赋值，不调用 `evaluate`。
+13. 上述源码断言不是 SwiftUI 点击、不是截图、不是 Mac 验收。
+
+本环境没有跑刀①，也没有 Mac。不要把本文写成「测试已绿」或「侧栏已点过」。
+
+## 风险
+
+| 风险 | 应对 |
+| --- | --- |
+| 用 `hostNetworkRates` 填进程网络 | 投影参数不准有主机速率；主位无数字 |
+| 用内存曲线或 0 表示「有网络」 | notice 无载荷；不看 `memorySeries` 长度 |
+| 磁盘 nil 画成 0，或读/写对调 | 两个 `Double?` 分开绑；复用 `DiskRateText` |
+| 用 `diskSortKey` 或主机 `DiskRateCard` 做详情 | 详情只读行上的两路；不画主机曲线 |
+| 为了 CPU 在上而新造 `cpuSeries` | 已有字段，只重排 `cpuChart` |
+| 换页清选中、清 quit、清曲线 | 不改 `selectPage` / `didSet` / sampler |
+| 冻结卡换 Tab 后数字或 `date` 变了 | 投影不修改入参；无 detail 不新卡 |
+| 改「驻留内存」或 Disclosure 来做辅助标题 | 非内存页标题保持「内存」；内存页 `.unchanged` |
+| 把列表「暂不可用」改成长句 | 长句只在投影常量 |
+| 源码测试被说成 GUI 已过 | 矩阵第 13 条 |
+
+## 验收
+
+- [ ] 内存页与 #57 / #58 一致：驻留、占比、basis、Disclosure、算法、ring、曲线顺序都不改
+- [ ] CPU 页主位是该进程 `cpuPercent`（nil 为「—」）和同一 `cpuSeries`；内存指标和 `memorySeries` 在下面，标题仍是「内存」
+- [ ] 网络页第一行是「当前进程网络暂不可用」；无主机数字、无 0、无网络曲线；CPU / 内存是原名辅助；内存曲线不叫网络
+- [ ] 磁盘页顶上是该行 `diskReadBytesPerSecond` / `diskWriteBytesPerSecond`，标题「读取」「写入」；nil 为「—」，0 为「0 字节/秒」；不交叉；无磁盘曲线
+- [ ] 同一 detail 换页只变投影；A/B pid 不串；输出不写回 VM / sampler / quit store
+- [ ] 冻结卡换 Tab 只改顺序和标签；无 `frozenDetail` 不新卡；失败帧不清旧 `cpuSeries` / `memorySeries`；磁盘未知不是 0
+- [ ] 不改十六期退出、不改 `selectedPid` 规则、内存→CPU 不因「仅上涨」而新清选中
+- [ ] 刀①按上表写纯投影测试；刀②只做源码约束。二者都不是本文档 PR 的已执行项。Mac 未验
+
+实现等本设计合并 + Grok merge gate 后再写 Swift。本 PR 不写 Swift、不写测试、不合并。
+
+核对后没有要退回产品的行为：`cpuSeries` 已在 `ProcessDetail` 上；主机网络不是 `networkMetricParts` 而是 `hostNetworkRates`；磁盘第一帧 nil 已是两帧差分。这三处都按源码写死，不另开待决。
+
 
