@@ -197,6 +197,45 @@ struct AppEmptyState: View {
     let message: String
     var retryTitle: String?
     var onRetry: (() -> Void)?
+    var isRetryEnabled: Bool = true
+    var pendingMessage: String?
+
+    init(
+        systemImage: String,
+        title: String,
+        message: String,
+        retryTitle: String? = nil,
+        onRetry: (() -> Void)? = nil,
+        isRetryEnabled: Bool = true,
+        pendingMessage: String? = nil
+    ) {
+        self.systemImage = systemImage
+        self.title = title
+        self.message = message
+        self.retryTitle = retryTitle
+        self.onRetry = onRetry
+        self.isRetryEnabled = isRetryEnabled
+        self.pendingMessage = pendingMessage
+    }
+
+    init(
+        systemImage: String,
+        title: String,
+        message: String,
+        retrying: Bool,
+        onRetry: @escaping () -> Void
+    ) {
+        let chrome = SamplingRetryEmptyChrome(retrying: retrying)
+        self.init(
+            systemImage: systemImage,
+            title: title,
+            message: message,
+            retryTitle: chrome.buttonTitle,
+            onRetry: onRetry,
+            isRetryEnabled: chrome.isButtonEnabled,
+            pendingMessage: chrome.pendingMessage
+        )
+    }
 
     var body: some View {
         VStack(spacing: 10) {
@@ -210,9 +249,15 @@ struct AppEmptyState: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 280)
+            if let pendingMessage {
+                Text(pendingMessage)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
             if let retryTitle, let onRetry {
                 Button(retryTitle, action: onRetry)
                     .buttonStyle(.bordered)
+                    .disabled(!isRetryEnabled)
                     .padding(.top, 4)
             }
         }

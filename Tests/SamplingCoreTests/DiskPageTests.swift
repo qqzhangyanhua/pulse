@@ -31,7 +31,8 @@ final class DiskPageTests: XCTestCase {
         XCTAssertEqual(DiskPageCopy.sampling, "正在采样…")
         XCTAssertEqual(DiskPageCopy.emptyTitle, "暂无磁盘数据")
         XCTAssertEqual(DiskPageCopy.failureTitle, "暂时读不到磁盘数据，稍后重试")
-        XCTAssertEqual(DiskPageCopy.retry, "重新采样")
+        XCTAssertEqual(DiskPageCopy.retry, "重试")
+        XCTAssertEqual(DiskPageCopy.failureMessage, "这轮采样没有回来，点重试再试。")
         XCTAssertEqual(DiskPageCopy.sidebarEmpty, "选一个进程看详情")
         XCTAssertEqual(DiskPageCopy.chartCollecting, "正在采样…")
     }

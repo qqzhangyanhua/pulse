@@ -488,24 +488,25 @@ final class SamplingRetryChromeTests: XCTestCase {
         XCTAssertEqual(phase, .processListFailed)
     }
 
-    func testOldFailureCopyIsUnchangedInThisCut() {
-        XCTAssertEqual(CPUPageCopy.retry, "重新采样")
-        XCTAssertEqual(CPUPageCopy.failureMessage, "这轮采样没有回来，点重新采样再试。")
-        XCTAssertEqual(NetworkPageCopy.retry, "重新采样")
-        XCTAssertEqual(NetworkPageCopy.failureMessage, "这轮采样没有回来，点重新采样再试。")
-        XCTAssertEqual(DiskPageCopy.retry, "重新采样")
+    func testPageCopyUsesLockedRetryWords() {
+        XCTAssertEqual(CPUPageCopy.retry, SamplingRetryChrome.buttonTitle)
+        XCTAssertEqual(CPUPageCopy.failureMessage, SamplingRetryChrome.overviewFailureMessage)
+        XCTAssertEqual(NetworkPageCopy.retry, SamplingRetryChrome.buttonTitle)
+        XCTAssertEqual(NetworkPageCopy.failureMessage, SamplingRetryChrome.overviewFailureMessage)
+        XCTAssertEqual(DiskPageCopy.retry, SamplingRetryChrome.buttonTitle)
         XCTAssertEqual(DiskPageCopy.failureTitle, "暂时读不到磁盘数据，稍后重试")
-        XCTAssertEqual(DiskPageCopy.failureMessage, "这轮采样没有回来，点重新采样再试。")
+        XCTAssertEqual(DiskPageCopy.failureMessage, SamplingRetryChrome.overviewFailureMessage)
         XCTAssertEqual(CPUPageCopy.sampling, "正在采样…")
-        XCTAssertNotEqual(CPUPageCopy.retry, SamplingRetryChrome.buttonTitle)
-        XCTAssertNotEqual(CPUPageCopy.failureMessage, SamplingRetryChrome.overviewFailureMessage)
+        XCTAssertEqual(CPUPageCopy.failureTitle, "暂时读不到 CPU 数据")
+        XCTAssertFalse(CPUPageCopy.retry.contains("重新采样"))
+        XCTAssertFalse(CPUPageCopy.failureMessage.contains("点重新采样再试"))
     }
 
     func testColdStartSkeletonIsNotRetryChrome() {
         XCTAssertFalse(SamplingRetryChrome.showsPendingLine(retrying: false))
         XCTAssertEqual(SamplingRetryChrome.loadStateDuringRetry(.sampling), .sampling)
         XCTAssertNotEqual(SamplingRetryChrome.pendingLine, CPUPageCopy.sampling)
-        XCTAssertNotEqual(SamplingRetryChrome.buttonTitle, CPUPageCopy.retry)
+        XCTAssertEqual(SamplingRetryChrome.buttonTitle, CPUPageCopy.retry)
     }
 
     func testChromeHasNoSecondPageVariant() {

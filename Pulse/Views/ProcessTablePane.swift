@@ -80,7 +80,6 @@ struct ProcessTablePane: View {
                     sampling: CPUPageCopy.sampling,
                     failureTitle: CPUPageCopy.failureTitle,
                     failureMessage: CPUPageCopy.failureMessage,
-                    retryTitle: CPUPageCopy.retry,
                     emptyTitle: CPUPageCopy.emptyTitle,
                     emptyMessage: CPUPageCopy.emptyMessage,
                     systemImage: "cpu"
@@ -90,7 +89,6 @@ struct ProcessTablePane: View {
                     sampling: NetworkPageCopy.sampling,
                     failureTitle: NetworkPageCopy.failureTitle,
                     failureMessage: NetworkPageCopy.failureMessage,
-                    retryTitle: NetworkPageCopy.retry,
                     emptyTitle: NetworkPageCopy.emptyTitle,
                     emptyMessage: NetworkPageCopy.emptyMessage,
                     systemImage: "network"
@@ -100,7 +98,6 @@ struct ProcessTablePane: View {
                     sampling: DiskPageCopy.sampling,
                     failureTitle: DiskPageCopy.failureTitle,
                     failureMessage: DiskPageCopy.failureMessage,
-                    retryTitle: DiskPageCopy.retry,
                     emptyTitle: DiskPageCopy.emptyTitle,
                     emptyMessage: DiskPageCopy.emptyMessage,
                     systemImage: "internaldrive"
@@ -133,8 +130,8 @@ struct ProcessTablePane: View {
                 AppEmptyState(
                     systemImage: "list.bullet.rectangle",
                     title: "暂时无法列出进程",
-                    message: "这轮没读到进程列表，点重新采样再试。",
-                    retryTitle: "重新采样",
+                    message: SamplingRetryChrome.processListFailedMessage,
+                    retrying: vm.isRetrying,
                     onRetry: vm.retrySampling
                 )
             case .failed:
@@ -142,7 +139,7 @@ struct ProcessTablePane: View {
                     systemImage: "waveform.path.ecg",
                     title: "进程列表还没有数据",
                     message: "总览还没回来，列表先空着。",
-                    retryTitle: "重新采样",
+                    retrying: vm.isRetrying,
                     onRetry: vm.retrySampling
                 )
             case .nameFilterEmpty:
@@ -178,7 +175,6 @@ struct ProcessTablePane: View {
         sampling: String,
         failureTitle: String,
         failureMessage: String,
-        retryTitle: String,
         emptyTitle: String,
         emptyMessage: String,
         systemImage: String
@@ -191,7 +187,7 @@ struct ProcessTablePane: View {
                 systemImage: systemImage,
                 title: failureTitle,
                 message: failureMessage,
-                retryTitle: retryTitle,
+                retrying: vm.isRetrying,
                 onRetry: vm.retrySampling
             )
         case .empty:

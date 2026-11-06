@@ -17,6 +17,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var quitPhase: QuitPhase = .idle
     @Published private(set) var quitMessage: String?
     @Published private(set) var samplingFailed = false
+    /// Gate projection. Not a second retry flag.
+    @Published private(set) var isRetrying = false
     @Published private(set) var usageHistory = UsageHistory()
     @Published private(set) var cpuHistory = SystemCPUHistory()
     @Published private(set) var networkHistory = SystemNetworkHistory()
@@ -44,9 +46,11 @@ final class MemoryDashboardVM: ObservableObject {
 
     private let sampler = MemorySampler()
     private var loopTask: Task<Void, Never>?
+    private var sleepTask: Task<Void, Error>?
     private var started = false
     private var samplingSession = SamplingSession()
     private var samplingClock = SamplingClock()
+    private var samplingGate = SamplingRequestGate()
 
     var visibleRows: [ProcessRow] {
         MemoryGrowthRisingFilter.apply(
@@ -145,13 +149,17 @@ final class MemoryDashboardVM: ObservableObject {
         loopTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { break }
-                let plan = self.samplingClock.plan(step: self.samplingSession.step)
-                if plan.sample {
-                    await self.tick()
+                let plan = self.samplingGate.plan(
+                    clock: &self.samplingClock,
+                    step: self.samplingSession.step
+                )
+                if plan.sample, let flight = plan.flight {
+                    await self.tick(flight)
                 }
-                try? await Task.sleep(nanoseconds: plan.sleepNanoseconds)
-                self.samplingClock.recordSleep(plan.sleepNanoseconds)
+                await self.sleepInterruptible(nanoseconds: plan.sleepNanoseconds)
             }
+            guard let self else { return }
+            self.finishSamplingLoop()
         }
     }
 
@@ -161,27 +169,19 @@ final class MemoryDashboardVM: ObservableObject {
     }
 
     func retrySampling() {
-        loadState = .sampling
-        snapshot = nil
-        systemCpuPercent = nil
-        hostNetworkRates = .missing
-        hostDiskRates = .missing
-        rows = []
-        processListFailed = false
-        samplingFailed = false
-        var clearedUsage = usageHistory
-        clearedUsage.record(nil)
-        usageHistory = clearedUsage
-        var clearedCPU = cpuHistory
-        clearedCPU.reset()
-        cpuHistory = clearedCPU
-        var clearedNetwork = networkHistory
-        clearedNetwork.reset()
-        networkHistory = clearedNetwork
-        var clearedDisk = diskHistory
-        clearedDisk.reset()
-        diskHistory = clearedDisk
-        Task { await tick() }
+        let held = SamplingRetryApply.Held(
+            loadState: loadState,
+            samplingFailed: samplingFailed,
+            processListFailed: processListFailed,
+            hasSnapshot: snapshot != nil
+        )
+        let next = SamplingRetryApply.afterManualRetry(held)
+        loadState = next.loadState
+        samplingFailed = next.samplingFailed
+        processListFailed = next.processListFailed
+        samplingGate.requestManualRetry()
+        isRetrying = samplingGate.retrying
+        sleepTask?.cancel()
     }
 
     func quitSelected() async {
@@ -235,11 +235,82 @@ final class MemoryDashboardVM: ObservableObject {
         Task { await sampler.setMemoryPageSort(sort) }
     }
 
-    private func tick() async {
+    private func finishSamplingLoop() {
+        samplingGate.invalidate()
+        isRetrying = samplingGate.retrying
+        sleepTask?.cancel()
+    }
+
+    private func sleepInterruptible(nanoseconds: UInt64) async {
+        let planned = nanoseconds
+        let startedAt = ContinuousClock().now
+        let task = Task<Void, Error> {
+            try await Task.sleep(nanoseconds: planned)
+        }
+        sleepTask = task
+        let completed = await withTaskCancellationHandler {
+            do {
+                try await task.value
+                return true
+            } catch {
+                return false
+            }
+        } onCancel: {
+            task.cancel()
+        }
+        sleepTask = nil
+        let consumed: UInt64
+        if completed {
+            consumed = planned
+        } else {
+            consumed = nanosecondsElapsed(from: startedAt, to: ContinuousClock().now)
+        }
+        if let recordable = SamplingSleepWait.recordableNanoseconds(
+            planned: planned,
+            consumed: consumed,
+            completed: completed,
+            loopCancelled: Task.isCancelled
+        ) {
+            samplingClock.recordSleep(recordable)
+        }
+    }
+
+    private func nanosecondsElapsed(
+        from start: ContinuousClock.Instant,
+        to end: ContinuousClock.Instant
+    ) -> UInt64 {
+        let duration = start.duration(to: end)
+        let seconds = duration.components.seconds
+        let attoseconds = duration.components.attoseconds
+        if seconds < 0 { return 0 }
+        let secNanos = UInt64(seconds) &* 1_000_000_000
+        let nanoPart = attoseconds <= 0 ? 0 : UInt64(attoseconds / 1_000_000_000)
+        return secNanos &+ nanoPart
+    }
+
+    private func tick(_ flight: SamplingFlight) async {
         let result = await sampler.sample()
+        if Task.isCancelled {
+            samplingGate.invalidate()
+            isRetrying = samplingGate.retrying
+            return
+        }
+        guard samplingGate.accept(flight) else { return }
+        isRetrying = samplingGate.retrying
+        let held = SamplingRetryApply.Held(
+            loadState: loadState,
+            samplingFailed: samplingFailed,
+            processListFailed: processListFailed,
+            hasSnapshot: snapshot != nil
+        )
         switch result {
         case .success(let frame):
-            samplingFailed = false
+            guard let applied = SamplingRetryApply.apply(
+                held,
+                accepted: true,
+                sampleSucceeded: true
+            ) else { return }
+            samplingFailed = applied.samplingFailed
             snapshot = frame.snapshot
             systemCpuPercent = frame.systemCpuPercent
             hostNetworkRates = frame.hostNetworkRates
@@ -270,12 +341,15 @@ final class MemoryDashboardVM: ObservableObject {
                 }
             }
             applyRisingOnlySelection()
-            loadState = .ready
+            loadState = applied.loadState
         case .failure:
-            samplingFailed = true
-            if snapshot == nil {
-                loadState = .failed
-            }
+            guard let applied = SamplingRetryApply.apply(
+                held,
+                accepted: true,
+                sampleSucceeded: false
+            ) else { return }
+            samplingFailed = applied.samplingFailed
+            loadState = applied.loadState
         }
     }
 }

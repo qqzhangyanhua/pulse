@@ -35,7 +35,7 @@ struct DiskOverviewSection: View {
             systemImage: "internaldrive",
             title: DiskPageCopy.failureTitle,
             message: DiskPageCopy.failureMessage,
-            retryTitle: DiskPageCopy.retry,
+            retrying: vm.isRetrying,
             onRetry: vm.retrySampling
         )
         .frame(minHeight: 150)
