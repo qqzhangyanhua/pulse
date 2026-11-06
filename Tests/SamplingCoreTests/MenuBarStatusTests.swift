@@ -179,6 +179,21 @@ final class MenuBarStatusTests: XCTestCase {
         XCTAssertFalse(view.contains("visibleRows"))
         XCTAssertFalse(view.contains("risingOnlyFilter"))
         XCTAssertTrue(view.contains(".frame(width: 248, alignment: .topLeading)"))
+
+        let dot = try slice(from: "static func resolve(pressure:", until: "enum MenuBarStatusItemAction", in: model)
+        XCTAssertFalse(dot.contains("busiest"))
+        XCTAssertFalse(dot.contains("CPUPageCopy"))
+
+        let host = try slice(from: "case .hostPressure:", until: "case .topProcesses:", in: view)
+        XCTAssertEqual(occurrenceCount(of: "strip.busiestCoreLine", in: host), 1)
+        XCTAssertTrue(host.contains("accessibilityLabel(\"最忙的一核\")"))
+        XCTAssertFalse(host.contains("Button"))
+        XCTAssertFalse(host.contains("最忙的一核 ·"))
+        XCTAssertEqual(MenuBarPopoverShell.sections.count, 3)
+
+        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        XCTAssertEqual(occurrenceCount(of: "busiestCorePercent: busiestCorePercent", in: vm), 1)
+        XCTAssertTrue(vm.contains("samplingFailed: samplingFailed"))
         XCTAssertTrue(view.contains("strip.processesEmptyCopy"))
         let noteAt = try index(of: "MenuBarCopy.topProcessesNote", in: view)
         let emptyAt = try index(of: "strip.processesEmptyCopy", in: view)

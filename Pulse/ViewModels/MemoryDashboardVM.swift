@@ -103,6 +103,7 @@ final class MemoryDashboardVM: ObservableObject {
 
     /// Strip B. Unfiltered `rows` ordered by the published memory-page sort.
     /// Does not read the name query, rising-only keep, or a resource-tab live `tableSort`.
+    /// Passes the latest busiest core through; a failed sample still hides that sentence.
     var menuBarPopover: MenuBarPopoverSnapshot {
         MenuBarPopoverSnapshot.project(
             pressure: snapshot?.pressure,
@@ -110,7 +111,8 @@ final class MemoryDashboardVM: ObservableObject {
             samplingFailed: samplingFailed,
             rows: rows,
             processListFailed: processListFailed,
-            sort: publication.sort
+            sort: publication.sort,
+            busiestCorePercent: busiestCorePercent
         )
     }
 

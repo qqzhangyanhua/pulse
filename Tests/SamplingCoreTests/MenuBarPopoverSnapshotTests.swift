@@ -415,6 +415,81 @@ final class MenuBarPopoverSnapshotTests: XCTestCase {
         XCTAssertFalse(MenuBarCopy.openPulseTitle.contains("立即处理"))
     }
 
+    func testBusiestCoreLineAppearsOnlyAtTheFloorAndReusesTheCPUPageSentence() {
+        XCTAssertEqual(MenuBarBusiestCoreNotice.floorPercent, 90)
+
+        let quiet = projectCore(percent: 89.9, samplingFailed: false)
+        let floor = projectCore(percent: 90, samplingFailed: false)
+        let busy = projectCore(percent: 92, samplingFailed: false)
+        let zero = projectCore(percent: 0, samplingFailed: false)
+        let missing = projectCore(percent: nil, samplingFailed: false)
+        let infinite = projectCore(percent: .infinity, samplingFailed: false)
+
+        XCTAssertNil(quiet.busiestCoreLine)
+        XCTAssertEqual(quiet.hostBlockLines.count, MenuBarPopoverShell.hostBlockLineCount)
+        XCTAssertEqual(quiet.hostBlockLines, [quiet.pressureLine, quiet.usedMemoryLine])
+        XCTAssertFalse(quiet.hostBlockLines.contains { $0.contains("最忙") })
+
+        XCTAssertEqual(floor.busiestCoreLine, CPUPageCopy.busiestCoreLine(percent: 90))
+        XCTAssertEqual(floor.busiestCoreLine, "最忙的一核 · 90.0%")
+        XCTAssertEqual(floor.hostBlockLines.count, MenuBarPopoverShell.hostBlockLineCount + 1)
+        XCTAssertEqual(
+            floor.hostBlockLines,
+            [floor.pressureLine, floor.usedMemoryLine, floor.busiestCoreLine!]
+        )
+        XCTAssertEqual(floor.pressureLine, "正常 · 余量充足")
+
+        XCTAssertEqual(busy.busiestCoreLine, "最忙的一核 · 92.0%")
+        XCTAssertEqual(busy.pressure, .normal)
+
+        XCTAssertNil(zero.busiestCoreLine)
+        XCTAssertNil(missing.busiestCoreLine)
+        XCTAssertNil(infinite.busiestCoreLine)
+        XCTAssertFalse(zero.hostBlockLines.joined(separator: "\n").contains("0.0%"))
+        XCTAssertFalse(missing.hostBlockLines.joined(separator: "\n").contains("—"))
+    }
+
+    func testSamplingFailureHidesAStaleBusiestCoreAndProcessListFailureDoesNot() {
+        let failed = projectCore(percent: 99, samplingFailed: true)
+        XCTAssertNil(failed.pressure)
+        XCTAssertNil(failed.busiestCoreLine)
+        XCTAssertEqual(failed.hostBlockLines, ["暂时读不到", "暂时读不到"])
+        XCTAssertFalse(failed.hostBlockLines.joined(separator: "\n").contains("最忙"))
+        XCTAssertFalse(failed.hostBlockLines.joined(separator: "\n").contains("99"))
+
+        let listFailed = MenuBarPopoverSnapshot.project(
+            pressure: .elevated,
+            usedBytes: 8_589_934_592,
+            samplingFailed: false,
+            rows: [process(pid: 7, name: "Safari", memory: 400_000_000)],
+            processListFailed: true,
+            busiestCorePercent: 95
+        )
+        XCTAssertTrue(listFailed.processes.isEmpty)
+        XCTAssertEqual(listFailed.busiestCoreLine, "最忙的一核 · 95.0%")
+        XCTAssertEqual(listFailed.pressureLine, "偏高 · 余量紧张")
+        XCTAssertEqual(MenuBarPopoverShell.sections.count, 3)
+    }
+
+    func testBusiestCoreCopyStaysCalm() {
+        let strip = projectCore(percent: 92, samplingFailed: false)
+        let blob = (strip.busiestCoreLine ?? "") + "\n" + strip.hostBlockLines.joined(separator: "\n")
+        for word in ["危急", "泄漏", "泄露", "危险", "告警", "过热", "降频"] {
+            XCTAssertFalse(blob.contains(word), word)
+        }
+    }
+
+    private func projectCore(percent: Double?, samplingFailed: Bool) -> MenuBarPopoverSnapshot {
+        MenuBarPopoverSnapshot.project(
+            pressure: .normal,
+            usedBytes: 13_261_991_936,
+            samplingFailed: samplingFailed,
+            rows: [process(pid: 1, name: "Finder", memory: 12)],
+            processListFailed: false,
+            busiestCorePercent: percent
+        )
+    }
+
     private func process(pid: Int32, name: String, memory: UInt64) -> ProcessRow {
         ProcessRow(
             pid: pid,

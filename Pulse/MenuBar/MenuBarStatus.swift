@@ -168,6 +168,7 @@ enum MenuBarPopoverShell {
     }
 
     /// Pressure then used memory, same information block. No Divider between them.
+    /// A busiest-core sentence can follow those two; it is not a fourth slot and is not part of this count.
     static let hostBlockLineCount = 2
 
     /// Calm empty copy. Never a fake "正常" or a 0-byte process row.
@@ -192,6 +193,21 @@ struct MenuBarPopoverProcess: Equatable, Sendable, Identifiable {
     let memoryBytes: UInt64
 }
 
+/// One optional host-block sentence. Same words as the CPU page. The status dot does not read it.
+enum MenuBarBusiestCoreNotice {
+    /// Inclusive. A quieter core leaves the popover on the two memory lines.
+    static let floorPercent = 90.0
+
+    /// Nil omits the row: missing, non-finite, below the floor, or a failed host sample.
+    /// A real 0 stays omitted. The sentence is never 「—」 and never 「0.0%」.
+    static func line(percent: Double?, samplingFailed: Bool) -> String? {
+        guard !samplingFailed, let percent, percent.isFinite, percent >= floorPercent else {
+            return nil
+        }
+        return CPUPageCopy.busiestCoreLine(percent: percent)
+    }
+}
+
 /// Read-only strip B. Same `snapshot` / `rows` the main window and color-dot A already read.
 struct MenuBarPopoverSnapshot: Equatable, Sendable {
     /// Nil when there is no snapshot or the latest sample failed. Never a fake `.normal`.
@@ -201,8 +217,15 @@ struct MenuBarPopoverSnapshot: Equatable, Sendable {
     /// At most `MenuBarPopoverShell.maxProcessRows` from the published memory-page sort.
     /// Empty — never padded. Rows still show name + memory, not PID.
     let processes: [MenuBarPopoverProcess]
+    /// Nil hides the row. Present only when `MenuBarBusiestCoreNotice.line` returns a sentence.
+    let busiestCoreLine: String?
 
-    static let empty = MenuBarPopoverSnapshot(pressure: nil, usedBytes: nil, processes: [])
+    static let empty = MenuBarPopoverSnapshot(
+        pressure: nil,
+        usedBytes: nil,
+        processes: [],
+        busiestCoreLine: nil
+    )
 
     var pressureLine: String {
         guard let pressure else {
@@ -224,9 +247,13 @@ struct MenuBarPopoverSnapshot: Equatable, Sendable {
     }
 
     /// Strip-B host block, top to bottom. The view draws these under `.hostPressure`
-    /// with no Divider and no tap target.
+    /// with no Divider and no tap target. The core sentence is last, and only when present.
     var hostBlockLines: [String] {
-        [pressureLine, usedMemoryLine]
+        var lines = [pressureLine, usedMemoryLine]
+        if let busiestCoreLine {
+            lines.append(busiestCoreLine)
+        }
+        return lines
     }
 
     static func pressureLine(for pressure: PressureLevel) -> String {
@@ -243,7 +270,8 @@ struct MenuBarPopoverSnapshot: Equatable, Sendable {
         samplingFailed: Bool,
         rows: [ProcessRow],
         processListFailed: Bool,
-        sort: ProcessTableSort = ProcessTableSort.defaultSort(for: .memory)
+        sort: ProcessTableSort = ProcessTableSort.defaultSort(for: .memory),
+        busiestCorePercent: Double? = nil
     ) -> MenuBarPopoverSnapshot {
         let hostReadable = !samplingFailed
         let resolvedPressure = hostReadable ? pressure : nil
@@ -252,7 +280,11 @@ struct MenuBarPopoverSnapshot: Equatable, Sendable {
         return MenuBarPopoverSnapshot(
             pressure: resolvedPressure,
             usedBytes: resolvedUsedBytes,
-            processes: processes
+            processes: processes,
+            busiestCoreLine: MenuBarBusiestCoreNotice.line(
+                percent: busiestCorePercent,
+                samplingFailed: samplingFailed
+            )
         )
     }
 
@@ -269,7 +301,7 @@ struct MenuBarPopoverSnapshot: Equatable, Sendable {
 }
 
 /// Strip B click targets. Only live Top3 rows and 「打开 Pulse」 are tappable.
-/// Pressure and used-memory host-block lines are display-only.
+/// Pressure, used memory, and the optional busiest-core sentence are display-only.
 enum MenuBarPopoverTapTarget: Equatable, Sendable {
     /// A process still projected into Top3. Identity is pid.
     case process(Int32)
