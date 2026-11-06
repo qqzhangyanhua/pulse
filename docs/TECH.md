@@ -2562,3 +2562,272 @@ Mac 冒烟（实现合并后、本机；不挡本文档验收）：
 
 实现等本设计合并、用户 / 主控确认、**Grok merge gate** 通过后再动 Swift、采样实现、entitlements 与脚本。本 docs 分支**不写 Swift**。
 
+---
+
+# Pulse 十四期技术设计（首包：菜单栏 Top3 与主窗内存排序对齐）
+
+> 一期至十三期正文不改写。七 / 十一期把菜单栏 B Top3 锁成「已采 `rows` 内存降序前 3 + 点选落内存页同 pid」；十二期名称过滤 / 「仅上涨」只收主窗表；九期 Top5 已跟内存页 `ProcessTableSort`——**本文只覆盖那条投影缺口**：主窗内存页改成 CPU / 线程（及现成名称）排序后，菜单栏 Top3 按**同一顺序**取前三。不改 Sampler / 采样频率，不新开排序算法，不改菜单栏布局 / 文案 / 主机压力与已用信息行，不重开十三期重试，不做磁盘趋势 / GPU / 新 Tab / 全表 ring，不改十二期过滤 / 增长算法 / TopN=5，不改主窗排序按钮与默认内存降序，不另加持久化排序设置，不重做 `MenuBarPopoverSnapshot`、不引入第二个状态源。
+
+**已锁定**：十四期 = **菜单栏 Top3 对齐主窗内存排序**。谁：先扫菜单栏的人。情境：主窗内存页已经按 CPU / 线程等列重排，弹出条仍按内存大小取前三，对不上。成功：菜单栏最多 3 行按**同一 comparator / order**显示未过滤 `rows` 的前三；行仍只画 pid 身份 + 名称 + `memoryBytes`；点选仍走十一期 `MenuBarPopoverTap`（dismiss → `selectPidIfPresent` → `focusMemoryPage`）。主窗名称过滤与十二期「仅上涨」**不**灌入菜单栏。失败 / 空态沿用。仍单进程、单 `MemorySampler` Actor、单 `MemoryDashboardVM`；弹出条**不**调 `sample()`。文案冷静；永不写「危急 / 泄漏 / 危险」。
+
+来源：用户 + 主控锁定的十四期 Must（十三期①#45 / ②#46 已合，基准 `e3fc8b7198ba68a986903fb94b692cd2e961a0a3`）；对照现实现（`ProcessTableSort` 在 `Models/CPUPage.swift`；`MemoryDashboardVM.tableSort` = `navigation.sort`；`ProcessTablePane.sortedRows = vm.tableSort.ordered(vm.visibleRows)`；`setMemoryPageSort` 在 `MemorySampler`，只经 `publishMemoryPageSort()` 在 `selectedPage == .memory` 时触达；`MenuBarPopoverSnapshot.topProcesses` 仍硬编码 `memoryBytes` desc + pid 升序；`menuBarPopover` 已吃完整 `rows`，不吃 `visibleRows`）。
+
+## 范围（相对一二三四五六七八九十十一十二十三期）
+
+| 项 | 一二三四五六七八九十十一十二十三期 | 十四期首包 |
+| --- | --- | --- |
+| 定位 | 七 / 十一期：Top3 = 已采 `rows` **内存降序**前 3，可点选落内存页 | **投影对齐**：Top3 = 主窗**内存页**当前 `ProcessTableSort` 对未过滤 `rows` 排序后的 `prefix(3)` |
+| 菜单栏外观 A / B 槽位 | 栏上色点；压力 + 已用 + Top3 +「打开 Pulse」 | **布局 / 文案 / 主机行不改**。Top3 仍名称 + 内存字节，不改写成 CPU / 线程 / PID 列 |
+| Top3 顺序 | 硬编码内存降序 + pid 升序次键（`MenuBarStatus.topProcesses`） | **做（本刀）**：复用主窗内存排序同一 comparator，再 `prefix(3)` |
+| 点选 | 十一期 `MenuBarPopoverTap`：dismiss → `selectPidIfPresent` → `focusMemoryPage` | **原样保留**。host block 不可点；「打开 Pulse」只聚焦 |
+| 主窗过滤 | 名称过滤 + 十二期「仅上涨」只进 `visibleRows` | **不灌入菜单栏**。投影继续吃完整 `rows` |
+| 主窗表排序 | 单份 `navigation.sort`；切 Tab **重置**为该页 default | **不改**切 Tab 重置、不改排序按钮、不另加持久化。菜单栏绑**内存页已发布**的 sort，不绑资源 Tab 当下的 `tableSort` |
+| Sampler / Top5 | 九期 `memoryPageSort` + `ProcessTableSort.ordered(rows).prefix(5)` | **零 Sampler 改动、不改 N=5**。只对齐菜单栏那份硬编码副本 |
+| 十三期重试 | 单消费者门闩 | **不重开** |
+| GPU / 新 Tab / 全表 ring / 新 cadence | 禁止 | **仍禁止** |
+| Helper / entitlements / Electron | 无 | **仍无** |
+
+一二三四五六七八九十十一十二十三期验收与公证路径不因本文重开。十一期点选、十期已用内存行、十二期仅上涨、九期 Top5、十三期重试不重开。实现等本设计合并 + Grok merge gate 后再写 Swift。
+
+## 架构（现实现，读仓库后的结论）
+
+仍单 Target、macOS 14+、非沙盒 Hardened Runtime。菜单栏与各资源页继续共享**同一个** `MemoryDashboardVM` / `MemorySampler`。
+
+本刀落在 **Darwin-free 排序语义 + 现成 `MenuBarPopoverSnapshot.project` 加 sort 输入**，不是第二套 VM sort，也不是第二套 menu sort。
+
+- 主窗表：`rows` → `MemoryGrowthRisingFilter.apply`（名称 + 仅上涨）→ `visibleRows` → `ProcessTableSort.ordered` → `ProcessTablePane.sortedRows`
+- 菜单栏今日：`MenuBarPopoverSnapshot.project(..., rows:)` 内部再 `sorted { memoryBytes desc; pid asc }.prefix(3)`——**故意不跟表头**
+- 九期 Top5 已经：`publishMemoryPageSort` → `MemorySampler.memoryPageSort` → `MemoryGrowthTopSeries.pids` = `sort.ordered(rows).prefix(5)`
+- 十四期菜单栏应对齐这条「未过滤 `rows` + 内存页 sort + prefix」，只是 N=3、映射现成 `MenuBarPopoverProcess`
+
+约束：
+
+- 不新开第二套 VM、不新开第二路 Mach、不调 `sample()`。
+- 不重做 `MenuBarPopoverSnapshot` 类型、不引入第二个弹出条状态源；只给现成 `project` 加 sort 输入。
+- 不改 `Pulse.entitlements`、不改公证脚本、不改十三期门闩。
+- 自身占用仍优先：排序是纯投影，不是重采样。
+
+### 现模型里有什么（必须按「已有 / 没有」落笔）
+
+| 现字段 / 调用 | 文件 | 十四期怎么用 |
+| --- | --- | --- |
+| `ProcessTableSort` / `ProcessSortColumn` | `Models/CPUPage.swift`（SamplingCore） | **唯一 comparator**。列：`name` / `cpu` / `memory` / `threads` / `disk`。**没有 PID 列** |
+| `ProcessTableSort.ordered` / `.selecting` / `.defaultSort(for:)` | 同上 | 主窗表已经在用。菜单栏改为调用同一份，禁止 piece-meal 再写一套 |
+| `ProcessTableSort.defaultSort(for: .memory)` | 同上 | 冷启动 / 切回内存页默认：**内存降序** |
+| `DashboardNavigation.sort` / `.select` / `.focusMemoryPage` / `.updateSort` | 同上 | **单份**当前表排序。切到另一可点页会 `sort = defaultSort(for: newPage)`；同页再选保持用户排序 |
+| `MemoryDashboardVM.tableSort` | `ViewModels/MemoryDashboardVM.swift` | `navigation.sort` 的只读投影。主窗按钮写的就是它 |
+| `MemoryDashboardVM.visibleRows` / `.rows` | 同上 | 菜单栏**继续吃 `rows`**。禁止改吃 `visibleRows` |
+| `MemoryDashboardVM.setTableSort` / `ProcessTablePane` 表头 | VM + `Views/ProcessTablePane.swift` | 内存页可点：名称 / CPU / 内存 / 线程。点列 = `tableSort.selecting(column)` |
+| `publishMemoryPageSort()` | VM private | `guard selectedPage == .memory` 才 `sampler.setMemoryPageSort(tableSort)`。注释原文：*Only the memory-page sort drives Top 5. Other tabs keep the last memory sort.* |
+| `MemorySampler.setMemoryPageSort` / `memoryPageSort` | `Sampling/MemorySampler.swift`（**不在** SamplingCore） | 已有「上次内存页排序」。切走 CPU / 网络 / 磁盘**不**改它。本刀零 Sampler 改动；VM 接线复用这条发布门闩，**不**新造 `@Published lastMemorySort` |
+| `MenuBarPopoverSnapshot.project` / `.topProcesses` | `MenuBar/MenuBarStatus.swift`（SamplingCore） | **延长**：加 `ProcessTableSort` 输入；`processListFailed` 仍 `[]`；否则 `sort.ordered(rows).prefix(3)` 再映射现成 `MenuBarPopoverProcess` |
+| `MenuBarPopoverProcess` | 同上 | 仍 `pid` / `name` / `memoryBytes`。不改行字段、不改弹出条画法 |
+| `MenuBarPopoverTap` | 同上 | **十一期步骤一字不改** |
+| `MemoryGrowthRisingFilter` / `filter` / `risingOnlyFilter` | Models + VM | **不进**菜单栏投影 |
+| `MemoryGrowthTopSeries.pids` | Models | **对照模式、不改 N=5**。菜单栏是同一 `ordered(rows)` 的 `prefix(3)` |
+| Sampler `rows.sort`（内存降序 + pid 升序） | `MemorySampler.sample()` | **不改**。这是采样输出的默认排列，不是菜单栏第二套 sort |
+
+**缺口（已核，不是采样缺口）**：
+
+1. 菜单栏 `topProcesses` 仍硬编码内存降序，与主窗内存页 `tableSort` / 九期 `memoryPageSort` 脱节。
+2. `ProcessTableSort.ordered` 主键 `.orderedSame` 时 `return false`；菜单栏与 Sampler 默认内存降序另有 **pid 升序次键**（`testEqualMemoryBreaksTiesByPidAscending`）。
+3. `navigation.sort` **不是**跨 Tab 持久的 last memory sort：切到 CPU / 网络 / 磁盘会重置为该页 default；切回内存页会重置为**内存降序**（`CPUPageTests.testColdStartStaysOnMemoryAndCPUSelectionChangesTheDefaultSort`）。
+4. 内存页表头**没有 PID 排序按钮**。产品口中的「CPU / 线程 / PID 排序」= 现成 CPU / 线程列 + 已有 pid 升序次键，**不**新开 PID 列。
+
+因此本刀：
+
+1. **零 Sampler 改动**（不改 `sample()` / tick / cadence / `setMemoryPageSort` 语义）。
+2. **一份 comparator**：把已有 pid 升序次键收进 `ProcessTableSort.ordered`（主键相等之后、**不受** `descending` 翻转）。这是消掉菜单栏硬编码副本，不是新指标、不是第二套 menu sort。
+3. **`project` 加 sort 输入**。VM 传入 `publishMemoryPageSort` 最后一次发出的 `ProcessTableSort`（在内存页上就是当下 `tableSort`）。禁止绑定资源 Tab 上 live 的 `navigation.sort`。
+4. 切片：`sort.ordered(rows).prefix(MenuBarPopoverShell.maxProcessRows)`，不足 3 不补 0。
+5. 不要新建第二个 `MemoryDashboardVM`，不要重做 Snapshot 类型。
+
+### 其它 Tab 是否 maintain last memory sort（必须如实回答）
+
+**表上的 `navigation.sort`：不 maintain。** 内存页与资源 Tab **共享同一份** `DashboardNavigation.sort`（不是 per-page map）。`select(.cpu / .network / .disk)` 会写成该页 `defaultSort`（CPU / 网络 = CPU 降序；磁盘 = 合计磁盘速率降序）。切回内存页会写成内存降序，用户在内存页点过的 CPU / 线程 / 名称排序**丢掉**。同页再点同一 Tab、或已在内存页时 `focusMemoryPage()`，才保持当前 sort。
+
+**Sampler `memoryPageSort`：maintain。** `publishMemoryPageSort()` 只在内存页发布；切走资源 Tab 早退。这就是九期 Top5 用的「上次内存排序」。注释与 `setMemoryPageSort` 已写死：*Leaving memory does not follow CPU / disk sort.*
+
+**十四期菜单栏绑哪一份：** 绑 **`publishMemoryPageSort` 已发布的那份**（与 Top5 同源），**不是**资源 Tab 当下的 `tableSort`。禁止为了「跟随任一 Tab」让弹出条在用户点 CPU Tab 时改成 CPU 默认序。禁止硬造平行的 `lastMemorySort` 状态机——发布门闩已经存在，接线只是把它传给 `project`。
+
+切 Tab **不**重设这条已发布的内存序（菜单栏 / Top5 保持）。切回内存页走现成 `DashboardNavigation.select` → 表与发布值都回到内存降序——这是现行为，本刀不改、不另加持久化。
+
+从资源 Tab 点 Top3：十一期 `focusMemoryPage()` 若从其它页回来，会把表 sort 重置为内存默认并发布；菜单栏随之回到内存降序。已在内存页时点 Top3 不重置。
+
+## 映射规则
+
+「主窗内存排序」= 内存页最后一次经 `setTableSort` / 冷启动 / 切回内存默认 发布的 `ProcessTableSort`。Top3 = 该 order 下未过滤 `rows` 的前三，**不是** Top 3 by memory，也**不是**把内存列改写成 CPU / 线程 / PID 数值。
+
+| 内存页当前 sort | 主窗未过滤序（同一 comparator） | 菜单栏 Top3 | 行上仍显示 |
+| --- | --- | --- | --- |
+| 默认 / 切回内存页 | `column == .memory`，`descending == true` | 内存降序前 3 | 名称 + `ByteFormat.memory` |
+| 再点内存列 | 升序翻转 | 同一升序前 3 | 同上 |
+| 点 CPU | `selecting(.cpu)`：首点降序；`cpuSortKey`（`cpuPercent ?? -1`） | CPU 序前 3，**不是**内存最大的 3 个 | 同上，不画 CPU% |
+| 再点 CPU | 升序 | 同一升序前 3 | 同上 |
+| 点线程 | 首点 `threadCount` 降序 | 线程序前 3 | 同上，不画线程数 |
+| 点名称 | 首点升序（`column != .name` 才默认降序） | 名称序前 3 | 同上 |
+| **PID** | **无表头按钮** | 只作主键相等时的 **pid 升序次键**（现菜单栏 / Sampler 默认内存序已有；收进共享 comparator） | 身份仍是 pid，不新开 PID 列 |
+
+升降序规则沿用现成 `selecting`：同一列再点翻转；换列时名称升序、指标列降序。不新开按钮，不改默认内存降序。
+
+| 主键相等 / 缺值 | 现测（以现 comparator 测试为准，不写新指标） | 十四期 |
+| --- | --- | --- |
+| 内存相等 | 菜单栏 `testEqualMemoryBreaksTiesByPidAscending`：pid 升序；`ProcessTableSort.ordered` 今日 `false` | 共享层收进 pid 升序次键，**不放宽**该菜单栏测试 |
+| CPU `nil` vs `0` | `CPUPageTests.testNilCPUSortsBelowARealZero`：`cpuSortKey == -1`，真实 0% 在缺失之上 | **原样** |
+| 线程相等 | 无独立次键测试；`compare` 到 `.orderedSame` | 走同一 pid 升序次键 |
+| 磁盘列 | 仅磁盘 Tab 表头；内存页 UI 点不到 | 不把磁盘 Tab 的 `.disk` default 灌进菜单栏 |
+| 不足 3 条 | 现测：有几条画几条，不补 0 | **原样** |
+| `processListFailed` | 现测：`processes == []`，「暂无进程」 | **原样** |
+| 采样失败主机行 | 压力 / 已用 `nil`，灰点，「暂时读不到」；进程切片仍可按 `rows` 投 | **原样**。本刀不碰主机行 |
+
+| 切 Tab / 过滤（现行为，菜单栏映射） | 主窗表 | 菜单栏 Top3 |
+| --- | --- | --- |
+| 内存页点 CPU / 线程 / 名称 | `visibleRows` 按新 sort | 跟随刚发布的内存页 sort |
+| 切到 CPU / 网络 / 磁盘 | `navigation.sort` **重置**为该页 default；`publishMemoryPageSort` 早退 | **保持**上次内存页 sort（与 Top5 相同）。**不**改成 CPU / 磁盘 default |
+| 切回内存页 | **重置**为内存降序并发布 | 跟随发布，回到内存降序 |
+| 已在内存页 `focusMemoryPage` | 不重置当前 sort | 不重置 |
+| 从其它页 `focusMemoryPage`（含点 Top3） | 重置为内存降序 | 跟随发布 |
+| 名称过滤 ON / OFF | 只改 `visibleRows` | **IDs / 顺序不变** |
+| 「仅上涨」ON / OFF | 只改内存页 `visibleRows` | **IDs / 顺序不变** |
+| `selectedPid` / Top5 series | 选中与九期 ring 照旧 | **不**灌入投影 |
+
+## VM / UI 契约
+
+`menuBarPopover` 今日：
+
+```
+MenuBarPopoverSnapshot.project(
+    pressure: snapshot?.pressure,
+    usedBytes: snapshot?.usedBytes,
+    samplingFailed: samplingFailed,
+    rows: rows,
+    processListFailed: processListFailed
+)
+```
+
+十四期只加 **sort 输入** = `publishMemoryPageSort` 最后一次发出的 `ProcessTableSort`（冷启动已是内存降序）。`rows` / 失败旗标 / 主机行语义不动。
+
+| 项 | 锁定 |
+| --- | --- |
+| 投影源 | 完整 `rows`，不是 `visibleRows` |
+| 顺序 | 上述 sort 的 `ordered(rows).prefix(3)` |
+| 行模型 | 现成 `MenuBarPopoverProcess`（pid / name / memoryBytes） |
+| 行 UI | 现成 `MenuBarPopoverView`：名称 + `ByteFormat.memory`；不改宽度、不加数值标签 |
+| 点选 | `MenuBarPopoverTap.steps`：`.dismissPopover` → `.selectPidIfPresent(pid)` → `.focusMemoryPage` |
+| 「打开 Pulse」 | dismiss + `focusMemoryPage`，不写 `selectedPid` |
+| host block | 不可点 |
+| 最多行数 | `MenuBarPopoverShell.maxProcessRows == 3` |
+| 空态 | `processListFailed` 或 0 行 →「暂无进程」，无行可点 |
+| 采样 | 不调用 `sample()`；不另开 timer |
+
+`AppEmptyState` / 十三期「重试」 / 仅上涨空态 / 九期徽标：**本刀不碰**。
+
+### 明确不做（相对本刀）
+
+- 改 Sampler / 采样源 / 频率 / `setMemoryPageSort` 发布门闩。
+- 新排序算法、新 PID 列、新指标、第二套 VM sort / menu sort。
+- 改菜单栏布局 / 文案 / 主机压力与已用行 / 栏上 A。
+- 重开十三期重试 / 调度。
+- 磁盘趋势 / GPU / 新 Tab / 全表 ring。
+- 改十二期过滤 / 增长算法 / TopN=5。
+- 改主窗排序按钮、默认内存降序、所需字段。
+- 另加持久化排序设置、per-page sort map、`@Published lastMemorySort`。
+- 重做 `MenuBarPopoverSnapshot` 或第二个状态源。
+- 让菜单栏跟随 CPU / 网络 / 磁盘 Tab 当下的 only-page sort。
+- 把名称过滤 / 仅上涨 / 选中 pid / Top5 series 灌进菜单栏。
+- 把 Top3 内存列改写成 CPU / 线程 / PID，或加第二列数值。
+- 声称 Linux 测了 VM / Xcode / 真菜单栏 / 点击表头的 SwiftUI 行为。
+
+## 建议工程顺序
+
+单刀，不要拆成另一套 VM sort。合并后（本文只锁设计；**本 docs PR 不写 Swift**）：
+
+1. **共享纯排序 + `project` 加 sort 输入 + Linux `swift test`**：`ProcessTableSort.ordered` 收进已有 pid 升序次键；`MenuBarPopoverSnapshot.project` 接收 `ProcessTableSort`，对未过滤 `rows` `ordered` 后 `prefix(3)`。钉文末矩阵能在 SamplingCore 钉的部分。零 Sampler、零 AppKit。
+2. **VM 接线**：`menuBarPopover` 把 `publishMemoryPageSort` 已发布的 sort 传入 `project`。在内存页上与 `tableSort` 是同一份；切走资源 Tab 不得改传 live `navigation.sort`。
+
+没有硬伤就不开第三条 polish PR。不要和 GPU / 全表 ring / 十三期重试 / 新周期捆在一起。合并不擅自写代码。
+
+## 风险
+
+| 风险 | 应对 |
+| --- | --- |
+| 把 live `tableSort` 绑到菜单栏，切 CPU Tab 后 Top3 变成 CPU default | 契约写死：只吃 `publishMemoryPageSort` 已发布值；单测钉切 Tab 后菜单栏 IDs 不变 |
+| 硬造 `lastMemorySort` / 第二套 menu sort | 复用已有发布门闩 + 同一 `ProcessTableSort`；禁止平行状态 |
+| 吃 `visibleRows`，名称过滤 / 仅上涨改 Top3 | 投影继续吃 `rows`；单测 ON/OFF IDs 不变 |
+| 把内存列改写成 CPU% / 线程 / PID | 行模型与 View 不改字段 |
+| 放宽菜单栏 pid 次键或主窗 ordered 测试 | 次键收进共享 comparator；**不改**现测断言 |
+| 当成重采样 / 新 cadence | 范围表零 Sampler |
+| 重开点选 / 十三期重试 | Tap 步骤与门闩本刀不碰 |
+| Helper / GPU / 新 Tab / 恐吓文案 | 范围表写死不加 |
+
+## 验收（十四期首包）
+
+产品 Must：
+
+- [ ] 内存页默认内存降序时，菜单栏 Top3 与今日相同（含 pid 升序次键）
+- [ ] 内存页按 CPU / 线程 / 名称排序后，菜单栏前三 = 同一 comparator 对未过滤 `rows` 的前三，**不是**内存最大的三行
+- [ ] 行仍只显示名称 + 内存字节；不改写成 CPU / 线程 / PID
+- [ ] 名称过滤、「仅上涨」ON/OFF 不改变菜单栏 pid 顺序
+- [ ] 切到 CPU / 网络 / 磁盘：菜单栏保持上次内存页顺序，不改成该 Tab default
+- [ ] 切回内存页：现成重置为内存降序；菜单栏跟随
+- [ ] 点选步骤同十一期；host block 不可点；「打开 Pulse」只聚焦
+- [ ] `processListFailed` / 空列表：「暂无进程」；不足 3 不补 0；采样失败主机行 nil / 灰点不改
+- [ ] 无新 Sampler cadence；菜单栏不调 `sample()`
+- [ ] 永不写「泄漏」/ leak / 「危险」
+
+测试矩阵（实现 PR 必须覆盖能 Linux 测的项；VM / GUI 标 Mac 剩余）：
+
+1. 默认内存降序 + 同内存 pid 升序：与现 `MenuBarPopoverSnapshotTests` 相同，**不放宽**
+2. 内存页 CPU 降序 / 升序：Top3 pid = `sort.ordered(rows).prefix(3)`，与内存最大三行可以不同
+3. 线程降序 / 升序：同上
+4. 名称升序：同上（现成表头，不是新列）
+5. 同主键 tie-break：内存相等 / 线程相等走 pid 升序；CPU nil 沉底低于真实 0（现 `CPUPageTests`）
+6. 名称过滤 ON/OFF：菜单栏 IDs / 顺序不变
+7. 「仅上涨」ON/OFF：菜单栏 IDs / 顺序不变
+8. 切到 CPU / 网络 / 磁盘：投影仍用上次内存页 sort（可用 `DashboardNavigation` + `project(sort:)` 钉，不必起 VM）
+9. 切回内存 / 从其它页 `focusMemoryPage`：sort 回内存默认；已在内存页的 `focusMemoryPage` 不重置（现 `CPUPageTests`）
+10. `processListFailed` / 空 / 1–2 条；采样失败主机行
+11. `MenuBarPopoverTap` 步骤与十一期测试相同，**不放宽**
+12. 原 `ProcessTableSort` / Top5 `MemoryGrowthTopSeries.pids` / 菜单栏主机行测试**不放宽**
+
+明确不做（本包出现即不合格）：
+
+- [ ] 无 GPU / 新 Tab / 全表 ring / 新 cadence
+- [ ] 无第二套 VM sort / menu sort / `lastMemorySort` 状态机
+- [ ] 无菜单栏布局 / 主机行 / 点选改写
+- [ ] 无 Helper / 新 entitlements / 持久化排序
+- [ ] 无恐吓文案、无「泄漏」
+- [ ] 无「跟随任一 Tab 当下排序」
+- [ ] 无把过滤 / 仅上涨灌进菜单栏
+
+共性：
+
+- [ ] 一二三四五六七八九十十一十二十三期验收不回退
+- [ ] 冷启动仍默认内存页 + 内存降序
+- [ ] Linux：`swift test` 跑共享 ordered + `project(sort:)` + 现成菜单栏 / Tap / CPU ordered 测试
+- [ ] 不改公证脚本与 entitlements
+
+### Linux 可测 vs Mac 剩余
+
+`Package.swift` 的 SamplingCore **已含** `Models/CPUPage.swift` 与 `MenuBar/MenuBarStatus.swift`，**排除** `ViewModels/`、`MemorySampler`、Views、`MenuBarPopoverView`。共享 comparator 与 `project(sort:)` 必须无 Darwin / 无 AppKit，才能在 Linux CI 实跑矩阵 1–11 的投影部分。
+
+本 docs PR **不跑**、也不声称：
+
+- `MemoryDashboardVM` 实例测试（不在 SamplingCore）
+- Xcode GUI / 真菜单栏弹出 / 点击表头设 sort 的 SwiftUI 行为
+- 实机 Sampler 发布时序
+
+Mac 冒烟（实现合并后、本机；不挡本文档验收）：
+
+- 内存页点 CPU / 线程，打开菜单栏：前三 pid 与主窗未过滤表一致，行上仍是内存字节
+- 打开名称过滤 / 「仅上涨」：菜单栏三行不动
+- 切到 CPU Tab 再打开菜单栏：仍是离开内存页前的那一序，不是 CPU 表当下序
+- 点 Top3：仍落内存页同 pid；从其它 Tab 点选后表回到内存降序（现 `focusMemoryPage`）
+- 失败空态 / 灰点 /「暂无进程」不回退
+
+## 工期
+
+小：天级。主因是复用现成 `ProcessTableSort` + 有界 `prefix(3)` 投影，不是重采样、不是新排序算法。按「共享 comparator + `project` 输入 + Linux 单测 → VM 接线」拆；没有硬伤就不开第三条 polish PR。本文只锁设计，不估日历人天。
+
+实现等本设计合并、用户 / 主控确认、**Grok merge gate** 通过后再动 Swift、采样实现、entitlements 与脚本。本 docs 分支**不写 Swift**。
+
