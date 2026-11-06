@@ -83,7 +83,8 @@ struct MemoryGrowthSlot: Equatable, Sendable {
     let title: String
     let caption: String
     /// Side note for a live `.rising` detail slot. Nil until `slot` fills it.
-    let basis: String? = nil
+    /// `var` so the memberwise initializer can pass a value; a defaulted `let` cannot.
+    var basis: String? = nil
 }
 
 /// Memory-page detail sidebar only. CPU and the other pages stay silent.
