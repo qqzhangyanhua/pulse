@@ -40,6 +40,13 @@ final class MemoryDashboardVM: ObservableObject {
             applyRisingOnlySelection()
         }
     }
+    /// Memory-tab only. Default OFF. Keeps apps that can open a window.
+    @Published var windowedOnlyFilter = false {
+        didSet {
+            guard oldValue != windowedOnlyFilter else { return }
+            applyWindowedOnlySelection()
+        }
+    }
     /// One-shot memory Top card reveal. The next locate replaces it.
     @Published var topAppLocateReveal: TopAppLocation.Reveal?
     @Published private(set) var navigation = DashboardNavigation()
@@ -87,12 +94,18 @@ final class MemoryDashboardVM: ObservableObject {
     }
 
     var visibleRows: [ProcessRow] {
-        MemoryGrowthRisingFilter.apply(
+        let named = MemoryGrowthRisingFilter.apply(
             rows: rows,
             nameQuery: filter,
             page: selectedPage,
             risingOnly: risingOnlyFilter,
             seriesByPid: topMemorySeries
+        )
+        return WindowedAppFilter.apply(
+            rows: named,
+            page: selectedPage,
+            windowedOnly: windowedOnlyFilter,
+            windowedPids: WindowedAppLookup.pids(in: rows)
         )
     }
 
@@ -167,6 +180,7 @@ final class MemoryDashboardVM: ObservableObject {
         navigation = next
         publishMemoryPageSort()
         applyRisingOnlySelection()
+        applyWindowedOnlySelection()
         syncMachineWatch()
     }
 
@@ -188,6 +202,7 @@ final class MemoryDashboardVM: ObservableObject {
         navigation = next
         publishMemoryPageSort()
         applyRisingOnlySelection()
+        applyWindowedOnlySelection()
         syncMachineWatch()
     }
 
@@ -230,6 +245,7 @@ final class MemoryDashboardVM: ObservableObject {
     func clearMemoryPageFilters() {
         filter = ""
         risingOnlyFilter = false
+        windowedOnlyFilter = false
     }
 
     func retrySampling() {
@@ -415,6 +431,7 @@ final class MemoryDashboardVM: ObservableObject {
         }
         if applyRisingOnly {
             applyRisingOnlySelection()
+            applyWindowedOnlySelection()
         }
     }
 }

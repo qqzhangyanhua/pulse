@@ -113,7 +113,8 @@ struct ProcessTablePane: View {
             visibleCount: vm.sortedRows.count,
             hasActiveNameFilter: vm.hasActiveFilter,
             risingOnly: vm.risingOnlyFilter,
-            processListFailed: vm.processListFailed
+            processListFailed: vm.processListFailed,
+            windowedOnly: vm.windowedOnlyFilter
         )
     }
 

@@ -14,6 +14,7 @@ extension MemoryDashboardVM {
             filter = nextName
         }
         risingOnlyFilter = false
+        windowedOnlyFilter = false
         selectPidIfPresent(plan.acceptedPid)
         topAppLocateReveal = plan.reveal
     }
