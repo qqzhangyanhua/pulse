@@ -51,14 +51,19 @@ final class KeyboardShortcutWiringSourceTests: XCTestCase {
 
         let dashboard = try WiringSourceText.text(for: "MemoryDashboardView")
         XCTAssertFalse(dashboard.contains("keyboardShortcut"))
+    }
 
+    func testMenuBarDoesNotSelectPagesOrInstallKeyboardShortcuts() throws {
         let menuBar = try repoText("Pulse/MenuBar/MenuBarController.swift")
         let popover = try repoText("Pulse/MenuBar/MenuBarPopoverView.swift")
         XCTAssertFalse(menuBar.contains("keyboardShortcut"))
         XCTAssertFalse(menuBar.contains("selectPage"))
         XCTAssertFalse(popover.contains("keyboardShortcut"))
         XCTAssertFalse(popover.contains("selectPage"))
+    }
 
+    func testAppMenuClearsNewItemAndQuitsWithCommandQ() throws {
+        let app = try repoText("Pulse/PulseApp.swift")
         XCTAssertTrue(app.contains("CommandGroup(replacing: .newItem) {}"))
         XCTAssertTrue(app.contains(".keyboardShortcut(\"q\")"))
         XCTAssertTrue(app.contains("MenuBarCopy.quitTitle"))
@@ -109,13 +114,19 @@ final class KeyboardShortcutWiringSourceTests: XCTestCase {
         let command = try functionBody(named: "ordinaryQuitCommand", in: app)
         XCTAssertTrue(command.contains("if nameFilterFocused == true"))
         let focusedBranch = try braceBody(after: "if nameFilterFocused == true", in: command)
-        XCTAssertTrue(focusedBranch.contains("dashboard.quitSelected()"))
         XCTAssertFalse(focusedBranch.contains("keyboardShortcut"))
         XCTAssertFalse(focusedBranch.contains(".disabled"))
-        let elseAt = try index(of: "} else {", in: command)
-        let shortcutAt = try index(of: ".keyboardShortcut(.delete, modifiers: .command)", in: command)
-        XCTAssertLessThan(elseAt, shortcutAt)
-        XCTAssertEqual(occurrenceCount(of: "dashboard.quitSelected()", in: command), 2)
+        XCTAssertFalse(focusedBranch.contains("Button("))
+        XCTAssertFalse(focusedBranch.contains("dashboard.quitSelected()"))
+        let elseBranch = try braceBody(after: "} else", in: command)
+        XCTAssertTrue(elseBranch.contains(".keyboardShortcut(.delete, modifiers: .command)"))
+        XCTAssertFalse(elseBranch.contains("Button("))
+        XCTAssertFalse(elseBranch.contains("dashboard.quitSelected()"))
+        XCTAssertEqual(occurrenceCount(of: "Button(\"退出选中进程\")", in: app), 1)
+        let buttonAction = try braceBody(after: "Button(\"退出选中进程\")", in: app)
+        XCTAssertTrue(buttonAction.contains("Task { await dashboard.quitSelected() }"))
+        XCTAssertFalse(buttonAction.contains("keyboardShortcut"))
+        XCTAssertEqual(occurrenceCount(of: "Task { await dashboard.quitSelected() }", in: app), 1)
         XCTAssertEqual(occurrenceCount(of: "keyboardShortcut(.delete", in: app), 1)
         XCTAssertFalse(command.contains("forceQuitSelected"))
         XCTAssertFalse(app.contains("forceQuitSelected"))

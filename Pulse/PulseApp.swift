@@ -64,14 +64,16 @@ private struct PulseWindowCommands: Commands {
     @ViewBuilder
     private func ordinaryQuitCommand() -> some View {
         if nameFilterFocused == true {
-            Button("退出选中进程") {
-                Task { await dashboard.quitSelected() }
-            }
+            quitSelectedButton
         } else {
-            Button("退出选中进程") {
-                Task { await dashboard.quitSelected() }
-            }
-            .keyboardShortcut(.delete, modifiers: .command)
+            quitSelectedButton
+                .keyboardShortcut(.delete, modifiers: .command)
+        }
+    }
+
+    private var quitSelectedButton: some View {
+        Button("退出选中进程") {
+            Task { await dashboard.quitSelected() }
         }
     }
 }
