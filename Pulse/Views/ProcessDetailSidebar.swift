@@ -297,6 +297,12 @@ struct ProcessDetailSidebar: View {
                 Text(kindLine(detail.row))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if let note = ProcessGlossary.note(for: detail.row.name) {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             Spacer(minLength: 8)
             closeButton
