@@ -4048,7 +4048,7 @@ Mac 冒烟（**仅**设计与实现都合并之后；**不挡**本文档）：
 
 > 一期至十七期正文不改写。十七期内存详情的现行文案以十七期那节和已合并的 #58 为准，**本节不改那些句子、算法、ring、Disclosure**。十六期退出存贮不重开。
 
-**已锁定**：侧栏仍是各 Tab 共用的一个 `ProcessDetailSidebar`。只按 `selectedPage` 重排**已经在 `ProcessDetail` 上的字段和曲线**。`.memory` 沿用十七期内存分支。`.gpu` 不进入该分支，也不新做 GPU 主读数。CPU 页主位是该进程自己的 `cpuPercent` 和同一份 `cpuSeries`。网络页主位只声明当前进程网络不可用，不画网络曲线，不用主机速率或 0 冒充。磁盘页主位是该行自己的读/写速率，`nil` 为「—」，真实 0 仍格式化成 0，两路不交叉，不造磁盘曲线。冻结卡换页只改标签和顺序。分子是冻结详情上的字节。分母是这个 pid 在缺席前、连续 live 期间最后一次 `totalBytes > 0`，不是缺席那一拍的新 snapshot。
+**已锁定**：侧栏仍是各 Tab 共用的一个 `ProcessDetailSidebar`。只按 `selectedPage` 重排**已经在 `ProcessDetail` 上的字段和曲线**。`.memory` 沿用十七期内存分支。`.gpu` 不进入该分支，也不新做 GPU 主读数。CPU 页主位是该进程自己的 `cpuPercent` 和同一份 `cpuSeries`。网络页主位只声明当前进程网络不可用，不画网络曲线，不用主机速率或 0 冒充。磁盘页主位是该行自己的读/写速率，`nil` 为「—」，真实 0 仍格式化成 0，两路不交叉，不造磁盘曲线。冻结卡换页只改标签和顺序。分子是冻结详情上的字节。分母是这个 `sidebarSubjectPid` 在缺席前、连续 live 期间最后一次 `totalBytes > 0`，不是缺席那一拍的新 snapshot。缺席时列表 `selectedPid` 变为 nil 不清这份分母。
 
 来源：十八期主控已锁的详情主读数；对照 `f06175fd9cbb2992374b7d02b25108df5f84baa6`（#58 合并提交，即本文 base）。仓库里**没有** `networkMetricParts`，**没有** `detailCapability`，**没有**进程网络字节，**没有**进程磁盘曲线。`ProcessDetail.cpuSeries` 已经存在，不必为了把 CPU 曲线放到上面而新造序列 state。
 
@@ -4060,6 +4060,7 @@ Mac 冒烟（**仅**设计与实现都合并之后；**不挡**本文档）：
 2. 冻结分母是缺席前该 pid 最后一次有效 live 总量。删掉「冻结影像第一次进入展示时再读 snapshot」。不改十六期 quit 记录，不改 `MemoryDetailPresentation.field` 的函数体。
 3. 非内存页内存文案就是共享函数 `MemoryDetailPresentation.field(page:part:total:)` 的返回值。列表排序不在本刀。
 4. 内存分支里 `metrics` 与 `cpuChart` 都还在。每个投影都保住自己的 `memoryBytes` 和 `memorySeries` 长度。
+5. 本地 live / 冻结的主体键只是 `sidebarSubjectPid`。列表 `selectedPid` 在缺席时变为 nil 不清 `lastLive`，也不算换成新主体。不扩范围。
 
 ## 十七期现状（保持，不改文件）
 
@@ -4088,7 +4089,7 @@ Mac 冒烟（**仅**设计与实现都合并之后；**不挡**本文档）：
 | 磁盘页详情 | 侧栏不提磁盘；列表已有读/写速率 | 主位两格「读取」「写入」，来自该行两个 `Double?`。其下 CPU 与内存辅助，再一条内存辅助曲线。无磁盘曲线 |
 | 进程网络数据 | `networkAvailability` 恒为 `.unavailable`，列表字是「暂不可用」 | **不新增字节、不探测**。列表短句不动。详情用上面那句长句，不复用列表短句当数字 |
 | 进程磁盘历史 | 只有两帧速率，没有 ring | **不造** |
-| 冻结 / 退出 / 选中 | 十六期记录不存物理总量 | **不改 quit 规则**。换 Tab 只重放投影。占比分母是缺席前该 pid 最后一次 live `totalBytes > 0`，不是缺席帧的新 snapshot |
+| 冻结 / 退出 / 选中 | 十六期：缺席时列表 `selectedPid` 变 nil，`sidebarSubjectPid` 仍是该 pid，冻结详情留在侧栏 | **不改 quit 规则**。换 Tab 只重放投影。占比分母跟 `sidebarSubjectPid`，不跟列表 `selectedPid` 清空 |
 | GPU 详情 | Tab 不可点；侧栏仍是同一份 | **不新做 GPU**。`.gpu` 走 `noResourceUpgrade`，不进入内存主读数分支 |
 | 总览、列表、菜单栏、Top5、主机合计 | 既有 | **不改** |
 
@@ -4171,21 +4172,23 @@ offRows：侧栏拿到的已经是那份 `frozenDetail`。换 Tab 用**同一份
 
 `ProcessQuitRecord.frozenDetail` 仍只是 `ProcessDetail?`。记录里没有物理总量，十八期不加。主机总量是机器级的 `physicalMemory`，每一成功帧写进新的 `MemorySnapshot`。视图本地只为了冻结后的占比文案，记住这个 pid 在连续 live 期间最后一次 `totalBytes > 0`。这不是物理总量历史，不保证知道缺席期间机器总量变过没有，也不新做身份判定。`MemoryDetailPresentation.field` 的函数体不改；变的只是冻结时传进去的那个 `total`。
 
-例：连续 live 见过 `memoryBytes = 8 GiB`、`totalBytes = 16 GiB`。缺席帧把旧详情冻成 8 GiB，同时 snapshot 换成 18 GiB。冻结后的占比仍按 8 / 16。切到 CPU 仍是 8 / 16，`field` 只改标题和句式。缺席之后 snapshot 再从 18 变成别的数、变成 nil、或从 nil 变成一个新的正数，都不改这组比率。
+例：连续 live 见过分子 8 GiB、分母 16 GiB。缺席帧 snapshot 换成 18 GiB，列表 `selectedPid` 变为 nil，`sidebarSubjectPid` 仍是 A，冻结详情留在侧栏。`.freeze(A, memoryBytes: 8 GiB)` 的分母是 16 GiB，`ByteFormat.share` 为 50%。这里只锁这一格的分母，不把整张冻结卡说成与某一帧 snapshot 重合。切到 CPU 仍是 8 / 16，`field` 只改标题和句式。列表选中没了、名称过滤、再换资源 Tab，都不清这份分母。缺席之后 snapshot 再变，包括 nil 与新的正数，也不改。
 
 视图本地两份 `@State`，都不是 VM 的 `@Published`：
 
-- `lastLiveTotal`：空，或 `(pid, totalBytes)` 且 `totalBytes > 0`。键只有 pid。`memoryBytes` 不参与「还算不算同一次 live」的判断，也不因为字节变了就丢掉总量。
+- `lastLiveTotal`：空，或 `(sidebarSubjectPid, totalBytes)` 且 `totalBytes > 0`。键只是侧栏主体。`memoryBytes` 不参与「还算不算同一次 live」。列表 `selectedPid`、`selectedRow`、滚动目标都不是这把键。侧栏详情不跟列表选中共用一把键。
 - `frozenMemorySemantics`：只在 live → 缺席那一次写入。之后换页、以及后续 snapshot 的 `onChange`，都只读它。
 
 记住的规则：
 
 - 正常 live（`showsAbsentRecord == false`，且 `sidebar.detail` 就是当前 `vm.detail`，pid 相同）见到 `totalBytes > 0` 时，记下这个 pid 的最近一次。当前是 nil 或 0：不覆盖已有的正数。live 画面仍按当前 snapshot 显示；当前无值就是无占比，不准把记下的正数偷出来显示。
 - 这个 pid 从第一次 live 起就没有过 `> 0`：`lastLiveTotal` 保持空。冻结分母为 nil，caption 停在「占物理内存」。缺席之后出现的新总量不得补上比率。
-- 选中从 pid A 换成 pid B：清掉 A 的 `lastLiveTotal` 和冻结语义，再按 B 的当前 snapshot 重新观察。A 的 16 GiB 不得进 B。同一 pid 只在「连续 live、没有经过缺席再出现」时可以接着记。新的 detail 只要还是这个连续 live，可以更新正数总量，但不得因为 same pid 就把旧冻结语义锁住。
-- `selectedPid` 或侧栏主体变了，就按新的 live 主体重置。避免两张卡共用一份 UI 身份。
-- 缺席切换的前提是：刚才就是这个 `sidebarSubject` / pid 的正常 live，主体没有换。捕获时分子用这份 `frozenDetail.row.memoryBytes`（例 8 GiB），分母用该 pid 记下的最后一次 `> 0`（例 16 GiB）。不为「对不上」再加一套生产用的身份字段。pid 不是这份语义的 pid 时，这组分母作废（nil），仍然不用当场的 18 GiB 顶上。
-- 同一 pid 无身份证据再出现：按十六期是新的实时进程。清掉上一份 `lastLiveTotal` 和 `frozenMemorySemantics`，重建观察。新 live 只用当前 snapshot；有 `> 0` 才显示比率，没有就未知。不得把上一份冻结总量当成新进程的预热缓存，不得因此改 sampler 或 quit store。
+- 清空只发生在 `sidebarSubjectPid` 上。A→B 送 `.subject(B)`：先清掉 A 的 `lastLive` 和冻结语义，再按 B 当前的 live snapshot 观察，A 的 16 GiB 不得进 B。`dismissSidebar` 使主体变为 nil：同样清空，空侧栏不新建 `lastLive`。列表 `selectedPid` 变为 nil、过滤把行藏起、或资源 Tab 切换，而侧栏主体仍是 A：不送 `.subject`，不清 `lastLive`。
+- 同一 pid 只在连续 live、且没有经过缺席再出现时接着记。连续 live 里换了一份 detail，可以更新正数总量，但不得因为 same pid 就把已经冻结的语义再锁一次。
+- 缺席切换的前提是：旧侧栏和新侧栏的 `sidebarSubjectPid` 都是 A，新的 `showsAbsentRecord == true`，侧栏详情已是这份 `frozenDetail`。这时送 `.freeze(A, memoryBytes: 8 GiB)`，不读当前 snapshot。同一拍列表 `selectedPid` 已是 nil，也不送 `.subject(nil)`。主体换成 B，或侧栏被关掉：跳过这次同 pid 的 `.freeze`，按上面的 `.subject` 清。
+- 同一 pid 无身份证据再出现：按十六期是新的实时进程，送 `.newLiveSubject`。清掉上一份 `lastLiveTotal` 和 `frozenMemorySemantics`，重建观察。新 live 只用当前 snapshot；有 `> 0` 才显示比率，没有就未知。不得把上一份冻结总量当成新进程的预热缓存，不得因此改 sampler 或 quit store。
+
+缺席成功帧里，`ProcessQuitSession.applySample` 的 `listSelectedPid` 会变成 nil（人已不在 `rows`）。VM 把 `selectedPid` 写成 nil 后，`didSet` 会把 VM 的 `detail` 清掉，并异步 `sampler.setSelectedPid(nil)`。`sidebarSubjectPid` 仍是 A：记录还在，所以主体不会被清成 nil。侧栏继续用这份 presence 上的 `frozenDetail`。`selectedPid == nil` 或 VM `detail == nil` 只是列表结算，不是新的侧栏主体，观察器不得据此认为「没有 live 主体」而清空 `lastLive`。
 
 纯函数只负责把已经决定的输入变成文案，自己不记缓存。建议 Darwin-free 的 `LastLiveTotalReducer.step`，输入是上一份 `lastLiveTotal` 加上一次事件，输出是下一份 `lastLiveTotal` 和可选的 `FrozenMemoryFieldSemantics`。投影函数不调用它。
 
@@ -4201,16 +4204,18 @@ struct FrozenMemoryFieldSemantics: Equatable, Sendable {
 
 | 事件 | 何时由视图送入 | 结果 |
 | --- | --- | --- |
-| `.live(pid, totalBytes)` | 正常 live 的 snapshot 变了，或视图出现时已经在 live | `> 0` 且 pid 相同：更新最近值。nil 或 0：不覆盖。pid 不同：先丢掉旧 pid，再只在 `> 0` 时记下新 pid。缺席期间视图不得送这个事件；reducer 在已有冻结语义时也忽略它 |
-| `.subject(pid)` | 侧栏主体换成另一个 pid | 清空旧 pid 的记忆和冻结语义 |
-| `.newLiveSubject(pid, totalBytes)` | 缺席之后同一 pid 再次成为 live | 清空旧缓存和旧冻结语义，只按这次的当前总量重新开始 |
-| `.freeze(pid, memoryBytes)` | live → 缺席，且 pid 仍是刚才的主体 | 用记忆里该 pid 的正数总量（或 nil）配上这个 `memoryBytes`，产出一份语义。不读 18 GiB |
+| `.live(pid, totalBytes)` | 当前侧栏已是该 `sidebarSubjectPid` 的正常 live | `> 0` 且 pid 就是这份记忆的主体：更新最近值。nil 或 0：不覆盖。pid 对不上：整次忽略，不把旧总量带去，也不当成换主体。缺席时不送；已冻结后再送来也忽略 |
+| `.subject(pid)` | `sidebarSubjectPid` 从 A 换成 B，或 `dismissSidebar` 后变为 nil | 清空旧记忆和冻结语义。空主体不新建 `lastLive`。换成 B 之后，另一次 `.live` 才按 B 的当前 snapshot 记；不得留下 A 的 16 GiB |
+| `.newLiveSubject(pid, totalBytes)` | 同一 pid 缺席后再成为 live | 清掉旧记录上的缓存和冻结语义，只按这次的当前总量重新开始 |
+| `.freeze(pid, memoryBytes)` | 新旧侧栏主体都是这个 pid，且新侧栏已是冻结详情 | 用记忆里该 pid 的正数总量（或 nil）配上这个 `memoryBytes`。参数里没有 snapshot，也没有列表 `selectedPid` |
 
 调用点在 `ProcessDetailSidebar`，不在 `body` 里给 `@State` 赋值：
 
-1. `.onAppear` 与 `.task`：当前已经满足正常 live 门时，用当前 `snapshot?.totalBytes` 送一次 `.live`。只补视图出现前已经在 live 的那一笔。
-2. `.onChange` 于被接受的新 snapshot（看 `totalBytes`）：仍要过 live 门。缺席时不送 `.live`。
-3. `.onChange(of: sidebar)`：看出 live → 缺席，送 `.freeze`；看出主体 pid 变了，送 `.subject`；看出缺席 → 同一 pid 的新 live，送 `.newLiveSubject`。
+1. `.onAppear` 与 `.task`：用**当前**侧栏判断。已经缺席则绝不送 `.live`。只有正常 live 才用当前 `snapshot?.totalBytes` 送一次 `.live`。正常 live 仍是：`showsAbsentRecord == false`，且 `sidebar.detail` 与当前 `vm.detail` 的 pid 相同。`showsAbsentRecord == false` 但详情只是行还在、VM `detail` 尚未回来的那份空序列 `ProcessDetail`，不算这次 live，定义不另加。主体为 nil 或侧栏为空：不新建 `lastLive`。
+2. `.onChange` 于被接受的新 snapshot：与侧栏那次 `onChange` 的先后不必规定。每次都重读**这一拍当前**侧栏的 `showsAbsentRecord`，不用上一拍留下的 live 门。当前已缺席就不送 `.live`。先冻结或后冻结都一样：缺席门拒绝 `.live`，新 snapshot 不覆盖已写入的冻结语义。
+3. `.onChange(of: sidebar)`：重读新侧栏。旧主体与新主体都是 A，且新的 `showsAbsentRecord == true`、详情已是 `frozenDetail`：送 `.freeze(A, 8 GiB)`，不带当前 snapshot。新的列表 `selectedPid` 即使是 nil，也不送 `.subject(nil)`。若这次是关掉侧栏或主体换成 B：不做这个同 pid 的 `.freeze`，送 `.subject` 清空。缺席结束、同一 pid 再次 live：送 `.newLiveSubject`。
+
+`.freeze` 之后，列表选中被清、名称过滤、资源 Tab 切换都不重置这两份 `@State`。资源 Tab 不用列表选中的新旧 id 去重置。能清的只有 `sidebarSubjectPid` 的 A→B、`dismissSidebar`，以及同一 pid 的 `.newLiveSubject`。不改 `applySample`，不加 VM `@Published`。
 
 `body` 只读。live 投影的 `total` 是当前 snapshot（nil 或 0 就是未知）。冻结投影只用已经写入的 `frozenMemorySemantics`。换页用同一份。后续 snapshot 的 `onChange` 不再改它。
 
@@ -4333,18 +4338,19 @@ struct NoResourceUpgradeProjection {
 1. 同一 `detail` 投影 `.cpu` / `.network` / `.disk`：`cpuPercent`、`memoryBytes` 都等于该行；`.cpu` 的 `cpuSeries.count` 与 `detail.cpuSeries.count` 相等且元素含 `date` 相等；三支的 `memorySeries.count` 都等于输入。磁盘读/写只在 `.disk`。
 2. `.memory` → `.memoryExisting`，其 `memorySeries.count` 与 `cpuSeries.count` 都等于输入。`.gpu` → `.noResourceUpgrade`，标题是 `field(page: .gpu, ...)` 的「内存」，不是「驻留内存」；`memorySeries.count` 等于输入；这一支没有 `cpuSeries` 字段，也没有磁盘或网络速率。
 3. pid A 与 pid B 交替投影，输出 pid 和 CPU 跟各自输入走，不留上一次。投影前后输入 `detail ==` 原值。
-4. 冻结分母由 `LastLiveTotalReducer` 产生，测试不得直接把「缺席当时的 snapshot」填进语义。顺序是：`.live(A, 16 GiB)`，再 `.freeze(A, memoryBytes: 8 GiB)`，期间另有一个 18 GiB 不得出现在 `.freeze` 的参数里。产出的语义分母是 16 GiB。投影同时收到这份语义和 live 18 GiB，caption 的 `share` 仍按 8 / 16；换 `.cpu` 后标题变为「内存」，分母仍是 16。接着：`.live(B, …)` 或对 B `.freeze` 不得带上 A 的 16。`.live(A, 16 GiB)` 之后 `.live(A, nil)` 与 `.live(A, 0)` 仍记住 16，但 live 投影若 `total == nil` 不得画出 16 的占比。从空状态 `.live(A, nil)` 再 `.freeze(A, 8 GiB)`，分母为 nil；之后的 18 GiB 不得补上。`.freeze` 之后 `.newLiveSubject(A, nil)` 清空旧语义，新的 live 投影只用当前总量；当前仍 nil 就无占比，当前若 `> 0` 才按这个新值，不沿用 16。
-5. 网络：`notice` 只有 `.unavailable`；常量等于「当前进程网络暂不可用」；不等于「暂不可用」、不等于「0 字节/秒」、不等于含「下行」的总览句。`memorySeries` 空或非空都是同一个 notice。类型上没有网络速率字段。
-6. 磁盘四支：读 nil / 写 0；读 0 / 写 nil；两路 nil；两路 0。`DiskRateText` 对 nil 是「—」、对 0 是「0 字节/秒」，左右不交换。
-7. `cpuPercent == nil` 且 `cpuSeries` 已有点：`.cpu` 主位仍是 nil，`cpuSeries.count` 不变。空的 `memorySeries` 在每一支都保持 0 点，不补到 2 点。
-8. `.cpu` 的 `memory` 等于 `MemoryDetailPresentation.field(page: .cpu, part:total:)`。不改 `MemoryDetailPresentationTests` 的既有期望；那些期望已经锁住非内存页 caption。
-9. 不改、不重跑 `ProcessDiskLoadTests`、`DiskPageTests`、`MemoryGrowthSignalTests`、十七期文案测试。那些已经锁住 nil/0 和 ring。十八期不把「再测一遍 ring」写成新代码。本 PR 自己也不跑这些测试。
+4. `.live(A, 16 GiB)` 之后 `.freeze(A, memoryBytes: 8 GiB)`。`.freeze` 不接收 18 GiB，也不接收「列表 selectedPid 已是 nil」。语义分母是 16 GiB。投影同时收到这份语义和 live 18 GiB，内存页 caption 的 `share` 是 50%（8 / 16）。换 `.cpu` 后标题变为「内存」，分母仍是 16。同一拍若当前侧栏已缺席，不得再送 `.live(A, 18 GiB)` 把 16 盖掉。
+5. 列表选中消失不送 `.subject`，冻结语义还在。`.subject(B)` 清掉 A 的 16，随后 `.live(B, …)` 不得带上 16。`.subject(nil)`（关掉侧栏）清空，且不新建 `lastLive`。`.live(A, 16 GiB)` 之后 `.live(A, nil)` 与 `.live(A, 0)` 仍记住 16，但 live 投影的 `total == nil` 时不得画出 16 的占比。从空状态 `.live(A, nil)` 再 `.freeze(A, 8 GiB)`，分母为 nil；之后的 18 GiB 不得补上。`.newLiveSubject(A, nil)` 清空旧语义；新的 live 只用当前总量，不用 16。
+6. 网络：`notice` 只有 `.unavailable`；常量等于「当前进程网络暂不可用」；不等于「暂不可用」、不等于「0 字节/秒」、不等于含「下行」的总览句。`memorySeries` 空或非空都是同一个 notice。类型上没有网络速率字段。
+7. 磁盘四支：读 nil / 写 0；读 0 / 写 nil；两路 nil；两路 0。`DiskRateText` 对 nil 是「—」、对 0 是「0 字节/秒」，左右不交换。
+8. `cpuPercent == nil` 且 `cpuSeries` 已有点：`.cpu` 主位仍是 nil，`cpuSeries.count` 不变。空的 `memorySeries` 在每一支都保持 0 点，不补到 2 点。
+9. `.cpu` 的 `memory` 等于 `MemoryDetailPresentation.field(page: .cpu, part:total:)`。不改 `MemoryDetailPresentationTests` 的既有期望；那些期望已经锁住非内存页 caption。
+10. 不改、不重跑 `ProcessDiskLoadTests`、`DiskPageTests`、`MemoryGrowthSignalTests`、十七期文案测试。那些已经锁住 nil/0 和 ring。十八期不把「再测一遍 ring」写成新代码。本 PR 自己也不跑这些测试。本条不写实现代码。
 
 **刀②（源码约束，不是 GUI，Mac 未验）：**
 
-10. `detailBody` 的 `.memoryExisting` 分支仍按 #58 源码测试的顺序包含上涨槽、Disclosure 门、`memoryChart`，并且其后仍有 `cpuChart`。该分支仍调用 `metrics`。`DisclosureGroup` 仍只有一处。`cpuChart` 的标题字面量不改。`.noResourceUpgrade` 分支不含 `samplingWindowDisclosure`、不含 `cpuChart`。VM 的 `@Published` 仍是 22 处。`selectPage` / `selectedPid` 的 `didSet` 源码不出现投影类型。`ProcessQuitSession.swift` 不出现 `totalBytes` 或 `FrozenMemoryFieldSemantics`。
-11. 网络分支源码不含 `hostNetworkRates`、`networkHistory`、`cpuChart`、`inbound`。磁盘分支不含 `hostDiskRates`、`diskHistory`、`DiskRateCard`、`cpuChart`。侧栏不给 `frozenDetail`、`quitOutcome`、`selectedPid` 赋值，不调用 `evaluate`。`lastLiveTotal` 的写入出现在 `.onChange` / `.onAppear` / `.task`，不出现在 `body` 里。冻结语义不写进 `ProcessQuitOutcome.swift`。
-12. 上述源码断言不是 SwiftUI 点击、不是截图、不是 Mac 验收。
+11. `detailBody` 的 `.memoryExisting` 分支仍按 #58 源码测试的顺序包含上涨槽、Disclosure 门、`memoryChart`，并且其后仍有 `cpuChart`。该分支仍调用 `metrics`。`DisclosureGroup` 仍只有一处。`cpuChart` 的标题字面量不改。`.noResourceUpgrade` 分支不含 `samplingWindowDisclosure`、不含 `cpuChart`。VM 的 `@Published` 仍是 22 处。`selectPage` / `selectedPid` 的 `didSet` 源码不出现投影类型。`ProcessQuitSession.swift` 不出现 `totalBytes` 或 `FrozenMemoryFieldSemantics`。侧栏源码不因 `selectedPid == nil` 去清 `lastLiveTotal`。
+12. 网络分支源码不含 `hostNetworkRates`、`networkHistory`、`cpuChart`、`inbound`。磁盘分支不含 `hostDiskRates`、`diskHistory`、`DiskRateCard`、`cpuChart`。侧栏不给 `frozenDetail`、`quitOutcome`、`selectedPid` 赋值，不调用 `evaluate`。`lastLiveTotal` 的写入出现在 `.onChange` / `.onAppear` / `.task`，不出现在 `body` 里。冻结语义不写进 `ProcessQuitOutcome.swift`。
+13. 上述源码断言不是 SwiftUI 点击、不是截图、不是 Mac 验收。
 
 本环境没有跑刀①，也没有 Mac。不要把本文写成「测试已绿」或「侧栏已点过」。
 
@@ -4358,11 +4364,11 @@ struct NoResourceUpgradeProjection {
 | 用主机 `DiskRateCard` 做进程详情 | 详情只读行上的两路 Optional；不画主机曲线 |
 | 为了 CPU 在上而新造 `cpuSeries` | 已有字段，只重排 `cpuChart` |
 | 换页清选中、清 quit、清曲线 | 不改 `selectPage` / `didSet` / sampler |
-| 冻结卡换 Tab 后字节、`date` 或比率变了，或用缺席帧的 18 GiB 当 16 GiB | 分子来自 `frozenDetail`；分母来自缺席前的 `lastLiveTotal`。`.freeze` 不接收当前 snapshot。换页只读已写入的语义 |
+| 缺席时列表 `selectedPid` 变 nil，观察器把 `lastLive` 清掉，或用 18 GiB 当 16 GiB | 键只是 `sidebarSubjectPid`。列表选中变 nil 不送 `.subject`。`.freeze` 不接收当前 snapshot。换页只读已写入的语义 |
 | `.gpu` 掉进内存主读数，冒出「驻留内存」和 Disclosure | `.gpu` 只产生 `.noResourceUpgrade`；内存支只有 `.memory` |
 | 改「驻留内存」或 Disclosure 来做辅助标题 | 非内存页标题来自 `field(page:)` 的「内存」；`.memoryExisting` 才走十七期分支 |
 | 把列表「暂不可用」改成长句 | 长句只在投影常量 |
-| 源码测试或文档评审被说成工程已绿 | 矩阵第 12 条；本 PR 不跑 `swift test` |
+| 源码测试或文档评审被说成工程已绿 | 矩阵第 13 条；本 PR 不跑 `swift test` |
 
 ## 验收
 
@@ -4372,7 +4378,7 @@ struct NoResourceUpgradeProjection {
 - [ ] 磁盘页顶上是该行 `diskReadBytesPerSecond` / `diskWriteBytesPerSecond`，标题「读取」「写入」；nil 为「—」，0 为「0 字节/秒」；不交叉；无磁盘曲线
 - [ ] `.memory` 为 `.memoryExisting`，内存支仍有 `metrics` 和 `cpuChart`。`.gpu` 为 `.noResourceUpgrade`：无 GPU 主读数、无 GPU 曲线，内存曲线只作辅内存，不进入十七期内存分支
 - [ ] 同一 detail 换页只变投影；每一支的 `memoryBytes` 与 `memorySeries.count` 等于输入；A/B pid 不串；输出不写回 VM / sampler / quit store
-- [ ] 冻结卡换页只改标签和顺序。分子是旧详情的字节（例 8 GiB）。分母是该 pid 连续 live 最后一次 `> 0` 的总量（例 16 GiB），不是缺席帧先写入的 18 GiB，也不跟之后的 snapshot。从未有过有效 live 总量则分母保持 nil，事后的新总量不补比率。同一 pid 再次成为 live 时按当前 snapshot 重开，不沿用上一份冻结分母。无 `frozenDetail` 不新卡。失败帧不清旧曲线。磁盘未知不是 0
+- [ ] 冻结卡换页只改标签和顺序。分子是旧详情的字节（例 8 GiB）。分母是该 `sidebarSubjectPid` 连续 live 最后一次 `> 0` 的总量（例 16 GiB，占比 50%），不是缺席帧先写入的 18 GiB。缺席时列表 `selectedPid` 变为 nil 不清这份分母；VM `detail` 被 `didSet` 清掉也不算换了侧栏主体。只有 `sidebarSubjectPid` 从 A 换成 B、`dismissSidebar`，或同一 pid 再次 live，才清。从未有过有效 live 总量则分母保持 nil。无 `frozenDetail` 不新卡。失败帧不清旧曲线。磁盘未知不是 0
 - [ ] 不改十六期 quit 记录、token、generation；不新增 VM state 或 ring。不改 `selectedPid` 规则。内存→CPU 不因「仅上涨」而新清选中
 - [ ] 刀①按上表写纯投影测试；刀②只做源码约束。二者都不是本文档 PR 的已执行项。Mac 未验。文档 diff 通过不是 `swift test` 已绿
 
