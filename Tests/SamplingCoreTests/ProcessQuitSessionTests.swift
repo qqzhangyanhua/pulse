@@ -914,6 +914,296 @@ final class ProcessQuitSessionTests: XCTestCase {
         XCTAssertEqual(before.opportunity, .open)
     }
 
+    /// Pure composition of `ProcessQuitSession` over the real `ProcessQuitOutcome`.
+    /// Not an `NSAlert`, not a VM button, and not a MainActor reply while that alert is open.
+    /// Linux does not verify that UI path. No `identityEvidence` injection.
+    ///
+    /// Same-pid supersede stays the knife-1 rule (`beginTerminate` may drop pending only for
+    /// that pid). A different pid's new terminate must not.
+    /// Ordinary in-flight still ignores another click on that same pid, so A's force confirm
+    /// starts only after A's ordinary packet has failed. B is still in-flight at that moment.
+    func testOtherPidsNewTerminateDoesNotClearAForcePending() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let aFlight = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        let bFlight = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 2,
+                sidebarSubjectPid: 2,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(aFlight.kind, .terminate)
+        XCTAssertEqual(bFlight.kind, .terminate)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertEqual(store.record(for: 2)?.phase, .quitting)
+        XCTAssertEqual(store.record(for: 1)?.presence, .inRows)
+        XCTAssertEqual(store.record(for: 2)?.presence, .inRows)
+
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: aFlight.pid,
+            token: aFlight.token,
+            result: .stillRunning,
+            taskCancelled: false
+        )
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.token, aFlight.token)
+        XCTAssertEqual(store.record(for: 2)?.token, bFlight.token)
+        XCTAssertEqual(store.record(for: 2)?.phase, .quitting)
+        let tokenClock = store.nextToken
+        let request = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        let pending = try XCTUnwrap(store.pendingForceConfirmation)
+        XCTAssertEqual(pending.generation, request.generation)
+        XCTAssertEqual(pending.targetPid, 1)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.token, aFlight.token)
+        XCTAssertNotEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertEqual(store.nextToken, tokenClock)
+
+        let looked = ProcessQuitSession.followListSelection(
+            listSelectedPid: 1,
+            sidebarSubjectPid: 1,
+            rows: rows
+        )
+        XCTAssertEqual(looked.listSelectedPid, 1)
+        XCTAssertEqual(looked.sidebarSubjectPid, 1)
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+
+        let bWhileInFlight = ProcessQuitSession.ordinaryTerminate(
+            store: &store,
+            listSelectedPid: 2,
+            sidebarSubjectPid: 2,
+            rows: rows
+        )
+        XCTAssertNil(bWhileInFlight)
+        XCTAssertEqual(store.record(for: 1)?.token, aFlight.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 2)?.token, bFlight.token)
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: bFlight.pid,
+            token: bFlight.token,
+            result: .stillRunning,
+            taskCancelled: false
+        )
+        XCTAssertEqual(store.record(for: 2)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 2)?.token, bFlight.token)
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+        XCTAssertEqual(store.record(for: 1)?.token, aFlight.token)
+
+        let bClick = ProcessQuitSession.ordinaryTerminate(
+            store: &store,
+            listSelectedPid: 2,
+            sidebarSubjectPid: 2,
+            rows: rows
+        )
+        XCTAssertEqual(bClick?.pid, 2)
+        XCTAssertEqual(bClick?.kind, .terminate)
+        XCTAssertEqual(store.record(for: 1)?.token, aFlight.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertNotEqual(store.record(for: 1)?.token, bClick?.token)
+        XCTAssertEqual(
+            store.pendingForceConfirmation,
+            pending,
+            "B's new terminate must not nil A's unanswered force generation"
+        )
+
+        let confirmed = ProcessQuitSession.confirmForce(
+            store: &store,
+            generation: request.generation,
+            listSelectedPid: looked.listSelectedPid,
+            rows: rows
+        )
+        XCTAssertEqual(looked.listSelectedPid, 1)
+        XCTAssertEqual(looked.sidebarSubjectPid, 1)
+        XCTAssertEqual(
+            confirmed?.pid,
+            Int32(1),
+            "same generation must still issue A's pid while A remains the legal selection"
+        )
+        XCTAssertEqual(confirmed?.kind, .forceTerminate)
+        XCTAssertNotEqual(confirmed?.pid, 2)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertEqual(store.record(for: 1)?.kind, .forceTerminate)
+        XCTAssertEqual(store.record(for: 1)?.token, confirmed?.token)
+        XCTAssertNotEqual(store.record(for: 1)?.token, aFlight.token)
+
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: aFlight.pid,
+            token: aFlight.token,
+            result: .stillRunning,
+            taskCancelled: false
+        )
+        XCTAssertEqual(store.record(for: 1)?.token, confirmed?.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+
+        let bToken = try XCTUnwrap(bClick).token
+        let aAfterConfirm = try XCTUnwrap(store.record(for: 1))
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: 2,
+            token: bToken,
+            result: .stillRunning,
+            taskCancelled: false
+        )
+        XCTAssertEqual(store.record(for: 2)?.pid, 2)
+        XCTAssertEqual(store.record(for: 2)?.token, bToken)
+        XCTAssertEqual(store.record(for: 2)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1), aAfterConfirm)
+        XCTAssertNotEqual(store.record(for: 1)?.token, bToken)
+    }
+
+    /// Pure composition timing, the other way around: B's selection and B's click.
+    /// Not an `NSAlert`, not a VM button, not a MainActor reply while the alert is open.
+    /// No `identityEvidence`. Selecting B must not write the store. B's click must not
+    /// close A's pending generation, so confirm still issues A's original pid.
+    func testBSelectionAndClickLeaveAForcePendingSoConfirmIssuesA() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let aOrdinary = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: aOrdinary.pid,
+            token: aOrdinary.token,
+            result: .stillRunning,
+            taskCancelled: false
+        )
+        let bOrdinary = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 2,
+                sidebarSubjectPid: 2,
+                rows: rows
+            )
+        )
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: bOrdinary.pid,
+            token: bOrdinary.token,
+            result: .stillRunning,
+            taskCancelled: false
+        )
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 2)?.phase, .failed)
+        let tokenClock = store.nextToken
+        let request = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        let pending = try XCTUnwrap(store.pendingForceConfirmation)
+        XCTAssertEqual(pending.targetPid, 1)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.token, aOrdinary.token)
+        XCTAssertEqual(store.nextToken, tokenClock)
+        XCTAssertNotEqual(store.record(for: 1)?.phase, .quitting)
+
+        let lookingAtB = ProcessQuitSession.followListSelection(
+            listSelectedPid: 2,
+            sidebarSubjectPid: 1,
+            rows: rows
+        )
+        XCTAssertEqual(lookingAtB.listSelectedPid, 2)
+        XCTAssertEqual(lookingAtB.sidebarSubjectPid, 2)
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+        XCTAssertEqual(store.record(for: 1)?.token, aOrdinary.token)
+
+        let bClick = ProcessQuitSession.ordinaryTerminate(
+            store: &store,
+            listSelectedPid: lookingAtB.listSelectedPid,
+            sidebarSubjectPid: lookingAtB.sidebarSubjectPid,
+            rows: rows
+        )
+        XCTAssertEqual(bClick?.pid, 2)
+        XCTAssertEqual(store.record(for: 1)?.token, aOrdinary.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(
+            store.pendingForceConfirmation,
+            pending,
+            "B's click must not close A's unanswered force generation"
+        )
+
+        let backToA = ProcessQuitSession.followListSelection(
+            listSelectedPid: 1,
+            sidebarSubjectPid: lookingAtB.sidebarSubjectPid,
+            rows: rows
+        )
+        XCTAssertEqual(backToA.listSelectedPid, 1)
+        XCTAssertEqual(backToA.sidebarSubjectPid, 1)
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+        let confirmed = ProcessQuitSession.confirmForce(
+            store: &store,
+            generation: request.generation,
+            listSelectedPid: backToA.listSelectedPid,
+            rows: rows
+        )
+        XCTAssertEqual(
+            confirmed?.pid,
+            Int32(1),
+            "confirm of A's generation must issue A's pid, not B"
+        )
+        XCTAssertEqual(confirmed?.kind, .forceTerminate)
+        XCTAssertNotEqual(confirmed?.pid, bClick?.pid)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertEqual(store.record(for: 1)?.kind, .forceTerminate)
+        XCTAssertEqual(store.record(for: 1)?.token, confirmed?.token)
+        XCTAssertNotEqual(store.record(for: 1)?.token, aOrdinary.token)
+
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: aOrdinary.pid,
+            token: aOrdinary.token,
+            result: .exited,
+            taskCancelled: false
+        )
+        XCTAssertEqual(store.record(for: 1)?.token, confirmed?.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertNotEqual(store.record(for: 1)?.opportunity, .closed)
+
+        let bToken = try XCTUnwrap(bClick).token
+        let aAfterConfirm = try XCTUnwrap(store.record(for: 1))
+        ProcessQuitSession.finish(
+            store: &store,
+            pid: 2,
+            token: bToken,
+            result: .stillRunning,
+            taskCancelled: false
+        )
+        XCTAssertEqual(store.record(for: 2)?.token, bToken)
+        XCTAssertEqual(store.record(for: 2)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1), aAfterConfirm)
+        XCTAssertNotEqual(store.record(for: 2)?.token, aAfterConfirm.token)
+    }
+
     func testNoQuitRecordUsesTheLiveRowAndEnablesAFreshClick() throws {
         let store = ProcessQuitOutcome()
         let rows = [row(15, "Plain", memory: 12)]
