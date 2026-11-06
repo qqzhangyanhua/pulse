@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// Strip B. Three peer slots, single column, secondary type. Host pressure and
-/// used memory share one information block. Live values are a read-only
-/// projection of the same dashboard the color-dot and main window use.
+/// used memory share one information block. A busy core can add one sentence
+/// under them. Live values are a read-only projection of the same dashboard
+/// the color-dot and main window use.
 struct MenuBarPopoverView: View {
     @ObservedObject var dashboard: MemoryDashboardVM
     var onOpenPulse: () -> Void
@@ -45,6 +46,14 @@ struct MenuBarPopoverView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityLabel("已用内存")
                     .accessibilityValue(strip.usedMemoryLine)
+                if let coreLine = strip.busiestCoreLine {
+                    Text(coreLine)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityLabel("最忙的一核")
+                        .accessibilityValue(coreLine)
+                }
             }
         case .topProcesses:
             topProcessesSlot

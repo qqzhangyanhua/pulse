@@ -74,6 +74,19 @@ final class MenuBarPopoverTapTests: XCTestCase {
             }
         )
         XCTAssertEqual(MenuBarPopoverTap.targets(in: strip), [.process(11), .openPulse])
+
+        let busy = MenuBarPopoverSnapshot.project(
+            pressure: .normal,
+            usedBytes: 13_261_991_936,
+            samplingFailed: false,
+            rows: [process(pid: 11, name: "Finder", memory: 12)],
+            processListFailed: false,
+            busiestCorePercent: 92
+        )
+        XCTAssertEqual(busy.busiestCoreLine, "最忙的一核 · 92.0%")
+        XCTAssertEqual(busy.hostBlockLines.count, MenuBarPopoverShell.hostBlockLineCount + 1)
+        XCTAssertFalse(MenuBarPopoverTap.hostBlockIsTappable)
+        XCTAssertEqual(MenuBarPopoverTap.targets(in: busy), [.process(11), .openPulse])
     }
 
     func testProcessTapStepsAreDismissThenSelectIfPresentThenFocus() {
