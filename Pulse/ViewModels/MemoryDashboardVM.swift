@@ -15,8 +15,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var topMemorySeries: [Int32: [ChartSample]] = [:]
     @Published private(set) var machineLabel: String?
     /// The only session quit store. Phase and message are projections of this.
-    @Published private var quitOutcome = ProcessQuitOutcome()
-    @Published private(set) var sidebarSubjectPid: Int32?
+    @Published var quitOutcome = ProcessQuitOutcome()
+    @Published var sidebarSubjectPid: Int32?
     var quitPhase: QuitPhase { sidebar.quitPhase }
     var quitMessage: String? { sidebar.quitMessage }
     @Published private(set) var samplingFailed = false
@@ -35,7 +35,7 @@ final class MemoryDashboardVM: ObservableObject {
         }
     }
     /// One-shot memory Top card reveal. The next locate replaces it.
-    @Published private(set) var topAppLocateReveal: TopAppLocation.Reveal?
+    @Published var topAppLocateReveal: TopAppLocation.Reveal?
     @Published private(set) var navigation = DashboardNavigation()
     /// Last memory-page sort, readable on the MainActor. Not a second published sort field.
     private var publication = MemoryPageSortPublication()
@@ -156,25 +156,6 @@ final class MemoryDashboardVM: ObservableObject {
         selectedPid = accepted
     }
 
-    /// Memory Top card. A nil plan writes nothing.
-    func locateMemoryTopApp(name: String, pid: Int32) {
-        guard let plan = TopAppLocation.plan(
-            name: name,
-            pid: pid,
-            rows: rows,
-            page: selectedPage,
-            currentFilter: filter,
-            currentRisingOnly: risingOnlyFilter,
-            previousReveal: topAppLocateReveal
-        ) else { return }
-        if case .replace(let nextName) = plan.nameFilter {
-            filter = nextName
-        }
-        risingOnlyFilter = false
-        selectPidIfPresent(plan.acceptedPid)
-        topAppLocateReveal = plan.reveal
-    }
-
     /// Process-list identity to reveal. Nil when nothing is selected or the pid left `rows`.
     var processListScrollTarget: Int32? {
         ProcessSelection.scrollTarget(selectedPid: selectedPid, rows: rows)
@@ -244,109 +225,6 @@ final class MemoryDashboardVM: ObservableObject {
         samplingGate.requestManualRetry()
         isRetrying = samplingGate.retrying
         sleepTask?.cancel()
-    }
-
-    /// Close the sidebar. The quit store stays unsettled.
-    func dismissSidebar() {
-        let effect = ProcessQuitSession.dismissSidebar()
-        if selectedPid != effect.listSelectedPid {
-            selectedPid = effect.listSelectedPid
-        }
-        if sidebarSubjectPid != effect.sidebarSubjectPid {
-            sidebarSubjectPid = effect.sidebarSubjectPid
-        }
-    }
-
-    func quitSelected() async {
-        var store = quitOutcome
-        let issued = ProcessQuitSession.ordinaryTerminate(
-            store: &store,
-            listSelectedPid: selectedPid,
-            sidebarSubjectPid: sidebarSubjectPid,
-            rows: rows
-        )
-        quitOutcome = store
-        guard let issued else { return }
-        let result = await ProcessActions.terminate(pid: issued.pid)
-        var finished = quitOutcome
-        ProcessQuitSession.finish(
-            store: &finished,
-            pid: issued.pid,
-            token: issued.token,
-            result: result,
-            taskCancelled: Task.isCancelled
-        )
-        quitOutcome = finished
-    }
-
-    func forceQuitSelected() async {
-        var store = quitOutcome
-        let request = ProcessQuitSession.requestForce(
-            store: &store,
-            listSelectedPid: selectedPid,
-            sidebarSubjectPid: sidebarSubjectPid,
-            rows: rows
-        )
-        quitOutcome = store
-        guard let request else { return }
-        let confirmed = ProcessActions.confirmForceQuit(displayName: request.displayName)
-        if !confirmed {
-            var cancelled = quitOutcome
-            ProcessQuitSession.cancelForce(store: &cancelled, generation: request.generation)
-            quitOutcome = cancelled
-            return
-        }
-        var confirming = quitOutcome
-        let issued = ProcessQuitSession.confirmForce(
-            store: &confirming,
-            generation: request.generation,
-            listSelectedPid: selectedPid,
-            rows: rows
-        )
-        if issued == nil {
-            ProcessQuitSession.releaseClosedForceConfirmation(
-                store: &confirming,
-                generation: request.generation,
-                issued: issued
-            )
-        }
-        quitOutcome = confirming
-        guard let issued else { return }
-        let result = await ProcessActions.forceTerminate(pid: issued.pid)
-        var finished = quitOutcome
-        ProcessQuitSession.finish(
-            store: &finished,
-            pid: issued.pid,
-            token: issued.token,
-            result: result,
-            taskCancelled: Task.isCancelled
-        )
-        quitOutcome = finished
-    }
-
-    /// Same-beat clear when the rising-only keep hides `selectedPid`. OFF does not restore.
-    private func applyRisingOnlySelection() {
-        let next = MemoryGrowthRisingFilter.selectedPid(
-            current: selectedPid,
-            rows: rows,
-            nameQuery: filter,
-            page: selectedPage,
-            risingOnly: risingOnlyFilter,
-            seriesByPid: topMemorySeries
-        )
-        guard next != selectedPid else { return }
-        let effect = ProcessQuitSession.risingOnlySelection(
-            nextListPid: next,
-            sidebarSubjectPid: sidebarSubjectPid,
-            rows: rows,
-            store: quitOutcome
-        )
-        if selectedPid != effect.listSelectedPid {
-            selectedPid = effect.listSelectedPid
-        }
-        if sidebarSubjectPid != effect.sidebarSubjectPid {
-            sidebarSubjectPid = effect.sidebarSubjectPid
-        }
     }
 
     /// Only the memory-page sort drives Top 5 and the menu bar. Other tabs keep

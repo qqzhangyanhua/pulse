@@ -81,7 +81,7 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
         let revealLine = try lineContaining("var topAppLocateReveal", in: source)
         XCTAssertEqual(
             revealLine.trimmingCharacters(in: .whitespaces),
-            "@Published private(set) var topAppLocateReveal: TopAppLocation.Reveal?"
+            "@Published var topAppLocateReveal: TopAppLocation.Reveal?"
         )
         XCTAssertFalse(revealLine.contains("didSet"))
 
