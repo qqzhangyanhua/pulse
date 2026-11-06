@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ProcessDetailSidebar: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
+    /// Sampling-window disclosure. View-local, collapsed. Not stored on the VM.
+    @State private var samplingWindowExpanded = false
 
     var body: some View {
         let sidebar = vm.sidebar
@@ -103,6 +105,9 @@ struct ProcessDetailSidebar: View {
                 if let slot = vm.memoryGrowthSlot {
                     memoryTrend(slot)
                 }
+                if vm.sidebar.showsLiveTrend && vm.selectedPage == .memory {
+                    samplingWindowDisclosure
+                }
                 memoryChart(detail)
                     .frame(height: 168)
                 cpuChart(detail)
@@ -142,13 +147,15 @@ struct ProcessDetailSidebar: View {
     }
 
     private func metrics(_ detail: ProcessDetail) -> some View {
-        HStack(alignment: .top, spacing: 10) {
+        let memory = memoryField(detail.row)
+        return HStack(alignment: .top, spacing: 10) {
             SidebarMetric(
                 systemImage: "memorychip",
-                title: "内存",
+                title: memory.title,
                 tint: PulsePalette.accent,
                 value: ByteFormat.memory(detail.row.memoryBytes),
-                caption: memoryCaption(detail.row)
+                caption: memory.caption,
+                help: memory.help
             )
             SidebarMetric(
                 systemImage: "cpu",
@@ -169,19 +176,38 @@ struct ProcessDetailSidebar: View {
                 .font(.caption.weight(.semibold))
             Text(slot.caption)
                 .font(.caption)
+            if let basis = slot.basis {
+                Text(basis)
+                    .font(.caption)
+            }
         }
         .foregroundStyle(.secondary)
         .accessibilityElement(children: .combine)
     }
 
-    private func memoryCaption(_ row: ProcessRow) -> String {
-        guard let total = vm.snapshot?.totalBytes, total > 0 else { return "占物理内存" }
-        return "占 \(ByteFormat.gibWhole(total)) 的 \(ByteFormat.share(part: row.memoryBytes, total: total))"
+    private var samplingWindowDisclosure: some View {
+        DisclosureGroup(isExpanded: $samplingWindowExpanded) {
+            Text(MemoryDetailSamplingWindow.body)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        } label: {
+            Text(MemoryDetailSamplingWindow.summary)
+                .font(.caption.weight(.semibold))
+        }
+    }
+
+    private func memoryField(_ row: ProcessRow) -> MemoryDetailFieldCopy {
+        MemoryDetailPresentation.field(
+            page: vm.selectedPage,
+            part: row.memoryBytes,
+            total: vm.snapshot?.totalBytes
+        )
     }
 
     private func memoryChart(_ detail: ProcessDetail) -> some View {
         seriesBlock(
-            title: "内存",
+            title: memoryField(detail.row).title,
             samples: detail.memorySeries,
             placeholder: "正在采集内存曲线",
             summary: memorySummary(detail.memorySeries),
@@ -310,6 +336,7 @@ private struct SidebarMetric: View {
     let tint: Color
     let value: String
     let caption: String
+    var help: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -326,11 +353,7 @@ private struct SidebarMetric: View {
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-            Text(caption)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
+            captionText
             Spacer(minLength: 0)
         }
         .padding(12)
@@ -339,6 +362,20 @@ private struct SidebarMetric: View {
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(PulsePalette.hairline, lineWidth: 1)
+        }
+    }
+
+    @ViewBuilder
+    private var captionText: some View {
+        let text = Text(caption)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
+        if let help {
+            text.help(help)
+        } else {
+            text
         }
     }
 }

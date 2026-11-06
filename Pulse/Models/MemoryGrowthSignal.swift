@@ -53,10 +53,10 @@ enum MemoryGrowthSignal: Equatable, Sendable {
 /// Locked memory-page sidebar copy. The title is a trend label, never a leak verdict.
 enum MemoryGrowthCopy {
     static let title = "内存趋势"
-    static let rising = "近几分钟持续上涨"
+    static let rising = "近期驻留内存上涨"
     static let insufficient = "样本不足，暂不判断"
-    /// Filled when the resident-basis sentence lands. Empty keeps the lock red.
-    static let basis = ""
+    /// Side note for a live `.rising` detail slot only.
+    static let basis = "当前进程近期趋势 · 基于现有驻留采样序列"
 
     static func caption(for signal: MemoryGrowthSignal) -> String? {
         switch signal {
@@ -69,10 +69,12 @@ enum MemoryGrowthCopy {
         }
     }
 
-    /// No basis is attached yet. `.insufficient` and `.none` stay nil after the lock too.
+    /// `.insufficient` and `.none` stay empty. This is not a new trend state.
     static func basis(for signal: MemoryGrowthSignal) -> String? {
         switch signal {
-        case .rising, .insufficient, .none:
+        case .rising:
+            return basis
+        case .insufficient, .none:
             return nil
         }
     }
@@ -100,7 +102,11 @@ enum MemoryGrowthSidebar {
         guard page == .memory, selectedPid != nil else { return nil }
         let signal = MemoryGrowthSignal.evaluate(detailSeries ?? [])
         guard let caption = MemoryGrowthCopy.caption(for: signal) else { return nil }
-        return MemoryGrowthSlot(title: MemoryGrowthCopy.title, caption: caption)
+        return MemoryGrowthSlot(
+            title: MemoryGrowthCopy.title,
+            caption: caption,
+            basis: MemoryGrowthCopy.basis(for: signal)
+        )
     }
 }
 
