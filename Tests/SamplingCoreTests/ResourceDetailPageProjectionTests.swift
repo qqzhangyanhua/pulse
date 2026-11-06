@@ -1,10 +1,11 @@
 import XCTest
 @testable import SamplingCore
 
-/// Phase 18 pure projection and last-live denominator.
+/// Phase 18 pure page projection.
 ///
-/// Linux SamplingCore only. A pass is not a SwiftUI sidebar, not a snapshot,
-/// and not a Mac click.
+/// Linux SamplingCore only. Frozen denominators are passed in as values.
+/// These cases do not step the last-live reducer. A pass is not a SwiftUI
+/// sidebar, not a snapshot, and not a Mac click.
 final class ResourceDetailPageProjectionTests: XCTestCase {
     private let gib: UInt64 = 1_073_741_824
     private let pidA: Int32 = 4
@@ -141,310 +142,6 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
         XCTAssertNil(diskB.writeBytesPerSecond)
     }
 
-    func testSameBeatSelectedPidNilFreezesEightOfSixteenNotEighteen() throws {
-        let eight = 8 * gib
-        let sixteen = 16 * gib
-        let eighteen = 18 * gib
-        let live = LastLiveTotalReducer.step(.empty, .live(pid: pidA, totalBytes: sixteen))
-        let previous = beat(
-            subject: pidA,
-            absent: false,
-            detailPid: pidA,
-            memory: eight,
-            hasDetail: true,
-            livePid: pidA,
-            listSelected: pidA
-        )
-        let current = beat(
-            subject: pidA,
-            absent: true,
-            detailPid: pidA,
-            memory: eight,
-            hasDetail: true,
-            livePid: nil,
-            listSelected: nil
-        )
-        let sidebarEvents = LastLiveTotalReducer.eventsForSidebar(
-            previous: previous,
-            current: current,
-            snapshotTotalBytes: eighteen
-        )
-        XCTAssertEqual(sidebarEvents, [.freeze(pid: pidA, memoryBytes: eight)])
-        XCTAssertFalse(sidebarEvents.contains(.subject(nil)))
-
-        let frozenState = apply(live, sidebarEvents)
-        XCTAssertEqual(frozenState.frozen?.pid, pidA)
-        XCTAssertEqual(frozenState.frozen?.memoryBytes, eight)
-        XCTAssertEqual(frozenState.frozen?.physicalTotalBytes, sixteen)
-        XCTAssertEqual(frozenState.lastLive?.totalBytes, sixteen)
-
-        let row = detail(pid: pidA, cpu: 1, memory: eight)
-        let semantics = frozenState.frozen
-        let memoryTotal = ResourceDetailPageProjection.memoryTotal(
-            detailPid: pidA,
-            physicalTotalBytes: eighteen,
-            frozen: semantics
-        )
-        XCTAssertEqual(memoryTotal, sixteen)
-        let resident = MemoryDetailPresentation.field(page: .memory, part: eight, total: memoryTotal)
-        XCTAssertEqual(resident.title, "驻留内存")
-        XCTAssertEqual(resident.caption, "占物理内存的 50%（按驻留内存计算）")
-        XCTAssertFalse(resident.caption.contains("18"))
-        let auxiliary = MemoryDetailPresentation.field(page: .cpu, part: eight, total: memoryTotal)
-        XCTAssertEqual(auxiliary.title, "内存")
-        XCTAssertEqual(auxiliary.caption, "占 16 GB 的 50%")
-        let cpu = try self.cpu(project(.cpu, row, total: eighteen, frozen: semantics))
-        XCTAssertEqual(cpu.memory, auxiliary)
-        XCTAssertFalse(cpu.memory.caption.contains("18"))
-
-        let beforeCallback = LastLiveTotalReducer.frozenSemanticsForProjection(
-            showsAbsentRecord: true,
-            state: live,
-            detailPid: pidA,
-            detailMemoryBytes: eight
-        )
-        XCTAssertEqual(beforeCallback?.physicalTotalBytes, sixteen)
-        XCTAssertEqual(
-            ResourceDetailPageProjection.memoryTotal(
-                detailPid: pidA,
-                physicalTotalBytes: eighteen,
-                frozen: beforeCallback
-            ),
-            sixteen
-        )
-    }
-
-    func testSnapshotAndSidebarCallbackOrderBothRefuseLiveEighteen() {
-        let eight = 8 * gib
-        let sixteen = 16 * gib
-        let eighteen = 18 * gib
-        let live = LastLiveTotalReducer.step(.empty, .live(pid: pidA, totalBytes: sixteen))
-        let previous = beat(
-            subject: pidA,
-            absent: false,
-            detailPid: pidA,
-            memory: eight,
-            hasDetail: true,
-            livePid: pidA,
-            listSelected: pidA
-        )
-        let current = beat(
-            subject: pidA,
-            absent: true,
-            detailPid: pidA,
-            memory: eight,
-            hasDetail: true,
-            livePid: nil,
-            listSelected: nil
-        )
-        let gate = SidebarLiveGate(beat: current, snapshotTotalBytes: eighteen)
-        let snapshotEvent = LastLiveTotalReducer.eventForCurrentSidebar(gate)
-        XCTAssertNil(snapshotEvent)
-        let sidebarEvents = LastLiveTotalReducer.eventsForSidebar(
-            previous: previous,
-            current: current,
-            snapshotTotalBytes: eighteen
-        )
-        let snapshotFirst = apply(live, [snapshotEvent].compactMap { $0 } + sidebarEvents)
-        let freezeFirst = apply(live, sidebarEvents + [snapshotEvent].compactMap { $0 })
-        for state in [snapshotFirst, freezeFirst] {
-            XCTAssertEqual(state.frozen?.physicalTotalBytes, sixteen)
-            XCTAssertEqual(state.frozen?.memoryBytes, eight)
-        }
-        let afterFreeze = apply(live, sidebarEvents)
-        let ignored = LastLiveTotalReducer.step(afterFreeze, .live(pid: pidA, totalBytes: eighteen))
-        XCTAssertEqual(ignored.frozen?.physicalTotalBytes, sixteen)
-        XCTAssertEqual(ignored.lastLive?.totalBytes, sixteen)
-
-        // The reducer adopts a live total that actually arrives before freeze.
-        // The absent gate has to refuse that delivery; both callback orders above do.
-        let adopted = LastLiveTotalReducer.step(
-            LastLiveTotalReducer.step(live, .live(pid: pidA, totalBytes: eighteen)),
-            .freeze(pid: pidA, memoryBytes: eight)
-        )
-        XCTAssertEqual(adopted.frozen?.physicalTotalBytes, eighteen)
-        XCTAssertNil(snapshotEvent)
-
-        let stillMatchingLivePid = beat(
-            subject: pidA,
-            absent: true,
-            detailPid: pidA,
-            memory: eight,
-            hasDetail: true,
-            livePid: pidA,
-            listSelected: nil
-        )
-        XCTAssertNil(
-            LastLiveTotalReducer.eventForCurrentSidebar(
-                SidebarLiveGate(beat: stillMatchingLivePid, snapshotTotalBytes: eighteen)
-            )
-        )
-    }
-
-    func testSubjectDismissAndNewLiveClearThePreviousDenominator() {
-        let sixteen = 16 * gib
-        let eight = 8 * gib
-        let frozen = LastLiveTotalReducer.step(
-            LastLiveTotalReducer.step(.empty, .live(pid: pidA, totalBytes: sixteen)),
-            .freeze(pid: pidA, memoryBytes: eight)
-        )
-        let absentA = beat(
-            subject: pidA,
-            absent: true,
-            detailPid: pidA,
-            memory: eight,
-            hasDetail: true,
-            livePid: nil,
-            listSelected: nil
-        )
-        let liveB = beat(
-            subject: pidB,
-            absent: false,
-            detailPid: pidB,
-            memory: 1,
-            hasDetail: true,
-            livePid: pidB,
-            listSelected: pidB
-        )
-        let placeholderB = beat(
-            subject: pidB,
-            absent: false,
-            detailPid: pidB,
-            memory: 1,
-            hasDetail: true,
-            livePid: nil,
-            listSelected: pidB
-        )
-        XCTAssertEqual(
-            LastLiveTotalReducer.eventsForSidebar(previous: absentA, current: liveB, snapshotTotalBytes: 4 * gib),
-            [.subject(pidB), .live(pid: pidB, totalBytes: 4 * gib)]
-        )
-        XCTAssertEqual(
-            LastLiveTotalReducer.eventsForSidebar(previous: absentA, current: placeholderB, snapshotTotalBytes: sixteen),
-            [.subject(pidB)]
-        )
-        let moved = apply(
-            frozen,
-            LastLiveTotalReducer.eventsForSidebar(previous: absentA, current: placeholderB, snapshotTotalBytes: sixteen)
-        )
-        XCTAssertNil(moved.lastLive)
-        XCTAssertNil(moved.frozen)
-        let followed = LastLiveTotalReducer.step(moved, .live(pid: pidB, totalBytes: nil))
-        XCTAssertNil(followed.lastLive)
-        let bLive = LastLiveTotalReducer.step(moved, .live(pid: pidB, totalBytes: 9 * gib))
-        XCTAssertEqual(bLive.lastLive, LastLiveTotal(pid: pidB, totalBytes: 9 * gib))
-        XCTAssertNotEqual(bLive.lastLive?.totalBytes, sixteen)
-
-        let dismissed = LastLiveTotalReducer.step(frozen, .subject(nil))
-        XCTAssertEqual(dismissed, .empty)
-        let dismissEvents = LastLiveTotalReducer.eventsForSidebar(
-            previous: liveB,
-            current: beat(subject: nil, absent: false),
-            snapshotTotalBytes: sixteen
-        )
-        XCTAssertEqual(dismissEvents, [.subject(nil)])
-        XCTAssertEqual(apply(bLive, dismissEvents), .empty)
-
-        let rebirthNil = LastLiveTotalReducer.eventsForSidebar(
-            previous: absentA,
-            current: beat(
-                subject: pidA,
-                absent: false,
-                detailPid: pidA,
-                memory: 3,
-                hasDetail: true,
-                livePid: pidA,
-                listSelected: pidA
-            ),
-            snapshotTotalBytes: nil
-        )
-        XCTAssertEqual(rebirthNil, [.newLiveSubject(pid: pidA, totalBytes: nil)])
-        let cleared = apply(frozen, rebirthNil)
-        XCTAssertNil(cleared.lastLive)
-        XCTAssertNil(cleared.frozen)
-        XCTAssertNil(
-            ResourceDetailPageProjection.memoryTotal(
-                detailPid: pidA,
-                physicalTotalBytes: nil,
-                frozen: LastLiveTotalReducer.frozenSemanticsForProjection(
-                    showsAbsentRecord: false,
-                    state: cleared,
-                    detailPid: pidA,
-                    detailMemoryBytes: 3
-                )
-            )
-        )
-        let rebirthEighteen = LastLiveTotalReducer.eventsForSidebar(
-            previous: absentA,
-            current: beat(
-                subject: pidA,
-                absent: false,
-                detailPid: pidA,
-                memory: 3,
-                hasDetail: true,
-                livePid: pidA,
-                listSelected: pidA
-            ),
-            snapshotTotalBytes: 18 * gib
-        )
-        XCTAssertEqual(rebirthEighteen, [.newLiveSubject(pid: pidA, totalBytes: 18 * gib)])
-        let restarted = apply(frozen, rebirthEighteen)
-        XCTAssertEqual(restarted.lastLive?.totalBytes, 18 * gib)
-        XCTAssertNil(restarted.frozen)
-        XCTAssertNotEqual(restarted.lastLive?.totalBytes, sixteen)
-    }
-
-    func testLiveNilAndZeroDoNotOverwriteOrBackfillTheShare() {
-        var state = LastLiveTotalReducer.step(.empty, .live(pid: pidA, totalBytes: 16 * gib))
-        state = LastLiveTotalReducer.step(state, .live(pid: pidA, totalBytes: nil))
-        state = LastLiveTotalReducer.step(state, .live(pid: pidA, totalBytes: 0))
-        XCTAssertEqual(state.lastLive?.totalBytes, 16 * gib)
-        XCTAssertNil(state.frozen)
-        for physical in [UInt64?.none, UInt64(0)] {
-            let total = ResourceDetailPageProjection.memoryTotal(
-                detailPid: pidA,
-                physicalTotalBytes: physical,
-                frozen: nil
-            )
-            XCTAssertNil(total)
-            let copy = MemoryDetailPresentation.field(page: .cpu, part: 8 * gib, total: total)
-            XCTAssertEqual(copy.caption, "占物理内存")
-            XCTAssertFalse(copy.caption.contains("%"), "total \(String(describing: physical))")
-            XCTAssertFalse(copy.caption.contains("0%"))
-            XCTAssertEqual(
-                LastLiveTotalReducer.frozenSemanticsForProjection(
-                    showsAbsentRecord: false,
-                    state: state,
-                    detailPid: pidA,
-                    detailMemoryBytes: 8 * gib
-                ),
-                nil
-            )
-        }
-    }
-
-    func testNeverValidLiveTotalStaysNilWhenALaterEighteenArrives() {
-        var state = LastLiveTotalReducer.step(.empty, .live(pid: pidA, totalBytes: nil))
-        state = LastLiveTotalReducer.step(state, .live(pid: pidA, totalBytes: 0))
-        XCTAssertNil(state.lastLive)
-        state = LastLiveTotalReducer.step(state, .freeze(pid: pidA, memoryBytes: 8 * gib))
-        XCTAssertEqual(state.frozen?.memoryBytes, 8 * gib)
-        XCTAssertNil(state.frozen?.physicalTotalBytes)
-        state = LastLiveTotalReducer.step(state, .live(pid: pidA, totalBytes: 18 * gib))
-        XCTAssertNil(state.lastLive)
-        XCTAssertNil(state.frozen?.physicalTotalBytes)
-        let total = ResourceDetailPageProjection.memoryTotal(
-            detailPid: pidA,
-            physicalTotalBytes: 18 * gib,
-            frozen: state.frozen
-        )
-        XCTAssertNil(total)
-        let copy = MemoryDetailPresentation.field(page: .memory, part: 8 * gib, total: total)
-        XCTAssertEqual(copy.caption, "占物理内存")
-        XCTAssertFalse(copy.caption.contains("%"))
-        XCTAssertFalse(copy.caption.contains("0%"))
-    }
-
     func testNetworkNoticeIsExactAndNeverAShamZero() throws {
         XCTAssertEqual(ResourceDetailPageProjection.processNetworkUnavailable, "当前进程网络暂不可用")
         XCTAssertNotEqual(ResourceDetailPageProjection.processNetworkUnavailable, "暂不可用")
@@ -566,172 +263,60 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
             }
         }
     }
-
-    func testCapturedNumeratorDoesNotRejectADifferentDetailPart() throws {
+    func testFrozenSemanticsKeepTheCapturedTotalWhenTheSnapshotIsEighteen() throws {
         let eight = 8 * gib
         let nine = 9 * gib
         let sixteen = 16 * gib
-        let state = LastLiveTotalReducer.step(
-            LastLiveTotalReducer.step(.empty, .live(pid: pidA, totalBytes: sixteen)),
-            .freeze(pid: pidA, memoryBytes: eight)
+        let eighteen = 18 * gib
+        let semantics = FrozenMemoryFieldSemantics(
+            pid: pidA,
+            memoryBytes: eight,
+            physicalTotalBytes: sixteen
         )
-        XCTAssertEqual(state.frozen?.memoryBytes, eight)
-        let detail = detail(pid: pidA, cpu: 1, memory: nine)
-        let cpu = try self.cpu(project(.cpu, detail, total: 18 * gib, frozen: state.frozen))
         XCTAssertEqual(
-            cpu.memory,
-            MemoryDetailPresentation.field(page: .cpu, part: nine, total: sixteen)
-        )
-        XCTAssertNotEqual(
-            cpu.memory,
-            MemoryDetailPresentation.field(page: .cpu, part: eight, total: sixteen)
-        )
-        let mismatch = ResourceDetailPageProjection.memoryTotal(
-            detailPid: pidB,
-            physicalTotalBytes: 18 * gib,
-            frozen: state.frozen
-        )
-        XCTAssertNil(mismatch)
-        let mismatchedCopy = MemoryDetailPresentation.field(page: .disk, part: nine, total: mismatch)
-        XCTAssertEqual(mismatchedCopy.caption, "占物理内存")
-        XCTAssertFalse(mismatchedCopy.caption.contains("%"))
-    }
-
-    func testLivePidMismatchIsIgnoredAndFreezeDoesNotBorrowAnotherPid() {
-        var state = LastLiveTotalReducer.step(.empty, .live(pid: pidA, totalBytes: 16 * gib))
-        state = LastLiveTotalReducer.step(state, .live(pid: pidB, totalBytes: 32 * gib))
-        XCTAssertEqual(state.lastLive, LastLiveTotal(pid: pidA, totalBytes: 16 * gib))
-        XCTAssertNil(state.frozen)
-        state = LastLiveTotalReducer.step(state, .freeze(pid: pidB, memoryBytes: 8 * gib))
-        XCTAssertEqual(state.frozen?.pid, pidB)
-        XCTAssertNil(state.frozen?.physicalTotalBytes)
-        XCTAssertEqual(state.lastLive?.pid, pidA)
-        XCTAssertEqual(state.lastLive?.totalBytes, 16 * gib)
-    }
-
-    func testPlaceholderIsNotLiveAndListSelectionNilDoesNotClearTheCache() {
-        let placeholder = beat(
-            subject: pidA,
-            absent: false,
-            detailPid: pidA,
-            memory: 100,
-            hasDetail: true,
-            livePid: nil,
-            listSelected: pidA
+            ResourceDetailPageProjection.memoryTotal(
+                detailPid: pidA,
+                physicalTotalBytes: eighteen,
+                frozen: semantics
+            ),
+            sixteen
         )
         XCTAssertNil(
-            LastLiveTotalReducer.eventForCurrentSidebar(
-                SidebarLiveGate(beat: placeholder, snapshotTotalBytes: 18 * gib)
+            ResourceDetailPageProjection.memoryTotal(
+                detailPid: pidB,
+                physicalTotalBytes: eighteen,
+                frozen: semantics
             )
         )
+        let resident = MemoryDetailPresentation.field(page: .memory, part: eight, total: sixteen)
+        XCTAssertEqual(resident.title, "驻留内存")
+        XCTAssertEqual(resident.caption, "占物理内存的 50%（按驻留内存计算）")
+        XCTAssertFalse(resident.caption.contains("18"))
+        let auxiliary = MemoryDetailPresentation.field(page: .cpu, part: eight, total: sixteen)
+        XCTAssertEqual(auxiliary.title, "内存")
+        XCTAssertEqual(auxiliary.caption, "占 16 GB 的 50%")
+        let row = detail(pid: pidA, cpu: 1, memory: nine)
+        let cpu = try self.cpu(project(.cpu, row, total: eighteen, frozen: semantics))
+        XCTAssertEqual(cpu.memory, MemoryDetailPresentation.field(page: .cpu, part: nine, total: sixteen))
+        XCTAssertNotEqual(cpu.memory, MemoryDetailPresentation.field(page: .cpu, part: eight, total: sixteen))
+        XCTAssertFalse(cpu.memory.caption.contains("18"))
+        let eightRow = detail(pid: pidA, cpu: 1, memory: eight)
+        let network = memoryCopy(project(.network, eightRow, total: eighteen, frozen: semantics))
+        let disk = memoryCopy(project(.disk, eightRow, total: 1, frozen: semantics))
+        XCTAssertEqual(network.caption, disk.caption)
+        XCTAssertEqual(network.caption, "占 16 GB 的 50%")
+        let missing = FrozenMemoryFieldSemantics(pid: pidA, memoryBytes: eight, physicalTotalBytes: nil)
         XCTAssertNil(
-            LastLiveTotalReducer.eventForCurrentSidebar(
-                SidebarLiveGate(beat: beat(subject: nil, absent: false), snapshotTotalBytes: 16 * gib)
-            )
-        )
-
-        let previous = beat(
-            subject: pidA,
-            absent: false,
-            detailPid: pidA,
-            memory: 8 * gib,
-            hasDetail: true,
-            livePid: pidA,
-            listSelected: pidA
-        )
-        let clearedList = beat(
-            subject: pidA,
-            absent: false,
-            detailPid: pidA,
-            memory: 8 * gib,
-            hasDetail: true,
-            livePid: nil,
-            listSelected: nil
-        )
-        XCTAssertEqual(
-            LastLiveTotalReducer.eventsForSidebar(
-                previous: previous,
-                current: clearedList,
-                snapshotTotalBytes: 18 * gib
-            ),
-            []
-        )
-        let state = apply(
-            LastLiveTotalReducer.step(.empty, .live(pid: pidA, totalBytes: 16 * gib)),
-            []
-        )
-        XCTAssertEqual(state.lastLive?.totalBytes, 16 * gib)
-        XCTAssertNil(state.frozen)
-
-        let onlyListChanges = beat(
-            subject: pidA,
-            absent: false,
-            detailPid: pidA,
-            memory: 8 * gib,
-            hasDetail: true,
-            livePid: pidA,
-            listSelected: nil
-        )
-        XCTAssertEqual(
-            LastLiveTotalReducer.eventsForSidebar(
-                previous: previous,
-                current: onlyListChanges,
-                snapshotTotalBytes: 18 * gib
-            ),
-            []
-        )
-        XCTAssertEqual(
-            LastLiveTotalReducer.eventForCurrentSidebar(
-                SidebarLiveGate(beat: previous, snapshotTotalBytes: 16 * gib)
-            ),
-            LastLiveTotalReducer.eventForCurrentSidebar(
-                SidebarLiveGate(beat: onlyListChanges, snapshotTotalBytes: 16 * gib)
-            )
-        )
-
-        let noCard = beat(subject: pidA, absent: true, listSelected: nil)
-        XCTAssertEqual(
-            LastLiveTotalReducer.eventsForSidebar(
-                previous: previous,
-                current: noCard,
-                snapshotTotalBytes: 18 * gib
-            ),
-            []
-        )
-    }
-
-    func testLastPositiveUpdatesUntilFreezeAndASecondFreezeDoesNotRelock() {
-        var state = LastLiveTotalReducer.step(.empty, .live(pid: pidA, totalBytes: 16 * gib))
-        state = LastLiveTotalReducer.step(state, .live(pid: pidA, totalBytes: 32 * gib))
-        state = LastLiveTotalReducer.step(state, .live(pid: pidA, totalBytes: 0))
-        XCTAssertEqual(state.lastLive?.totalBytes, 32 * gib)
-        state = LastLiveTotalReducer.step(state, .freeze(pid: pidA, memoryBytes: 8 * gib))
-        XCTAssertEqual(state.frozen?.physicalTotalBytes, 32 * gib)
-        state = LastLiveTotalReducer.step(state, .freeze(pid: pidA, memoryBytes: 99))
-        XCTAssertEqual(state.frozen?.memoryBytes, 8 * gib)
-        XCTAssertEqual(state.frozen?.physicalTotalBytes, 32 * gib)
-
-        let cpu = MemoryDetailPresentation.field(
-            page: .cpu,
-            part: 8 * gib,
-            total: ResourceDetailPageProjection.memoryTotal(
+            ResourceDetailPageProjection.memoryTotal(
                 detailPid: pidA,
-                physicalTotalBytes: 18 * gib,
-                frozen: state.frozen
+                physicalTotalBytes: eighteen,
+                frozen: missing
             )
         )
-        let network = MemoryDetailPresentation.field(
-            page: .network,
-            part: 8 * gib,
-            total: ResourceDetailPageProjection.memoryTotal(
-                detailPid: pidA,
-                physicalTotalBytes: 1,
-                frozen: state.frozen
-            )
-        )
-        XCTAssertEqual(cpu.caption, network.caption)
-        XCTAssertEqual(cpu.title, "内存")
-        XCTAssertFalse(cpu.caption.contains("18"))
+        let noShare = memoryCopy(project(.cpu, row, total: eighteen, frozen: missing))
+        XCTAssertEqual(noShare.caption, "占物理内存")
+        XCTAssertFalse(noShare.caption.contains("%"))
+        XCTAssertFalse(noShare.caption.contains("0%"))
     }
 
     private func project(
@@ -745,30 +330,6 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
             detail: detail,
             physicalTotalBytes: total,
             frozen: frozen
-        )
-    }
-
-    private func apply(_ state: LastLiveTotalState, _ events: [LastLiveTotalEvent]) -> LastLiveTotalState {
-        events.reduce(state) { LastLiveTotalReducer.step($0, $1) }
-    }
-
-    private func beat(
-        subject: Int32?,
-        absent: Bool,
-        detailPid: Int32? = nil,
-        memory: UInt64? = nil,
-        hasDetail: Bool = false,
-        livePid: Int32? = nil,
-        listSelected: Int32? = nil
-    ) -> SidebarSubjectBeat {
-        SidebarSubjectBeat(
-            subjectPid: subject,
-            showsAbsentRecord: absent,
-            sidebarDetailPid: detailPid,
-            sidebarDetailMemoryBytes: memory,
-            hasSidebarDetail: hasDetail,
-            liveDetailPid: livePid,
-            listSelectedPid: listSelected
         )
     }
 

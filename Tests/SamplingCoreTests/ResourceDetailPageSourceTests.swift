@@ -108,12 +108,22 @@ final class ResourceDetailPageSourceTests: XCTestCase {
         XCTAssertFalse(events.contains("listSelectedPid"))
         XCTAssertTrue(events.contains("return [.freeze(pid: pid, memoryBytes: memoryBytes)]"))
         XCTAssertTrue(events.contains(".newLiveSubject(pid: pid, totalBytes: snapshotTotalBytes)"))
+        XCTAssertTrue(events.contains("current.showsAbsentRecord == false, previous.isNormalLive == false"))
+        XCTAssertTrue(events.contains("return [live]"))
         XCTAssertFalse(events.contains(".subject(nil)"))
+
+        let beat = try functionBody(named: "sidebarSubjectBeat", in: sidebar)
+        XCTAssertTrue(beat.contains("memorySeries.isEmpty && $0.cpuSeries.isEmpty"))
+        XCTAssertFalse(beat.contains("lastLiveTotal ="))
+        XCTAssertFalse(body.contains("eventsForSidebar"))
     }
 
     func testNewModelsStayOutOfTheSamplerQuitStoreAndVMPublishedSurface() throws {
         let projection = try repoText("Pulse/Models/ResourceDetailPageProjection.swift")
         let reducer = try repoText("Pulse/Models/LastLiveTotalReducer.swift")
+        XCTAssertFalse(projection.contains("LastLiveTotalReducer"))
+        XCTAssertFalse(projection.contains("LastLiveTotalState"))
+        XCTAssertFalse(reducer.contains("ResourceDetailPageProjection"))
         for source in [projection, reducer] {
             XCTAssertTrue(source.contains("import Foundation"))
             XCTAssertFalse(source.contains("import SwiftUI"))

@@ -39,28 +39,27 @@ struct SidebarSubjectBeat: Equatable, Sendable {
     var hasSidebarDetail: Bool
     var liveDetailPid: Int32?
     var listSelectedPid: Int32?
-}
+    /// Both series on the sidebar detail are empty.
+    var sidebarSeriesEmpty: Bool
 
-/// Current-sidebar gate for `.live`. An absent sidebar never produces that event.
-struct SidebarLiveGate: Equatable, Sendable {
-    var subjectPid: Int32?
-    var showsAbsentRecord: Bool
-    var sidebarDetailPid: Int32?
-    var liveDetailPid: Int32?
-    var snapshotTotalBytes: UInt64?
-
-    init(beat: SidebarSubjectBeat, snapshotTotalBytes: UInt64?) {
-        subjectPid = beat.subjectPid
-        showsAbsentRecord = beat.showsAbsentRecord
-        sidebarDetailPid = beat.sidebarDetailPid
-        liveDetailPid = beat.liveDetailPid
-        self.snapshotTotalBytes = snapshotTotalBytes
+    /// Row identity plus empty series, while `vm.detail` has not caught up.
+    /// A real detail whose series are still empty is not this placeholder.
+    var isRowPlaceholder: Bool {
+        guard showsAbsentRecord == false,
+              hasSidebarDetail,
+              let subjectPid,
+              sidebarDetailPid == subjectPid,
+              liveDetailPid != subjectPid,
+              sidebarSeriesEmpty
+        else { return false }
+        return true
     }
 
-    /// Normal live is a present subject whose sidebar detail pid matches `vm.detail`.
-    /// A row-only placeholder, or any absent record, is not this live.
+    /// Present subject whose sidebar detail pid matches `vm.detail`.
+    /// The empty-series row placeholder is not this live.
     var isNormalLive: Bool {
         guard showsAbsentRecord == false,
+              isRowPlaceholder == false,
               let subjectPid,
               let sidebarDetailPid,
               sidebarDetailPid == subjectPid,
@@ -68,6 +67,20 @@ struct SidebarLiveGate: Equatable, Sendable {
         else { return false }
         return true
     }
+}
+
+/// Current-sidebar gate for `.live`. An absent sidebar never produces that event.
+struct SidebarLiveGate: Equatable, Sendable {
+    var beat: SidebarSubjectBeat
+    var snapshotTotalBytes: UInt64?
+
+    init(beat: SidebarSubjectBeat, snapshotTotalBytes: UInt64?) {
+        self.beat = beat
+        self.snapshotTotalBytes = snapshotTotalBytes
+    }
+
+    var isNormalLive: Bool { beat.isNormalLive }
+    var subjectPid: Int32? { beat.subjectPid }
 }
 
 /// Pure transition for the sidebar's last positive physical total.
@@ -112,6 +125,8 @@ enum LastLiveTotalReducer {
 
     /// Sidebar-subject callback. A nil list selection is not a subject change.
     /// Freeze carries the frozen row's bytes and does not read `snapshotTotalBytes`.
+    /// While presence is not frozen, a row placeholder becoming the real detail
+    /// still emits `.live` so the current snapshot total is observed.
     static func eventsForSidebar(
         previous: SidebarSubjectBeat,
         current: SidebarSubjectBeat,
@@ -134,6 +149,12 @@ enum LastLiveTotalReducer {
         }
         if previous.showsAbsentRecord, current.showsAbsentRecord == false {
             return [.newLiveSubject(pid: pid, totalBytes: snapshotTotalBytes)]
+        }
+        if current.showsAbsentRecord == false, previous.isNormalLive == false {
+            let gate = SidebarLiveGate(beat: current, snapshotTotalBytes: snapshotTotalBytes)
+            if let live = eventForCurrentSidebar(gate) {
+                return [live]
+            }
         }
         return []
     }

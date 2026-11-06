@@ -39,7 +39,8 @@ struct ProcessDetailSidebar: View {
             sidebarDetailMemoryBytes: detail?.row.memoryBytes,
             hasSidebarDetail: detail != nil,
             liveDetailPid: vm.detail?.row.pid,
-            listSelectedPid: vm.selectedPid
+            listSelectedPid: vm.selectedPid,
+            sidebarSeriesEmpty: detail.map { $0.memorySeries.isEmpty && $0.cpuSeries.isEmpty } ?? false
         )
     }
 
