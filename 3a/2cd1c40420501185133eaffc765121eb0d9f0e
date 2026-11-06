@@ -1,0 +1,19 @@
+Pulse.xcodeproj/project.pbxproj
+  s_fbf0897fa79c03::t_3f817d9dd3ca53 109-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "3a2cd1c40420501185133eaffc765121eb0d9f0e",
+  "prompts": {},
+  "sessions": {
+    "s_fbf0897fa79c03": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b0d2-b2a5-7461-941b-52565d3d82de",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
