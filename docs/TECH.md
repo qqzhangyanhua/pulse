@@ -3239,3 +3239,435 @@ Mac 冒烟（**仅**本设计已合并且实现合并后；不挡本文档审阅
 
 实现等本设计合并 + Grok merge gate 后再写 Swift。Mark 在技术设计合入后才可开工程。本 PR 不写 Swift、不合并。
 
+---
+
+# Pulse 十六期技术设计（首包：退出结果按 pid 留存与原处重试）
+
+> 一期至十五期正文不改写。一期把退出锁成侧栏 `terminate()`，失败后再 `forceTerminate()` + 系统确认；十一期起侧栏仍读 `selectedPid`；十二至十五期只动过滤 / 空态 / 菜单栏排序，**没有**按 pid 留存退出结果——**本文只覆盖这条主窗侧栏缺口**：本会话内最近一次普通退出 / 强退的结果跟 pid 走，用户回到该 pid 原详情原按钮即可手动重试；切到别的进程不串请求、旧回包不盖新选择。不重开十二至十五期，不改 Sampler 周期，不改强退确认 / 权限，不做自动重试、退出历史、通知中心、批量终止、按名称串身份。GPU Tab、全表 ring、新 cadence、恐吓文案仍不做。
+
+**已锁定**：十六期 = **退出结果按 pid 留存与原处重试**。谁：主窗侧栏刚点过「退出」或「强制退出…」、结果还没看清或想再试一次的人。情境：今日结果挂在**全局** `quitPhase` / `quitMessage` 上，一切选 / 一切 pid 离开 `rows` 就被清掉，失败像没发生过；旧 `async` 回包还会写到新选中的进程上。成功：侧栏只在**本会话**记录该 pid 最近一次发起类型（普通退出 | 强制退出）以及可投影的三类可见结果——**退出中**、**失败（未退出）**、**已不在列表**；失败按 pid 留着，清选再选**仍在 `rows` 的同一 pid** 仍能看见失败并走原按钮；进程已不在列表是保留的可见状态，**不等于已成功**；同 pid 号以后再出现、又没有实例代次证明是同一进程时，**先当新进程、直接实时详情，不自动复活旧失败卡**。成功结束本次机会 = 清掉这次失败 / 重试展示，**不**新增成功横幅、**不**新增第四类可见「成功」态。
+
+仍单进程、单 `MemorySampler` Actor、单 `MemoryDashboardVM`。退出仍走现成 `ProcessActions.terminate` / `forceTerminate` + 现系统 `NSAlert`。采样周期不变；**零新 Sampler period / cadence**。不新开 entitlements。文案冷静；永不写「危急 / 泄漏 / 危险」。
+
+来源：Grok Bot 主控书面转达的十六期正式 Must / Won't，以及之后产品书面终修（失败详情卡不强制列表行选中；「已不在列表」≠ 成功；验收 A 采样缺席 vs 验收 B token 结算分开；退出中离表不得停在「正在退出…」；**同一 pid 复现先当新进程、能确认同一身份才恢复上次失败与手动重试、不抢当前选中**）。对照 main `64d596c42151f2e107d79605ca844e7f0cdc231f`（十五期② #53 已合；#51 / #52 / #53 均已合）的现实现，见「现模型里有什么」。本文是 DESIGN SCOPE，不是合并或实现授权。实现等本设计合并 + Grok merge gate 后再写 Swift。本 PR 不写 Swift、不合并。
+
+开盘基线：
+
+| 项 | 值 |
+| --- | --- |
+| base | `origin/main` `64d596c42151f2e107d79605ca844e7f0cdc231f`（`feat: 十五期② 内存页过滤空态双清接线 (#53)`） |
+| 本 PR 改文件 | 仅 `docs/TECH.md`、`README.md`（索引加「十六期」） |
+| 十五期旧分支 | **不改**（`cursor/period-15-filter-empty-design-15fc` / `cursor/memory-filter-clear-b-09a5` / `cursor/memory-page-filter-clear-wiring-ba46` 只作历史） |
+| 并行 | 开稿时仓库 **无** 十六期 TECH / 实现 PR、无同名分支；本 agent 不抢并行合并 |
+
+## 范围（相对一二三四五六七八九十十一十二十三十四十五期）
+
+| 项 | 一二三四五六七八九十十一十二十三十四十五期 | 十六期首包 |
+| --- | --- | --- |
+| 定位 | 侧栏退出；结果是 VM 上**一份** `quitPhase` / `quitMessage`，跟选中绑定、跟 tick 清空 | **做**：本会话 per-pid 最近一次退出操作记录 + presence；原侧栏原按钮手动重试 |
+| 退出 API | `ProcessActions.terminate` → `forceTerminate` + 系统确认 | **不改** API、权限、确认框文案 / 按钮 |
+| 结果留存 | 切 `selectedPid` 即 `quitPhase = .idle`；pid 离开 `rows` 也清 | **做**：失败跟 pid 走；切选不串；采样不得把失败写成成功 |
+| 已不在列表 | 今日当「没了」：清选中、清详情、退出中还会被打成 idle | **做**：保留可见状态「已不在列表／上次记录」；冻结旧详情；禁用旧 pid 重试；**不是**成功 |
+| 同 pid 再出现 | 无此产品；pid 只是 `ProcessRow.id` | **终锁**：无实例代次 → **当新进程**，实时详情，**不**自动复活旧失败 / 重试卡。能确认同一身份才恢复失败卡与手动重试，且**不抢**当前选中 |
+| 重试 | 用户再点同一侧栏按钮；无 token，旧 `await` 可盖新选中 | **做**：显式点击；点击当下合法 `selectedPid`；operation token 隔离旧回包 |
+| 自动重试 / 轮询终止 | 无（`waitForExit` 只是一次操作内的短等） | **仍不做**。不新 Timer、不把后台 tick 当终止轮询 |
+| 历史 / 通知 / 批量 / 跨启动 | 无 | **仍不做** |
+| Sampler / 过滤 / 菜单栏 / 十五期双清 | 既有 | **不重开、不改周期、不改布局** |
+| GPU / 新 Tab / 全表 ring / 新 cadence | 禁止 | **仍禁止** |
+| Helper / entitlements / Electron | 无 | **仍无** |
+| Mac 烟测 / 签名公证 | 八期清单；公证另路径 | **不作为本期交付** |
+
+一二三四五六七八九十十一十二十三十四十五期验收与公证路径不因本文重开。十二期过滤谓词、九期 Top5、十三期采样重试、十四期菜单栏排序、十五期双清不重开。主窗侧栏退出结果的留存 / 原处重试 / 缺席冻结以**本文**为准（覆盖一期「失败态可见」但未按 pid 留存的实现缺口）。实现等本设计合并 + Grok merge gate 后再写 Swift。Mark 在技术设计合入后才可开工程。本 PR 不写 Swift、不合并。
+
+## 架构（现实现，读仓库后的结论）
+
+仍单 Target、macOS 14+、非沙盒 Hardened Runtime。菜单栏与各资源页继续共享**同一个** `MemoryDashboardVM` / `MemorySampler`。
+
+本刀落在 **Darwin-free 的 per-pid 退出操作记录 + presence 投影 + operation token**，不是第二套 VM，不是新侧栏页面，不是 Sampler 改周期，不是把 `MemoryDashboardVM` 整类塞进 Linux。
+
+- 主窗表：`rows` → 过滤 → `visibleRows` → `ProcessTableSort.ordered` → `ProcessTablePane` `List(..., selection: $vm.selectedPid)`
+- 侧栏：`ProcessDetailSidebar` 读 `vm.detail ?? selectedFallback`，页脚读**全局** `quitPhase` / `quitMessage`，按钮调 `quitSelected()` / `forceQuitSelected()`
+- 退出：Views → VM → `ProcessActions` → `NSRunningApplication`（按 pid）+ `waitForExit` 短等
+- 选中：`selectedPid` didSet 清 `detail` 并 `sampler.setSelectedPid`；成功 tick 里 pid 不在 `frame.rows` 则 `selectedPid = nil`
+
+约束：
+
+- 不新开第二套 VM、不新开第二路 Mach、不改 `sample()` 周期。
+- 不把整份 Actor VM 放进 SamplingCore。Linux 只测纯函数 reducer。
+- 不改 `Pulse.entitlements`、不改公证脚本、不改 `confirmForceQuit`。
+- 自身占用仍优先：一次点击至多一个 in-flight `ProcessActions` **针对该 pid**；不做无界队列。
+
+### 现模型里有什么（必须按「已有 / 没有」落笔）
+
+对照 `Pulse/Actions/ProcessActions.swift`、`Pulse/ViewModels/MemoryDashboardVM.swift`、`Pulse/Views/ProcessDetailSidebar.swift`、`Pulse/Views/ProcessTablePane.swift`、`Pulse/Models/MemoryModels.swift`、`Pulse/Models/ProcessSelection.swift`、`Pulse/Models/MemoryGrowthRisingFilter.swift`、`Pulse/Sampling/ProcessEnumerator.swift`、`Pulse/Sampling/MemorySampler.swift`、`Package.swift`、`Tests/SamplingCoreTests/`。禁止把别处 agent 报告当成已核实源代码。**现测试目录对 `quitPhase` / `quitSelected` / `ProcessActionResult` 零覆盖。**
+
+| 现字段 / 调用 | 文件 | 十六期怎么用 |
+| --- | --- | --- |
+| `quitPhase: QuitPhase`（`.idle \| .quitting \| .failed`） | `MemoryModels.swift` + VM `@Published` | **今日全局一份**。要改成**派生**，不得再当唯一存贮。产品三可见是 viewState，内部更细 |
+| `quitMessage: String?` | VM | 今日失败文案全局一份。切 pid 即 nil。改为按当前侧栏 subject 从 per-pid 记录投影 |
+| `selectedPid` didSet | VM L38–46 | **缺口**：`oldValue !=` 就 `detail = nil`、`quitPhase = .idle`、`quitMessage = nil`。切 B、点 x、tick 清选中都会把 A 的失败抹掉 |
+| `quitSelected()` | VM L198–204 | 读**当下** `selectedPid`，`quitPhase = .quitting`，`await ProcessActions.terminate`，**不带 token**，回包无条件 `applyQuit` |
+| `forceQuitSelected()` | VM L206–213 | 先 `confirmForceQuit`；取消则 `return`（今日碰巧不改 phase）。确认后同样无 token |
+| `applyQuit` | VM L215–226 | `.exited \| .notFound` → 清选中 / 详情 / idle（看起来像成功）；`.requestFailed \| .stillRunning` → `.failed`。**不看**回包是否仍属于当前选中 |
+| 成功 `tick` pid 不在 `frame.rows` | VM L349–358 | `selectedPid = nil`、`detail = nil`；若 `quitPhase == .quitting` 再打成 idle。`selectedPid = nil` 的 didSet **连 `.failed` 也会清掉** |
+| `ProcessSelection.acceptedPid` | `ProcessSelection.swift` | 只认「pid ∈ 当前 `rows`」。列表行选中继续走这条，**不**把消失 pid 写回 List |
+| `MemoryGrowthRisingFilter.selectedPid` | Filter | 仅上涨把无徽标 pid 清选中。名称藏行**不清**选中。这是过滤选中，不是 enumerator 缺席 |
+| `ProcessRow.id` | `MemoryModels.swift` | `var id: Int32 { pid }`。字段：pid / name / bundleIdentifier / executablePath / cpu / rss / threads / disk rates。**无 `startTime`、无 generation** |
+| `RawProcessSample` | `ProcessEnumerator.swift` | 只 `proc_pidinfo(PROC_PIDTASKINFO=4)`：rss、线程、user/system 时间 + 可选 rusage 磁盘。**无 `p_starttime` / `pbi_start_*`** |
+| `ProcessIdentity` | 同上 | name + bundleIdentifier + path，**显示名缓存**，不是实例代次。禁止拿来当「同一进程」 |
+| `MemorySampler.setSelectedPid` | Sampler | pid 一变就清选中 ring。pid 不在当帧 `rows` 则 `detailFrame` 返回 nil |
+| `ProcessActions.terminate` / `forceTerminate` | `ProcessActions.swift` | `NSRunningApplication.terminate()` / `forceTerminate()` 的 Bool 只表示**请求是否交出**；随后 `waitForExit` 轮询 `isAlive`（`NSRunningApplication` 或 `kill(pid,0)`，EPERM 当活着） |
+| `ProcessActionResult` | `MemoryModels.swift` | `.exited \| .notFound \| .requestFailed \| .stillRunning`。**没有**「内核确认已死」 |
+| `confirmForceQuit` | ProcessActions | 系统 `NSAlert`「立即退出“name”？」/「立即退出」/「取消」。**本期一字不改** |
+| `ProcessDetailSidebar.footer` | 侧栏 | 失败句 + 「正在退出…」+ 两按钮；`quitPhase == .quitting` 时两按钮 disabled。按钮**总是**打当前 VM 选中，无 pid 参数 |
+| SamplingCore | `Package.swift` | 列入 Models / 部分 Sampling / MenuBarStatus；**排除** `ViewModels/`、`Views/`、`Actions/`、`MemorySampler.swift`、`ProcessEnumerator.swift` |
+| 退出单测 | `Tests/SamplingCoreTests` | **没有** |
+
+**缺口（已核，不是采样缺口、不是「再做一个历史页」）：**
+
+1. 结果不是 per-pid：全局 `quitPhase` 在 `selectedPid` didSet、tick 离表、`applyQuit` 成功支三条路上被清。
+2. 无 operation token：`await` 回来后不比对发起时的 pid / 代数，旧回包可以写到新选择上（Must3 反面）。
+3. pid 离开 `rows` 被当成「可以收摊」：退出中打 idle，失败被 didSet 清掉，侧栏回空态。产品要的是「已不在列表／上次记录」+ 失败语义仍在，**不是**成功。
+4. `.exited` / `.notFound` 被 `applyQuit` 当成 UI 成功清场。产品三态**无成功**；结算只是清掉本次失败展示，且只有匹配 token 的操作 completion 才能结算。采样帧无此权利。
+5. 没有实例代次。同 pid 再出现**不能**声称同一进程。
+6. Linux 测不到 VM / `ProcessActions` / SwiftUI 按钮。
+
+因此本刀：
+
+1. **不改** `ProcessActions` 的 terminate / forceTerminate / 确认框 / `isAlive` 语义。
+2. **不改** Sampler `sample()` / cadence / Top5。
+3. **加** Darwin-free 的 per-pid 记录 + presence + token reducer（SamplingCore）。
+4. VM / 侧栏只投影该 reducer；列表选中继续 `ProcessSelection`（消失 pid 不进 List）。
+5. 本期生产路径 **`identityMatch` 恒为 false**（见下节），复现当新进程。
+
+### 身份：现成没有 startTime / generation（本期默认新进程）
+
+已核：`ProcessRow`、`RawProcessSample`、`ProcessIdentity`、`SampledFrame` **都没有**启动时间或代次。`ProcessRow.id` 就是 pid。macOS 上 `proc_pidinfo(PROC_PIDTBSDINFO)` 的 `pbi_start_tvsec` 或 `NSRunningApplication.launchDate` 都**没有**接到模型里。
+
+产品终修（比「同 pid 再现还露旧失败卡」更明确，已拍板，不再等）：
+
+- **同一 pid 复现也先当新进程**：直接实时详情，**不**自动复活旧失败卡 / 重试卡。
+- **能确认同一身份**才恢复上次失败与手动重试，并且**不抢当前选中**。
+- 成功结束本次机会后无旧失败 / 重试卡。
+- 现模型没有实例代次 → **本期必须默认按新进程**，不可宣称已经识别同进程。
+- 不可用进程名 / bundle / path 代替身份。
+
+与前面「同 pid 再现侧栏能看到此前失败 / 标待确认」的表面矛盾，按**终修**收口，不是漏做：
+
+| 场景 | 终锁 | 不是 |
+| --- | --- | --- |
+| 清选再选、或切到 B 再切回 A，且 A **从未**离开本会话 `rows` | 仍是同一条 inRows 记录；侧栏再选 A 时**要**看到失败，原按钮可重试 | 不是跨启动历史 |
+| pid 离开 `rows` | 侧栏可停在该 pid 的「已不在列表／上次记录」冻结卡；列表**不**强制高亮失踪行；禁用旧 pid 重试；operation 仍可是 `failed` / `quitting` | 不是成功、不是活着 |
+| 同 pid **再出现在**当前 `rows`，无代次证明 | **新进程**：实时详情；UI **不**露历史失败 / 重试。内存里可以留着旧 record，此处不得投影出来 | 不是「同 pid 号 = 同实例」 |
+| 将来有代次且 `identityMatch == true` | 恢复该记录的失败相与手动重试；**不**把当前已选的 B 改成 A | 本期生产不做这条 true 路径 |
+
+**本期第一刀补不补 `startTime`？不补。** 理由：
+
+- 终锁允许「不能确认 → 当新进程」。Must 要的自动恢复**以身份确认前置**，不是无条件按 pid 复活。
+- `startTime` 要改 `ProcessEnumerator.inspect` + `ProcessRow` + Sampler 组行，踩到 Won't「不改 Sampler 周期 / 不把采样当本期范围」，也不是 Darwin-free。
+- 在 absent 态去问 `NSRunningApplication(pid)` / `launchDate` 会被产品明确禁止（「不要在 absent state 挑战既有 NS App identity」）。
+- 若以后要「确认同实例才恢复失败」，最小代次是 **pid + startTime（或等价 launch 代数）** 一枚 token，**禁止**进程名匹配。Reducer 本刀先留 `identityMatch: Bool` 输入，单测钉 true / false 两支；VM 接线本期 **永远传 false**。
+
+## 内部模型（正交；产品三可见是投影）
+
+不要用一个互斥 enum 同时表示「操作结果」和「还在不在表里」。那会在「退出中离表」「失败后离表」「失败后同号再现」上互打。
+
+### 存贮（reducer 真源）
+
+每个本会话碰到过退出操作的 pid 至多一条 **latest record**（不是无限历史）：
+
+| 字段 | 含义 | 不是 |
+| --- | --- | --- |
+| `pid` | 发起时 point-in-time 捕获的 pid | 不是实例代次 |
+| `kind` | `terminate` \| `forceTerminate`（最近一次**发起类型**） | 不是按钮文案 |
+| `phase` | **仅** `quitting` \| `failed` | **无** `success`、**无** `absent`、**无** `idle` 当成功 |
+| `token` | 单调 `UInt64`，每次用户点击 +1 | 不是时间戳 UI |
+| `frozenDetail` | 离开 `rows` 那一拍拷贝的 `ProcessDetail`（行 + 当时曲线） | 不是新的历史 store；之后**不再 append** |
+| `presence` | `inRows` \| `absentAndUnknown` \| `currentReappearedUnconfirmed` | 不是 operation phase |
+
+另：全会话 `nextToken`。没有跨启动 persistence。App 退出即丢。
+
+`QuitPhase.idle` 不再表示「成功了」，只表示「当前侧栏 subject 没有一条未结算记录」或「有记录但投影为新进程（不露失败）」。
+
+### 派生 viewState（主控三类可见 + 复现新进程）
+
+`viewState(record, listSelectedPid, sidebarSubjectPid)` —— UI 只认这个，文件里可以留一个 derived enum 方便侧栏 `switch`，**内部不得只存这一个**。
+
+| 投影 | 条件 | 侧栏 | 按钮 |
+| --- | --- | --- | --- |
+| `quitting` | `phase == .quitting && presence == .inRows` 且 subject 是该 pid | 「正在退出…」；现按钮 disabled | 禁 |
+| `failedStillPresent` | `phase == .failed && presence == .inRows` 且 subject 是该 pid | 失败（未退出）；原处可重试 | 对该 **当前合法选中** 可点 |
+| `absentFromListLastRecord` | `presence == .absentAndUnknown` 且 subject 是该 pid | **已不在列表／上次记录**；曲线冻结；**覆盖**「正在退出…」 | **禁**（不准重试旧 pid，不暗示仍存活） |
+| `liveAsNewProcess` | `presence == .currentReappearedUnconfirmed` | **实时详情**（新进程）。**不**露历史失败 / 重试卡 | 若该 pid 是当前合法选中：允许**新一次**当前操作 |
+| `none` | 无记录，或记录已结算删掉，或 subject 不是该 pid | 普通详情或空态 | 现规则 |
+
+「running absent 同时曾有 failure」：`phase` 可以仍是 `quitting` 或 `failed`，`presence = absentAndUnknown`。UI **只**走 `absentFromListLastRecord`，**不清** `phase`、不结算。这就是「presence 覆盖正在退出句，并不清 operation failure」。
+
+### 为什么必须正交（测试反例）
+
+反例都要进刀①单测。若有人把 `QuitPhase` 扩成 `.idle \| .quitting \| .failed \| .absent` 互斥四态，下列会失败：
+
+1. **退出中离表**：互斥会把 `quitting` 改成 `absent`，in-flight token 丢相。正交：`phase=quitting`、`presence=absentAndUnknown`；UI 已不在列表；回包仍按 token 结算或改 `failed`。
+2. **失败后离表**：互斥 `absent` 盖掉 `failed`。再要求「此前失败结果仍保留」只能靠猜。正交：`phase=failed` 不动，presence 变；UI 已不在列表／上次记录。
+3. **失败后同号再现、无代次**：互斥若写成 `failed` 会错误复活失败卡；写成新 idle 又把内存里的失败结算掉（采样无权结算）。正交：`phase=failed` 可留在内存，`presence=currentReappearedUnconfirmed`，UI **liveAsNewProcess、不露失败**。
+4. **失败帧空表**：互斥若 `rows.isEmpty ⇒ absent/success` 会把 enumerator 失败当成全体死光。正交：`processListFailed == true` 的帧**禁止**改 presence、禁止结算。
+5. **切到 B 时 A 的 `.exited` 才回来**：互斥全局 phase 会把 B 打成成功/空。正交：token+pid 对不上就 ignore；B 的记录不动。
+
+### 列表选中 vs 失败卡（终锁关联规则）
+
+两套身份，禁止混成一个 `selectedPid` 兼当「失踪进程的失败卡」。
+
+| | 列表行 `selectedPid` | 侧栏 subject |
+| --- | --- | --- |
+| 必须 | ∈ 当前成功进程帧的 `rows`（现成 `ProcessSelection`） | 可以是刚离开 `rows`、仍有未结算记录的 pid（只为冻结卡） |
+| pid 在 rows 且用户点了该行 | 高亮该行 | 该 pid 实时详情 + 若 `presence==inRows` 则叠加失败 / 退出中 |
+| 用户点侧栏 x 清选 | nil | **空态**；store **保留**（清选再选仍 inRows 时再看到失败） |
+| pid 在 quitting/failed 时离开 rows | **不得**把失踪 pid 写进 List（不强制行选中） | 若原先就在看该 pid：留冻结卡「已不在列表／上次记录」 |
+| 用户此时点选 B | B | 侧栏改看 B；B 的按钮只发 B；A 的记录仍在 store |
+| 同 pid 再现、`identityMatch==false`（本期生产） | **不抢**当前选中：当前是 B 就留 B。若当前 List 为 nil 且侧栏 subject 仍是该 pid：可以把它收成合法选中并给**实时**详情（新进程），**不**露旧失败 | 投影 `liveAsNewProcess` |
+| 同 pid 再现、`identityMatch==true`（仅单测 / 未来） | **不抢**当前选中。当前已是别人则只在 store 恢复「可露失败」资格，等用户自己点该行 | 用户再选中该 pid 才看到上次失败 + 手动重试 |
+
+过滤藏行（名称过滤）**不是** `rows` 缺席。仅上涨清选中也只清 List，不清 per-pid 退出记录。
+
+## 输入、生命周期、边界
+
+### 点击（point-in-time）
+
+1. 只允许对**当前合法选中**发起：`ProcessSelection.acceptedPid(selectedPid, in: rows) != nil`。侧栏停在「已不在列表」时按钮 disabled，**不准**对失散旧 pid `terminate`。
+2. 捕获 `{ pid, kind, token = nextToken++ }`。`phase = quitting`，`presence = inRows`。同一 pid 上已有 in-flight（`phase==quitting` 且 token 未结算）则忽略连点（不排队、不开第二路 unstructured 无限 Task）。
+3. `forceTerminate` 仍先跑现成 `confirmForceQuit`。**取消不等于结算**：不删记录、不改别人的 token、不把先前的 `failed` 清掉。
+4. 跨 pid：看 B 时按钮 pid=B，绝不把 A 的 pid 送进 `ProcessActions`。A 若仍 in-flight，其 Task 继续；回包只对 A 的 token 生效。允许 B 再开自己的 in-flight（用户显式点的，不是队列）。禁止 Timer / 自动再点。
+
+### 回包（只在 MainActor 对 token+pid）
+
+`ProcessActions` 返回后：
+
+- `token` 或 `pid` 与该 pid 当前 record 不一致 → **整包丢掉**。即使 `.exited` / `.notFound` 也 **ignore**：不结算、不重启、不改新流程、不写到新选中进程。
+- 一致且 `.requestFailed` / `.stillRunning` → `phase = failed`（未退出）。presence 不动。
+- 一致且 `.exited` / `.notFound` → **机会结算**：删除该 pid 的 record（本次失败 / 重试卡消失）。**不**设 success phase，**不**出成功横幅。这不是「核证已死」。
+
+当前选择变化、点 x、切 Tab、`confirmForceQuit` 取消：**都没有**权利替原 operation 结算。
+
+### 验收 A vs 验收 B（必须分开写、分开测）
+
+**A. `rows` 缺席 / 采样新鲜度（采样帧本身）**
+
+只允许：
+
+- 用**成功的进程列表帧**（`processListFailed == false`）更新 presence：pid 不在 `rows` → `absentAndUnknown`；从缺席回到 `rows` → 本期 `currentReappearedUnconfirmed`（`identityMatch` 恒 false）。
+- 缺席那一拍把当时 `detail` **拷进** `frozenDetail`，之后冻结：UI 标「已不在列表／上次记录」，曲线**无新点**。
+- `processListFailed == true`、失败采样、少样本空表：**不**改 presence、**不**清失败、**不**推导成功。
+
+禁止：
+
+- 把缺席写成 `.idle` / 成功。
+- 改 `phase`（A **不得**改 `quitting`/`failed`）。
+- 清退出 failure。
+- 把冻结曲线当活跃采样，或给失踪 pid 继续 `setSelectedPid` 追加 ring。
+- 新开第二条全表 / 退出历史曲线 store。
+
+`phase` 在 A 路径保持原值。退出中离表：UI 改为「已不在列表／上次记录」，禁用旧 pid 重试；**此前失败结果仍保留**（若已经 `failed`；若仍 `quitting` 则等 B 路径回包）。
+
+**B. 机会结算（只有原退出 operation 的 completion）**
+
+只有「发起时 token+pid」匹配的 `ProcessActions` 回包 `.exited` / `.notFound` 才能删除该 record、清掉本次失败展示。绝不新增成功横幅。采样帧、presence 变化、当前选择、Cancel **无此权利**。
+
+`.exited` 的诚实含义见下节：结算 ≠ 真死。
+
+### `ProcessActions` completion 实际提供什么（不要 API true = 确死）
+
+已核 `ProcessActions.swift`：
+
+| 返回 | 何时 | 保证 |
+| --- | --- | --- |
+| `.requestFailed` | 无 `NSRunningApplication` 但 `isAlive`，或 `terminate()` / `forceTerminate()` 返回 false | 请求没交出或进程仍像活着 |
+| `.notFound` | 发起当下无 `NSRunningApplication` 且 `isAlive == false` | 发起当下看不到该 pid，**不是**「我们刚把它杀成功」 |
+| `.exited` | `terminate`/`forceTerminate` 已交出后，`waitForExit` 在 2.5s / 2s 内某次 `isAlive==false` | **轮询窗口里看起来不在**。`isAlive` 是 `NSRunningApplication` 或 `kill(pid,0)`（EPERM 当活） |
+| `.stillRunning` | 等到超时仍 `isAlive` | 未退出 |
+
+`app.terminate() == true` 只表示 Apple API 接受了退出请求，**随后仍可能 `.stillRunning`**。pid 在等待期间复用、enumerator 漏列、SIP 进程 EPERM，都会让 `.exited` 与「真死」错位。因此：
+
+- **禁止**第四类可见「成功」。
+- **禁止**用 tick 里「突然不在 rows」去印证 `.exited`。
+- 结算只表示「这次操作机会结束、失败卡拿掉」。下一帧若该 pid 仍在 `rows`，就当当前合法进程，可再操作，无成功横幅可撑。
+
+`waitForExit` 内部 25 次 `Task.sleep` 是**这一次用户操作的完成等待**，不是产品「自动重试 / 后台轮询终止」，本期不拆、不延长、不改成 Timer 重试。
+
+### `selectedPid` / `quitPhase` / `quitMessage` 现重置路径 → 本期
+
+| 今日路径 | 今日效果 | 本期 |
+| --- | --- | --- |
+| `selectedPid` didSet 任何变化 | 清 detail、`quitPhase=.idle`、清 message、`sampler.setSelectedPid` | **禁止**清 per-pid store。切换 subject / 清 List 选中。A 的记录留下。Sampler 仍可按**列表合法选中**重绑 ring（失踪 subject 不要活采） |
+| `applyQuit` `.exited/.notFound` | 清选中 + idle | 改为 token 匹配才走验收 B 结算；不匹配 ignore |
+| `applyQuit` `.requestFailed/.stillRunning` | 全局 `.failed` | 写入该 token 的 `phase=failed` |
+| tick：pid ∉ `frame.rows` | 清选中 / detail；quitting→idle | 验收 A：presence 缺席 + 冻结；**不清** failure |
+| tick：`processListFailed` / 失败采样 | 不走那条离表支（失败支不改 rows） | 明确钉：失败帧不得改 presence |
+| `applyRisingOnlySelection` 清选中 | didSet 会误清退出态 | 只清 List 选中；退出记录不动 |
+| 侧栏 x | `selectedPid = nil` → didSet 清退出态 | 空侧栏 + 保留 store |
+| `retrySampling` | 不清 selectedPid | 仍不清退出 store |
+| `confirmForceQuit` 取消 | `return`，phase 不动 | **保持**；单测钉「取消 ≠ 结算」 |
+
+## UI（原侧栏原处，不新页面）
+
+仍只改 `ProcessDetailSidebar` 页脚 / 详情是否冻结，不新开历史入口、不新 Tab、不进菜单栏。
+
+- **退出中且仍 inRows**：现「正在退出…」+ 按钮 disabled（与今日同类）。
+- **失败且 inRows**：现失败句 + 现「退出」/「强制退出…」（见文案建议）。再失败仍留入口。强退仍弹**现**确认框；只有验收 B 结算才拿掉卡。
+- **缺席**：标题 / 状态用产品已用词 **「已不在列表／上次记录」**；指标与曲线用 `frozenDetail`，**禁止**新采样点、禁止写成当前 rss/cpu；按钮 disabled。关闭（x）回空态，记录仍在。
+- **同号再现、未确认身份**：普通实时详情（Sampler 新 ring，从零采，**不**把 frozen 曲线接上）。不渲染旧失败 / 重试。
+- 切 pid：B 的页脚只反映 B。A 的卡不出现在 B 上。
+- 不把失败句做成通知中心、不在列表行画退出 badge（Won't 布局）。
+
+### 文案
+
+产品已锁的**状态名**（不是按钮精词）：「退出中」「失败（未退出）」「已不在列表」「上次记录」。失败含义是**未退出**。缺席 ≠ 成功。
+
+按钮精词产品**未拍板**。研发 / 设计建议、**待产品锁精词**（来源是设计，**不是**已锁，实现不得写成产品承诺）：
+
+| 建议 | 文本 |
+| --- | --- |
+| 普通退出失败说明 | 上次退出未成功，可重试。 |
+| 普通退出按钮 | 重试退出 |
+| 强退失败说明 | 上次强制退出未成功，可重试。 |
+| 强退按钮 | 重试强制退出… |
+
+**本期默认可保持行为不变、仍用现按钮「退出」「强制退出…」以及现成失败句**（「未能退出。可以请系统立即结束该进程。」/「系统未能结束该进程。」）。换词不是本刀范围，也不挡 Darwin-free 状态机。禁止把上表写进验收当锁词。强退确认框维持现状。
+
+禁词仍：泄漏 / leak / 危急 / 危险。不要「已成功结束该进程」横幅。
+
+## 建议工程顺序（最少两刀）
+
+两刀，不要拆成历史系统，不改其它范围。实现等本设计合并 + Grok merge gate 后再写 Swift。Mark 在技术设计合入后才可开工程。本 PR 不写 Swift、不合并。
+
+1. **Darwin-free reducer + 状态转换测试（Linux `swift test`）**  
+   新文件建议：`Pulse/Models/ProcessQuitOutcome.swift`（名称可调，须进 SamplingCore `sources`）+ `Tests/SamplingCoreTests/ProcessQuitOutcomeTests.swift`。  
+   纯函数：`click` / `applyPresenceFromRows` / `complete` / `project`。零 AppKit、零 VM、不编 App、不调 `ProcessActions`。  
+   `identityMatch` 作为 `applyPresenceFromRows` 的显式参数；默认测试与「本期 VM 行为」钉 **false**；另备 true 支防止以后误用名字匹配。
+
+2. **Actor VM / 原侧栏接线（Mac 剩余）**  
+   `MemoryDashboardVM` 持有 store；`quitSelected` / `forceQuitSelected` 发 token；`tick` 只走验收 A；`applyQuit` 改为 `complete`。`ProcessDetailSidebar` 按 viewState 投影。`didSet` 不再 `quitPhase=.idle`。不改 Sampler 周期、不改确认框、不改十五期过滤空态。
+
+没有硬伤就不开第三条 polish PR。不要和 GPU / 全表 ring / 菜单栏 / 十五期双清捆在一起。
+
+Linux 源码结构检查若刀②要做：必须标明「不是 VM 行为 / 不是 GUI / 不是真实退出」。
+
+## 测试矩阵
+
+**刀① Linux（必须实跑；这是状态转换，不是按钮 GUI）：**
+
+1. 跨 pid：A `failed` 后选 B；B 的投影无 A 的失败；对 B `click` 不写 A 的 pid。
+2. A in-flight 时切 B；A 的旧 `.exited` **ignore**；B 若已失败，不被结算、不被改成 A 的结果。
+3. 再对 A 新 click（A 仍 inRows）：新 token；之后旧 token `.exited` 仍 ignore。
+4. 验收 A：inRows `failed` → 成功帧 pid 缺席 → `phase` 仍 `failed`，presence `absentAndUnknown`，投影缺席／上次记录，**不是** idle/success。
+5. 验收 A：`quitting` + 缺席 → 投影不再是「正在退出…」，是缺席／上次记录；`phase` 仍 `quitting` 直到 B。
+6. 验收 A：`processListFailed` 或失败帧即使 `rows=[]` → presence / phase 不变。
+7. 验收 A：同 pid 再出现、`identityMatch=false` → `currentReappearedUnconfirmed`；`project` **无**失败 / 重试 chrome；`phase` 仍可 `failed`（内存留、UI 不露）。
+8. 验收 A：`identityMatch=true`（未来支）→ 允许失败 chrome 恢复；投影不得要求「抢选中」（reducer 不写 list selection）。
+9. 验收 B：匹配 token 的 `.exited` / `.notFound` → record 删除；投影无成功横幅、无失败卡。
+10. 验收 B：匹配 token 的 `.stillRunning` / `.requestFailed` → `failed`；若当时缺席，仍缺席投影。
+11. 缺席后的 `.exited`（token 仍匹配）→ 结算删 record，**不是**把缺席升级成成功横幅。
+12. 清选再选（presence 一直 `inRows`）→ 再 project 同一 pid 仍 `failedStillPresent`。
+13. Cancel 强退：无 complete 调用；既有 `failed` 仍在。
+14. 冻结：缺席后 `applyPresence` 再来带同 pid 的假曲线 → `frozenDetail` 点数不增。
+15. 禁词：新锁状态名不含泄漏 / 危险。
+16. 互斥四态反例 1–5（见上）必须失败于「用单枚 phase 冒充 presence」。
+
+**刀②（Linux 至多源码结构；Mac 才是实例）：**
+
+17. VM 不再在 `selectedPid` didSet 里无条件 `quitPhase=.idle`。
+18. `quitSelected` / `forceQuitSelected` 在 click 当下捕获 pid+token；`complete` 前比对。
+19. 侧栏缺席投影禁用两按钮；`liveAsNewProcess` 不渲染旧失败句。
+20. 无新页面 / 无菜单栏 terminate / 无 `Timer` 自动重试 / 无 `sample()` cadence 改动。
+
+明确：**源码字符串匹配 ≠ 已验 SwiftUI 按钮 ≠ 已验真实退出。**
+
+## 风险
+
+| 风险 | 应对 |
+| --- | --- |
+| 把 `.exited` 或 rows 缺席写成成功态 / 横幅 | 验收 A/B 分开；三可见无成功；单测钉删除 record 而非 `.success` |
+| 互斥 enum 丢掉 in-flight 或 failure | 正交字段 + 反例 1–5 |
+| 同 pid 复现自动露失败卡 | 本期 `identityMatch=false`；投影 `liveAsNewProcess` |
+| 用 name/path 冒充同实例 | Won't；identity 节写死 |
+| 旧 await 盖新选中 | token+pid；不匹配 ignore |
+| didSet / tick 继续清失败 | 重置路径表；刀②验收 |
+| `processListFailed` 空表当全体缺席 | 验收 A 钉失败帧不动 presence |
+| 把 `waitForExit` 当成自动重试 | 范围表：它是一次操作内短等 |
+| 结构测试写成 GUI 已测 | Linux / Mac 分界 |
+| 补 startTime 拖进本刀 | 第一刀明确不补 Enumerator |
+
+## 验收（十六期首包）
+
+产品 Must：
+
+- [ ] Must1：本会话侧栏能呈现最近一次普通退出或强退的发起类型，以及投影后的退出中 / 失败（未退出）/ 已不在列表；会外动作或后续采样不得把失败覆盖成已成功
+- [ ] Must2：失败按 pid 留存。清选再选**仍在 rows** 的同 pid，侧栏能看到此前失败，可对**当前合法选中**走原按钮普通退出、必要时强退（现确认不改）。不强制为失踪 pid 恢复列表行选中
+- [ ] Must3：A 有退出中 / 失败 / 结果时，B 的按钮不向 A 发请求；新动作与旧回包用 token 隔离
+- [ ] Must4：已不在列表不提供旧 pid 重试、不暗示仍存活。同 pid 再现且**不能**确认身份：当新进程、实时详情、不自动复活旧失败 / 重试卡，可对当前合法选中发起新操作，绝不把上次过程宣称成功
+- [ ] Must5：Darwin-free 转换测试覆盖跨 pid、离开 / 再现、少样本 / 失败帧保留最近结果、重选；Mac 上 VM 真实 SwiftUI 按钮 / 真实退出 / GUI **标未验**；结构测试不冒操作验收
+- [ ] 退出中若离 rows：UI 不得停在「正在退出…」，改为「已不在列表／上次记录」，禁用旧 pid 重试；失败语义保留
+- [ ] 验收 A 与验收 B 分开成立（见上）
+- [ ] 再失败仍可手动重试（仅 inRows + 当前合法选中）；Cancel 强退不结算
+- [ ] 现 `terminate` → `forceTerminate` 边界、cancellation、每 pid 最大 1 个 in-flight 不回退成无界任务
+- [ ] 十二至十五期、Sampler 周期、菜单栏、过滤空态、强退确认框不回退
+- [ ] 永不写「泄漏」/ leak / 「危险」；无成功横幅
+
+明确不做（本包出现即不合格）：
+
+- [ ] 无自动重试 / 无把 tick 当终止轮询 / 无新 Timer
+- [ ] 无跨启动持久化、无退出历史页、无通知中心、无批量退出
+- [ ] 无按名称 / bundle / path 串 pid
+- [ ] 无改 `confirmForceQuit` 文案或权限 / entitlements
+- [ ] 无改 Sampler cadence、无重开十五期双清、无菜单栏 terminate
+- [ ] 无第四类可见成功态
+- [ ] 无「源码匹配 = 已验真实退出 / GUI」
+- [ ] 无把本期 `identityMatch` 生产路径写成 true
+
+共性：
+
+- [ ] 一期至十五期验收不回退
+- [ ] 冷启动仍默认内存页
+- [ ] Linux：`swift test` 跑 ProcessQuitOutcome 转换 + 既有 SamplingCore
+- [ ] 不改公证脚本与 entitlements
+
+### Linux 可测 vs Mac 剩余
+
+已核 `Package.swift`：SamplingCore **可列入**新的 Darwin-free `ProcessQuitOutcome`（或同层文件）。**排除** `ViewModels/`、`Views/`、`Actions/ProcessActions.swift`、`Sampling/MemorySampler.swift`、`Sampling/ProcessEnumerator.swift`。因此：
+
+- token / presence / phase / project / 验收 A 与 B / 跨 pid / 失败帧：Linux CI 可实跑。
+- `MemoryDashboardVM` 实例、SwiftUI 点「退出」、真实 `NSRunningApplication`、Xcode 主窗：**不能**在 Linux 声称已测。
+- 若刀②加 VM 源码结构检查：必须写明不是行为测试、不是 GUI。
+
+本 docs PR **不跑**、也不声称：
+
+- `MemoryDashboardVM` 实例测试
+- Xcode GUI / 点退出 / 强制退出 / 触控
+- 实机 `terminate` / `forceTerminate` / 进程真死
+- 签名 / 公证
+
+Mac 冒烟（**仅**本设计已合并且实现合并后；**不挡**本文档审阅，也**不是**本期 docs 交付）：
+
+- 失败后切到另一进程再切回（pid 一直在表里）：失败还在，按钮打当前 pid
+- 退出中或失败时该行从 enumerator 消失：侧栏「已不在列表／上次记录」，不是「正在退出…」，不是成功；List 不点亮空行；按钮不可点
+- 同 pid 后再出现：实时详情，**没有**旧失败卡（无 startTime）
+- 切走之后旧退出才返回：当前进程页脚不被改写
+- 强退取消：失败卡仍在
+- 名称过滤 / 仅上涨 / 十五期双清 / 菜单栏 Top3 无回归
+
+## 工期
+
+小：两刀都是会话内 reducer + 原侧栏投影，不是新采样通道、不是历史产品。① Darwin-free 转换 + Linux `swift test`；② VM / 侧栏接线。没有硬伤就不开第三条 polish PR。本文只锁设计，不估日历人天。
+
+## 依赖与未决
+
+**产品行为**：正式 Must / Won't + 终修（复现当新进程、缺席 ≠ 成功、A/B 分开、不抢选中）已落，**不再等产品 / 设计表态**。实现不把未拍板的按钮精词当锁。
+
+**仍未拍板、但不挡本设计 / 不挡刀①（不是范围 blocker）**：
+
+- 失败卡上的**按钮与说明精词**（设计建议见「文案」；默认可沿用现「退出」「强制退出…」与现失败句）。
+
+没有其它产品待决需要把十六期停成草稿。
+
+实现等本设计合并 + Grok merge gate 后再写 Swift。Mark 在技术设计合入后才可开工程。本 PR 不写 Swift、不合并。
+
+
