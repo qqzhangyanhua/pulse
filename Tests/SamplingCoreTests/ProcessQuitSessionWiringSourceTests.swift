@@ -38,8 +38,8 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         let source = try vmSource()
         XCTAssertEqual(occurrenceCount(of: "ProcessQuitOutcome()", in: source), 1)
         XCTAssertEqual(occurrenceCount(of: "var quitOutcome", in: source), 1)
-        XCTAssertTrue(source.contains("@Published private var quitOutcome = ProcessQuitOutcome()"))
-        XCTAssertTrue(source.contains("@Published private(set) var sidebarSubjectPid: Int32?"))
+        XCTAssertTrue(source.contains("@Published var quitOutcome = ProcessQuitOutcome()"))
+        XCTAssertTrue(source.contains("@Published var sidebarSubjectPid: Int32?"))
         XCTAssertEqual(
             try lineContaining("var quitPhase", in: source),
             "    var quitPhase: QuitPhase { sidebar.quitPhase }"
