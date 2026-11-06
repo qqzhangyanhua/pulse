@@ -1,0 +1,85 @@
+Pulse/Models/ResourceDetailPageProjection.swift
+  s_be259349f003f2::t_c96b1b031daab8 145
+Pulse/Views/MemoryDashboardView.swift
+  s_be259349f003f2::t_b823e1d482ad60 7-44
+Tests/SamplingCoreTests/MemoryDashboardVMSortWiringSourceTests.swift
+  s_be259349f003f2::t_75809a7ec7c6d8 123
+Tests/SamplingCoreTests/MemoryDetailSidebarWiringSourceTests.swift
+  s_be259349f003f2::t_68cf4608303488 99
+Pulse/MenuBar/MenuBarStatus.swift
+  s_be259349f003f2::t_7736d27976da8c 22-24
+  s_be259349f003f2::t_44d98805e83aa3 3,10,13,16
+Tests/SamplingCoreTests/MachinePageTests.swift
+  s_be259349f003f2::t_0746ad3414d1f8 127-128,183-184
+  s_be259349f003f2::t_c168abeb0aa58c 188
+  s_be259349f003f2::t_c50b6c27b7f727 1-86,109-126,129-182,185-187,189-212
+  s_be259349f003f2::t_fe91d232ae5485 87-108
+Tests/SamplingCoreTests/KeyboardShortcutWiringSourceTests.swift
+  s_be259349f003f2::t_87ffb3a142ad78 10,18,23-24,41-47
+  s_be259349f003f2::t_c0c8074b34015f 26-28
+Pulse/Sampling/HostMachineReader.swift
+  s_be259349f003f2::t_f1eaf1df4957ac 1-49,51-55,64-65,70-101
+  s_be259349f003f2::t_045127e5ef4959 56-57,59-63
+  s_be259349f003f2::t_d9b93ce11c62dd 50
+  s_be259349f003f2::t_574bd61630e2da 58,66-69
+Pulse/PulseApp.swift
+  s_be259349f003f2::t_4ea3fb904f7091 47-48
+  s_be259349f003f2::t_3e0c756a4a6996 80
+Tests/SamplingCoreTests/NetworkPageTests.swift
+  s_be259349f003f2::t_70fbfca1c4639e 111
+Tests/SamplingCoreTests/MemoryPageFilterClearWiringSourceTests.swift
+  s_be259349f003f2::t_784923ca7bc054 78-79
+Pulse/Sampling/MachineInfo.swift
+  s_be259349f003f2::t_3e7fa98f627d73 23-28
+Package.swift
+  s_be259349f003f2::t_a135c2a33c79ef 28,56
+Pulse/Views/MachineOverviewSection.swift
+  s_be259349f003f2::t_d93aae522d14ea 3-4,9-13,23-61,63-162,165,168,171,173,175,177
+  s_be259349f003f2::t_512a4d14fdafb6 1-2,5-8,14-22,163-164,166-167,169-170,172,174,176,178-180
+  s_be259349f003f2::t_41cbdb40c2ab78 62
+Pulse/Views/SharedUI.swift
+  s_be259349f003f2::t_4ce5f833fde745 80-81
+  s_be259349f003f2::t_0280ef54892fc3 45,56,69
+Pulse/ViewModels/MemoryDashboardVM.swift
+  s_be259349f003f2::t_7af39654aeb62c 19-20,78,85,168,182,189,444-472
+Pulse.xcodeproj/project.pbxproj
+  s_be259349f003f2::t_12be7a88a83d4f 26-28,87-89,185,206,250,369-371
+Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift
+  s_be259349f003f2::t_ff55e013d40311 20,44
+Pulse/Models/CPUPage.swift
+  s_be259349f003f2::t_8be971b2edf727 111
+Tests/SamplingCoreTests/CPUPageTests.swift
+  s_be259349f003f2::t_03ccc0abdc8c2a 183
+Tests/SamplingCoreTests/ResourceDetailPageSourceTests.swift
+  s_be259349f003f2::t_eaa1927ff701fa 156
+Tests/SamplingCoreTests/DiskPageTests.swift
+  s_be259349f003f2::t_c8a7d87a06e57f 90
+Tests/SamplingCoreTests/TopAppLocationWiringSourceTests.swift
+  s_be259349f003f2::t_7611fd77bc3dcf 72
+Tests/SamplingCoreTests/HistoryCurveWiringSourceTests.swift
+  s_be259349f003f2::t_87c4d6d6c4cd71 189
+Tests/SamplingCoreTests/ProcessQuitSessionWiringSourceTests.swift
+  s_be259349f003f2::t_0c8f5b0eaefa2e 62,214
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_be259349f003f2::t_9f1c9e8a3c789d 109,130
+Pulse/Models/MachinePage.swift
+  s_be259349f003f2::t_2463be89c54330 1-38,40,50-52,54-55,57,59-65,71-90,111-145
+  s_be259349f003f2::t_04efa583b3d519 94
+  s_be259349f003f2::t_b6b33bb4aa282c 39,41-49,53,56,58,66-70,91-93,95-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "624053e9192a5952056fe954ecb1c7e72a19ad10",
+  "prompts": {},
+  "sessions": {
+    "s_be259349f003f2": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b170-637b-73e0-87e7-7c69302506cc",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
