@@ -380,19 +380,38 @@ final class ProcessQuitOutcomeTests: XCTestCase {
         XCTAssertEqual(store.nextToken, tokenAfter)
         XCTAssertEqual(store.trackedCount, 1)
 
-        let retry = try XCTUnwrap(store.click(.terminate, selectedPid: pid, rows: rows))
-        XCTAssertNotEqual(retry.token, issued.token)
-        store.complete(pid: pid, token: retry.token, result: .stillRunning)
-        let again = try XCTUnwrap(store.record(for: pid))
-        XCTAssertEqual(again.phase, .failed)
-        XCTAssertEqual(again.opportunity, .open)
-        XCTAssertEqual(again.presence, .inRows)
-        XCTAssertEqual(again.token, retry.token)
+        // The pid is absent. A rows array that still names it is not a reappearance frame.
+        XCTAssertNil(store.click(.terminate, selectedPid: pid, rows: rows))
+        XCTAssertNil(store.click(.requestForce, selectedPid: pid, rows: rows))
+        XCTAssertEqual(try XCTUnwrap(store.record(for: pid)), once)
+        XCTAssertEqual(store.record(for: pid)?.phase, .failed)
+        XCTAssertEqual(store.record(for: pid)?.opportunity, .open)
+        XCTAssertEqual(store.record(for: pid)?.presence, .absentAndUnknown)
+        XCTAssertEqual(store.record(for: pid)?.token, issued.token)
+        XCTAssertEqual(store.nextToken, tokenAfter)
+        XCTAssertNil(store.pendingForceConfirmation)
         XCTAssertEqual(store.trackedCount, 1)
-        let present = store.project(listSelectedPid: pid, sidebarSubjectPid: pid, rows: rows)
-        XCTAssertEqual(present.viewState, .failedStillPresent)
-        XCTAssertTrue(present.canRetry)
-        XCTAssertTrue(present.showsFailureCard)
+        let stillAbsent = store.project(listSelectedPid: pid, sidebarSubjectPid: pid, rows: rows)
+        XCTAssertEqual(stillAbsent.viewState, .absentFromList)
+        XCTAssertFalse(stillAbsent.canRetry)
+        XCTAssertFalse(stillAbsent.showsFailureCard)
+        XCTAssertFalse(stillAbsent.showsSuccessBanner)
+    }
+
+    /// Absence blocks a new quit until a successful reappearance frame. Completion of the current token stays legal.
+    func testAbsentRecordRefusesFreshQuitUntilReappearanceFrame() throws {
+        try assertInRowsFailedRetryStillOpensOneRecord()
+        try assertInRowsQuittingRepeatClickKeepsToken()
+        try assertAbsentBlocksFreshTerminate(failedFirst: false)
+        try assertAbsentBlocksFreshTerminate(failedFirst: true)
+        try assertAbsentBlocksForceRequest()
+        try assertAbsentTerminateLeavesPendingForce()
+        try assertAbsentCompletionStillSettlesCurrentToken(.stillRunning, phase: .failed, opportunity: .open)
+        try assertAbsentCompletionStillSettlesCurrentToken(.requestFailed, phase: .failed, opportunity: .open)
+        try assertAbsentCompletionStillSettlesCurrentToken(.exited, phase: .quitting, opportunity: .closed)
+        try assertAbsentCompletionStillSettlesCurrentToken(.notFound, phase: .quitting, opportunity: .closed)
+        try assertReappearanceThenExplicitClickReplaces()
+        try assertForceConfirmWaitsForReappearanceFrame()
     }
 
     /// 11. Absent + matching `.exited` closes the opportunity without a success banner. Repeat is idempotent. A stale token is dropped.
@@ -1128,6 +1147,238 @@ final class ProcessQuitOutcomeTests: XCTestCase {
         XCTAssertEqual(store.record(for: pid)?.opportunity, .open)
         XCTAssertEqual(store.record(for: pid)?.token, issued.token)
         XCTAssertEqual(store.record(for: pid)?.presence, .absentAndUnknown)
+    }
+
+    private func assertInRowsFailedRetryStillOpensOneRecord() throws {
+        var store = ProcessQuitOutcome()
+        let pid: Int32 = 41
+        let rows = [row(pid: pid, name: "A")]
+        let first = try fail(pid: pid, rows: rows, store: &store)
+        let second = try XCTUnwrap(store.click(.terminate, selectedPid: pid, rows: rows))
+        XCTAssertNotEqual(second.token, first.token)
+        XCTAssertEqual(second.pid, pid)
+        store.complete(pid: pid, token: second.token, result: .requestFailed)
+        let again = try XCTUnwrap(store.record(for: pid))
+        XCTAssertEqual(again.phase, .failed)
+        XCTAssertEqual(again.opportunity, .open)
+        XCTAssertEqual(again.presence, .inRows)
+        XCTAssertEqual(again.token, second.token)
+        XCTAssertEqual(store.trackedCount, 1)
+        let card = store.project(listSelectedPid: pid, sidebarSubjectPid: pid, rows: rows)
+        XCTAssertEqual(card.viewState, .failedStillPresent)
+        XCTAssertTrue(card.canRetry)
+    }
+
+    private func assertInRowsQuittingRepeatClickKeepsToken() throws {
+        var store = ProcessQuitOutcome()
+        let pid: Int32 = 42
+        let rows = [row(pid: pid, name: "A")]
+        let issued = try XCTUnwrap(store.click(.terminate, selectedPid: pid, rows: rows))
+        XCTAssertNil(store.click(.terminate, selectedPid: pid, rows: rows))
+        XCTAssertNil(store.click(.requestForce, selectedPid: pid, rows: rows))
+        let record = try XCTUnwrap(store.record(for: pid))
+        XCTAssertEqual(record.token, issued.token)
+        XCTAssertEqual(record.phase, .quitting)
+        XCTAssertEqual(record.opportunity, .open)
+        XCTAssertEqual(record.presence, .inRows)
+        XCTAssertEqual(store.nextToken, issued.token &+ 1)
+        XCTAssertNil(store.pendingForceConfirmation)
+        XCTAssertEqual(store.trackedCount, 1)
+    }
+
+    private func assertAbsentBlocksFreshTerminate(failedFirst: Bool) throws {
+        var store = ProcessQuitOutcome()
+        let pid: Int32 = failedFirst ? 43 : 44
+        let rows = [row(pid: pid, name: "A")]
+        let issued = try XCTUnwrap(store.click(.terminate, selectedPid: pid, rows: rows))
+        if failedFirst {
+            store.complete(pid: pid, token: issued.token, result: .stillRunning)
+        }
+        store.applyPresenceFromRows(
+            ProcessQuitPresenceFrame(rows: [], detail: detail(pid: pid, memoryPoints: 2, cpuPoints: 1))
+        )
+        let before = try XCTUnwrap(store.record(for: pid))
+        let clock = store.nextToken
+        XCTAssertEqual(before.presence, .absentAndUnknown)
+        XCTAssertEqual(before.opportunity, .open)
+        XCTAssertEqual(before.token, issued.token)
+        XCTAssertEqual(before.phase, failedFirst ? .failed : .quitting)
+        XCTAssertNil(store.click(.terminate, selectedPid: pid, rows: rows))
+        XCTAssertEqual(try XCTUnwrap(store.record(for: pid)), before)
+        XCTAssertEqual(store.nextToken, clock)
+        XCTAssertNil(store.pendingForceConfirmation)
+        XCTAssertEqual(store.trackedCount, 1)
+        let card = store.project(listSelectedPid: pid, sidebarSubjectPid: pid, rows: rows)
+        XCTAssertEqual(card.viewState, .absentFromList)
+        XCTAssertFalse(card.canRetry)
+        XCTAssertFalse(card.showsQuittingSpinner)
+        XCTAssertFalse(card.showsFailureCard)
+    }
+
+    private func assertAbsentBlocksForceRequest() throws {
+        var store = ProcessQuitOutcome()
+        let pid: Int32 = 45
+        let rows = [row(pid: pid, name: "A")]
+        let issued = try fail(pid: pid, rows: rows, store: &store)
+        store.applyPresenceFromRows(ProcessQuitPresenceFrame(rows: []))
+        let before = try XCTUnwrap(store.record(for: pid))
+        let clock = store.nextToken
+        XCTAssertNil(store.click(.requestForce, selectedPid: pid, rows: rows))
+        XCTAssertNil(store.pendingForceConfirmation)
+        XCTAssertEqual(try XCTUnwrap(store.record(for: pid)), before)
+        XCTAssertEqual(store.record(for: pid)?.phase, .failed)
+        XCTAssertEqual(store.record(for: pid)?.opportunity, .open)
+        XCTAssertEqual(store.record(for: pid)?.presence, .absentAndUnknown)
+        XCTAssertEqual(store.record(for: pid)?.token, issued.token)
+        XCTAssertEqual(store.nextToken, clock)
+    }
+
+    private func assertAbsentTerminateLeavesPendingForce() throws {
+        var store = ProcessQuitOutcome()
+        let pid: Int32 = 49
+        let rows = [row(pid: pid, name: "A")]
+        let failed = try fail(pid: pid, rows: rows, store: &store)
+        XCTAssertNil(store.click(.requestForce, selectedPid: pid, rows: rows))
+        let pending = try XCTUnwrap(store.pendingForceConfirmation)
+        store.applyPresenceFromRows(ProcessQuitPresenceFrame(rows: []))
+        let before = try XCTUnwrap(store.record(for: pid))
+        let clock = store.nextToken
+        XCTAssertEqual(before.presence, .absentAndUnknown)
+        XCTAssertEqual(before.token, failed.token)
+        XCTAssertNil(store.click(.terminate, selectedPid: pid, rows: rows))
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+        XCTAssertEqual(try XCTUnwrap(store.record(for: pid)), before)
+        XCTAssertEqual(store.nextToken, clock)
+        XCTAssertEqual(store.record(for: pid)?.phase, .failed)
+        XCTAssertEqual(store.record(for: pid)?.opportunity, .open)
+    }
+
+    private func assertAbsentCompletionStillSettlesCurrentToken(
+        _ result: ProcessActionResult,
+        phase: ProcessQuitPhase,
+        opportunity: ProcessQuitOpportunity
+    ) throws {
+        var store = ProcessQuitOutcome()
+        let pid: Int32 = 46
+        let rows = [row(pid: pid, name: "A")]
+        let issued = try XCTUnwrap(store.click(.terminate, selectedPid: pid, rows: rows))
+        store.applyPresenceFromRows(ProcessQuitPresenceFrame(rows: []))
+        let clock = store.nextToken
+        store.complete(pid: pid, token: issued.token, result: result)
+        let after = try XCTUnwrap(store.record(for: pid))
+        XCTAssertEqual(after.pid, pid)
+        XCTAssertEqual(after.token, issued.token)
+        XCTAssertEqual(after.kind, .terminate)
+        XCTAssertEqual(after.phase, phase)
+        XCTAssertEqual(after.opportunity, opportunity)
+        XCTAssertEqual(after.presence, .absentAndUnknown)
+        XCTAssertEqual(store.nextToken, clock)
+        XCTAssertEqual(store.trackedCount, 1)
+        XCTAssertNil(store.pendingForceConfirmation)
+        let card = store.project(listSelectedPid: nil, sidebarSubjectPid: pid, rows: [])
+        XCTAssertEqual(card.viewState, .absentFromList)
+        XCTAssertFalse(card.showsSuccessBanner)
+        XCTAssertFalse(card.canRetry)
+        if opportunity == .open && phase == .failed {
+            XCTAssertFalse(card.showsFailureCard)
+        }
+        if phase == .quitting {
+            XCTAssertFalse(card.showsQuittingSpinner)
+        }
+    }
+
+    private func assertReappearanceThenExplicitClickReplaces() throws {
+        var store = ProcessQuitOutcome()
+        let pid: Int32 = 47
+        let rows = [row(pid: pid, name: "A")]
+        let issued = try fail(pid: pid, rows: rows, store: &store)
+        store.applyPresenceFromRows(ProcessQuitPresenceFrame(rows: []))
+        let absent = try XCTUnwrap(store.record(for: pid))
+        XCTAssertEqual(absent.presence, .absentAndUnknown)
+        XCTAssertEqual(absent.phase, .failed)
+        XCTAssertEqual(absent.opportunity, .open)
+        XCTAssertEqual(absent.token, issued.token)
+
+        let frame = ProcessQuitPresenceFrame(rows: rows)
+        XCTAssertFalse(frame.identityEvidence)
+        store.applyPresenceFromRows(frame)
+        let reappeared = try XCTUnwrap(store.record(for: pid))
+        XCTAssertEqual(reappeared.presence, .currentReappearedUnconfirmed)
+        XCTAssertEqual(reappeared.phase, .failed)
+        XCTAssertEqual(reappeared.opportunity, .open)
+        XCTAssertEqual(reappeared.token, issued.token)
+        XCTAssertEqual(
+            store.project(listSelectedPid: pid, sidebarSubjectPid: pid, rows: rows).viewState,
+            .liveAsNewProcess
+        )
+
+        let fresh = try XCTUnwrap(store.click(.terminate, selectedPid: pid, rows: rows))
+        XCTAssertNotEqual(fresh.token, issued.token)
+        XCTAssertEqual(fresh.pid, pid)
+        XCTAssertEqual(fresh.kind, .terminate)
+        let replaced = try XCTUnwrap(store.record(for: pid))
+        XCTAssertEqual(replaced.token, fresh.token)
+        XCTAssertEqual(replaced.phase, .quitting)
+        XCTAssertEqual(replaced.opportunity, .open)
+        XCTAssertEqual(replaced.presence, .inRows)
+        XCTAssertEqual(store.trackedCount, 1)
+        store.complete(pid: pid, token: issued.token, result: .exited)
+        store.complete(pid: pid, token: issued.token, result: .stillRunning)
+        XCTAssertEqual(try XCTUnwrap(store.record(for: pid)), replaced)
+    }
+
+    private func assertForceConfirmWaitsForReappearanceFrame() throws {
+        var store = ProcessQuitOutcome()
+        let pid: Int32 = 48
+        let rows = [row(pid: pid, name: "A")]
+        let failed = try fail(pid: pid, rows: rows, store: &store)
+        XCTAssertNil(store.click(.requestForce, selectedPid: pid, rows: rows))
+        let pending = try XCTUnwrap(store.pendingForceConfirmation)
+        XCTAssertEqual(pending.targetPid, pid)
+        XCTAssertEqual(store.record(for: pid)?.phase, .failed)
+        XCTAssertEqual(store.nextToken, failed.token &+ 1)
+
+        store.applyPresenceFromRows(ProcessQuitPresenceFrame(rows: []))
+        let absent = try XCTUnwrap(store.record(for: pid))
+        XCTAssertEqual(absent.presence, .absentAndUnknown)
+        XCTAssertEqual(absent.phase, .failed)
+        XCTAssertEqual(absent.opportunity, .open)
+        XCTAssertEqual(absent.token, failed.token)
+        let clock = store.nextToken
+
+        XCTAssertNil(
+            store.click(.confirmForce(generation: pending.generation), selectedPid: pid, rows: rows)
+        )
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+        XCTAssertEqual(try XCTUnwrap(store.record(for: pid)), absent)
+        XCTAssertEqual(store.nextToken, clock)
+        XCTAssertEqual(store.trackedCount, 1)
+
+        store.applyPresenceFromRows(ProcessQuitPresenceFrame(rows: rows))
+        let waiting = try XCTUnwrap(store.record(for: pid))
+        XCTAssertEqual(waiting.presence, .currentReappearedUnconfirmed)
+        XCTAssertEqual(waiting.phase, .failed)
+        XCTAssertEqual(waiting.opportunity, .open)
+        XCTAssertEqual(waiting.token, failed.token)
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+        XCTAssertEqual(store.nextToken, clock)
+
+        let issued = try XCTUnwrap(
+            store.click(.confirmForce(generation: pending.generation), selectedPid: pid, rows: rows)
+        )
+        XCTAssertEqual(issued.pid, pid)
+        XCTAssertEqual(issued.kind, .forceTerminate)
+        XCTAssertNotEqual(issued.token, failed.token)
+        XCTAssertNil(store.pendingForceConfirmation)
+        let restarted = try XCTUnwrap(store.record(for: pid))
+        XCTAssertEqual(restarted.token, issued.token)
+        XCTAssertEqual(restarted.kind, .forceTerminate)
+        XCTAssertEqual(restarted.phase, .quitting)
+        XCTAssertEqual(restarted.opportunity, .open)
+        XCTAssertEqual(restarted.presence, .inRows)
+        XCTAssertEqual(store.trackedCount, 1)
+        store.complete(pid: pid, token: failed.token, result: .exited)
+        XCTAssertEqual(try XCTUnwrap(store.record(for: pid)), restarted)
     }
 
     @discardableResult
