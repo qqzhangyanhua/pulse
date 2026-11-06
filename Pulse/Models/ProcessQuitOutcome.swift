@@ -189,7 +189,6 @@ struct ProcessQuitOutcome: Equatable, Sendable {
         if let existing = records[pid], isInFlight(existing) || isAbsent(pid) {
             return nil
         }
-        pendingForceConfirmation = nil
         return replaceWithQuitting(pid: pid, kind: .terminate)
     }
 
@@ -232,6 +231,9 @@ struct ProcessQuitOutcome: Equatable, Sendable {
     }
 
     private mutating func replaceWithQuitting(pid: Int32, kind: ProcessQuitKind) -> ProcessQuitIssued {
+        if pendingForceConfirmation?.targetPid == pid {
+            pendingForceConfirmation = nil
+        }
         let token = nextToken
         nextToken &+= 1
         records[pid] = ProcessQuitRecord(

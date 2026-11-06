@@ -14,8 +14,11 @@ final class MemoryDashboardVM: ObservableObject {
     /// Bounded Top N=5 memory series. List rows look up `memoryGrowthListBadge(for:)`.
     @Published private(set) var topMemorySeries: [Int32: [ChartSample]] = [:]
     @Published private(set) var machineLabel: String?
-    @Published private(set) var quitPhase: QuitPhase = .idle
-    @Published private(set) var quitMessage: String?
+    /// The only session quit store. Phase and message are projections of this.
+    @Published private var quitOutcome = ProcessQuitOutcome()
+    @Published private(set) var sidebarSubjectPid: Int32?
+    var quitPhase: QuitPhase { sidebar.quitPhase }
+    var quitMessage: String? { sidebar.quitMessage }
     @Published private(set) var samplingFailed = false
     /// Gate projection. Not a second retry flag.
     @Published private(set) var isRetrying = false
@@ -38,9 +41,19 @@ final class MemoryDashboardVM: ObservableObject {
     @Published var selectedPid: Int32? {
         didSet {
             guard oldValue != selectedPid else { return }
+            let effect = ProcessQuitSession.followListSelection(
+                listSelectedPid: selectedPid,
+                sidebarSubjectPid: sidebarSubjectPid,
+                rows: rows
+            )
+            if selectedPid != effect.listSelectedPid {
+                selectedPid = effect.listSelectedPid
+                return
+            }
+            if sidebarSubjectPid != effect.sidebarSubjectPid {
+                sidebarSubjectPid = effect.sidebarSubjectPid
+            }
             detail = nil
-            quitPhase = .idle
-            quitMessage = nil
             let pid = selectedPid
             Task { await sampler.setSelectedPid(pid) }
         }
@@ -89,13 +102,25 @@ final class MemoryDashboardVM: ObservableObject {
     var selectedPage: DashboardPage { navigation.selectedPage }
     var tableSort: ProcessTableSort { navigation.sort }
 
-    /// Memory-page sidebar trend. Reads the current detail series, so a pid or detail clear
-    /// drops the previous process's rising line on the same turn.
+    /// Live memory-page trend for the joint sidebar. A frozen absent card does not use it.
     var memoryGrowthSlot: MemoryGrowthSlot? {
-        MemoryGrowthSidebar.slot(
+        guard sidebar.showsLiveTrend else { return nil }
+        return MemoryGrowthSidebar.slot(
             page: selectedPage,
             selectedPid: selectedPid,
-            detailSeries: detail?.memorySeries
+            detailSeries: sidebar.detail?.memorySeries
+        )
+    }
+
+    var sidebar: ProcessQuitSession.Sidebar {
+        ProcessQuitSession.sidebar(
+            quitOutcome,
+            ProcessQuitSession.Context(
+                listSelectedPid: selectedPid,
+                sidebarSubjectPid: sidebarSubjectPid,
+                rows: rows,
+                liveDetail: detail
+            )
         )
     }
 
@@ -195,34 +220,82 @@ final class MemoryDashboardVM: ObservableObject {
         sleepTask?.cancel()
     }
 
+    /// Close the sidebar. The quit store stays unsettled.
+    func dismissSidebar() {
+        let effect = ProcessQuitSession.dismissSidebar()
+        if selectedPid != effect.listSelectedPid {
+            selectedPid = effect.listSelectedPid
+        }
+        if sidebarSubjectPid != effect.sidebarSubjectPid {
+            sidebarSubjectPid = effect.sidebarSubjectPid
+        }
+    }
+
     func quitSelected() async {
-        guard let pid = selectedPid else { return }
-        quitPhase = .quitting
-        quitMessage = nil
-        let result = await ProcessActions.terminate(pid: pid)
-        applyQuit(result, fallback: "未能退出。可以请系统立即结束该进程。")
+        var store = quitOutcome
+        let issued = ProcessQuitSession.ordinaryTerminate(
+            store: &store,
+            listSelectedPid: selectedPid,
+            sidebarSubjectPid: sidebarSubjectPid,
+            rows: rows
+        )
+        quitOutcome = store
+        guard let issued else { return }
+        let result = await ProcessActions.terminate(pid: issued.pid)
+        var finished = quitOutcome
+        ProcessQuitSession.finish(
+            store: &finished,
+            pid: issued.pid,
+            token: issued.token,
+            result: result,
+            taskCancelled: Task.isCancelled
+        )
+        quitOutcome = finished
     }
 
     func forceQuitSelected() async {
-        guard let pid = selectedPid, let name = selectedRow?.name ?? detail?.row.name else { return }
-        guard ProcessActions.confirmForceQuit(displayName: name) else { return }
-        quitPhase = .quitting
-        quitMessage = nil
-        let result = await ProcessActions.forceTerminate(pid: pid)
-        applyQuit(result, fallback: "系统未能结束该进程。")
-    }
-
-    private func applyQuit(_ result: ProcessActionResult, fallback: String) {
-        switch result {
-        case .exited, .notFound:
-            selectedPid = nil
-            detail = nil
-            quitPhase = .idle
-            quitMessage = nil
-        case .requestFailed, .stillRunning:
-            quitPhase = .failed
-            quitMessage = fallback
+        var store = quitOutcome
+        let request = ProcessQuitSession.requestForce(
+            store: &store,
+            listSelectedPid: selectedPid,
+            sidebarSubjectPid: sidebarSubjectPid,
+            rows: rows
+        )
+        quitOutcome = store
+        guard let request else { return }
+        let confirmed = ProcessActions.confirmForceQuit(displayName: request.displayName)
+        if !confirmed {
+            var cancelled = quitOutcome
+            ProcessQuitSession.cancelForce(store: &cancelled, generation: request.generation)
+            quitOutcome = cancelled
+            return
         }
+        var confirming = quitOutcome
+        let issued = ProcessQuitSession.confirmForce(
+            store: &confirming,
+            generation: request.generation,
+            listSelectedPid: selectedPid,
+            rows: rows
+        )
+        if issued == nil {
+            ProcessQuitSession.releaseClosedForceConfirmation(
+                store: &confirming,
+                generation: request.generation,
+                issued: issued
+            )
+        }
+        quitOutcome = confirming
+        guard let issued else { return }
+        let result = await ProcessActions.forceTerminate(pid: issued.pid)
+        var finished = quitOutcome
+        ProcessQuitSession.finish(
+            store: &finished,
+            pid: issued.pid,
+            token: issued.token,
+            result: result,
+            taskCancelled: Task.isCancelled
+        )
+        quitOutcome = finished
     }
 
     /// Same-beat clear when the rising-only keep hides `selectedPid`. OFF does not restore.
@@ -236,7 +309,18 @@ final class MemoryDashboardVM: ObservableObject {
             seriesByPid: topMemorySeries
         )
         guard next != selectedPid else { return }
-        selectedPid = next
+        let effect = ProcessQuitSession.risingOnlySelection(
+            nextListPid: next,
+            sidebarSubjectPid: sidebarSubjectPid,
+            rows: rows,
+            store: quitOutcome
+        )
+        if selectedPid != effect.listSelectedPid {
+            selectedPid = effect.listSelectedPid
+        }
+        if sidebarSubjectPid != effect.sidebarSubjectPid {
+            sidebarSubjectPid = effect.sidebarSubjectPid
+        }
     }
 
     /// Only the memory-page sort drives Top 5 and the menu bar. Other tabs keep
@@ -311,61 +395,99 @@ final class MemoryDashboardVM: ObservableObject {
             isRetrying = samplingGate.retrying
             return
         }
-        guard samplingGate.accept(flight) else { return }
+        let accepted = samplingGate.accept(flight)
         isRetrying = samplingGate.retrying
+        applySample(result, accepted: accepted)
+    }
+
+    /// Every accepted frame, list failure, sampling failure, and stale flight
+    /// reaches one presence observation. Model writes stay on the accepted paths.
+    private func applySample(_ result: Result<SampledFrame, HostMemoryError>, accepted: Bool) {
         let held = SamplingRetryApply.Held(
             loadState: loadState,
             samplingFailed: samplingFailed,
             processListFailed: processListFailed,
             hasSnapshot: snapshot != nil
         )
-        switch result {
-        case .success(let frame):
-            guard let applied = SamplingRetryApply.apply(
-                held,
-                accepted: true,
-                sampleSucceeded: true
-            ) else { return }
-            samplingFailed = applied.samplingFailed
-            snapshot = frame.snapshot
-            systemCpuPercent = frame.systemCpuPercent
-            hostNetworkRates = frame.hostNetworkRates
-            hostDiskRates = frame.hostDiskRates
-            var nextUsage = usageHistory
-            nextUsage.record(frame.snapshot)
-            usageHistory = nextUsage
-            var nextCPU = cpuHistory
-            nextCPU.record(percent: frame.systemCpuPercent, at: frame.snapshot.capturedAt)
-            cpuHistory = nextCPU
-            var nextNetwork = networkHistory
-            nextNetwork.record(rates: frame.hostNetworkRates, at: frame.snapshot.capturedAt)
-            networkHistory = nextNetwork
-            var nextDisk = diskHistory
-            nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
-            diskHistory = nextDisk
-            rows = frame.rows
-            processListFailed = frame.processListFailed
-            topMemorySeries = frame.topMemorySeries
-            if let frameDetail = frame.detail {
-                detail = frameDetail
-            } else if let pid = selectedPid, !frame.rows.contains(where: { $0.pid == pid }) {
-                selectedPid = nil
-                detail = nil
-                if quitPhase == .quitting {
-                    quitPhase = .idle
-                    quitMessage = nil
+        let observation: ProcessQuitSession.Observation
+        var applyRisingOnly = false
+        if !accepted {
+            observation = ProcessQuitSession.Observation(freshnessInsufficient: true)
+        } else {
+            switch result {
+            case .success(let frame):
+                if let applied = SamplingRetryApply.apply(
+                    held,
+                    accepted: true,
+                    sampleSucceeded: true
+                ) {
+                    samplingFailed = applied.samplingFailed
+                    snapshot = frame.snapshot
+                    systemCpuPercent = frame.systemCpuPercent
+                    hostNetworkRates = frame.hostNetworkRates
+                    hostDiskRates = frame.hostDiskRates
+                    var nextUsage = usageHistory
+                    nextUsage.record(frame.snapshot)
+                    usageHistory = nextUsage
+                    var nextCPU = cpuHistory
+                    nextCPU.record(percent: frame.systemCpuPercent, at: frame.snapshot.capturedAt)
+                    cpuHistory = nextCPU
+                    var nextNetwork = networkHistory
+                    nextNetwork.record(rates: frame.hostNetworkRates, at: frame.snapshot.capturedAt)
+                    networkHistory = nextNetwork
+                    var nextDisk = diskHistory
+                    nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
+                    diskHistory = nextDisk
+                    rows = frame.rows
+                    processListFailed = frame.processListFailed
+                    topMemorySeries = frame.topMemorySeries
+                    loadState = applied.loadState
+                    observation = ProcessQuitSession.Observation(
+                        rows: frame.rows,
+                        liveDetail: frame.detail,
+                        detailToFreeze: detail,
+                        processListFailed: frame.processListFailed,
+                        samplingFailed: false,
+                        freshnessInsufficient: false
+                    )
+                    applyRisingOnly = true
+                } else {
+                    observation = ProcessQuitSession.Observation(freshnessInsufficient: true)
+                }
+            case .failure:
+                if let applied = SamplingRetryApply.apply(
+                    held,
+                    accepted: true,
+                    sampleSucceeded: false
+                ) {
+                    samplingFailed = applied.samplingFailed
+                    loadState = applied.loadState
+                    observation = ProcessQuitSession.Observation(samplingFailed: true)
+                } else {
+                    observation = ProcessQuitSession.Observation(freshnessInsufficient: true)
                 }
             }
+        }
+        var store = quitOutcome
+        let effect = ProcessQuitSession.applySample(
+            store: &store,
+            listSelectedPid: selectedPid,
+            sidebarSubjectPid: sidebarSubjectPid,
+            currentLiveDetail: detail,
+            observation: observation
+        )
+        quitOutcome = store
+        if selectedPid != effect.listSelectedPid {
+            selectedPid = effect.listSelectedPid
+        }
+        if sidebarSubjectPid != effect.sidebarSubjectPid {
+            sidebarSubjectPid = effect.sidebarSubjectPid
+        }
+        if detail != effect.liveDetail {
+            detail = effect.liveDetail
+        }
+        if applyRisingOnly {
             applyRisingOnlySelection()
-            loadState = applied.loadState
-        case .failure:
-            guard let applied = SamplingRetryApply.apply(
-                held,
-                accepted: true,
-                sampleSucceeded: false
-            ) else { return }
-            samplingFailed = applied.samplingFailed
-            loadState = applied.loadState
         }
     }
 }
