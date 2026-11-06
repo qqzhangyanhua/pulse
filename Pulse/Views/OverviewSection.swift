@@ -125,6 +125,7 @@ struct OverviewSection: View {
         let available = snapshot.totalBytes > snapshot.usedBytes
             ? snapshot.totalBytes - snapshot.usedBytes
             : 0
+        let swap = SwapUsage.display(usedBytes: snapshot.swapUsedBytes)
         let consumer = TopConsumer.leading(in: vm.rows)
 
         return VStack(spacing: 12) {
@@ -154,12 +155,11 @@ struct OverviewSection: View {
                     caption: "空闲或可回收",
                     iconColor: PulsePalette.accent
                 )
-                // 交换用量不在现有快照里，这里用「—」，避免把未采样写成 0 字节。
                 MetricStatCard(
                     systemImage: "arrow.left.arrow.right",
                     title: "交换",
-                    value: "—",
-                    caption: "未采样",
+                    value: swap.value,
+                    caption: swap.caption,
                     iconColor: .secondary
                 )
                 TopAppCard(consumer: consumer) { pid in
