@@ -30,8 +30,8 @@ struct SamplingClock: Equatable, Sendable {
     private(set) var elapsed: UInt64 = 0
     private var needsInitialSample = true
 
-    mutating func plan(step: SamplingStep) -> SamplingTickPlan {
-        let due = needsInitialSample || elapsed >= step.sleepNanoseconds
+    mutating func plan(step: SamplingStep, immediate: Bool = false) -> SamplingTickPlan {
+        let due = needsInitialSample || elapsed >= step.sleepNanoseconds || immediate
         if due {
             elapsed = 0
             needsInitialSample = false
@@ -39,6 +39,12 @@ struct SamplingClock: Equatable, Sendable {
         let remain = step.sleepNanoseconds > elapsed ? step.sleepNanoseconds - elapsed : step.sleepNanoseconds
         let sleep = min(Self.wakeSliceNanoseconds, remain)
         return SamplingTickPlan(sample: due && step.samples, sleepNanoseconds: sleep)
+    }
+
+    /// Sleep the loop would take without consuming a due. In-flight plans must not call `plan`.
+    func nextSleepNanoseconds(step: SamplingStep) -> UInt64 {
+        let remain = step.sleepNanoseconds > elapsed ? step.sleepNanoseconds - elapsed : step.sleepNanoseconds
+        return min(Self.wakeSliceNanoseconds, remain)
     }
 
     mutating func recordSleep(_ nanoseconds: UInt64) {
