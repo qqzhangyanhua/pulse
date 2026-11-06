@@ -352,7 +352,8 @@ final class MemoryDashboardVM: ObservableObject {
                         detailToFreeze: detail,
                         processListFailed: frame.processListFailed,
                         samplingFailed: false,
-                        freshnessInsufficient: false
+                        freshnessInsufficient: false,
+                        usedBytes: frame.snapshot.usedBytes
                     )
                     applyRisingOnly = true
                 } else {

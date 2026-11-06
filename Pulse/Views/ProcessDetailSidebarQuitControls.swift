@@ -18,6 +18,12 @@ struct ProcessDetailSidebarQuitControls: View {
                     .foregroundStyle(PulsePalette.pressureElevated)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            if let releaseNote = sidebar.releaseNote {
+                Text(releaseNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if sidebar.showsQuittingSpinner {
                 HStack(spacing: 8) {
                     ProgressView()
