@@ -20,6 +20,12 @@ enum CPUPageCopy {
     static let retry = SamplingRetryChrome.buttonTitle
     static let sidebarEmpty = "选一个进程看详情"
 
+    /// Resource-tab name-filter empty. The sentence stays today's pane copy.
+    /// Clearing still means the name only; memory-page empties do not read these.
+    static let filteredEmptyTitle = "没有匹配的 App"
+    static let filteredEmptyMessage = "换个名称试试，或清空过滤。"
+    static let filteredEmptyButton = "清空过滤"
+
     /// Overview slot. `nil` (first frame or a missed host read) is 「CPU · —」, not 「CPU · 0.0%」.
     static func overviewLine(systemCpuPercent: Double?) -> String {
         "CPU · \(CPUPercentText.string(systemCpuPercent))"
