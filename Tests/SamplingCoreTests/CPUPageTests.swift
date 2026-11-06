@@ -33,6 +33,9 @@ final class CPUPageTests: XCTestCase {
             CPUPageCopy.failureMessage,
             CPUPageCopy.retry,
             CPUPageCopy.sidebarEmpty,
+            CPUPageCopy.filteredEmptyTitle,
+            CPUPageCopy.filteredEmptyMessage,
+            CPUPageCopy.filteredEmptyButton,
             CPUPageCopy.overviewLine(systemCpuPercent: nil),
             CPUPageCopy.overviewLine(systemCpuPercent: 90),
         ].joined(separator: "\n")
@@ -193,6 +196,81 @@ final class CPUPageTests: XCTestCase {
 
         history.reset()
         XCTAssertTrue(history.samples.isEmpty)
+    }
+
+    func testResourceFilterEmptyPhaseAndLegacyCopyStay() {
+        XCTAssertEqual(CPUPageCopy.sampling, "正在采样…")
+        XCTAssertEqual(CPUPageCopy.emptyTitle, "还没有进程数据")
+        XCTAssertEqual(CPUPageCopy.emptyMessage, "这一帧没有进程可显示。")
+        XCTAssertEqual(CPUPageCopy.failureTitle, "暂时读不到 CPU 数据")
+        XCTAssertEqual(CPUPageCopy.failureMessage, "这轮采样没有回来，点重试再试。")
+        XCTAssertEqual(CPUPageCopy.retry, "重试")
+        XCTAssertEqual(CPUPageCopy.sidebarEmpty, "选一个进程看详情")
+        XCTAssertEqual(CPUPageCopy.filteredEmptyTitle, "没有匹配的 App")
+        XCTAssertEqual(CPUPageCopy.filteredEmptyMessage, "换个名称试试，或清空过滤。")
+        XCTAssertEqual(CPUPageCopy.filteredEmptyButton, "清空过滤")
+        XCTAssertNotEqual(CPUPageCopy.filteredEmptyMessage, "清空名称和仅上涨过滤。")
+
+        XCTAssertEqual(
+            CPUPagePhaseResolver.resolve(
+                loadState: .ready,
+                processCount: 4,
+                visibleCount: 0,
+                hasActiveFilter: true,
+                processListFailed: false
+            ),
+            .filteredEmpty
+        )
+        XCTAssertEqual(
+            CPUPagePhaseResolver.resolve(
+                loadState: .sampling,
+                processCount: 0,
+                visibleCount: 0,
+                hasActiveFilter: true,
+                processListFailed: false
+            ),
+            .sampling
+        )
+        XCTAssertEqual(
+            CPUPagePhaseResolver.resolve(
+                loadState: .failed,
+                processCount: 0,
+                visibleCount: 0,
+                hasActiveFilter: true,
+                processListFailed: false
+            ),
+            .failed
+        )
+        XCTAssertEqual(
+            CPUPagePhaseResolver.resolve(
+                loadState: .ready,
+                processCount: 0,
+                visibleCount: 0,
+                hasActiveFilter: true,
+                processListFailed: true
+            ),
+            .failed
+        )
+        XCTAssertEqual(
+            CPUPagePhaseResolver.resolve(
+                loadState: .ready,
+                processCount: 0,
+                visibleCount: 0,
+                hasActiveFilter: false,
+                processListFailed: false
+            ),
+            .empty
+        )
+        XCTAssertEqual(
+            CPUPagePhaseResolver.resolve(
+                loadState: .ready,
+                processCount: 4,
+                visibleCount: 1,
+                hasActiveFilter: true,
+                processListFailed: false
+            ),
+            .ready
+        )
     }
 
     func testColumnClickTogglesAndMetricColumnsStartDescending() {
