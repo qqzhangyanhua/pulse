@@ -158,14 +158,14 @@ final class MemoryDetailPresentationTests: XCTestCase {
 
     func testListBadgeCopyAndIndependentRingStayPut() {
         XCTAssertEqual(MemoryGrowthListCopy.title, "上涨")
-        XCTAssertEqual(MemoryGrowthListCopy.help, "近期内存持续上涨")
+        XCTAssertEqual(MemoryGrowthListCopy.help, "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。")
         XCTAssertNotEqual(MemoryGrowthListCopy.title, "近期驻留内存上涨")
         XCTAssertNotEqual(MemoryGrowthListCopy.help, "近期驻留内存上涨")
         XCTAssertNotEqual(MemoryGrowthListCopy.title, MemoryGrowthCopy.rising)
 
         let rising = series(count: 80, step: 1_048_576)
         let badge = MemoryGrowthList.badge(page: .memory, rowPid: 3, seriesByPid: [3: rising])
-        XCTAssertEqual(badge, MemoryGrowthListBadge(title: "上涨", help: "近期内存持续上涨"))
+        XCTAssertEqual(badge, MemoryGrowthListBadge(title: "上涨", help: "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。"))
         XCTAssertEqual(
             MemoryGrowthSidebar.slot(page: .memory, selectedPid: 9, detailSeries: rising)?.caption,
             MemoryGrowthCopy.rising
