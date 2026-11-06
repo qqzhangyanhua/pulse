@@ -143,9 +143,9 @@ struct ProcessTablePane: View {
                     onRetry: vm.retrySampling
                 )
             case .nameFilterEmpty:
-                filterEmpty
+                memoryFilterEmpty(phase: .nameFilterEmpty)
             case .risingOnlyEmpty:
-                risingOnlyEmpty
+                memoryFilterEmpty(phase: .risingOnlyEmpty)
             case .empty:
                 AppEmptyState(
                     systemImage: "list.bullet.rectangle",
@@ -158,16 +158,24 @@ struct ProcessTablePane: View {
         }
     }
 
-    private var risingOnlyEmpty: some View {
-        VStack(spacing: 8) {
-            Text(MemoryGrowthRisingFilterCopy.emptyTitle)
-                .font(.headline)
-            Text(MemoryGrowthRisingFilterCopy.emptyMessage)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+    @ViewBuilder
+    private func memoryFilterEmpty(phase: MemoryTablePhase) -> some View {
+        if let lines = MemoryTableEmptyCopy.filterEmptyLines(for: phase) {
+            VStack(spacing: 8) {
+                Text(lines.title)
+                    .font(.headline)
+                Text(lines.message)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Button(lines.buttonTitle) {
+                    vm.clearMemoryPageFilters()
+                }
+                .buttonStyle(.bordered)
+                .padding(.top, 4)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(24)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(24)
     }
 
     @ViewBuilder
@@ -225,12 +233,12 @@ struct ProcessTablePane: View {
 
     private var filterEmpty: some View {
         VStack(spacing: 8) {
-            Text("没有匹配的 App")
+            Text(CPUPageCopy.filteredEmptyTitle)
                 .font(.headline)
-            Text("换个名称试试，或清空过滤。")
+            Text(CPUPageCopy.filteredEmptyMessage)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Button("清空过滤") {
+            Button(CPUPageCopy.filteredEmptyButton) {
                 vm.filter = ""
             }
             .buttonStyle(.bordered)

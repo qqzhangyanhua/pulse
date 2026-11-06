@@ -172,6 +172,13 @@ final class MemoryDashboardVM: ObservableObject {
         samplingSession.setForeground(active)
     }
 
+    /// Memory-page filter empties. Both existing fields are written on this turn,
+    /// including when one of them is already the default.
+    func clearMemoryPageFilters() {
+        filter = ""
+        risingOnlyFilter = false
+    }
+
     func retrySampling() {
         let held = SamplingRetryApply.Held(
             loadState: loadState,
