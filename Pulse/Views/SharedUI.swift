@@ -42,6 +42,7 @@ enum ResourceTab: String, CaseIterable, Identifiable {
     case cpu = "CPU"
     case disk = "磁盘"
     case network = "网络"
+    case machine = "本机"
     case gpu = "GPU"
 
     var id: String { rawValue }
@@ -52,6 +53,7 @@ enum ResourceTab: String, CaseIterable, Identifiable {
         case .cpu: return .cpu
         case .disk: return .disk
         case .network: return .network
+        case .machine: return .machine
         case .gpu: return .gpu
         }
     }
@@ -64,6 +66,7 @@ enum ResourceTab: String, CaseIterable, Identifiable {
         case .cpu: return "cpu"
         case .disk: return "internaldrive"
         case .network: return "network"
+        case .machine: return "desktopcomputer"
         case .gpu: return "display"
         }
     }
@@ -74,12 +77,8 @@ struct ResourceTabs: View {
 
     var body: some View {
         HStack(spacing: 2) {
-            ForEach(ResourceTab.allCases) { tab in
-                if tab.isEnabled {
-                    enabledTab(tab)
-                } else {
-                    disabledTab(tab)
-                }
+            ForEach(ResourceTab.allCases.filter(\.isEnabled)) { tab in
+                enabledTab(tab)
             }
         }
         .padding(3)
@@ -113,15 +112,6 @@ struct ResourceTabs: View {
         .help(tab.rawValue)
         .accessibilityLabel(tab.rawValue)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
-    }
-
-    private func disabledTab(_ tab: ResourceTab) -> some View {
-        Image(systemName: tab.symbol)
-            .font(.caption)
-            .foregroundStyle(Color.white.opacity(0.32))
-            .frame(width: 30, height: 24)
-            .allowsHitTesting(false)
-            .accessibilityLabel("\(tab.rawValue)，不可用")
     }
 }
 

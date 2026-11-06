@@ -108,7 +108,7 @@ struct ProcessTableSort: Equatable, Sendable {
             return ProcessTableSort(column: .cpu, descending: true)
         case .disk:
             return ProcessTableSort(column: .disk, descending: true)
-        case .memory, .gpu:
+        case .memory, .gpu, .machine:
             return ProcessTableSort(column: .memory, descending: true)
         }
     }

@@ -7,7 +7,7 @@ import XCTest
 /// These tests read source text. They do not press keys, move focus, quit a
 /// process, or relaunch the window.
 final class KeyboardShortcutWiringSourceTests: XCTestCase {
-    /// ⌘1 memory, ⌘2 CPU, ⌘3 disk, ⌘4 network. GPU is not selectable and has no shortcut.
+    /// ⌘1 memory, ⌘2 CPU, ⌘3 disk, ⌘4 network, ⌘5 machine. GPU is not selectable and has no shortcut.
     /// Digit order follows `ResourceTab.allCases`, not the user-story phrase that lists network before disk.
     func testCommandDigitsFollowSelectableResourceTabOrder() throws {
         let shared = try WiringSourceText.text(for: "SharedUI")
@@ -15,14 +15,17 @@ final class KeyboardShortcutWiringSourceTests: XCTestCase {
         let cpu = try index(of: "case cpu", in: shared)
         let disk = try index(of: "case disk", in: shared)
         let network = try index(of: "case network", in: shared)
+        let machine = try index(of: "case machine", in: shared)
         let gpu = try index(of: "case gpu", in: shared)
         XCTAssertLessThan(memory, cpu)
         XCTAssertLessThan(cpu, disk)
         XCTAssertLessThan(disk, network)
-        XCTAssertLessThan(network, gpu)
+        XCTAssertLessThan(network, machine)
+        XCTAssertLessThan(machine, gpu)
 
-        let disabled = try functionBody(named: "disabledTab", in: shared)
-        XCTAssertFalse(disabled.contains("keyboardShortcut"))
+        let tabs = try braceBody(after: "struct ResourceTabs", in: shared)
+        XCTAssertTrue(tabs.contains("allCases.filter(\\.isEnabled)"))
+        XCTAssertFalse(tabs.contains("disabledTab"))
         XCTAssertFalse(shared.contains("keyboardShortcut"))
 
         let app = try repoText("Pulse/PulseApp.swift")
@@ -35,13 +38,15 @@ final class KeyboardShortcutWiringSourceTests: XCTestCase {
         XCTAssertFalse(cpuToDisk.contains(shortcut("3")))
         XCTAssertTrue(diskToNetwork.contains(shortcut("3")))
         XCTAssertFalse(diskToNetwork.contains(shortcut("4")))
-        let networkAt = try index(of: "selectPage(.network)", in: app)
-        let fourAt = try index(of: shortcut("4"), in: app)
-        XCTAssertLessThan(networkAt, fourAt)
-        XCTAssertFalse(app[fourAt...].contains("selectPage("))
+        let networkToMachine = try between("selectPage(.network)", "selectPage(.machine)", in: app)
+        XCTAssertTrue(networkToMachine.contains(shortcut("4")))
+        XCTAssertFalse(networkToMachine.contains(shortcut("5")))
+        let machineAt = try index(of: "selectPage(.machine)", in: app)
+        let fiveAt = try index(of: shortcut("5"), in: app)
+        XCTAssertLessThan(machineAt, fiveAt)
+        XCTAssertFalse(app[fiveAt...].contains("selectPage("))
         XCTAssertFalse(app.contains("selectPage(.gpu)"))
         XCTAssertFalse(app.contains("\"GPU\""))
-        XCTAssertFalse(app.contains(shortcut("5")))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         let selectPage = try functionBody(named: "selectPage", in: vm)

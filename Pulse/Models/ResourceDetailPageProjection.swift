@@ -142,7 +142,7 @@ enum ResourceDetailPageProjection {
                     memorySeries: detail.memorySeries
                 )
             )
-        case .gpu:
+        case .gpu, .machine:
             return .noResourceUpgrade(
                 NoResourceUpgradeProjection(
                     pid: detail.row.pid,

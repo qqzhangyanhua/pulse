@@ -106,7 +106,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         XCTAssertFalse(vm.contains(sentence))
         XCTAssertFalse(vm.contains("MemoryGrowthListCopy"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 25)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 26)
         XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 2)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: vm), 1)
         let badge = try functionBody(named: "memoryGrowthListBadge", in: vm)
@@ -127,7 +127,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         XCTAssertFalse(package.contains("MemoryDashboardVM.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
-        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 55, "phase26 adds ThermalNotice.swift")
+        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 58, "machine page adds MachinePage, HostMachineReader, MachineOverviewSection")
         let build = try markedSection("PBXBuildFile", in: project)
         let refs = try markedSection("PBXFileReference", in: project)
         let models = try modelsGroup(in: project)

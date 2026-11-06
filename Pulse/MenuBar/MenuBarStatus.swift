@@ -1,23 +1,27 @@
 import Foundation
 
-/// Pages the status item can land on. The main window presents memory, CPU, network, and disk.
+/// Pages the status item can land on. The main window presents memory, CPU, network, disk, and machine.
 /// GPU stays in the enum so a click can force memory instead of following it.
 enum DashboardPage: String, Equatable, Sendable, CaseIterable {
     case memory
     case cpu
     case disk
     case network
+    case machine
     case gpu
 
-    /// Memory, CPU, network, and disk are tappable. GPU stays disabled.
+    /// Memory, CPU, network, disk, and machine are tappable. GPU stays disabled.
     var isSelectable: Bool {
         switch self {
-        case .memory, .cpu, .network, .disk:
+        case .memory, .cpu, .network, .disk, .machine:
             return true
         case .gpu:
             return false
         }
     }
+
+    /// The machine page has no process list, so quit commands stay disabled there.
+    var allowsProcessQuit: Bool { self != .machine }
 }
 
 struct MenuBarNavigation: Equatable, Sendable {

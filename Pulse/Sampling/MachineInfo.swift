@@ -20,6 +20,12 @@ enum MachineInfo {
         stringSysctl("hw.model")
     }
 
+    /// Marketing chip name, such as "Apple M3 Pro". Nil when sysctl fails or returns empty.
+    /// Not a substitute for `hw.model`.
+    static func chipName() -> String? {
+        stringSysctl("machdep.cpu.brand_string")
+    }
+
     static func memoryLabel() -> String? {
         let bytes = ProcessInfo.processInfo.physicalMemory
         guard bytes > 0 else { return nil }

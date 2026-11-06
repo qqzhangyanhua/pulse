@@ -87,6 +87,7 @@ final class DiskPageTests: XCTestCase {
         XCTAssertTrue(DashboardPage.cpu.isSelectable)
         XCTAssertTrue(DashboardPage.network.isSelectable)
         XCTAssertTrue(DashboardPage.disk.isSelectable)
+        XCTAssertTrue(DashboardPage.machine.isSelectable)
         XCTAssertFalse(DashboardPage.gpu.isSelectable)
     }
 

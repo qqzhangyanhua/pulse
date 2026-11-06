@@ -17,6 +17,7 @@ extension MemoryDashboardVM {
     }
 
     func quitSelected() async {
+        guard selectedPage.allowsProcessQuit else { return }
         var store = quitOutcome
         let issued = ProcessQuitSession.ordinaryTerminate(
             store: &store,
@@ -40,6 +41,7 @@ extension MemoryDashboardVM {
     }
 
     func forceQuitSelected() async {
+        guard selectedPage.allowsProcessQuit else { return }
         var store = quitOutcome
         let request = ProcessQuitSession.requestForce(
             store: &store,

@@ -44,6 +44,8 @@ private struct PulseWindowCommands: Commands {
                 .keyboardShortcut("3", modifiers: .command)
             Button("网络") { dashboard.selectPage(.network) }
                 .keyboardShortcut("4", modifiers: .command)
+            Button("本机") { dashboard.selectPage(.machine) }
+                .keyboardShortcut("5", modifiers: .command)
             Divider()
             Button("过滤名称") {
                 focusNameFilter?()
@@ -75,6 +77,7 @@ private struct PulseWindowCommands: Commands {
         Button("退出选中进程") {
             Task { await dashboard.quitSelected() }
         }
+        .disabled(!dashboard.selectedPage.allowsProcessQuit)
     }
 }
 

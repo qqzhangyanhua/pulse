@@ -75,8 +75,8 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         XCTAssertFalse(source.contains("onChange"), "VM gains no onChange")
         XCTAssertEqual(
             occurrenceCount(of: "@Published", in: source),
-            25,
-            "phase26 adds thermalNotice"
+            26,
+            "machine page adds machineFacts"
         )
         XCTAssertEqual(
             try lineContaining("var topAppLocateReveal", in: source).trimmingCharacters(in: .whitespaces),

@@ -16,6 +16,8 @@ final class MemoryDashboardVM: ObservableObject {
     /// Bounded Top N=5 memory series. List rows look up `memoryGrowthListBadge(for:)`.
     @Published private(set) var topMemorySeries: [Int32: [ChartSample]] = [:]
     @Published private(set) var machineLabel: String?
+    /// Host facts for the machine page. Nil until that page is opened. Not a sample frame.
+    @Published private(set) var machineFacts: MachineFacts?
     /// The only session quit store. Phase and message are projections of this.
     @Published var quitOutcome = ProcessQuitOutcome()
     @Published var sidebarSubjectPid: Int32?
@@ -73,12 +75,14 @@ final class MemoryDashboardVM: ObservableObject {
     private var samplingClock = SamplingClock()
     private var samplingGate = SamplingRequestGate()
     private var thermalObserver: NSObjectProtocol?
+    private var machineRefreshTask: Task<Void, Never>?
 
     init() {
         beginThermalWatch()
     }
 
     isolated deinit {
+        machineRefreshTask?.cancel()
         endThermalWatch()
     }
 
@@ -161,6 +165,7 @@ final class MemoryDashboardVM: ObservableObject {
         navigation = next
         publishMemoryPageSort()
         applyRisingOnlySelection()
+        syncMachineWatch()
     }
 
     /// Select-if-present against the live `rows`. Missing / vanished pids are not written.
@@ -174,13 +179,14 @@ final class MemoryDashboardVM: ObservableObject {
         ProcessSelection.scrollTarget(selectedPid: selectedPid, rows: rows)
     }
 
-    /// Memory, CPU, network, and disk. GPU stays on the current page.
+    /// Memory, CPU, network, disk, and machine. GPU stays on the current page.
     func selectPage(_ page: DashboardPage) {
         var next = navigation
         next.select(page)
         navigation = next
         publishMemoryPageSort()
         applyRisingOnlySelection()
+        syncMachineWatch()
     }
 
     func setTableSort(_ sort: ProcessTableSort) {
@@ -434,6 +440,35 @@ private extension MemoryDashboardVM {
 
     func applyThermalState(_ state: ProcessInfo.ThermalState) {
         thermalNotice = ThermalNotice.message(for: ThermalCondition(state))
+    }
+
+    /// Read on entry, then every 30 seconds while the machine page stays selected.
+    func syncMachineWatch() {
+        guard selectedPage == .machine else {
+            machineRefreshTask?.cancel()
+            machineRefreshTask = nil
+            return
+        }
+        guard machineRefreshTask == nil else { return }
+        refreshMachineFacts()
+        machineRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(for: .seconds(30))
+                } catch {
+                    break
+                }
+                guard let self else { return }
+                self.refreshMachineFacts()
+            }
+        }
+    }
+
+    func refreshMachineFacts() {
+        let next = HostMachineReader.read()
+        if next != machineFacts {
+            machineFacts = next
+        }
     }
 }
 

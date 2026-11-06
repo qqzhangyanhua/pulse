@@ -186,7 +186,7 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         XCTAssertFalse(cards.contains("annotation:"))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 25)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 26)
         XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 2)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: vm), 1)
         let sortedLine = try lineContaining("var sortedRows", in: vm)
