@@ -198,6 +198,37 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         let menu = try repoText("Pulse/MenuBar/MenuBarStatus.swift")
         XCTAssertFalse(menu.contains("quitSelected"))
         XCTAssertFalse(menu.contains("forceTerminate"))
+    }
+
+    /// Source shape only. Not a VM instance, not NSAlert, not MainActor, not a real quit.
+    func testClosedConfirmHelperIsGenerationScopedAndWrittenBack() throws {
+        let session = try repoText("Pulse/Models/ProcessQuitSession.swift")
+        let helper = try functionBody(named: "releaseClosedForceConfirmation", in: session)
+        XCTAssertTrue(helper.contains("cancelForce"))
+        XCTAssertTrue(helper.contains("generation"))
+        XCTAssertFalse(helper.contains("NSAlert"))
+        XCTAssertFalse(helper.contains("ProcessActions"))
+        XCTAssertFalse(helper.contains("targetPid ="))
+        XCTAssertFalse(session.contains("import AppKit"))
+        let outcome = try repoText("Pulse/Models/ProcessQuitOutcome.swift")
+        XCTAssertTrue(outcome.contains("if isAbsent(pending.targetPid)"))
+        XCTAssertTrue(outcome.contains("pendingForceConfirmation = nil"))
+        let force = try functionBody(named: "forceQuitSelected", in: try vmSource())
+        XCTAssertLessThan(
+            try index(of: "ProcessQuitSession.confirmForce", in: force),
+            try index(of: "ProcessQuitSession.releaseClosedForceConfirmation", in: force)
+        )
+        XCTAssertLessThan(
+            try index(of: "ProcessQuitSession.releaseClosedForceConfirmation", in: force),
+            try index(of: "quitOutcome = confirming", in: force)
+        )
+        XCTAssertLessThan(
+            try index(of: "ProcessQuitSession.cancelForce", in: force),
+            try index(of: "ProcessQuitSession.confirmForce", in: force)
+        )
+        XCTAssertTrue(force.contains("if !confirmed"))
+        XCTAssertTrue(force.contains("ProcessActions.forceTerminate(pid: issued.pid)"))
+        XCTAssertFalse(force.contains("NSAlert"))
         let entitlements = try repoText("Pulse/Pulse.entitlements")
         XCTAssertFalse(entitlements.contains("ProcessQuit"))
     }

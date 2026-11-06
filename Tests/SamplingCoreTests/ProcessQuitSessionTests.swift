@@ -1489,6 +1489,293 @@ final class ProcessQuitSessionTests: XCTestCase {
         XCTAssertNotEqual(store.record(for: 2)?.pid, pending.targetPid)
     }
 
+    /// Not an NSAlert, not a VM instance, and not a MainActor reply.
+    /// `issued == nil` is the real `confirmForce` result after a closed confirmation
+    /// returned true. The helper is what the VM calls on that branch.
+    func testClosedAbsentConfirmReleasesThatGenerationAndReappearanceCanForceAgain() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let failed = try fail(1, rows: rows, store: &store)
+        let clock = store.nextToken
+        let request = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(store.nextToken, clock)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+
+        _ = ProcessQuitSession.applySample(
+            store: &store,
+            listSelectedPid: 1,
+            sidebarSubjectPid: 1,
+            currentLiveDetail: nil,
+            observation: ProcessQuitSession.Observation(rows: [row(2, "B")])
+        )
+        XCTAssertEqual(store.record(for: 1)?.presence, .absentAndUnknown)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.opportunity, .open)
+        XCTAssertEqual(store.pendingForceConfirmation?.generation, request.generation)
+        XCTAssertEqual(store.pendingForceConfirmation?.targetPid, 1)
+
+        let issued = ProcessQuitSession.confirmForce(
+            store: &store,
+            generation: request.generation,
+            listSelectedPid: 1,
+            rows: [row(2, "B")]
+        )
+        XCTAssertNil(issued)
+        XCTAssertEqual(store.nextToken, clock)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+        XCTAssertNil(store.record(for: 2))
+        ProcessQuitSession.releaseClosedForceConfirmation(
+            store: &store,
+            generation: request.generation,
+            issued: issued
+        )
+        XCTAssertNil(
+            store.pendingForceConfirmation,
+            "closed confirmation must consume the same generation the alert already returned"
+        )
+        XCTAssertEqual(store.nextToken, clock)
+        XCTAssertEqual(store.record(for: 1)?.pid, 1)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+        XCTAssertEqual(store.record(for: 1)?.kind, .terminate)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.presence, .absentAndUnknown)
+        XCTAssertEqual(store.record(for: 1)?.opportunity, .open)
+        XCTAssertNotEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertNil(store.record(for: 2))
+        let absent = project(store, list: nil, subject: 1, rows: [row(2, "B")], live: nil)
+        XCTAssertEqual(absent.viewState, .absentFromList)
+        XCTAssertEqual(absent.absentLabel, ProcessQuitOutcomeCopy.absentRecordLabel)
+        XCTAssertFalse(absent.showsSuccessBanner)
+        XCTAssertFalse(absent.buttonsEnabled)
+        XCTAssertFalse(absent.showsFailureCard)
+        XCTAssertFalse(absent.showsQuittingSpinner)
+        XCTAssertNil(absent.actionPid)
+        XCTAssertNil(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: [row(2, "B")]
+            )
+        )
+
+        _ = ProcessQuitSession.applySample(
+            store: &store,
+            listSelectedPid: nil,
+            sidebarSubjectPid: 1,
+            currentLiveDetail: nil,
+            observation: ProcessQuitSession.Observation(rows: rows)
+        )
+        XCTAssertEqual(store.record(for: 1)?.presence, .currentReappearedUnconfirmed)
+        XCTAssertNotEqual(store.record(for: 1)?.presence, .inRows)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+        let live = project(store, list: 1, subject: 1, rows: rows, live: nil)
+        XCTAssertEqual(live.viewState, .liveAsNewProcess)
+        XCTAssertFalse(live.showsFailureCard)
+        XCTAssertNil(live.quitMessage)
+        XCTAssertFalse(live.showsSuccessBanner)
+        XCTAssertFalse(live.showsAbsentRecord)
+        let again = ProcessQuitSession.requestForce(
+            store: &store,
+            listSelectedPid: 1,
+            sidebarSubjectPid: 1,
+            rows: rows
+        )
+        XCTAssertEqual(again?.targetPid, 1)
+        XCTAssertEqual(
+            again?.generation,
+            request.generation &+ 1,
+            "reappearance must get a new generation instead of the closed alert"
+        )
+        let forced = ProcessQuitSession.confirmForce(
+            store: &store,
+            generation: again?.generation ?? 0,
+            listSelectedPid: 1,
+            rows: rows
+        )
+        XCTAssertEqual(forced?.pid, 1)
+        XCTAssertEqual(forced?.kind, .forceTerminate)
+        XCTAssertNotEqual(forced?.pid, 2)
+        XCTAssertNotEqual(forced?.token, failed.token)
+        XCTAssertEqual(store.record(for: 1)?.token, forced?.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertEqual(store.record(for: 1)?.kind, .forceTerminate)
+        XCTAssertNil(store.record(for: 2))
+        XCTAssertNil(
+            ProcessQuitSession.confirmForce(
+                store: &store,
+                generation: request.generation,
+                listSelectedPid: 1,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(store.record(for: 1)?.token, forced?.token)
+        XCTAssertNotEqual(store.record(for: 1)?.token, failed.token)
+    }
+
+    /// A different generation, a nil force request, and a late confirm must not
+    /// clear the pending that belongs to someone else or issue A/B.
+    /// Not an NSAlert and not a VM button.
+    func testClosedConfirmDoesNotClearADifferentGenerationOrIssue() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let failed = try fail(1, rows: rows, store: &store)
+        let request = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        XCTAssertNil(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 2,
+                sidebarSubjectPid: 2,
+                rows: rows
+            )
+        )
+        XCTAssertNil(store.click(.requestForce, selectedPid: 2, rows: rows))
+        let pending = try XCTUnwrap(store.pendingForceConfirmation)
+        ProcessQuitSession.releaseClosedForceConfirmation(
+            store: &store,
+            generation: request.generation &+ 1,
+            issued: nil
+        )
+        XCTAssertEqual(store.pendingForceConfirmation, pending)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+        XCTAssertNil(store.record(for: 2))
+
+        let replaced = try XCTUnwrap(
+            ProcessQuitSession.ordinaryTerminate(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        XCTAssertNil(store.pendingForceConfirmation)
+        let newer = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 2,
+                sidebarSubjectPid: 2,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(newer.targetPid, 2)
+        XCTAssertNotEqual(newer.generation, request.generation)
+        let staleIssued = ProcessQuitSession.confirmForce(
+            store: &store,
+            generation: request.generation,
+            listSelectedPid: 2,
+            rows: rows
+        )
+        XCTAssertNil(staleIssued)
+        ProcessQuitSession.releaseClosedForceConfirmation(
+            store: &store,
+            generation: request.generation,
+            issued: staleIssued
+        )
+        XCTAssertEqual(store.pendingForceConfirmation?.generation, newer.generation)
+        XCTAssertEqual(store.pendingForceConfirmation?.targetPid, 2)
+        XCTAssertEqual(store.record(for: 1)?.token, replaced.token)
+        XCTAssertEqual(store.record(for: 1)?.phase, .quitting)
+        XCTAssertEqual(store.record(for: 1)?.kind, .terminate)
+        XCTAssertNil(store.record(for: 2))
+        XCTAssertNil(
+            ProcessQuitSession.confirmForce(
+                store: &store,
+                generation: request.generation,
+                listSelectedPid: 1,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(store.pendingForceConfirmation?.targetPid, 2)
+        XCTAssertEqual(store.record(for: 1)?.token, replaced.token)
+        XCTAssertNotEqual(store.record(for: 1)?.kind, .forceTerminate)
+        XCTAssertNil(store.record(for: 2))
+    }
+
+    /// Moved-target confirm already disposes pending. The helper must not rewrite that.
+    /// A real issued force token must also stay if the helper is handed that issued value.
+    func testMovedTargetDisposalAndIssuedForceStayUntouchedByTheHelper() throws {
+        var store = ProcessQuitOutcome()
+        let rows = [row(1, "A"), row(2, "B")]
+        let failed = try fail(1, rows: rows, store: &store)
+        let request = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &store,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        let moved = ProcessQuitSession.confirmForce(
+            store: &store,
+            generation: request.generation,
+            listSelectedPid: 2,
+            rows: rows
+        )
+        XCTAssertNil(moved)
+        XCTAssertNil(store.pendingForceConfirmation)
+        XCTAssertEqual(store.record(for: 1)?.phase, .failed)
+        XCTAssertEqual(store.record(for: 1)?.token, failed.token)
+        XCTAssertNil(store.record(for: 2))
+        XCTAssertNotEqual(store.record(for: 1)?.phase, .quitting)
+        let disposed = store
+        ProcessQuitSession.releaseClosedForceConfirmation(
+            store: &store,
+            generation: request.generation,
+            issued: moved
+        )
+        XCTAssertEqual(store, disposed)
+
+        var issuedStore = ProcessQuitOutcome()
+        let issuedFailed = try fail(1, rows: rows, store: &issuedStore)
+        let open = try XCTUnwrap(
+            ProcessQuitSession.requestForce(
+                store: &issuedStore,
+                listSelectedPid: 1,
+                sidebarSubjectPid: 1,
+                rows: rows
+            )
+        )
+        let issued = try XCTUnwrap(
+            ProcessQuitSession.confirmForce(
+                store: &issuedStore,
+                generation: open.generation,
+                listSelectedPid: 1,
+                rows: rows
+            )
+        )
+        XCTAssertEqual(issued.pid, 1)
+        XCTAssertEqual(issued.kind, .forceTerminate)
+        let quitting = issuedStore
+        ProcessQuitSession.releaseClosedForceConfirmation(
+            store: &issuedStore,
+            generation: open.generation,
+            issued: issued
+        )
+        XCTAssertEqual(issuedStore, quitting)
+        XCTAssertEqual(issuedStore.record(for: 1)?.token, issued.token)
+        XCTAssertEqual(issuedStore.record(for: 1)?.kind, .forceTerminate)
+        XCTAssertEqual(issuedStore.record(for: 1)?.phase, .quitting)
+        XCTAssertNotEqual(issuedStore.record(for: 1)?.token, issuedFailed.token)
+        XCTAssertNil(issuedStore.record(for: 2))
+    }
+
     func testNoQuitRecordUsesTheLiveRowAndEnablesAFreshClick() throws {
         let store = ProcessQuitOutcome()
         let rows = [row(15, "Plain", memory: 12)]

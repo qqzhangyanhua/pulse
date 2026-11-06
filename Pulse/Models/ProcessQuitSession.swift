@@ -252,6 +252,17 @@ enum ProcessQuitSession {
         store.click(.confirmForce(generation: generation), selectedPid: listSelectedPid, rows: rows)
     }
 
+    /// Closed confirmation only. Scaffold until the same generation is consumed.
+    static func releaseClosedForceConfirmation(
+        store: inout ProcessQuitOutcome,
+        generation: UInt64,
+        issued: ProcessQuitIssued?
+    ) {
+        _ = generation
+        _ = issued
+        _ = store.pendingForceConfirmation
+    }
+
     /// Completion is the issued pid and token. A cancelled task is not a result.
     static func finish(
         store: inout ProcessQuitOutcome,
