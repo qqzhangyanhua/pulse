@@ -46,6 +46,8 @@ struct MainWindowAnchor: NSViewRepresentable {
             releaseAttachment()
             attached = id
             window.identifier = NSUserInterfaceItemIdentifier(PulseWindowID.main)
+            // Size and position only.
+            _ = window.setFrameAutosaveName(PulseWindowID.main)
             closeObserver = NotificationCenter.default.addObserver(
                 forName: NSWindow.willCloseNotification,
                 object: window,

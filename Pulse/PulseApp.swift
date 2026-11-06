@@ -23,13 +23,57 @@ struct PulseApp: App {
         .windowResizability(.contentMinSize)
         .windowToolbarStyle(.unifiedCompact)
         .commands {
-            CommandGroup(replacing: .newItem) {}
-            CommandGroup(replacing: .appTermination) {
-                Button(action: { NSApp.terminate(nil) }) {
-                    Text(verbatim: MenuBarCopy.quitTitle)
-                }
-                .keyboardShortcut("q")
+            PulseWindowCommands(dashboard: dashboard)
+        }
+    }
+}
+
+private struct PulseWindowCommands: Commands {
+    let dashboard: MemoryDashboardVM
+    @FocusedValue(\.focusNameFilter) private var focusNameFilter
+    @FocusedValue(\.nameFilterFocused) private var nameFilterFocused
+
+    var body: some Commands {
+        CommandGroup(replacing: .newItem) {}
+        CommandMenu("视图") {
+            Button("内存") { dashboard.selectPage(.memory) }
+                .keyboardShortcut("1", modifiers: .command)
+            Button("CPU") { dashboard.selectPage(.cpu) }
+                .keyboardShortcut("2", modifiers: .command)
+            Button("磁盘") { dashboard.selectPage(.disk) }
+                .keyboardShortcut("3", modifiers: .command)
+            Button("网络") { dashboard.selectPage(.network) }
+                .keyboardShortcut("4", modifiers: .command)
+            Divider()
+            Button("过滤名称") {
+                focusNameFilter?()
             }
+            .keyboardShortcut("f", modifiers: .command)
+            .disabled(focusNameFilter == nil)
+            ordinaryQuitCommand()
+        }
+        CommandGroup(replacing: .appTermination) {
+            Button(action: { NSApp.terminate(nil) }) {
+                Text(verbatim: MenuBarCopy.quitTitle)
+            }
+            .keyboardShortcut("q")
+        }
+    }
+
+    /// Omit the key equivalent while the name filter is focused so the field keeps delete-to-line-start.
+    @ViewBuilder
+    private func ordinaryQuitCommand() -> some View {
+        if nameFilterFocused == true {
+            quitSelectedButton
+        } else {
+            quitSelectedButton
+                .keyboardShortcut(.delete, modifiers: .command)
+        }
+    }
+
+    private var quitSelectedButton: some View {
+        Button("退出选中进程") {
+            Task { await dashboard.quitSelected() }
         }
     }
 }
