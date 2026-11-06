@@ -4686,7 +4686,7 @@ Focused 放在 `DiskPageTests`（或确有必要时的一个新测试文件；�
 | `selectedPid` | `@Published`。`didSet` 在值变化时调用 `ProcessQuitSession.followListSelection`，必要时把 `selectedPid` 写回合法 pid；然后 `detail = nil`，`Task { await sampler.setSelectedPid(pid) }`。同值直接返回 |
 | `selectPidIfPresent` | `ProcessSelection.acceptedPid(pid, in: rows)` 非 nil 才写 `selectedPid`。缺失 pid 不写 |
 | `processListScrollTarget` | `ProcessSelection.scrollTarget(selectedPid:rows:)`，只问完整 `rows` 里有没有这个 pid。不读 `filter`、`visibleRows`、上涨徽标 |
-| `visibleRows` / `sortedRows` | `MemoryGrowthRisingFilter.apply` 后，`tableSort.ordered`。`List(sortedRows, selection: $vm.selectedPid)` |
+| `visibleRows` / `sortedRows` | `visibleRows` 在 VM，是 `MemoryGrowthRisingFilter.apply`。`sortedRows` 在 `ProcessTablePane`（约 28–30 行），私有计算属性，右值是 `vm.tableSort.ordered(vm.visibleRows)`。不是 VM 成员，也不是 `@Published`。`List` 用的是它 |
 | `ProcessTablePane.processList` | `.onAppear` 与 `.onChange(of: vm.processListScrollTarget)` 调用 `revealProcessListTarget`。该函数在 `processListScrollTarget` 非 nil 时 `DispatchQueue.main.async` 再 `scrollTo(target, anchor: .center)` |
 | `MemoryGrowthRisingFilter.selectedPid` | 显式丢掉 `rows` 与 `nameQuery`。只有 `risingOnly && page == .memory` 且当前 pid 没有列表徽标时才返回 nil。名称把行藏起来时，选中仍留着。OFF 时返回 `current`，不复活、也不因没徽标而清 |
 | `MemoryGrowthList.badge` | 内存页、`seriesByPid` 里有该 pid、且 `evaluate == .rising` 才有徽标。缺 series 就是 nil |
@@ -4718,7 +4718,7 @@ Focused 放在 `DiskPageTests`（或确有必要时的一个新测试文件；�
 | 非空查询 | 卡片不改 `filter` | trim 后非空且 raw 还不是组名时写成组名；raw 已经 `==` 组名则保持 |
 | 「仅上涨」 | 卡片不关 | 通过门的动作都写 `risingOnlyFilter = false` |
 | 选中 | 直接赋值 | `selectPidIfPresent`。不写 `selectedPid =` |
-| 揭示 | 只有 `processListScrollTarget` 变化或 `List` 首次出现 | **加一条**卡片专用命令。同 pid 被名称藏住时也发 |
+| 揭示 | 只有 `processListScrollTarget` 变化或 `List` 首次出现 | **加** `revealTopApp(request:proxy:)`，只接这条卡片的 `onChange`。同步门确认 `request.pid` 在现有 `sortedRows` 里，再在 `main.async` 里 `scrollTo` 该 pid。旧 helper 原样留给旧的 `onChange` 与 `onAppear` |
 | 无 consumer 的卡 | 不调用 `onSelect` | **保持**。不加新手势 |
 | pid 消失或改名 | 直接赋值没有组名门 | **整次不写**，含不发揭示。不改挑同组另一个 pid |
 | 列表点选、键盘、名称框、页切换、两处清空 | 现有绑定 | **不发**这条揭示，不改那些绑定 |
@@ -4857,7 +4857,7 @@ OFF 写在 `selectPidIfPresent` 之前。上涨从 true 变成 false 时，`didS
 
 `currentFilter == "Safari"`，`currentRisingOnly == false`，传入 pid 43、组名 Chrome。计划仍是 `.replace("Chrome")`、`risingOnly: false`、一条新揭示。不因为上涨已经是 OFF、也不因为 pid 将与选中相同而返回 nil。
 
-动作前 `selectedPid` 若已是 43：`scrollTarget` 在 43 仍在 `rows` 时就是 43，不是 nil；现有 `onChange(of: processListScrollTarget)` 不会因这次赋值而跑。揭示命令的 generation 变了，所以这一条专用 `onChange` 会跑。写完后查询为 Chrome、上涨为 false 的投影包含 43，选中仍是 43。
+动作前 `selectedPid` 若已是 43：`scrollTarget` 在 43 仍在 `rows` 时就是 43，不是 nil；现有 `onChange(of: processListScrollTarget)` 不会因这次赋值而跑。揭示命令的 generation 变了，所以 `revealTopApp` 会接到这一次。写完后查询为 Chrome、上涨为 false 的 `sortedRows` 含 43，同步门通过，`scrollTo` 的参数是 `request.pid`（43）。若这次 `sortedRows` 仍不含 43（例如门看到的查询还是 Safari），函数在 `scrollTo` 前返回，不改滚当前选中。选中仍是 43。
 
 ### 5. pid 已不在 rows
 
@@ -4877,7 +4877,9 @@ OFF 写在 `selectPidIfPresent` 之前。上涨从 true 变成 false 时，`didS
 
 ## 揭示与滚动
 
-`processListScrollTarget` 保持今天的完整 `rows` 语义，不改成可见行，也不把 generation 塞进这个 `Int32?`。普通选中变化时，它仍会随 pid 变化，现有 `onChange` 与 `onAppear` 留在原地。
+VM 顺序不变：计划的门失败就返回；通过之后才是 filter 写入（需要时）、`risingOnlyFilter = false`、`selectPidIfPresent`，最后发布 `topAppLocateReveal`。同 pid 仍靠 generation 让这次显式动作发出一条命令。`@Published` 仍只从 22 增到 23，这一处就是该命令。`selectedPid` 数值变化时，原有 `onChange(of: vm.processListScrollTarget)` 与 `List.onAppear` 保留。
+
+`processListScrollTarget` 保持今天的完整 `rows` 语义，不改成可见行，也不把 generation 塞进这个 `Int32?`。它继续只服务旧 helper。普通选中变化时，它仍会随 pid 变化。
 
 同 pid 只改 filter 或上涨时，这个 `Int32?` 不变，现有 `onChange` 不能作为「每点一次卡都揭示」的依据。pid 单独做 `Equatable` 也一样。因此增加一处窄的可选发布属性：
 
@@ -4885,28 +4887,39 @@ OFF 写在 `selectPidIfPresent` 之前。上涨从 true 变成 false 时，`didS
 @Published private(set) var topAppLocateReveal: TopAppLocation.Reveal?
 ```
 
-没有 `didSet`。没有第二份选中，没有历史数组，没有钉住的 sampler pid。generation 存在这条命令里，不另做发布字段。属性留在 VM 内存中，被下一次显式定位替换。不写入 `navigation`、publication、偏好或采样。之后的样本、退出和再次点卡都不会把它当成持续覆盖 filter 的模式；filter 只在当次 `.replace` 时写一次。
+没有 `didSet`。没有第二份选中，没有历史数组，没有钉住的 sampler pid，也没有待重试队列。generation 存在这条命令里，不另做发布字段。属性留在 VM 内存中，被下一次显式定位替换。不写入 `navigation`、publication、偏好或采样。之后的样本、退出和再次点卡都不会把它当成持续覆盖 filter 的模式；filter 只在当次 `.replace` 时写一次。不把旧 filter 存下来做回退。
 
-这是 `@Published` 从 22 变成 23 的唯一一处。十五期 `MemoryPageFilterClearWiringSourceTests` 今天断言计数为 22、`didSet` 为 2、`@MainActor` 为 1，并断言 `clearMemoryPageFilters` 的语句就是 `filter = ""` 与 `risingOnlyFilter = false`。实现 PR 只把该计数改为 23，并点名 `topAppLocateReveal` 是唯一新增。`didSet` 仍是 2，`@MainActor` 仍是 1，清空方法的两条语句不改。VM 源码仍不含 `onChange` 这个词。
+这是 `@Published` 从 22 变成 23 的唯一一处。十五期 `MemoryPageFilterClearWiringSourceTests` 今天断言计数为 22、`didSet` 为 2、`@MainActor` 为 1，并断言 `clearMemoryPageFilters` 的语句就是 `filter = ""` 与 `risingOnlyFilter = false`。实现 PR 只把该计数改为 23，并点名 `topAppLocateReveal` 是唯一新增。`didSet` 仍是 2，`@MainActor` 仍是 1，清空方法的两条语句不改。VM 源码仍不含 `onChange` 这个词。`sortedRows` 不是新的 `@Published`。
 
-`ProcessTablePane.processList` 在现有 `ScrollViewReader` 里增加：
+`sortedRows` 今天是 `ProcessTablePane` 的私有计算属性，右值是 `vm.tableSort.ordered(vm.visibleRows)`。VM 上还没有这个名字。锁稿要的读取是 `vm.sortedRows`：同一条公式，不是完整 `rows`，也不是新存储。实现把它做成 VM 上的非发布计算属性，pane 里的 `List` 与 `visibleCount` 改为读它，避免两份公式。`@Published` 因此不会变成 24。
+
+显式 Top 的 `onChange` 只调用专用入口 `revealTopApp(request:proxy:)`。`revealProcessListTarget` 不改，仍只给 `.onChange(of: vm.processListScrollTarget)` 和 `.onAppear`。不把旧 helper 改成按 `request.pid` 滚动，否则日常选中的目标会被换掉。
 
 ```swift
 .onChange(of: vm.topAppLocateReveal) { _, request in
-    guard request != nil else { return }
-    revealProcessListTarget(proxy)
+    guard let request else { return }
+    revealTopApp(request: request, proxy: proxy)
+}
+
+private func revealTopApp(request: TopAppLocation.Reveal, proxy: ScrollViewProxy) {
+    guard vm.sortedRows.contains(where: { $0.pid == request.pid }) else { return }
+    DispatchQueue.main.async {
+        proxy.scrollTo(request.pid, anchor: .center)
+    }
 }
 ```
 
-处理函数就是现成的 `revealProcessListTarget`。那一层已经有 `DispatchQueue.main.async` 再 `scrollTo`。不另写滚动，不引入 UIKit，不在 VM 里拿 `ScrollViewProxy`。命令在 filter、上涨、`selectPidIfPresent` 三次写入之后才发布，所以这一轮视图更新能看到写完的投影。`main.async` 是现成揭示已经用的下一转调度。
+同步门和 `main.async` 闭包里的 `scrollTo` 都只用 `request.pid`。不读 `processListScrollTarget`，也不读 `selectedPid` 来代替目标。不落到同组另一行，不落到完整 `rows`。43 不在这次 `sortedRows` 里就是 no-op；当前选中即使是 9，也不滚 9。
 
-源码要断言的是：这条 `onChange` 调用了现成 helper，helper 仍在 main 异步之后滚动 `processListScrollTarget`。滚动发生时，锁定例子里的投影已经包含该 pid，这由写入顺序和上面的 `ordered` 断言说明。不把 `scrollTarget != nil` 写成「已经可见」。不改 helper 去读 `visibleRows`。
+和旧 helper 共用的只有两件：`DispatchQueue.main.async` 这一跳，以及 `anchor: .center`。不共用它的目标选择。不引入 UIKit，不在 VM 里拿 `ScrollViewProxy`。
 
-同 pid：现有 scroll-target `onChange` 不跑，专用命令是这一次点卡的揭示。这是必须有命令的原因。
+同一次动作里，发布发生在 filter、OFF、`selectPidIfPresent` 之后。视图接到事件时，同步门看的是当时的 `sortedRows`。正常夹具里，写完后的名称查询与 OFF 会让 43 进入这份投影，门通过，async 之后 `scrollTo` 的是 43。这是这条合成计划的顺序，不是「async 回来时数据永远还在」的 Mac 保证。更早或更晚的样本、过滤若让 `request.pid` 不在当时的 `sortedRows`，门直接返回：不 `scrollTo`，不改 filter / 上涨 / 退出，不换一行重定位，不把请求留下次再试。门通过之后，闭包不再查选中或旧滚动目标。间隙里行若又消失，仍只对原来的 `request.pid` 调用 `scrollTo`；SwiftUI 对过期 id 的真实处理未在 Mac 上验证，本文不把它写成成功。
 
-pid 有变化：`selectedPid` 变化会使 `processListScrollTarget` 变化，现有 `onChange` 仍会调用同一个 helper；专用命令也调用它一次。源码契约是「一次动作一条专用命令」，外加选中身份自然变化时的现有钩子。本文不把这两次调用写成 SwiftUI 会合成一次视觉滚动，也不写成用户一定会看到跳两次。那种合并没有在 Mac 上验证，实现 PR 也不要补一条假日志。不删现有钩子，不为它再多发一条命令。
+同 pid：现有 scroll-target `onChange` 不跑。generation 变化使专用 `onChange` 再进一次 `revealTopApp`。同一目标的第二次请求（generation 再加一）仍各自走这个入口，不因为 pid 相同而省掉。
 
-`List` 当时不在层次里（过滤空态）时，这份新 `onChange` 还不在树上。状态变回 `.ready` 后，现有 `onAppear` 会用当时的 `processListScrollTarget` 揭示。专用命令仍然照发，供源码观察「一次动作一条」。本文不断言 SwiftUI 会在出现时补发当时已经存在的 `onChange`。
+pid 有变化：`processListScrollTarget` 的现有 `onChange` 仍调用 `revealProcessListTarget`；专用入口另按 `request.pid` 走自己的门和 `scrollTo`。不人工把这两次合成一次，也不写成视觉上恰好滚一次。那种合并没有在 Mac 上验证。不删现有钩子，不为它再多发一条 Top 命令。
+
+`List` 当时不在层次里（过滤空态）时，这份新 `onChange` 还不在树上。状态变回 `.ready` 后，现有 `onAppear` 仍用当时的 `processListScrollTarget` 走旧 helper。那是旧的普通选中揭示，不把 Top 请求收成一份持久 pending。本文不断言 SwiftUI 会在出现时补发当时已经存在的 Top `onChange`。
 
 不在 `filter` 或 `risingOnlyFilter` 上加 `onChange`。名称框是 `AppFilterField(text: $vm.filter)`，上涨开关是 `Toggle(..., isOn: $vm.risingOnlyFilter)`。挂在这两枚值上会让普通输入和开关也滚动。
 
@@ -4927,7 +4940,7 @@ pid 有变化：`selectedPid` 变化会使 `processListScrollTarget` 变化，�
 - 不改 `ProcessNameFilter`、`MemoryGrowthRisingFilter.apply` / `selectedPid`、`ProcessTableSort`
 - 不在纯函数里重算 `TopConsumer`，不在同组里另挑 pid，不处理卡片未给出的平局
 - 不为 nil 卡片加手势，不在 CPU / 网络 / 磁盘总览加这张卡的调用
-- 不改 `processListScrollTarget` 的定义，不用它的非 nil 代表可见
+- 不改 `processListScrollTarget` 的定义，不用它的非 nil 代表可见。不改 `revealProcessListTarget` 的目标。Top 请求不退回它，也不在没有可见行时改滚当前选中
 - 不把揭示做成选中历史、pin，或第二份 `selectedPid`
 - 不改 quit 观察器、store、失败文案、冻结投影
 - 不改 Sampler、采样节奏、菜单栏、资源详情
@@ -4942,9 +4955,9 @@ pid 有变化：`selectedPid` 变化会使 `processListScrollTarget` 变化，�
 | `Pulse/Models/TopAppLocation.swift` | 新的纯函数 |
 | `Package.swift` | `sources` 加入该文件 |
 | `project.pbxproj` | 与现有模型相同，增加文件引用与 App target 的 Sources |
-| `Pulse/ViewModels/MemoryDashboardVM.swift` | 一处可选发布属性与 `locateMemoryTopApp` |
+| `Pulse/ViewModels/MemoryDashboardVM.swift` | 一处可选发布属性、`locateMemoryTopApp`，以及非发布的 `sortedRows` 计算属性（公式与今天 pane 上的那条相同） |
 | `Pulse/Views/OverviewSection.swift` | 唯一调用点。绑定一次 `leading`，闭包传 name 与 pid |
-| `Pulse/Views/ProcessTablePane.swift` | `processList` 增加揭示 `onChange`，调用现成 helper |
+| `Pulse/Views/ProcessTablePane.swift` | Top 的 `onChange` 只调用 `revealTopApp(request:proxy:)`。旧 `revealProcessListTarget` 仍只服务 scroll-target `onChange` 与 `onAppear` |
 | 十五期清空接线测试 | 只把 `@Published` 计数从 22 改为 23，并点名新属性 |
 | 新测试 | reducer 与源码接线分开，见下节 |
 
@@ -4975,7 +4988,9 @@ Reducer 测试调用纯函数和现成 `ordered`，不编译 `MemoryDashboardVM`
 - 纯函数源码不含 `TopConsumer`、`leading`、`selectedPid`
 - VM 方法源码先 `guard let plan`，其后 `risingOnlyFilter = false`、`selectPidIfPresent`、`topAppLocateReveal =` 各一处且按这个顺序；`filter =` 只在 replace 分支；无 `selectedPid =`、无 `await`、无 `sample()`
 - `OverviewSection` 只有一处 `TopConsumer.leading`、一处 `locateMemoryTopApp`，把绑定值的 `name` 和闭包 pid 传入；没有 `selectedPid =`
-- `ProcessTablePane` 的新 `onChange` 调用 `revealProcessListTarget`；该函数仍含 `DispatchQueue.main.async` 与 `scrollTo`；旧的 `processListScrollTarget` `onChange` 与 `onAppear` 还在
+- `ProcessTablePane` 里只有 Top 的 `onChange(of: vm.topAppLocateReveal)` 调用 `revealTopApp`。该函数同时含 `vm.sortedRows.contains(where: { $0.pid == request.pid })` 与 `scrollTo(request.pid, anchor: .center)`，并且 `scrollTo` 在 `DispatchQueue.main.async` 闭包里。三处缺一即红。空白或换行可以不同，身份门和 `request.pid` 这两个匹配都要在。函数体不用 `processListScrollTarget` 或 `selectedPid` 当滚动目标
+- `revealProcessListTarget` 仍含对 `processListScrollTarget` 的读取、`DispatchQueue.main.async` 与 `scrollTo`。旧的 `onChange(of: vm.processListScrollTarget)` 与 `onAppear` 仍调用它，不改为调用 `revealTopApp`
+- 反向夹具只约束专用入口：`sortedRows` 不含请求 pid 时这条函数在 `scrollTo` 前返回。源码接线不是点击、不是真的 `ScrollView`、也不是视口已经滚到
 - CPU / 网络 / 磁盘总览源码不含 `locateMemoryTopApp`
 - `clearMemoryPageFilters` 语句仍是那两句。`@Published` 为 23，新属性没有 `didSet`，全文件 `didSet` 仍为 2
 
@@ -4990,7 +5005,7 @@ Reducer 测试调用纯函数和现成 `ordered`，不编译 `MemoryDashboardVM`
 | 同 pid 已选中就跳过 OFF 或揭示 | 计划不读 `selectedPid`。VM 三步都在 nil 返回之后，无同 pid 条件 |
 | 先写 filter，门失败再补救 | nil 在任何写入之前返回 |
 | `await` 之后再读 `rows` 重算代表 | 方法无 `await`。代表 pid 是参数，函数不调用 `leading` |
-| 用 `scrollTarget != nil` 当作已经滚到 | 揭示是另一枚 Equatable。同 pid 时 scroll target 不变 |
+| 用 `scrollTarget != nil` 当作已经滚到，或 Top 入口再调用旧 helper | 同 pid 时 scroll target 不变。`revealTopApp` 只看 `sortedRows` 是否含 `request.pid`，`scrollTo` 只用该 pid |
 | 在 filter 上 `onChange`，输入每个字都滚动 | 只观察 `topAppLocateReveal` |
 | 新 pid 时现有钩子加新命令被写成「已证实只滚一次」 | 源码只锁一条专用命令。视觉合并不写进验收 |
 | 点卡当拍被写成一定会清掉无徽标选中 | 今天的直接赋值不调用 `applyRisingOnlySelection`。清发生在后来那次调用且上涨仍 ON 时 |
@@ -5008,7 +5023,7 @@ Reducer 测试调用纯函数和现成 `ordered`，不编译 `MemoryDashboardVM`
 - [ ] 例子 2、3：空白 OFF 与空白 ON 都保持空白 raw；ON 那条仍先 OFF 再选中再揭示
 - [ ] 例子 4：已选 43、Safari、上涨 OFF → 查询变为 Chrome、选中仍 43、投影含 43、专用揭示恰好一条。不把非 nil 的 `scrollTarget` 当成已经可见
 - [ ] 例子 5、6：消失或改名是 nil，含不发揭示
-- [ ] 揭示属性是唯一新增 `@Published`（22 调整为 23），无 `didSet`，无选中历史。`processList` 的新 `onChange` 调用现成 `revealProcessListTarget`，其 `main.async` 仍在。pid 变化时现有 scroll-target 钩子保留。不宣称 SwiftUI 合成或真实居中
+- [ ] 揭示属性是唯一新增 `@Published`（22 调整为 23），无 `didSet`，无选中历史。`sortedRows` 仍是今天那条 `visibleRows` + `tableSort` 公式，不另发布。Top 的 `onChange` 只进 `revealTopApp(request:proxy:)`：同步门是 `vm.sortedRows.contains(where: { $0.pid == request.pid })`，`main.async` 里只 `scrollTo(request.pid, anchor: .center)`。43 不在这份投影里则不滚动，也不改滚选中 9。旧 `revealProcessListTarget` 仍只服务 `processListScrollTarget` 的 `onChange` 与 `onAppear`。不宣称 SwiftUI 合成、真实居中，或 async 间隙里行集不变
 - [ ] 不改 quit store / session。选中数值变化时仍是现成 `followListSelection`：活的新 pid 成为主体；不保证详情当拍出现；旧的不可用记录留在 store。同 pid 的 OFF 不给选中带来副作用
 - [ ] 名称过滤谓词、上涨谓词、清空方法的两条语句、N=5、Sampler 都不改。后续样本不持续改写这次 filter
 - [ ] 实现 PR 有真实的编译失败红，以及 Linux 上 reducer 与源码接线的日志。这些日志不是 Mac 点卡，也不是 Xcode 已编译
@@ -5021,8 +5036,9 @@ Reducer 测试调用纯函数和现成 `ordered`，不编译 `MemoryDashboardVM`
 
 未验，不挡本设计合并，实现 PR 在 Linux 上也不能把它们勾成已过：
 
-- Mac 上点这张卡、SwiftUI `List` 重建、高亮、真实滚到居中
-- 新 pid 时两次 `scrollTo` 调度是否被合成成一次视觉滚动
+- Mac 上点这张卡、SwiftUI `List` 重建、高亮、真实滚到居中、过期 id 的实际处理
+- 新 pid 时旧 helper 与 `revealTopApp` 两次 `scrollTo` 调度是否被合成成一次视觉滚动
+- 源码接线不等于点击、真的滚动或视口里已经看见该行
 - Xcode 编译 App，以及 `project.pbxproj` 下的实际运行
 - 本设计 PR 没有 Mac 日志，也不做手势埋点
 
