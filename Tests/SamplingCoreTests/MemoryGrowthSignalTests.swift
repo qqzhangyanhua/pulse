@@ -125,6 +125,41 @@ final class MemoryGrowthSignalTests: XCTestCase {
         XCTAssertEqual(MemoryGrowthSignal.evaluate(earlier), .rising)
     }
 
+    func testRisingCopyNamesMemoryFootprint() {
+        XCTAssertEqual(MemoryGrowthCopy.rising, "近期内存占用上涨")
+        XCTAssertFalse(MemoryGrowthCopy.rising.contains("驻留"))
+        XCTAssertFalse(MemoryGrowthCopy.rising.contains("泄漏"))
+        XCTAssertFalse(MemoryGrowthCopy.rising.contains("危险"))
+        XCTAssertFalse(MemoryGrowthCopy.rising.localizedCaseInsensitiveContains("leak"))
+    }
+
+    func testBasisCopyNamesMemoryFootprint() {
+        XCTAssertEqual(MemoryGrowthCopy.basis, "当前进程近期趋势 · 基于现有内存占用")
+        XCTAssertEqual(MemoryGrowthCopy.basis(for: .rising), "当前进程近期趋势 · 基于现有内存占用")
+        XCTAssertFalse(MemoryGrowthCopy.basis.contains("驻留"))
+        XCTAssertFalse(MemoryGrowthCopy.basis.contains("泄漏"))
+        XCTAssertFalse(MemoryGrowthCopy.basis.contains("危险"))
+        XCTAssertFalse(MemoryGrowthCopy.basis.localizedCaseInsensitiveContains("leak"))
+    }
+
+    func testListHelpNamesMemoryFootprintAndKeepsBadgeTitle() {
+        let help = "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期内存占用序列判断趋势。"
+        XCTAssertEqual(MemoryGrowthListCopy.help, help)
+        XCTAssertEqual(MemoryGrowthListCopy.title, "上涨")
+        let sentences = [
+            MemoryGrowthCopy.rising,
+            MemoryGrowthCopy.basis,
+            MemoryGrowthListCopy.help,
+            MemoryGrowthListCopy.title,
+        ]
+        for sentence in sentences {
+            XCTAssertFalse(sentence.contains("驻留"), sentence)
+            XCTAssertFalse(sentence.contains("泄漏"), sentence)
+            XCTAssertFalse(sentence.contains("危险"), sentence)
+            XCTAssertFalse(sentence.localizedCaseInsensitiveContains("leak"), sentence)
+        }
+    }
+
     func testSignalNamesDoNotClaimALeakOrDanger() {
         let names = [
             String(describing: MemoryGrowthSignal.insufficient),

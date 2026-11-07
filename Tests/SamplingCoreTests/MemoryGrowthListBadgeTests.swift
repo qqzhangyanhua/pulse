@@ -4,7 +4,7 @@ import XCTest
 final class MemoryGrowthListBadgeTests: XCTestCase {
     func testLockedCopyIsShortBadgeAndCalmHelp() {
         XCTAssertEqual(MemoryGrowthListCopy.title, "上涨")
-        XCTAssertEqual(MemoryGrowthListCopy.help, "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。")
+        XCTAssertEqual(MemoryGrowthListCopy.help, "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期内存占用序列判断趋势。")
         XCTAssertNotEqual(MemoryGrowthListCopy.title, "持续上涨")
         XCTAssertNotEqual(MemoryGrowthListCopy.title, MemoryGrowthCopy.rising)
     }

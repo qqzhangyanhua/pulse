@@ -6,15 +6,116 @@ import XCTest
 final class MemoryDetailPresentationTests: XCTestCase {
     private let gib: UInt64 = 1_073_741_824
 
-    func testMemoryPagePositiveTotalUsesResidentTitleAndShareCaption() {
+    func testMemoryPagePositiveTotalUsesFootprintTitleAndShareCaption() {
         let cases: [(UInt64, UInt64)] = shareBands() + [(0, 16 * gib)]
         for (part, total) in cases {
             let share = ByteFormat.share(part: part, total: total)
             let copy = MemoryDetailPresentation.field(page: .memory, part: part, total: total)
-            XCTAssertEqual(copy.title, "驻留内存", "part \(part) total \(total)")
-            XCTAssertEqual(copy.caption, "占物理内存的 \(share)（按驻留内存计算）")
+            XCTAssertEqual(copy.title, "内存占用", "part \(part) total \(total)")
+            XCTAssertEqual(copy.caption, "占物理内存的 \(share)（按内存占用计算）")
             XCTAssertNil(copy.help)
             XCTAssertFalse(copy.caption.contains("GB"))
+        }
+    }
+
+    func testMemoryPageShareAboveOneHundredIsNotClamped() {
+        let copy = MemoryDetailPresentation.field(page: .memory, part: 150, total: 100)
+        XCTAssertEqual(copy.title, "内存占用")
+        XCTAssertEqual(copy.caption, "占物理内存的 150%（按内存占用计算）")
+        XCTAssertNil(copy.help)
+        XCTAssertNotEqual(copy.caption, "占物理内存的 100%（按内存占用计算）")
+    }
+
+    func testPartialResidentGroupUsesPartialNoteOnTheMemoryPage() {
+        let withTotal = MemoryDetailPresentation.field(
+            page: .memory,
+            part: 150,
+            total: 100,
+            source: .resident,
+            residentIsPartial: true
+        )
+        XCTAssertEqual(withTotal.title, "驻留内存")
+        XCTAssertEqual(withTotal.caption, "占物理内存的 150%（部分按驻留内存计算）")
+        XCTAssertNil(withTotal.help)
+        XCTAssertNotEqual(withTotal.caption, "占物理内存的 150%（按驻留内存计算）")
+
+        let help = "部分按驻留内存。当前没有物理内存总量，不显示占比。"
+        for total in [UInt64?.none, UInt64(0)] {
+            let missing = MemoryDetailPresentation.field(
+                page: .memory,
+                part: 12_345,
+                total: total,
+                source: .resident,
+                residentIsPartial: true
+            )
+            XCTAssertEqual(missing.title, "驻留内存", "total \(String(describing: total))")
+            XCTAssertEqual(missing.caption, "占物理内存")
+            XCTAssertEqual(missing.help, help)
+            XCTAssertFalse(missing.caption.contains("%"))
+        }
+
+        let single = MemoryDetailPresentation.field(
+            page: .memory,
+            part: 150,
+            total: 100,
+            source: .resident
+        )
+        XCTAssertEqual(single.title, "驻留内存")
+        XCTAssertEqual(single.caption, "占物理内存的 150%（按驻留内存计算）")
+        XCTAssertFalse(single.caption.contains("部分按驻留内存"))
+
+        let footprint = MemoryDetailPresentation.field(
+            page: .memory,
+            part: 150,
+            total: 100,
+            source: .footprint,
+            residentIsPartial: true
+        )
+        XCTAssertEqual(footprint.title, "内存占用")
+        XCTAssertEqual(footprint.caption, "占物理内存的 150%（按内存占用计算）")
+        XCTAssertNil(footprint.help)
+
+        let cpu = MemoryDetailPresentation.field(
+            page: .cpu,
+            part: 8 * gib,
+            total: 16 * gib,
+            source: .resident,
+            residentIsPartial: true
+        )
+        XCTAssertEqual(cpu.title, "内存")
+        XCTAssertEqual(cpu.caption, "占 16 GB 的 50%")
+        XCTAssertNil(cpu.help)
+
+        let blob = [withTotal.title, withTotal.caption, help].joined(separator: "\n")
+        for word in ["泄漏", "leak", "危险"] {
+            XCTAssertFalse(blob.localizedCaseInsensitiveContains(word), word)
+        }
+    }
+
+    func testResidentSourceKeepsResidentTitleAndMarksTheBasis() {
+        let withTotal = MemoryDetailPresentation.field(
+            page: .memory,
+            part: 150,
+            total: 100,
+            source: .resident
+        )
+        XCTAssertEqual(withTotal.title, "驻留内存")
+        XCTAssertEqual(withTotal.caption, "占物理内存的 150%（按驻留内存计算）")
+        XCTAssertTrue(withTotal.caption.contains("按驻留内存"))
+        XCTAssertNil(withTotal.help)
+
+        let help = "按驻留内存。当前没有物理内存总量，不显示占比。"
+        for total in [UInt64?.none, UInt64(0)] {
+            let missing = MemoryDetailPresentation.field(
+                page: .memory,
+                part: 12_345,
+                total: total,
+                source: .resident
+            )
+            XCTAssertEqual(missing.title, "驻留内存", "total \(String(describing: total))")
+            XCTAssertEqual(missing.caption, "占物理内存")
+            XCTAssertEqual(missing.help, help)
+            XCTAssertFalse(missing.caption.contains("%"))
         }
     }
 
@@ -48,11 +149,11 @@ final class MemoryDetailPresentationTests: XCTestCase {
         }
     }
 
-    func testMemoryPageMissingTotalHelpStatesResidentAndNoShare() {
-        let help = "此数值为驻留内存。当前没有物理内存总量，不显示占比。"
+    func testMemoryPageMissingTotalHelpStatesFootprintAndNoShare() {
+        let help = "此数值为内存占用。当前没有物理内存总量，不显示占比。"
         for total in [UInt64?.none, UInt64(0)] {
             let copy = MemoryDetailPresentation.field(page: .memory, part: 12_345, total: total)
-            XCTAssertEqual(copy.title, "驻留内存")
+            XCTAssertEqual(copy.title, "内存占用")
             XCTAssertEqual(copy.caption, "占物理内存")
             XCTAssertEqual(copy.help, help)
         }
@@ -83,11 +184,20 @@ final class MemoryDetailPresentationTests: XCTestCase {
         XCTAssertEqual(ByteFormat.gibWhole(16 * gib), "16 GB")
         XCTAssertEqual(ByteFormat.share(part: 8 * gib, total: 16 * gib), "50%")
         XCTAssertEqual(sixteen.caption, "占 16 GB 的 50%")
+        let residentOnCPU = MemoryDetailPresentation.field(
+            page: .cpu,
+            part: 8 * gib,
+            total: 16 * gib,
+            source: .resident
+        )
+        XCTAssertEqual(residentOnCPU.title, "内存")
+        XCTAssertEqual(residentOnCPU.caption, sixteen.caption)
+        XCTAssertNil(residentOnCPU.help)
     }
 
     func testRisingDetailCaptionAndBasis() {
-        XCTAssertEqual(MemoryGrowthCopy.rising, "近期驻留内存上涨")
-        XCTAssertEqual(MemoryGrowthCopy.basis, "当前进程近期趋势 · 基于现有驻留采样序列")
+        XCTAssertEqual(MemoryGrowthCopy.rising, "近期内存占用上涨")
+        XCTAssertEqual(MemoryGrowthCopy.basis, "当前进程近期趋势 · 基于现有内存占用")
         XCTAssertEqual(MemoryGrowthCopy.basis(for: .rising), MemoryGrowthCopy.basis)
         XCTAssertFalse(MemoryGrowthCopy.rising.contains("分钟"))
         XCTAssertFalse(MemoryGrowthCopy.basis.contains("分钟"))
@@ -100,8 +210,8 @@ final class MemoryDetailPresentationTests: XCTestCase {
             detailSeries: series(count: MemoryGrowthSignal.minSamples, step: 1_048_576)
         )
         XCTAssertEqual(slot?.title, "内存趋势")
-        XCTAssertEqual(slot?.caption, "近期驻留内存上涨")
-        XCTAssertEqual(slot?.basis, "当前进程近期趋势 · 基于现有驻留采样序列")
+        XCTAssertEqual(slot?.caption, "近期内存占用上涨")
+        XCTAssertEqual(slot?.basis, "当前进程近期趋势 · 基于现有内存占用")
         XCTAssertNotEqual(slot?.caption, MemoryGrowthListCopy.title)
         XCTAssertNotEqual(slot?.caption, MemoryGrowthListCopy.help)
     }
@@ -158,14 +268,14 @@ final class MemoryDetailPresentationTests: XCTestCase {
 
     func testListBadgeCopyAndIndependentRingStayPut() {
         XCTAssertEqual(MemoryGrowthListCopy.title, "上涨")
-        XCTAssertEqual(MemoryGrowthListCopy.help, "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。")
-        XCTAssertNotEqual(MemoryGrowthListCopy.title, "近期驻留内存上涨")
-        XCTAssertNotEqual(MemoryGrowthListCopy.help, "近期驻留内存上涨")
+        XCTAssertEqual(MemoryGrowthListCopy.help, "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期内存占用序列判断趋势。")
+        XCTAssertNotEqual(MemoryGrowthListCopy.title, "近期内存占用上涨")
+        XCTAssertNotEqual(MemoryGrowthListCopy.help, "近期内存占用上涨")
         XCTAssertNotEqual(MemoryGrowthListCopy.title, MemoryGrowthCopy.rising)
 
         let rising = series(count: 80, step: 1_048_576)
         let badge = MemoryGrowthList.badge(page: .memory, rowPid: 3, seriesByPid: [3: rising])
-        XCTAssertEqual(badge, MemoryGrowthListBadge(title: "上涨", help: "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。"))
+        XCTAssertEqual(badge, MemoryGrowthListBadge(title: "上涨", help: "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期内存占用序列判断趋势。"))
         XCTAssertEqual(
             MemoryGrowthSidebar.slot(page: .memory, selectedPid: 9, detailSeries: rising)?.caption,
             MemoryGrowthCopy.rising
@@ -190,12 +300,26 @@ final class MemoryDetailPresentationTests: XCTestCase {
 
     func testNewDetailCopyOmitsBannedWords() {
         var lines: [String] = []
+        let sources: [(ProcessMemorySource, Bool)] = [
+            (.footprint, false),
+            (.footprint, true),
+            (.resident, false),
+            (.resident, true),
+        ]
         for page in DashboardPage.allCases {
-            for total in [UInt64?.none, UInt64(0), 16 * gib] {
-                let copy = MemoryDetailPresentation.field(page: page, part: 42, total: total)
-                lines.append(copy.title)
-                lines.append(copy.caption)
-                lines.append(copy.help ?? "")
+            for (source, partial) in sources {
+                for total in [UInt64?.none, UInt64(0), 16 * gib] {
+                    let copy = MemoryDetailPresentation.field(
+                        page: page,
+                        part: 42,
+                        total: total,
+                        source: source,
+                        residentIsPartial: partial
+                    )
+                    lines.append(copy.title)
+                    lines.append(copy.caption)
+                    lines.append(copy.help ?? "")
+                }
             }
         }
         lines.append(contentsOf: [

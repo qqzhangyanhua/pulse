@@ -5,7 +5,10 @@ struct RawProcessSample: Sendable, Equatable {
     let pid: Int32
     let comm: String
     let path: String?
-    let memoryBytes: UInt64
+    /// `proc_taskinfo` resident size. The sampler chooses the row value.
+    let residentBytes: UInt64
+    /// `ri_phys_footprint` from the same rusage read as disk IO. Nil when that call fails.
+    let footprintBytes: UInt64?
     let threadCount: Int
     let userTimeNs: UInt64
     let systemTimeNs: UInt64
@@ -69,30 +72,42 @@ enum ProcessEnumerator {
             pulse_proc_pidpath(pid, buffer.baseAddress, UInt32(buffer.count))
         }
         let path = pathLen > 0 ? String(cString: pathBuffer) : nil
-        let diskIO = readDiskIO(pid: pid)
+        let rusage = readRusage(pid: pid)
 
         return RawProcessSample(
             pid: pid,
             comm: name,
             path: path,
-            memoryBytes: info.pti_resident_size,
+            residentBytes: info.pti_resident_size,
+            footprintBytes: rusage?.footprintBytes,
             threadCount: max(0, Int(info.pti_threadnum)),
             userTimeNs: info.pti_total_user,
             systemTimeNs: info.pti_total_system,
-            diskBytesRead: diskIO?.read,
-            diskBytesWritten: diskIO?.written
+            diskBytesRead: rusage?.bytesRead,
+            diskBytesWritten: rusage?.bytesWritten
         )
     }
 
     /// rusage failure must not drop the row. SIP / kernel tasks often return EPERM.
-    private static func readDiskIO(pid: pid_t) -> (read: UInt64, written: UInt64)? {
+    /// One call supplies disk counters and footprint. A zero footprint is a real reading.
+    private static func readRusage(pid: pid_t) -> ProcessRusageSample? {
         var info = PulseRusageInfoV4()
         let status = withUnsafeMutablePointer(to: &info) { pointer in
             pulse_proc_pid_rusage(pid, rusageInfoV4, pointer)
         }
         guard status == 0 else { return nil }
-        return (info.ri_diskio_bytesread, info.ri_diskio_byteswritten)
+        return ProcessRusageSample(
+            bytesRead: info.ri_diskio_bytesread,
+            bytesWritten: info.ri_diskio_byteswritten,
+            footprintBytes: info.ri_phys_footprint
+        )
     }
+}
+
+private struct ProcessRusageSample {
+    let bytesRead: UInt64
+    let bytesWritten: UInt64
+    let footprintBytes: UInt64
 }
 
 struct ProcessIdentity: Sendable, Equatable {
@@ -200,7 +215,7 @@ private func pulse_proc_pid_rusage(
     _ buffer: UnsafeMutableRawPointer?
 ) -> Int32
 
-/// Matches Darwin `struct rusage_info_v4` (sys/resource.h). Only `ri_diskio_*` is consumed.
+/// Matches Darwin `struct rusage_info_v4` (sys/resource.h). Disk bytes and `ri_phys_footprint` are consumed.
 private struct PulseRusageInfoV4 {
     var ri_uuid: (
         UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,

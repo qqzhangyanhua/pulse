@@ -6,9 +6,10 @@ final class ResourceDetailPageSourceTests: XCTestCase {
     func testMemoryBranchKeepsThePhase17OrderAndFieldBody() throws {
         let presentation = try repoText("Pulse/Models/MemoryDetailPresentation.swift")
         let field = try functionBody(named: "field", in: presentation)
-        XCTAssertTrue(field.contains("let title = page == .memory ? \"驻留内存\" : \"内存\""))
+        XCTAssertTrue(field.contains("source == .footprint ? \"内存占用\" : \"驻留内存\""))
         XCTAssertTrue(field.contains("guard let total, total > 0 else"))
-        XCTAssertTrue(field.contains("占物理内存的 \\(share)（按驻留内存计算）"))
+        XCTAssertTrue(field.contains("按内存占用计算"))
+        XCTAssertTrue(field.contains("按驻留内存计算"))
         XCTAssertTrue(field.contains("ByteFormat.share(part: part, total: total)"))
         XCTAssertFalse(field.contains("lastLive"))
         XCTAssertFalse(field.contains("FrozenMemory"))

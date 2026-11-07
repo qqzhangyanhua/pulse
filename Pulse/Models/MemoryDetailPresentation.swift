@@ -10,25 +10,41 @@ struct MemoryDetailFieldCopy: Equatable, Sendable {
     let help: String?
 }
 
-/// Page-gated memory detail copy. Memory uses the resident title and share sentence.
-/// Other pages keep today's gib caption. Missing totals never call `share`.
+/// Page-gated memory detail copy. The memory page names footprint unless the row fell back.
+/// An app-group row that includes a resident member says 「部分按驻留内存」.
+/// An ungrouped resident row does not. Other pages ignore source.
+/// Missing totals never call `share`.
 enum MemoryDetailPresentation {
-    static let missingTotalHelp = "此数值为驻留内存。当前没有物理内存总量，不显示占比。"
-
-    static func field(page: DashboardPage, part: UInt64, total: UInt64?) -> MemoryDetailFieldCopy {
-        let title = page == .memory ? "驻留内存" : "内存"
+    static func field(
+        page: DashboardPage,
+        part: UInt64,
+        total: UInt64?,
+        source: ProcessMemorySource = .footprint,
+        residentIsPartial: Bool = false
+    ) -> MemoryDetailFieldCopy {
+        let title = page == .memory
+            ? (source == .footprint ? "内存占用" : "驻留内存")
+            : "内存"
         guard let total, total > 0 else {
             return MemoryDetailFieldCopy(
                 title: title,
                 caption: "占物理内存",
-                help: page == .memory ? missingTotalHelp : nil
+                help: page == .memory ? missingTotalHelp(source, residentIsPartial: residentIsPartial) : nil
             )
         }
         let share = ByteFormat.share(part: part, total: total)
         if page == .memory {
+            let basis: String
+            if source == .footprint {
+                basis = "按内存占用计算"
+            } else if residentIsPartial {
+                basis = "部分按驻留内存计算"
+            } else {
+                basis = "按驻留内存计算"
+            }
             return MemoryDetailFieldCopy(
                 title: title,
-                caption: "占物理内存的 \(share)（按驻留内存计算）",
+                caption: "占物理内存的 \(share)（\(basis)）",
                 help: nil
             )
         }
@@ -37,6 +53,19 @@ enum MemoryDetailPresentation {
             caption: "占 \(ByteFormat.gibWhole(total)) 的 \(share)",
             help: nil
         )
+    }
+
+    private static func missingTotalHelp(
+        _ source: ProcessMemorySource,
+        residentIsPartial: Bool
+    ) -> String {
+        switch source {
+        case .footprint:
+            return "此数值为内存占用。当前没有物理内存总量，不显示占比。"
+        case .resident:
+            let lead = residentIsPartial ? "部分按驻留内存" : "按驻留内存"
+            return "\(lead)。当前没有物理内存总量，不显示占比。"
+        }
     }
 }
 

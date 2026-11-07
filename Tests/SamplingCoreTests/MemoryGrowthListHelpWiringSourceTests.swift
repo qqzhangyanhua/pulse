@@ -5,7 +5,7 @@ import XCTest
 /// These tests read Swift source. They do not draw SwiftUI, hover a tooltip,
 /// move keyboard focus, or run VoiceOver. A passing read is not a Mac tooltip.
 final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
-    private let sentence = "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。"
+    private let sentence = "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期内存占用序列判断趋势。"
     private let sharedHelp = ".help(MemoryGrowthListCopy.help)"
     private let toggleCall = "Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)"
 
@@ -127,7 +127,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         XCTAssertFalse(package.contains("MemoryDashboardVM.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
-        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 64, "machine overview adds MachineOverview.swift")
+        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 65, "process memory choice adds ProcessMemoryChoice.swift")
         let build = try markedSection("PBXBuildFile", in: project)
         let refs = try markedSection("PBXFileReference", in: project)
         let models = try modelsGroup(in: project)
