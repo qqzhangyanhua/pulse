@@ -20,6 +20,12 @@ struct MemoryDashboardView: View {
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 if vm.selectedPage != .machine {
+                    if WindowedAppChrome.showsToggle(page: vm.selectedPage) {
+                        Toggle(WindowedAppChrome.toggleTitle, isOn: $vm.windowedOnlyFilter)
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                            .help(WindowedAppChrome.help)
+                    }
                     if MemoryRisingOnlyChrome.showsToggle(page: vm.selectedPage) {
                         Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)
                             .toggleStyle(.switch)

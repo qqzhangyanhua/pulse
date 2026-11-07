@@ -111,4 +111,27 @@ extension MemoryDashboardVM {
             sidebarSubjectPid = effect.sidebarSubjectPid
         }
     }
+
+    /// Same-beat clear when the windowed keep hides `selectedPid`. OFF does not restore.
+    func applyWindowedOnlySelection() {
+        let next = WindowedAppFilter.selectedPid(
+            current: selectedPid,
+            page: selectedPage,
+            windowedOnly: windowedOnlyFilter,
+            windowedPids: WindowedAppLookup.pids(in: rows)
+        )
+        guard next != selectedPid else { return }
+        let effect = ProcessQuitSession.risingOnlySelection(
+            nextListPid: next,
+            sidebarSubjectPid: sidebarSubjectPid,
+            rows: rows,
+            store: quitOutcome
+        )
+        if selectedPid != effect.listSelectedPid {
+            selectedPid = effect.listSelectedPid
+        }
+        if sidebarSubjectPid != effect.sidebarSubjectPid {
+            sidebarSubjectPid = effect.sidebarSubjectPid
+        }
+    }
 }

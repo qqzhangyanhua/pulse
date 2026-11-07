@@ -68,8 +68,8 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
     func testLocateMethodSnapshotsThenWritesOnlyAfterThePlanGuard() throws {
         let source = try vmSource()
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: source), 1)
-        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 2)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 26)
+        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 3)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 27)
         XCTAssertEqual(occurrenceCount(of: "func locateMemoryTopApp(", in: source), 1)
         XCTAssertEqual(occurrenceCount(of: "topAppLocateReveal =", in: source), 1)
 
@@ -207,7 +207,10 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
     func testOrdinaryPathsDoNotPublishTheTopReveal() throws {
         let source = try vmSource()
         let clear = try functionBody(named: "clearMemoryPageFilters", in: source)
-        XCTAssertEqual(statements(in: clear), ["filter = \"\"", "risingOnlyFilter = false"])
+        XCTAssertEqual(
+            statements(in: clear),
+            ["filter = \"\"", "risingOnlyFilter = false", "windowedOnlyFilter = false"]
+        )
         XCTAssertFalse(clear.contains("topAppLocateReveal"))
 
         let filterLine = try lineContaining("var filter", in: source)

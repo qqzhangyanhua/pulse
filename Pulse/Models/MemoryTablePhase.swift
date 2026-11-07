@@ -29,7 +29,8 @@ enum MemoryTablePhaseResolver {
         visibleCount: Int,
         hasActiveNameFilter: Bool,
         risingOnly: Bool,
-        processListFailed: Bool
+        processListFailed: Bool,
+        windowedOnly: Bool = false
     ) -> MemoryTablePhase {
         if processCount == 0 {
             if loadState == .sampling { return .sampling }
@@ -44,6 +45,10 @@ enum MemoryTablePhaseResolver {
 
         // Name filter wins over a pure rising empty, including the pair.
         if hasActiveNameFilter {
+            return .nameFilterEmpty
+        }
+
+        if page == .memory, windowedOnly {
             return .nameFilterEmpty
         }
 
@@ -99,21 +104,24 @@ enum MemoryTableEmptyCopy {
 struct MemoryPageFilterClear: Equatable, Sendable {
     var filter: String
     var risingOnly: Bool
+    var windowedOnly: Bool = false
     var selectedPid: Int32?
 
     static func project(
         filter: String,
         risingOnly: Bool,
+        windowedOnly: Bool = false,
         selectedPid: Int32?,
         rows: [ProcessRow],
         page: DashboardPage,
         seriesByPid: [Int32: [ChartSample]]
     ) -> MemoryPageFilterClear {
-        // Always write both defaults, including when one input is already default.
-        _ = (filter, risingOnly)
+        // Always write the defaults, including when an input is already default.
+        _ = (filter, risingOnly, windowedOnly)
         return MemoryPageFilterClear(
             filter: "",
             risingOnly: false,
+            windowedOnly: false,
             selectedPid: MemoryGrowthRisingFilter.selectedPid(
                 current: selectedPid,
                 rows: rows,

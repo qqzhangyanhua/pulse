@@ -96,7 +96,7 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
         XCTAssertFalse(vm.contains("samplingWindowExpanded"))
         XCTAssertFalse(vm.contains("MemoryDetailSamplingWindow"))
         XCTAssertFalse(vm.contains("MemoryDetailPresentation"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 26, "machine page adds machineFacts")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 27, "windowed app filter adds windowedOnlyFilter")
 
         let didSet = try braceBody(after: "var selectedPid", in: vm)
         XCTAssertTrue(didSet.contains("detail = nil"))

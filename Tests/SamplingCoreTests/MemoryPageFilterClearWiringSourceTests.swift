@@ -35,8 +35,8 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         let body = try functionBody(named: "clearMemoryPageFilters", in: source)
         XCTAssertEqual(
             statements(in: body),
-            ["filter = \"\"", "risingOnlyFilter = false"],
-            "direct writes of the two existing fields, even when already default; not a VM instance"
+            ["filter = \"\"", "risingOnlyFilter = false", "windowedOnlyFilter = false"],
+            "direct writes of the three filter fields, even when already default; not a VM instance"
         )
     }
 
@@ -71,12 +71,12 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         let filterLine = try lineContaining("var filter", in: source)
         XCTAssertEqual(filterLine, "    @Published var filter = \"\"")
         XCTAssertFalse(filterLine.contains("didSet"), "do not add didSet on filter")
-        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 2, "no new didSet")
+        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 3, "windowedOnlyFilter adds one didSet")
         XCTAssertFalse(source.contains("onChange"), "VM gains no onChange")
         XCTAssertEqual(
             occurrenceCount(of: "@Published", in: source),
-            26,
-            "machine page adds machineFacts"
+            27,
+            "windowed app filter adds windowedOnlyFilter"
         )
         XCTAssertEqual(
             try lineContaining("var topAppLocateReveal", in: source).trimmingCharacters(in: .whitespaces),
