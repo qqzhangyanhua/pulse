@@ -91,6 +91,38 @@ enum HostMemoryReader {
     }()
 }
 
+/// Layout of `struct xsw_usage`. Kept local so a size mismatch stays a nil sample.
+struct SwapUsageRaw {
+    var xsu_total: UInt64 = 0
+    var xsu_avail: UInt64 = 0
+    var xsu_used: UInt64 = 0
+    var xsu_pagesize: UInt32 = 0
+    var xsu_encrypted: UInt32 = 0
+}
+
+/// `vm.swapusage` only. A failed read is nil and never a thrown host-memory error.
+enum SwapUsageReader {
+    static func read() -> UInt64? {
+        var raw = SwapUsageRaw()
+        var returnedSize = 0
+        let expectedSize = MemoryLayout<SwapUsageRaw>.size
+        let status = withUnsafeMutableBytes(of: &raw) { buffer -> Int32 in
+            var size = buffer.count
+            let result = sysctlbyname("vm.swapusage", buffer.baseAddress, &size, nil, 0)
+            returnedSize = size
+            return result
+        }
+        return SwapUsage.usedBytes(
+            from: SwapUsageSample(
+                status: status,
+                returnedSize: returnedSize,
+                expectedSize: expectedSize,
+                usedBytes: raw.xsu_used
+            )
+        )
+    }
+}
+
 /// UI only binds `normal | elevated`. Sysctl first, heuristic fallback if the key is missing.
 enum PressureProvider {
     static func resolve(usedRatio: Double, compressedRatio: Double) -> PressureLevel {

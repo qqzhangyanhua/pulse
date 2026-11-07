@@ -54,6 +54,7 @@ let package = Package(
                 "Models/NetworkPage.swift",
                 "Models/DiskPage.swift",
                 "Models/MachinePage.swift",
+                "Models/SwapUsage.swift",
                 "Sampling/CPULoad.swift",
                 "Sampling/HostNetwork.swift",
                 "Sampling/HostDisk.swift",

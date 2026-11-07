@@ -47,6 +47,7 @@ actor MemorySampler {
 
         let capturedAt = Date()
         append(host.pressureMetric, at: capturedAt, to: &pressureSeries)
+        let swapUsedBytes = SwapUsageReader.read()
 
         let snapshot = MemorySnapshot(
             usedBytes: host.usedBytes,
@@ -60,7 +61,8 @@ actor MemorySampler {
             pressure: host.pressure,
             pressureMetric: host.pressureMetric,
             pressureSeries: pressureSeries,
-            capturedAt: capturedAt
+            capturedAt: capturedAt,
+            swapUsedBytes: swapUsedBytes
         )
         let systemCpuPercent = consumeSystemCPU()
         let busiestCorePercent = consumeBusiestCore()
