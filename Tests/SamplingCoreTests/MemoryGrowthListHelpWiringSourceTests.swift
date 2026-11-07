@@ -7,7 +7,7 @@ import XCTest
 final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
     private let sentence = "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期内存占用序列判断趋势。"
     private let sharedHelp = ".help(MemoryGrowthListCopy.help)"
-    private let toggleCall = "Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)"
+    private let toggleCall = "title: MemoryRisingOnlyChrome.toggleTitle,"
 
     func testHelpLiteralIsOnlyTheStaticLet() throws {
         let model = try repoText("Pulse/Models/MemoryGrowthSignal.swift")
@@ -55,8 +55,8 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         XCTAssertTrue(code.contains("ToolbarItemGroup(placement: .primaryAction)"))
         XCTAssertEqual(occurrenceCount(of: "MemoryRisingOnlyChrome.showsToggle(page: vm.selectedPage)", in: code), 1)
         XCTAssertEqual(occurrenceCount(of: toggleCall, in: code), 1)
-        XCTAssertTrue(code.contains(".toggleStyle(.switch)"))
-        XCTAssertTrue(code.contains(".controlSize(.small)"))
+        XCTAssertTrue(code.contains("MemoryToolbarSwitch("))
+        XCTAssertFalse(code.contains(".toggleStyle(.switch)"))
 
         let toggleAt = try index(of: toggleCall, in: code)
         let fieldAt = try index(of: "AppFilterField(text: $vm.filter)", in: code)
@@ -67,14 +67,12 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         XCTAssertEqual(occurrenceCount(of: toggleCall, in: shows), 1)
         XCTAssertFalse(shows.contains("AppFilterField"))
 
-        let chain = try modifierChain(from: toggleCall, in: code)
         XCTAssertEqual(
-            compact(chain),
-            "Toggle(MemoryRisingOnlyChrome.toggleTitle,isOn:$vm.risingOnlyFilter).toggleStyle(.switch).controlSize(.small).help(MemoryGrowthListCopy.help)"
+            compact(shows),
+            "{MemoryToolbarSwitch(title:MemoryRisingOnlyChrome.toggleTitle,systemImage:\"chart.line.uptrend.xyaxis\",isOn:$vm.risingOnlyFilter).help(MemoryGrowthListCopy.help)}"
         )
-        XCTAssertEqual(occurrenceCount(of: sharedHelp, in: chain), 1)
-        XCTAssertFalse(chain.contains(".disabled"))
-        XCTAssertFalse(chain.contains(sentence))
+        XCTAssertFalse(shows.contains(".disabled"))
+        XCTAssertFalse(shows.contains(sentence))
     }
 
     func testBadgeRowReadsTheInstanceHelpOnlyWhenPresent() throws {
@@ -209,27 +207,6 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
             throw SourceSliceError.missing("body after \(needle)")
         }
         return try balancedSlice(from: brace, in: source, label: needle)
-    }
-
-    private func modifierChain(from toggle: String, in source: String) throws -> String {
-        guard let start = source.range(of: toggle)?.lowerBound else {
-            throw SourceSliceError.missing(toggle)
-        }
-        var lines: [String] = []
-        for line in source[start...].components(separatedBy: .newlines) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.hasPrefix("//") { continue }
-            if lines.isEmpty {
-                lines.append(trimmed)
-                continue
-            }
-            if trimmed.hasPrefix(".") {
-                lines.append(trimmed)
-                continue
-            }
-            break
-        }
-        return lines.joined(separator: "\n")
     }
 
     private func markedSection(_ name: String, in source: String) throws -> String {

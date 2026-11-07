@@ -137,7 +137,7 @@ final class AppGroupProjectionTests: XCTestCase {
         XCTAssertFalse(sampler.contains("groupedByApp"))
 
         let dashboard = try source("Pulse/Views/MemoryDashboardView.swift")
-        XCTAssertTrue(dashboard.contains("Toggle(AppGroupChrome.toggleTitle, isOn: $vm.groupedByApp)"))
+        XCTAssertTrue(dashboard.contains("title: AppGroupChrome.toggleTitle,"))
         let windowed = try XCTUnwrap(dashboard.range(of: "WindowedAppChrome.toggleTitle"))
         let grouped = try XCTUnwrap(dashboard.range(of: "AppGroupChrome.toggleTitle"))
         let rising = try XCTUnwrap(dashboard.range(of: "MemoryRisingOnlyChrome.toggleTitle"))

@@ -24,22 +24,28 @@ struct MemoryDashboardView: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 if vm.selectedPage != .machine {
                     if WindowedAppChrome.showsToggle(page: vm.selectedPage) {
-                        Toggle(WindowedAppChrome.toggleTitle, isOn: $vm.windowedOnlyFilter)
-                            .toggleStyle(.switch)
-                            .controlSize(.small)
-                            .help(WindowedAppChrome.help)
+                        MemoryToolbarSwitch(
+                            title: WindowedAppChrome.toggleTitle,
+                            systemImage: "macwindow",
+                            isOn: $vm.windowedOnlyFilter
+                        )
+                        .help(WindowedAppChrome.help)
                     }
                     if AppGroupChrome.showsToggle(page: vm.selectedPage) {
-                        Toggle(AppGroupChrome.toggleTitle, isOn: $vm.groupedByApp)
-                            .toggleStyle(.switch)
-                            .controlSize(.small)
-                            .help(AppGroupChrome.help)
+                        MemoryToolbarSwitch(
+                            title: AppGroupChrome.toggleTitle,
+                            systemImage: "square.stack.3d.up",
+                            isOn: $vm.groupedByApp
+                        )
+                        .help(AppGroupChrome.help)
                     }
                     if MemoryRisingOnlyChrome.showsToggle(page: vm.selectedPage) {
-                        Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)
-                            .toggleStyle(.switch)
-                            .controlSize(.small)
-                            .help(MemoryGrowthListCopy.help)
+                        MemoryToolbarSwitch(
+                            title: MemoryRisingOnlyChrome.toggleTitle,
+                            systemImage: "chart.line.uptrend.xyaxis",
+                            isOn: $vm.risingOnlyFilter
+                        )
+                        .help(MemoryGrowthListCopy.help)
                     }
                     AppFilterField(text: $vm.filter)
                 }
@@ -103,5 +109,44 @@ struct MemoryDashboardView: View {
         } else {
             update()
         }
+    }
+}
+
+/// macOS hides a `Toggle` title inside the unified toolbar, so the symbol and
+/// the short label are drawn here. On fills the chip; off stays a hairline outline.
+private struct MemoryToolbarSwitch: View {
+    let title: String
+    let systemImage: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Button {
+            isOn.toggle()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: systemImage)
+                    .font(.caption.weight(.semibold))
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+            }
+            .fixedSize(horizontal: true, vertical: false)
+            .foregroundStyle(isOn ? Color.white : Color.white.opacity(0.72))
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background {
+                Capsule()
+                    .fill(isOn ? PulsePalette.accent : Color.white.opacity(0.06))
+            }
+            .overlay {
+                Capsule()
+                    .strokeBorder(isOn ? Color.clear : PulsePalette.hairline, lineWidth: 1)
+            }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityValue(isOn ? "开" : "关")
+        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 }

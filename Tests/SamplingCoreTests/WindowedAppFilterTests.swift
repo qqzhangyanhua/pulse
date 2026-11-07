@@ -119,7 +119,7 @@ final class WindowedAppFilterTests: XCTestCase {
         XCTAssertFalse(sampler.contains("windowedOnly"))
 
         let dashboard = try source("Pulse/Views/MemoryDashboardView.swift")
-        XCTAssertTrue(dashboard.contains("Toggle(WindowedAppChrome.toggleTitle, isOn: $vm.windowedOnlyFilter)"))
+        XCTAssertTrue(dashboard.contains("title: WindowedAppChrome.toggleTitle,"))
         XCTAssertTrue(dashboard.contains(".help(WindowedAppChrome.help)"))
         let windowedAt = try XCTUnwrap(dashboard.range(of: "WindowedAppChrome.toggleTitle"))
         let risingAt = try XCTUnwrap(dashboard.range(of: "MemoryRisingOnlyChrome.toggleTitle"))

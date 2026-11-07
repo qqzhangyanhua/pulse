@@ -239,7 +239,7 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
 
     func testToolbarAndAppFilterFieldStayNameOnlyClear() throws {
         let dashboard = try repoText("Pulse/Views/MemoryDashboardView.swift")
-        let toggle = try range(of: "Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)", in: dashboard)
+        let toggle = try range(of: "title: MemoryRisingOnlyChrome.toggleTitle,", in: dashboard)
         let field = try range(of: "AppFilterField(text: $vm.filter)", in: dashboard)
         XCTAssertLessThan(
             toggle.lowerBound,
