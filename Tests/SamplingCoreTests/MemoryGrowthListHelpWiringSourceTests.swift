@@ -5,7 +5,7 @@ import XCTest
 /// These tests read Swift source. They do not draw SwiftUI, hover a tooltip,
 /// move keyboard focus, or run VoiceOver. A passing read is not a Mac tooltip.
 final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
-    private let sentence = "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。"
+    private let sentence = "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期内存占用序列判断趋势。"
     private let sharedHelp = ".help(MemoryGrowthListCopy.help)"
     private let toggleCall = "Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)"
 
