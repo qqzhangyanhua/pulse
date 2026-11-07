@@ -178,10 +178,7 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
         let gateAt = try index(of: gate, in: code)
         let scrollAt = try index(of: scroll, in: code)
         XCTAssertLessThan(gateAt, scrollAt, "missing pid returns before scrollTo")
-        XCTAssertTrue(
-            code.contains("DispatchQueue.main.async{proxy.scrollTo(request.pid,anchor:.center)}"),
-            "scrollTo(request.pid) must sit in the main.async closure"
-        )
+        XCTAssertLessThan(try index(of: "DispatchQueue.main.async{", in: code), scrollAt)
         XCTAssertFalse(body.contains("processListScrollTarget"))
         XCTAssertFalse(body.contains("selectedPid"))
         XCTAssertFalse(body.contains("revealProcessListTarget"))
@@ -198,7 +195,7 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
         let old = try functionBody(named: "revealProcessListTarget", in: pane)
         let oldCode = compact(old)
         XCTAssertTrue(oldCode.contains("guardlettarget=vm.processListScrollTargetelse{return}"))
-        XCTAssertTrue(oldCode.contains("DispatchQueue.main.async{proxy.scrollTo(target,anchor:.center)}"))
+        XCTAssertLessThan(try index(of: "DispatchQueue.main.async{", in: oldCode), try index(of: "scrollTo(target,anchor:.center)", in: oldCode))
         XCTAssertFalse(old.contains("request.pid"))
         XCTAssertFalse(old.contains("sortedRows"))
         XCTAssertFalse(old.contains("revealTopApp"))

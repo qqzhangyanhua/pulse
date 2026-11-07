@@ -74,6 +74,13 @@ enum ResourceTab: String, CaseIterable, Identifiable {
 
 struct ResourceTabs: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var selectionPill
+    @State private var highlighted: DashboardPage?
+
+    private static let selectionAnimation = Animation.smooth(duration: 0.34, extraBounce: 0)
+
+    private var shownPage: DashboardPage { highlighted ?? vm.selectedPage }
 
     var body: some View {
         HStack(spacing: 2) {
@@ -83,27 +90,40 @@ struct ResourceTabs: View {
         }
         .padding(3)
         .background(Color.white.opacity(0.05), in: Capsule())
+        .onAppear { if highlighted == nil { highlighted = vm.selectedPage } }
+        .onChange(of: vm.selectedPage) { _, newPage in
+            guard highlighted != newPage else { return }
+            moveHighlight(to: newPage)
+        }
     }
 
     private func enabledTab(_ tab: ResourceTab) -> some View {
-        let selected = vm.selectedPage == tab.page
+        let selected = shownPage == tab.page
         return Button {
+            if shownPage != tab.page {
+                moveHighlight(to: tab.page)
+            }
             vm.selectPage(tab.page)
         } label: {
-            HStack(spacing: 5) {
+            HStack(spacing: 0) {
                 Image(systemName: tab.symbol)
-                if selected {
-                    Text(tab.rawValue)
-                }
+                Text(tab.rawValue)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.leading, 5)
+                    .modifier(ResourceTabLabelCollapse(progress: selected ? 1 : 0))
+                    .accessibilityHidden(true)
             }
             .font(.caption.weight(.semibold))
             .foregroundStyle(selected ? Color.white : Color.white.opacity(0.78))
             .padding(.horizontal, selected ? 10 : 8)
             .padding(.vertical, 5)
-            .frame(minWidth: selected ? nil : 30, minHeight: 24)
+            .frame(minWidth: 30, minHeight: 24)
             .background {
                 if selected {
-                    Capsule().fill(PulsePalette.accent)
+                    Capsule()
+                        .fill(PulsePalette.accent)
+                        .matchedGeometryEffect(id: "resource-tab-pill", in: selectionPill)
                 }
             }
             .contentShape(Capsule())
@@ -112,6 +132,52 @@ struct ResourceTabs: View {
         .help(tab.rawValue)
         .accessibilityLabel(tab.rawValue)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
+    }
+
+    private func moveHighlight(to page: DashboardPage) {
+        if reduceMotion {
+            highlighted = page
+        } else {
+            withAnimation(Self.selectionAnimation) {
+                highlighted = page
+            }
+        }
+    }
+}
+
+/// Label stays mounted so the selected capsule can morph width instead of popping.
+private struct ResourceTabLabelCollapse: ViewModifier, Animatable {
+    var progress: CGFloat
+
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        ResourceTabLabelWidth(progress: progress) { content }
+            .clipped()
+            .opacity(min(1, max(0, (progress - 0.72) / 0.28)))
+    }
+}
+
+private struct ResourceTabLabelWidth: Layout {
+    var progress: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let child = subviews.first else { return .zero }
+        let full = child.sizeThatFits(ProposedViewSize(width: nil, height: proposal.height))
+        return CGSize(width: full.width * min(1, max(0, progress)), height: full.height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard let child = subviews.first else { return }
+        let full = child.sizeThatFits(ProposedViewSize(width: nil, height: bounds.height))
+        child.place(
+            at: CGPoint(x: bounds.minX, y: bounds.midY),
+            anchor: .leading,
+            proposal: ProposedViewSize(width: full.width, height: full.height)
+        )
     }
 }
 
@@ -138,6 +204,7 @@ extension FocusedValues {
 struct AppFilterField: View {
     @Binding var text: String
     @FocusState private var isFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 6) {
@@ -157,8 +224,10 @@ struct AppFilterField: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("清空过滤")
+                .transition(.opacity.combined(with: .scale(scale: 0.7)))
             }
         }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: text.isEmpty)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(width: 210)

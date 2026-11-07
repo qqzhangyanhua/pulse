@@ -2,13 +2,16 @@ import SwiftUI
 
 struct MemoryDashboardView: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var overviewPage: DashboardPage = .memory
+    @State private var showingMachine = false
 
     var body: some View {
         Group {
-            if vm.selectedPage == .machine {
-                machinePage
+            if showingMachine {
+                machinePage.transition(.opacity)
             } else {
-                resourcePage
+                resourcePage.transition(.opacity)
             }
         }
         .background(PulsePalette.windowBackground)
@@ -43,7 +46,13 @@ struct MemoryDashboardView: View {
             }
         }
         .toolbarBackground(PulsePalette.windowBackground, for: .windowToolbar)
-        .onAppear { vm.start() }
+        .onAppear {
+            vm.start()
+            applyPageMotion(vm.selectedPage, animated: false)
+        }
+        .onChange(of: vm.selectedPage) { _, newPage in
+            applyPageMotion(newPage, animated: !reduceMotion)
+        }
     }
 
     private var machinePage: some View {
@@ -56,16 +65,7 @@ struct MemoryDashboardView: View {
     private var resourcePage: some View {
         HSplitView {
             VStack(spacing: 12) {
-                switch vm.selectedPage {
-                case .cpu:
-                    CPUOverviewSection()
-                case .network:
-                    NetworkOverviewSection()
-                case .disk:
-                    DiskOverviewSection()
-                default:
-                    OverviewSection()
-                }
+                resourceOverview
                 ProcessTablePane()
             }
             .padding(12)
@@ -74,6 +74,34 @@ struct MemoryDashboardView: View {
 
             ProcessDetailSidebar()
                 .frame(minWidth: 300, idealWidth: 332, maxWidth: 400)
+        }
+    }
+
+    /// Overview only. The process table follows the page immediately and does not fade.
+    private var resourceOverview: some View {
+        Group {
+            switch overviewPage {
+            case .cpu:
+                CPUOverviewSection().transition(.opacity)
+            case .network:
+                NetworkOverviewSection().transition(.opacity)
+            case .disk:
+                DiskOverviewSection().transition(.opacity)
+            default:
+                OverviewSection().transition(.opacity)
+            }
+        }
+    }
+
+    private func applyPageMotion(_ page: DashboardPage, animated: Bool) {
+        let update = {
+            self.showingMachine = page == .machine
+            self.overviewPage = page
+        }
+        if animated {
+            withAnimation(.easeInOut(duration: 0.2), update)
+        } else {
+            update()
         }
     }
 }

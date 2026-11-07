@@ -10,6 +10,7 @@ private enum ProcessColumn {
 
 struct ProcessTablePane: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -278,20 +279,31 @@ struct ProcessTablePane: View {
     private func revealProcessListTarget(_ proxy: ScrollViewProxy) {
         guard let target = vm.processListScrollTarget else { return }
         DispatchQueue.main.async {
-            proxy.scrollTo(target, anchor: .center)
+            let move = { proxy.scrollTo(target, anchor: .center) }
+            if self.reduceMotion {
+                move()
+            } else {
+                withAnimation(.easeInOut(duration: 0.28), move)
+            }
         }
     }
 
     private func revealTopApp(request: TopAppLocation.Reveal, proxy: ScrollViewProxy) {
         guard vm.sortedRows.contains(where: { $0.pid == request.pid }) else { return }
         DispatchQueue.main.async {
-            proxy.scrollTo(request.pid, anchor: .center)
+            let move = { proxy.scrollTo(request.pid, anchor: .center) }
+            if self.reduceMotion {
+                move()
+            } else {
+                withAnimation(.easeInOut(duration: 0.28), move)
+            }
         }
     }
 
     private func rowBackground(_ selected: Bool) -> some View {
         RoundedRectangle(cornerRadius: 8, style: .continuous)
             .fill(selected ? PulsePalette.selection : Color.clear)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: selected)
     }
 
     private func staticHeader(_ title: String) -> some View {
@@ -320,6 +332,8 @@ struct ProcessTablePane: View {
                 if active {
                     Image(systemName: vm.tableSort.descending ? "chevron.down" : "chevron.up")
                         .font(.system(size: 8, weight: .bold))
+                        .contentTransition(.symbolEffect(.replace))
+                        .transition(.opacity.combined(with: .scale(scale: 0.5)))
                 }
                 if !trailing {
                     Spacer(minLength: 0)
@@ -329,6 +343,7 @@ struct ProcessTablePane: View {
             .foregroundStyle(active ? Color.white.opacity(0.88) : Color.secondary)
         }
         .buttonStyle(.plain)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: vm.tableSort)
     }
 }
 
@@ -339,6 +354,7 @@ private struct ProcessLine: View {
     var showsDisk: Bool
     /// Phase-6 chip. Per-row Top5 ∩ `.rising`; selection is not a gate. Nil paints nothing.
     var growthBadge: MemoryGrowthListBadge?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 0) {
@@ -375,6 +391,7 @@ private struct ProcessLine: View {
         }
         .font(.callout)
         .foregroundStyle(selected ? Color.white : Color.primary)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: selected)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
     }

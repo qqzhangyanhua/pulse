@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ProcessDetailSidebar: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Sampling-window disclosure. View-local, collapsed. Not stored on the VM.
     @State private var samplingWindowExpanded = false
     /// Last positive physical total for the sidebar subject, plus the locked freeze.
@@ -11,13 +12,14 @@ struct ProcessDetailSidebar: View {
         let sidebar = vm.sidebar
         Group {
             if let detail = sidebar.detail {
-                detailBody(detail)
+                detailBody(detail).transition(.opacity)
             } else if sidebar.showsAbsentRecord {
-                absentRecordBody
+                absentRecordBody.transition(.opacity)
             } else {
-                emptyBody
+                emptyBody.transition(.opacity)
             }
         }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: sidebarMotionID)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(PulsePalette.sidebar)
         .onAppear(perform: acceptCurrentSidebarLiveTotal)
@@ -71,6 +73,12 @@ struct ProcessDetailSidebar: View {
         for event in events {
             lastLiveTotal = LastLiveTotalReducer.step(lastLiveTotal, event)
         }
+    }
+
+    /// Detail pid, absent record, or empty. Snapshot ticks do not change it.
+    private var sidebarMotionID: String {
+        if let pid = vm.sidebar.detail?.row.pid { return "d\(pid)" }
+        return vm.sidebar.showsAbsentRecord ? "absent" : "empty"
     }
 
     private var emptyPrompt: String {
