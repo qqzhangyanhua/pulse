@@ -34,6 +34,48 @@ final class AppGroupProjectionTests: XCTestCase {
         XCTAssertEqual(grouped.memoryBytes, 20)
     }
 
+    func testAnyResidentMemberMarksTheCombinedRowResidentAndKeepsTheSum() {
+        let grouped = AppGroupProjection.combine([
+            row(4, "WeChat", memory: 800),
+            row(7, "WeChat", memory: 200, source: .resident),
+        ])
+        XCTAssertEqual(grouped.memoryBytes, 1_000)
+        XCTAssertEqual(grouped.memorySource, .resident)
+    }
+
+    func testAllFootprintMembersKeepFootprintOnTheCombinedRow() {
+        let grouped = AppGroupProjection.combine([
+            row(4, "WeChat", memory: 800),
+            row(7, "WeChat", memory: 200),
+        ])
+        XCTAssertEqual(grouped.memoryBytes, 1_000)
+        XCTAssertEqual(grouped.memorySource, .footprint)
+        XCTAssertFalse(grouped.residentMemoryIsPartial)
+    }
+
+    func testSeveralMembersMarkResidentFallbackPartialButOneMemberDoesNot() {
+        let mixed = AppGroupProjection.combine([
+            row(4, "WeChat", memory: 800),
+            row(7, "WeChat", memory: 200, source: .resident),
+        ])
+        XCTAssertTrue(mixed.residentMemoryIsPartial)
+
+        let allResident = AppGroupProjection.combine([
+            row(1, "Mail", memory: 10, source: .resident),
+            row(2, "Mail", memory: 30, source: .resident),
+        ])
+        XCTAssertEqual(allResident.memoryBytes, 40)
+        XCTAssertEqual(allResident.memorySource, .resident)
+        XCTAssertTrue(allResident.residentMemoryIsPartial)
+
+        let alone = AppGroupProjection.combine([
+            row(4, "WeChat", memory: 800, source: .resident),
+        ])
+        XCTAssertEqual(alone.memoryBytes, 800)
+        XCTAssertEqual(alone.memorySource, .resident)
+        XCTAssertFalse(alone.residentMemoryIsPartial)
+    }
+
     func testMissingRateStaysMissingAndZeroStillAdds() {
         let missing = AppGroupProjection.combine([
             row(1, "Chrome", memory: 1, cpu: nil, diskRead: 4),
@@ -88,7 +130,8 @@ final class AppGroupProjectionTests: XCTestCase {
         memory: UInt64,
         threads: Int = 1,
         cpu: Double? = nil,
-        diskRead: Double? = nil
+        diskRead: Double? = nil,
+        source: ProcessMemorySource = .footprint
     ) -> ProcessRow {
         ProcessRow(
             pid: pid,
@@ -97,6 +140,7 @@ final class AppGroupProjectionTests: XCTestCase {
             executablePath: nil,
             cpuPercent: cpu,
             memoryBytes: memory,
+            memorySource: source,
             threadCount: threads,
             diskReadBytesPerSecond: diskRead,
             diskWriteBytesPerSecond: nil

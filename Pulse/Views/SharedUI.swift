@@ -413,6 +413,56 @@ struct ThermalNoticeLine: View {
     }
 }
 
+struct SidebarMetric: View {
+    let systemImage: String
+    let title: String
+    let tint: Color
+    let value: String
+    let caption: String
+    var help: String? = nil
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .foregroundStyle(tint)
+                Text(title)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+            }
+            .font(.caption)
+            Text(value)
+                .font(.system(size: 22, weight: .semibold))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            captionText
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 104, alignment: .topLeading)
+        .background(PulsePalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(PulsePalette.hairline, lineWidth: 1)
+        }
+    }
+
+    @ViewBuilder
+    private var captionText: some View {
+        let text = Text(caption)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
+        if let help {
+            text.help(help)
+        } else {
+            text
+        }
+    }
+}
+
 struct HistoryAnnotatedChart<Content: View>: View {
     let annotation: String?
     @ViewBuilder var content: () -> Content

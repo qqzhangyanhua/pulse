@@ -108,6 +108,8 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     let memoryBytes: UInt64
     /// `footprint` unless that read was nil. Call sites that omit it stay on footprint.
     let memorySource: ProcessMemorySource
+    /// App-group sum that includes a resident member. A single row stays false.
+    let residentMemoryIsPartial: Bool
     let threadCount: Int
     /// `proc_pid_rusage` two-frame rates. Nil on first frame, EPERM, wrap, or a failed read.
     let diskReadBytesPerSecond: Double?
@@ -121,6 +123,7 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         cpuPercent: Double?,
         memoryBytes: UInt64,
         memorySource: ProcessMemorySource = .footprint,
+        residentMemoryIsPartial: Bool = false,
         threadCount: Int,
         diskReadBytesPerSecond: Double? = nil,
         diskWriteBytesPerSecond: Double? = nil
@@ -132,6 +135,7 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         self.cpuPercent = cpuPercent
         self.memoryBytes = memoryBytes
         self.memorySource = memorySource
+        self.residentMemoryIsPartial = residentMemoryIsPartial
         self.threadCount = threadCount
         self.diskReadBytesPerSecond = diskReadBytesPerSecond
         self.diskWriteBytesPerSecond = diskWriteBytesPerSecond

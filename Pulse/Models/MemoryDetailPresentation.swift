@@ -11,13 +11,15 @@ struct MemoryDetailFieldCopy: Equatable, Sendable {
 }
 
 /// Page-gated memory detail copy. The memory page names footprint unless the row fell back.
-/// Other pages keep today's gib caption and ignore source. Missing totals never call `share`.
+/// A multi-member app group that fell back says 「部分按驻留内存」. Other pages ignore source.
+/// Missing totals never call `share`.
 enum MemoryDetailPresentation {
     static func field(
         page: DashboardPage,
         part: UInt64,
         total: UInt64?,
-        source: ProcessMemorySource = .footprint
+        source: ProcessMemorySource = .footprint,
+        residentIsPartial: Bool = false
     ) -> MemoryDetailFieldCopy {
         let title = page == .memory
             ? (source == .footprint ? "内存占用" : "驻留内存")
@@ -26,12 +28,19 @@ enum MemoryDetailPresentation {
             return MemoryDetailFieldCopy(
                 title: title,
                 caption: "占物理内存",
-                help: page == .memory ? missingTotalHelp(source) : nil
+                help: page == .memory ? missingTotalHelp(source, residentIsPartial: residentIsPartial) : nil
             )
         }
         let share = ByteFormat.share(part: part, total: total)
         if page == .memory {
-            let basis = source == .footprint ? "按内存占用计算" : "按驻留内存计算"
+            let basis: String
+            if source == .footprint {
+                basis = "按内存占用计算"
+            } else if residentIsPartial {
+                basis = "部分按驻留内存计算"
+            } else {
+                basis = "按驻留内存计算"
+            }
             return MemoryDetailFieldCopy(
                 title: title,
                 caption: "占物理内存的 \(share)（\(basis)）",
@@ -45,12 +54,16 @@ enum MemoryDetailPresentation {
         )
     }
 
-    private static func missingTotalHelp(_ source: ProcessMemorySource) -> String {
+    private static func missingTotalHelp(
+        _ source: ProcessMemorySource,
+        residentIsPartial: Bool
+    ) -> String {
         switch source {
         case .footprint:
             return "此数值为内存占用。当前没有物理内存总量，不显示占比。"
         case .resident:
-            return "按驻留内存。当前没有物理内存总量，不显示占比。"
+            let lead = residentIsPartial ? "部分按驻留内存" : "按驻留内存"
+            return "\(lead)。当前没有物理内存总量，不显示占比。"
         }
     }
 }

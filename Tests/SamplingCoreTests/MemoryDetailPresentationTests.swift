@@ -26,6 +26,72 @@ final class MemoryDetailPresentationTests: XCTestCase {
         XCTAssertNotEqual(copy.caption, "占物理内存的 100%（按内存占用计算）")
     }
 
+    func testPartialResidentGroupUsesPartialNoteOnTheMemoryPage() {
+        let withTotal = MemoryDetailPresentation.field(
+            page: .memory,
+            part: 150,
+            total: 100,
+            source: .resident,
+            residentIsPartial: true
+        )
+        XCTAssertEqual(withTotal.title, "驻留内存")
+        XCTAssertEqual(withTotal.caption, "占物理内存的 150%（部分按驻留内存计算）")
+        XCTAssertNil(withTotal.help)
+        XCTAssertNotEqual(withTotal.caption, "占物理内存的 150%（按驻留内存计算）")
+
+        let help = "部分按驻留内存。当前没有物理内存总量，不显示占比。"
+        for total in [UInt64?.none, UInt64(0)] {
+            let missing = MemoryDetailPresentation.field(
+                page: .memory,
+                part: 12_345,
+                total: total,
+                source: .resident,
+                residentIsPartial: true
+            )
+            XCTAssertEqual(missing.title, "驻留内存", "total \(String(describing: total))")
+            XCTAssertEqual(missing.caption, "占物理内存")
+            XCTAssertEqual(missing.help, help)
+            XCTAssertFalse(missing.caption.contains("%"))
+        }
+
+        let single = MemoryDetailPresentation.field(
+            page: .memory,
+            part: 150,
+            total: 100,
+            source: .resident
+        )
+        XCTAssertEqual(single.title, "驻留内存")
+        XCTAssertEqual(single.caption, "占物理内存的 150%（按驻留内存计算）")
+        XCTAssertFalse(single.caption.contains("部分按驻留内存"))
+
+        let footprint = MemoryDetailPresentation.field(
+            page: .memory,
+            part: 150,
+            total: 100,
+            source: .footprint,
+            residentIsPartial: true
+        )
+        XCTAssertEqual(footprint.title, "内存占用")
+        XCTAssertEqual(footprint.caption, "占物理内存的 150%（按内存占用计算）")
+        XCTAssertNil(footprint.help)
+
+        let cpu = MemoryDetailPresentation.field(
+            page: .cpu,
+            part: 8 * gib,
+            total: 16 * gib,
+            source: .resident,
+            residentIsPartial: true
+        )
+        XCTAssertEqual(cpu.title, "内存")
+        XCTAssertEqual(cpu.caption, "占 16 GB 的 50%")
+        XCTAssertNil(cpu.help)
+
+        let blob = [withTotal.title, withTotal.caption, help].joined(separator: "\n")
+        for word in ["泄漏", "leak", "危险"] {
+            XCTAssertFalse(blob.localizedCaseInsensitiveContains(word), word)
+        }
+    }
+
     func testResidentSourceKeepsResidentTitleAndMarksTheBasis() {
         let withTotal = MemoryDetailPresentation.field(
             page: .memory,
@@ -234,14 +300,21 @@ final class MemoryDetailPresentationTests: XCTestCase {
 
     func testNewDetailCopyOmitsBannedWords() {
         var lines: [String] = []
+        let sources: [(ProcessMemorySource, Bool)] = [
+            (.footprint, false),
+            (.footprint, true),
+            (.resident, false),
+            (.resident, true),
+        ]
         for page in DashboardPage.allCases {
-            for source in [ProcessMemorySource.footprint, .resident] {
+            for (source, partial) in sources {
                 for total in [UInt64?.none, UInt64(0), 16 * gib] {
                     let copy = MemoryDetailPresentation.field(
                         page: page,
                         part: 42,
                         total: total,
-                        source: source
+                        source: source,
+                        residentIsPartial: partial
                     )
                     lines.append(copy.title)
                     lines.append(copy.caption)

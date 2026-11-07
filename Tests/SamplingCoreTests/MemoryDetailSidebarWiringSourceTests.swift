@@ -56,7 +56,8 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
         XCTAssertFalse(disclosure.contains("evaluate"))
 
         let metrics = try functionBody(named: "metrics", in: sidebar)
-        XCTAssertTrue(metrics.contains("memoryField(detail.row)"))
+        XCTAssertTrue(metrics.contains("displayedMemoryRow(detail.row)"))
+        XCTAssertTrue(metrics.contains("memoryField(row)"))
         XCTAssertTrue(metrics.contains("title: memory.title"))
         XCTAssertTrue(metrics.contains("caption: memory.caption"))
         XCTAssertTrue(metrics.contains("help: memory.help"))
@@ -75,8 +76,10 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
         XCTAssertTrue(trend.contains("slot.caption"))
         XCTAssertTrue(trend.contains("slot.basis"))
 
-        XCTAssertTrue(sidebar.contains("var help: String? = nil"))
-        XCTAssertTrue(sidebar.contains(".help(help)"))
+        let metric = try repoText("Pulse/Views/SharedUI.swift")
+        XCTAssertTrue(metric.contains("struct SidebarMetric"))
+        XCTAssertTrue(metric.contains("var help: String? = nil"))
+        XCTAssertTrue(metric.contains(".help(help)"))
         XCTAssertTrue(sidebar.contains("samples.count < 2"))
     }
 

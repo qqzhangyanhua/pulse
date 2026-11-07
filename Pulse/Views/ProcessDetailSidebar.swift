@@ -315,13 +315,14 @@ struct ProcessDetailSidebar: View {
     }
 
     private func metrics(_ detail: ProcessDetail) -> some View {
-        let memory = memoryField(detail.row)
+        let row = displayedMemoryRow(detail.row)
+        let memory = memoryField(row)
         return HStack(alignment: .top, spacing: 10) {
             SidebarMetric(
                 systemImage: "memorychip",
                 title: memory.title,
                 tint: PulsePalette.accent,
-                value: ByteFormat.memory(detail.row.memoryBytes),
+                value: ByteFormat.memory(row.memoryBytes),
                 caption: memory.caption,
                 help: memory.help
             )
@@ -365,6 +366,12 @@ struct ProcessDetailSidebar: View {
         }
     }
 
+    /// Grouped memory page shows the merged row. The curve stays on the selected pid.
+    private func displayedMemoryRow(_ row: ProcessRow) -> ProcessRow {
+        guard vm.groupedByApp, vm.selectedPage == .memory else { return row }
+        return vm.sortedRows.first { $0.pid == row.pid } ?? row
+    }
+
     private func memoryField(_ row: ProcessRow) -> MemoryDetailFieldCopy {
         let frozen = LastLiveTotalReducer.frozenSemanticsForProjection(
             showsAbsentRecord: vm.sidebar.showsAbsentRecord,
@@ -380,7 +387,8 @@ struct ProcessDetailSidebar: View {
                 physicalTotalBytes: vm.snapshot?.totalBytes,
                 frozen: frozen
             ),
-            source: row.memorySource
+            source: row.memorySource,
+            residentIsPartial: row.residentMemoryIsPartial
         )
     }
 
@@ -452,56 +460,6 @@ struct ProcessDetailSidebar: View {
             } else {
                 SparklineChart(samples: samples, tint: tint, domain: domain, formatY: formatY)
             }
-        }
-    }
-}
-
-private struct SidebarMetric: View {
-    let systemImage: String
-    let title: String
-    let tint: Color
-    let value: String
-    let caption: String
-    var help: String? = nil
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: systemImage)
-                    .foregroundStyle(tint)
-                Text(title)
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-            }
-            .font(.caption)
-            Text(value)
-                .font(.system(size: 22, weight: .semibold))
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-            captionText
-            Spacer(minLength: 0)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 104, alignment: .topLeading)
-        .background(PulsePalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(PulsePalette.hairline, lineWidth: 1)
-        }
-    }
-
-    @ViewBuilder
-    private var captionText: some View {
-        let text = Text(caption)
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
-        if let help {
-            text.help(help)
-        } else {
-            text
         }
     }
 }
