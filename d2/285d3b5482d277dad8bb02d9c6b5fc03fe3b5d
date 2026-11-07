@@ -1,0 +1,19 @@
+Pulse/Views/SharedUI.swift
+  s_e6d713456ec6b8::t_eebef0ac5b6812 77-83,93-97,101,103-105,108,110-115,121,124-126,136-181,227
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "d2285d3b5482d277dad8bb02d9c6b5fc03fe3b5d",
+  "prompts": {},
+  "sessions": {
+    "s_e6d713456ec6b8": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b434-6731-7063-8c15-17d8268f484a",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
