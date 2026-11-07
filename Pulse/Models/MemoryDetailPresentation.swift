@@ -11,7 +11,8 @@ struct MemoryDetailFieldCopy: Equatable, Sendable {
 }
 
 /// Page-gated memory detail copy. The memory page names footprint unless the row fell back.
-/// A multi-member app group that fell back says 「部分按驻留内存」. Other pages ignore source.
+/// An app-group row that includes a resident member says 「部分按驻留内存」.
+/// An ungrouped resident row does not. Other pages ignore source.
 /// Missing totals never call `share`.
 enum MemoryDetailPresentation {
     static func field(

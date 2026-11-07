@@ -108,7 +108,8 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     let memoryBytes: UInt64
     /// `footprint` unless that read was nil. Call sites that omit it stay on footprint.
     let memorySource: ProcessMemorySource
-    /// App-group sum that includes a resident member. A single row stays false.
+    /// App-group row that includes a resident member, including a one-member group.
+    /// An ungrouped row stays false.
     let residentMemoryIsPartial: Bool
     let threadCount: Int
     /// `proc_pid_rusage` two-frame rates. Nil on first frame, EPERM, wrap, or a failed read.

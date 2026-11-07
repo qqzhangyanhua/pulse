@@ -53,7 +53,7 @@ final class AppGroupProjectionTests: XCTestCase {
         XCTAssertFalse(grouped.residentMemoryIsPartial)
     }
 
-    func testSeveralMembersMarkResidentFallbackPartialButOneMemberDoesNot() {
+    func testAnyResidentMemberMarksPartialIncludingAOneMemberGroup() {
         let mixed = AppGroupProjection.combine([
             row(4, "WeChat", memory: 800),
             row(7, "WeChat", memory: 200, source: .resident),
@@ -73,7 +73,28 @@ final class AppGroupProjectionTests: XCTestCase {
         ])
         XCTAssertEqual(alone.memoryBytes, 800)
         XCTAssertEqual(alone.memorySource, .resident)
-        XCTAssertFalse(alone.residentMemoryIsPartial)
+        XCTAssertTrue(alone.residentMemoryIsPartial)
+
+        let grouped = AppGroupProjection.apply(
+            rows: [row(4, "WeChat", memory: 800, source: .resident)],
+            grouped: true
+        )
+        XCTAssertEqual(grouped.map(\.memoryBytes), [800])
+        XCTAssertEqual(grouped.map(\.memorySource), [.resident])
+        XCTAssertEqual(grouped.map(\.residentMemoryIsPartial), [true])
+
+        let aloneFootprint = AppGroupProjection.combine([
+            row(5, "Notes", memory: 100),
+        ])
+        XCTAssertEqual(aloneFootprint.memorySource, .footprint)
+        XCTAssertFalse(aloneFootprint.residentMemoryIsPartial)
+
+        let ungrouped = AppGroupProjection.apply(
+            rows: [row(4, "WeChat", memory: 800, source: .resident)],
+            grouped: false
+        )
+        XCTAssertEqual(ungrouped.map(\.memorySource), [.resident])
+        XCTAssertEqual(ungrouped.map(\.residentMemoryIsPartial), [false])
     }
 
     func testMissingRateStaysMissingAndZeroStillAdds() {

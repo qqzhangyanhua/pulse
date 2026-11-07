@@ -66,7 +66,9 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
         XCTAssertFalse(metrics.contains("title: \"内存\""))
 
         let chart = try functionBody(named: "memoryChart", in: sidebar)
-        XCTAssertTrue(chart.contains("memoryField(detail.row).title"))
+        XCTAssertTrue(chart.contains("displayedMemoryRow(detail.row)"))
+        XCTAssertTrue(chart.contains("memoryField("))
+        XCTAssertFalse(chart.contains("memoryField(detail.row)"))
         XCTAssertFalse(chart.contains("title: \"内存\""))
         XCTAssertFalse(chart.contains("memoryGrowthSlot"))
         XCTAssertTrue(chart.contains("正在采集内存曲线"))

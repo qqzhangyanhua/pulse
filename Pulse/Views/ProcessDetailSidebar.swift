@@ -394,7 +394,7 @@ struct ProcessDetailSidebar: View {
 
     private func memoryChart(_ detail: ProcessDetail) -> some View {
         seriesBlock(
-            title: memoryField(detail.row).title,
+            title: memoryField(displayedMemoryRow(detail.row)).title,
             samples: detail.memorySeries,
             placeholder: "正在采集内存曲线",
             summary: memorySummary(detail.memorySeries),

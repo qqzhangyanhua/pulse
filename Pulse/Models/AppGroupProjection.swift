@@ -52,7 +52,7 @@ enum AppGroupProjection {
             cpuPercent: sum(members.map(\.cpuPercent)),
             memoryBytes: members.reduce(0) { $0 &+ $1.memoryBytes },
             memorySource: anyResident ? .resident : .footprint,
-            residentMemoryIsPartial: members.count > 1 && anyResident,
+            residentMemoryIsPartial: anyResident,
             threadCount: members.reduce(0) { $0 + $1.threadCount },
             diskReadBytesPerSecond: sum(members.map(\.diskReadBytesPerSecond)),
             diskWriteBytesPerSecond: sum(members.map(\.diskWriteBytesPerSecond))
