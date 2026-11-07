@@ -306,10 +306,11 @@ final class MachinePageTests: XCTestCase {
         XCTAssertTrue(reader.contains("bootedAt"))
 
         let overview = try repoText("Pulse/Views/MachineOverviewSection.swift")
-        XCTAssertEqual(occurrenceCount(of: "selectPage(.memory)", in: overview), 3)
+        XCTAssertEqual(occurrenceCount(of: "selectPage(.memory)", in: overview), 1)
         XCTAssertEqual(occurrenceCount(of: "selectPage(.cpu)", in: overview), 1)
         XCTAssertFalse(overview.contains("selectedPage ="))
-        XCTAssertFalse(overview.contains("SparklineChart"))
+        XCTAssertTrue(overview.contains("SparklineChart"))
+        XCTAssertFalse(overview.contains("Timer"))
         XCTAssertFalse(overview.contains("ProcessTablePane"))
         XCTAssertTrue(overview.contains("vm.thermalNotice"))
     }
