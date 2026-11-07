@@ -4,8 +4,8 @@ import XCTest
 final class MemoryGrowthSidebarTests: XCTestCase {
     func testLockedCopy() {
         XCTAssertEqual(MemoryGrowthCopy.title, "内存趋势")
-        XCTAssertEqual(MemoryGrowthCopy.rising, "近期驻留内存上涨")
-        XCTAssertEqual(MemoryGrowthCopy.basis, "当前进程近期趋势 · 基于现有驻留采样序列")
+        XCTAssertEqual(MemoryGrowthCopy.rising, "近期内存占用上涨")
+        XCTAssertEqual(MemoryGrowthCopy.basis, "当前进程近期趋势 · 基于现有内存占用")
         XCTAssertEqual(MemoryGrowthCopy.insufficient, "样本不足，暂不判断")
         XCTAssertEqual(MemoryGrowthCopy.caption(for: .rising), MemoryGrowthCopy.rising)
         XCTAssertEqual(MemoryGrowthCopy.caption(for: .insufficient), MemoryGrowthCopy.insufficient)

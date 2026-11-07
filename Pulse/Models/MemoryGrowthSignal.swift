@@ -53,10 +53,10 @@ enum MemoryGrowthSignal: Equatable, Sendable {
 /// Locked memory-page sidebar copy. The title is a trend label, never a leak verdict.
 enum MemoryGrowthCopy {
     static let title = "内存趋势"
-    static let rising = "近期驻留内存上涨"
+    static let rising = "近期内存占用上涨"
     static let insufficient = "样本不足，暂不判断"
     /// Side note for a live `.rising` detail slot only.
-    static let basis = "当前进程近期趋势 · 基于现有驻留采样序列"
+    static let basis = "当前进程近期趋势 · 基于现有内存占用"
 
     static func caption(for signal: MemoryGrowthSignal) -> String? {
         switch signal {
@@ -113,7 +113,7 @@ enum MemoryGrowthSidebar {
 /// Locked memory-tab list-row copy. Short badge, calm hover; never a leak verdict.
 enum MemoryGrowthListCopy {
     static let title = "上涨"
-    static let help = "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。"
+    static let help = "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期内存占用序列判断趋势。"
 }
 
 /// Visible list badge. Absence means the row paints nothing in the badge slot.

@@ -130,8 +130,8 @@ final class MemoryDetailPresentationTests: XCTestCase {
     }
 
     func testRisingDetailCaptionAndBasis() {
-        XCTAssertEqual(MemoryGrowthCopy.rising, "近期驻留内存上涨")
-        XCTAssertEqual(MemoryGrowthCopy.basis, "当前进程近期趋势 · 基于现有驻留采样序列")
+        XCTAssertEqual(MemoryGrowthCopy.rising, "近期内存占用上涨")
+        XCTAssertEqual(MemoryGrowthCopy.basis, "当前进程近期趋势 · 基于现有内存占用")
         XCTAssertEqual(MemoryGrowthCopy.basis(for: .rising), MemoryGrowthCopy.basis)
         XCTAssertFalse(MemoryGrowthCopy.rising.contains("分钟"))
         XCTAssertFalse(MemoryGrowthCopy.basis.contains("分钟"))
@@ -144,8 +144,8 @@ final class MemoryDetailPresentationTests: XCTestCase {
             detailSeries: series(count: MemoryGrowthSignal.minSamples, step: 1_048_576)
         )
         XCTAssertEqual(slot?.title, "内存趋势")
-        XCTAssertEqual(slot?.caption, "近期驻留内存上涨")
-        XCTAssertEqual(slot?.basis, "当前进程近期趋势 · 基于现有驻留采样序列")
+        XCTAssertEqual(slot?.caption, "近期内存占用上涨")
+        XCTAssertEqual(slot?.basis, "当前进程近期趋势 · 基于现有内存占用")
         XCTAssertNotEqual(slot?.caption, MemoryGrowthListCopy.title)
         XCTAssertNotEqual(slot?.caption, MemoryGrowthListCopy.help)
     }
@@ -202,14 +202,14 @@ final class MemoryDetailPresentationTests: XCTestCase {
 
     func testListBadgeCopyAndIndependentRingStayPut() {
         XCTAssertEqual(MemoryGrowthListCopy.title, "上涨")
-        XCTAssertEqual(MemoryGrowthListCopy.help, "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。")
-        XCTAssertNotEqual(MemoryGrowthListCopy.title, "近期驻留内存上涨")
-        XCTAssertNotEqual(MemoryGrowthListCopy.help, "近期驻留内存上涨")
+        XCTAssertEqual(MemoryGrowthListCopy.help, "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期内存占用序列判断趋势。")
+        XCTAssertNotEqual(MemoryGrowthListCopy.title, "近期内存占用上涨")
+        XCTAssertNotEqual(MemoryGrowthListCopy.help, "近期内存占用上涨")
         XCTAssertNotEqual(MemoryGrowthListCopy.title, MemoryGrowthCopy.rising)
 
         let rising = series(count: 80, step: 1_048_576)
         let badge = MemoryGrowthList.badge(page: .memory, rowPid: 3, seriesByPid: [3: rising])
-        XCTAssertEqual(badge, MemoryGrowthListBadge(title: "上涨", help: "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期驻留内存序列判断趋势。"))
+        XCTAssertEqual(badge, MemoryGrowthListBadge(title: "上涨", help: "完整进程列表按当前表头排序后取前5，非过滤后前5；仅按各进程自身的近期内存占用序列判断趋势。"))
         XCTAssertEqual(
             MemoryGrowthSidebar.slot(page: .memory, selectedPid: 9, detailSeries: rising)?.caption,
             MemoryGrowthCopy.rising
