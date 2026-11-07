@@ -1,0 +1,22 @@
+Pulse/Views/MemoryDashboardView.swift
+  h_4132837b09b7e7 27-32,35-40,43-48,114-152
+Tests/SamplingCoreTests/AppGroupProjectionTests.swift
+  h_4132837b09b7e7 140
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  h_4132837b09b7e7 10,58-59,71-72,74-75
+Tests/SamplingCoreTests/MemoryPageFilterClearWiringSourceTests.swift
+  h_4132837b09b7e7 242
+Tests/SamplingCoreTests/WindowedAppFilterTests.swift
+  h_4132837b09b7e7 122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "979a7f3dc5e0fbd2f495dd4e3c533cba8df309ba",
+  "prompts": {},
+  "humans": {
+    "h_4132837b09b7e7": {
+      "author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
