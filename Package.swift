@@ -57,6 +57,7 @@ let package = Package(
                 "Models/SwapUsage.swift",
                 "Models/WindowedAppFilter.swift",
                 "Models/AppGroupProjection.swift",
+                "Models/ProcessGlossary.swift",
                 "Sampling/CPULoad.swift",
                 "Sampling/HostNetwork.swift",
                 "Sampling/HostDisk.swift",
