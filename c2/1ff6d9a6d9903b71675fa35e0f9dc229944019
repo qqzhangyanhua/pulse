@@ -1,0 +1,45 @@
+Pulse/Views/ProcessDetailSidebar.swift
+  s_ec2ba9612c6eb2::t_df134d0a826324 318-319,325,369-372
+  s_ec2ba9612c6eb2::t_b25ae594d7dd9e 390-391
+  s_ec2ba9612c6eb2::t_21c4fbe7fc39ba 373-374
+Pulse/Models/MemoryModels.swift
+  s_ec2ba9612c6eb2::t_54e858ccfef644 111-112,126,138
+Pulse/Models/MemoryDetailPresentation.swift
+  s_ec2ba9612c6eb2::t_e897a28e5be5de 36-43
+  s_ec2ba9612c6eb2::t_7a9edc0ae7123b 14-15,21-22,31,57-60,65-66
+Tests/SamplingCoreTests/ProcessMemoryChoiceWiringSourceTests.swift
+  s_ec2ba9612c6eb2::t_fccb7c1a6702fd 43-48
+  s_ec2ba9612c6eb2::t_bc0108ac15599f 50-52
+Pulse/Models/AppGroupProjection.swift
+  s_ec2ba9612c6eb2::t_dc9bc5407b23a7 46,54
+  s_ec2ba9612c6eb2::t_a8f08ce2d211de 55
+Tests/SamplingCoreTests/MemoryDetailPresentationTests.swift
+  s_ec2ba9612c6eb2::t_c61c19a7499e83 316-317
+  s_ec2ba9612c6eb2::t_f8c591d8e56501 29-94
+  s_ec2ba9612c6eb2::t_bfcc0ed3915cf4 303-308,310
+Tests/SamplingCoreTests/MemoryDetailSidebarWiringSourceTests.swift
+  s_ec2ba9612c6eb2::t_c90af565c3dca6 79-82
+  s_ec2ba9612c6eb2::t_6cef28cf825902 59-60
+Pulse/Views/SharedUI.swift
+  s_ec2ba9612c6eb2::t_81dab0b29b75db 416-465
+Tests/SamplingCoreTests/AppGroupProjectionTests.swift
+  s_ec2ba9612c6eb2::t_e79cd23120590c 37-45,133-134,143
+  s_ec2ba9612c6eb2::t_3e4713597af881 53-76
+  s_ec2ba9612c6eb2::t_675bcd85830a15 46-52,77-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "c21ff6d9a6d9903b71675fa35e0f9dc229944019",
+  "prompts": {},
+  "sessions": {
+    "s_ec2ba9612c6eb2": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b47d-efa8-7d10-91f7-644df9884e7c",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
