@@ -6,15 +6,50 @@ import XCTest
 final class MemoryDetailPresentationTests: XCTestCase {
     private let gib: UInt64 = 1_073_741_824
 
-    func testMemoryPagePositiveTotalUsesResidentTitleAndShareCaption() {
+    func testMemoryPagePositiveTotalUsesFootprintTitleAndShareCaption() {
         let cases: [(UInt64, UInt64)] = shareBands() + [(0, 16 * gib)]
         for (part, total) in cases {
             let share = ByteFormat.share(part: part, total: total)
             let copy = MemoryDetailPresentation.field(page: .memory, part: part, total: total)
-            XCTAssertEqual(copy.title, "驻留内存", "part \(part) total \(total)")
-            XCTAssertEqual(copy.caption, "占物理内存的 \(share)（按驻留内存计算）")
+            XCTAssertEqual(copy.title, "内存占用", "part \(part) total \(total)")
+            XCTAssertEqual(copy.caption, "占物理内存的 \(share)（按内存占用计算）")
             XCTAssertNil(copy.help)
             XCTAssertFalse(copy.caption.contains("GB"))
+        }
+    }
+
+    func testMemoryPageShareAboveOneHundredIsNotClamped() {
+        let copy = MemoryDetailPresentation.field(page: .memory, part: 150, total: 100)
+        XCTAssertEqual(copy.title, "内存占用")
+        XCTAssertEqual(copy.caption, "占物理内存的 150%（按内存占用计算）")
+        XCTAssertNil(copy.help)
+        XCTAssertNotEqual(copy.caption, "占物理内存的 100%（按内存占用计算）")
+    }
+
+    func testResidentSourceKeepsResidentTitleAndMarksTheBasis() {
+        let withTotal = MemoryDetailPresentation.field(
+            page: .memory,
+            part: 150,
+            total: 100,
+            source: .resident
+        )
+        XCTAssertEqual(withTotal.title, "驻留内存")
+        XCTAssertEqual(withTotal.caption, "占物理内存的 150%（按驻留内存计算）")
+        XCTAssertTrue(withTotal.caption.contains("按驻留内存"))
+        XCTAssertNil(withTotal.help)
+
+        let help = "按驻留内存。当前没有物理内存总量，不显示占比。"
+        for total in [UInt64?.none, UInt64(0)] {
+            let missing = MemoryDetailPresentation.field(
+                page: .memory,
+                part: 12_345,
+                total: total,
+                source: .resident
+            )
+            XCTAssertEqual(missing.title, "驻留内存", "total \(String(describing: total))")
+            XCTAssertEqual(missing.caption, "占物理内存")
+            XCTAssertEqual(missing.help, help)
+            XCTAssertFalse(missing.caption.contains("%"))
         }
     }
 
@@ -48,11 +83,11 @@ final class MemoryDetailPresentationTests: XCTestCase {
         }
     }
 
-    func testMemoryPageMissingTotalHelpStatesResidentAndNoShare() {
-        let help = "此数值为驻留内存。当前没有物理内存总量，不显示占比。"
+    func testMemoryPageMissingTotalHelpStatesFootprintAndNoShare() {
+        let help = "此数值为内存占用。当前没有物理内存总量，不显示占比。"
         for total in [UInt64?.none, UInt64(0)] {
             let copy = MemoryDetailPresentation.field(page: .memory, part: 12_345, total: total)
-            XCTAssertEqual(copy.title, "驻留内存")
+            XCTAssertEqual(copy.title, "内存占用")
             XCTAssertEqual(copy.caption, "占物理内存")
             XCTAssertEqual(copy.help, help)
         }
@@ -83,6 +118,15 @@ final class MemoryDetailPresentationTests: XCTestCase {
         XCTAssertEqual(ByteFormat.gibWhole(16 * gib), "16 GB")
         XCTAssertEqual(ByteFormat.share(part: 8 * gib, total: 16 * gib), "50%")
         XCTAssertEqual(sixteen.caption, "占 16 GB 的 50%")
+        let residentOnCPU = MemoryDetailPresentation.field(
+            page: .cpu,
+            part: 8 * gib,
+            total: 16 * gib,
+            source: .resident
+        )
+        XCTAssertEqual(residentOnCPU.title, "内存")
+        XCTAssertEqual(residentOnCPU.caption, sixteen.caption)
+        XCTAssertNil(residentOnCPU.help)
     }
 
     func testRisingDetailCaptionAndBasis() {
@@ -191,11 +235,18 @@ final class MemoryDetailPresentationTests: XCTestCase {
     func testNewDetailCopyOmitsBannedWords() {
         var lines: [String] = []
         for page in DashboardPage.allCases {
-            for total in [UInt64?.none, UInt64(0), 16 * gib] {
-                let copy = MemoryDetailPresentation.field(page: page, part: 42, total: total)
-                lines.append(copy.title)
-                lines.append(copy.caption)
-                lines.append(copy.help ?? "")
+            for source in [ProcessMemorySource.footprint, .resident] {
+                for total in [UInt64?.none, UInt64(0), 16 * gib] {
+                    let copy = MemoryDetailPresentation.field(
+                        page: page,
+                        part: 42,
+                        total: total,
+                        source: source
+                    )
+                    lines.append(copy.title)
+                    lines.append(copy.caption)
+                    lines.append(copy.help ?? "")
+                }
             }
         }
         lines.append(contentsOf: [

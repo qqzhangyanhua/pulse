@@ -379,7 +379,8 @@ struct ProcessDetailSidebar: View {
                 detailPid: row.pid,
                 physicalTotalBytes: vm.snapshot?.totalBytes,
                 frozen: frozen
-            )
+            ),
+            source: row.memorySource
         )
     }
 

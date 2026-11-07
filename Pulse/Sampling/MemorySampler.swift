@@ -119,6 +119,10 @@ actor MemorySampler {
                 nextDiskTicks[raw.pid] = baseline
             }
 
+            let memory = ProcessMemoryChoice.project(
+                footprint: raw.footprintBytes,
+                resident: raw.residentBytes
+            )
             rows.append(
                 ProcessRow(
                     pid: raw.pid,
@@ -126,7 +130,8 @@ actor MemorySampler {
                     bundleIdentifier: identity.bundleIdentifier,
                     executablePath: identity.path,
                     cpuPercent: cpu,
-                    memoryBytes: raw.memoryBytes,
+                    memoryBytes: memory.bytes,
+                    memorySource: memory.source,
                     threadCount: raw.threadCount,
                     diskReadBytesPerSecond: disk.rates.readBytesPerSecond,
                     diskWriteBytesPerSecond: disk.rates.writeBytesPerSecond
