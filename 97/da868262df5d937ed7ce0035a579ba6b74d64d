@@ -1,0 +1,47 @@
+Tests/SamplingCoreTests/ResourceDetailPageSourceTests.swift
+  s_92cd5bb70a1f5f::t_75a43a4c1bd708 9,11-12
+Tests/SamplingCoreTests/ProcessMemoryChoiceWiringSourceTests.swift
+  s_92cd5bb70a1f5f::t_a1a3bf3399d7ba 1-99
+Tests/SamplingCoreTests/ProcessMemoryChoiceTests.swift
+  s_92cd5bb70a1f5f::t_f8ec8cd970e20c 28-54
+  s_92cd5bb70a1f5f::t_c5c1748b3c8864 1-27,55
+Pulse/Sampling/MemorySampler.swift
+  s_92cd5bb70a1f5f::t_b96acc6a0ea3ac 122-125,133-134
+Pulse.xcodeproj/project.pbxproj
+  s_92cd5bb70a1f5f::t_37f26b08b7024a 12,80,181,378
+Tests/SamplingCoreTests/ResourceDetailPageProjectionTests.swift
+  s_92cd5bb70a1f5f::t_fb3ee40574a0bf 291-294
+Pulse/Models/MemoryModels.swift
+  s_92cd5bb70a1f5f::t_62a0da245cb4f8 109-110,123,134
+Package.swift
+  s_92cd5bb70a1f5f::t_5e53dbc99fcb5d 38
+Pulse/Views/ProcessDetailSidebar.swift
+  s_92cd5bb70a1f5f::t_6a079a43d6cab7 382-383
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_92cd5bb70a1f5f::t_6f1e68fa808bf1 130
+Pulse/Sampling/ProcessEnumerator.swift
+  s_92cd5bb70a1f5f::t_389d0891fa0e85 8-11,75,81-82,86-87,92-93,99-103,107-112,218
+Pulse/Models/ProcessMemoryChoice.swift
+  s_92cd5bb70a1f5f::t_8942786d03efa5 1-20
+Pulse/Models/MemoryDetailPresentation.swift
+  s_92cd5bb70a1f5f::t_8889fb46b82a97 13-14,16-24,29,34,37,47-54
+  s_92cd5bb70a1f5f::t_ac19c7713ab352 55
+Tests/SamplingCoreTests/MemoryDetailPresentationTests.swift
+  s_92cd5bb70a1f5f::t_3c06504b07ab5e 9,14-15,21-55,86-87,90,121-129,238-249
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "97da868262df5d937ed7ce0035a579ba6b74d64d",
+  "prompts": {},
+  "sessions": {
+    "s_92cd5bb70a1f5f": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b475-025f-70c2-b578-876a13f23913",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
