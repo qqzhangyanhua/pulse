@@ -1,0 +1,31 @@
+Tests/SamplingCoreTests/AppGroupProjectionTests.swift
+  s_d1d913c3635a35::t_57beb654c12d90 56,76-97
+Pulse/Models/AppGroupProjection.swift
+  s_d1d913c3635a35::t_a21641f20232d8 55
+Pulse/Models/MemoryModels.swift
+  s_d1d913c3635a35::t_d6340a51c68faf 111-112
+Pulse/Models/MemoryDetailPresentation.swift
+  s_d1d913c3635a35::t_3be7fd86e0b0e1 14-15
+Tests/SamplingCoreTests/ProcessMemoryChoiceWiringSourceTests.swift
+  s_d1d913c3635a35::t_ecaa2b4a68eeaa 55-57
+Tests/SamplingCoreTests/MemoryDetailSidebarWiringSourceTests.swift
+  s_d1d913c3635a35::t_d66d5bc06aaeef 69-71
+Pulse/Views/ProcessDetailSidebar.swift
+  s_d1d913c3635a35::t_fa1a05efa950a8 397
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "71fb56920924ac8d1ca86b6f4eafc2c05580f9e9",
+  "prompts": {},
+  "sessions": {
+    "s_d1d913c3635a35": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b490-b301-7883-9027-99c6d9946b1b",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
