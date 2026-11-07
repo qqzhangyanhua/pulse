@@ -1,0 +1,58 @@
+Pulse.xcodeproj/project.pbxproj
+  s_2ab4603a10f84e::t_b291fb90829cb5 27,94,198,388
+Pulse/Views/MachineOverviewSection.swift
+  s_2ab4603a10f84e::t_43731ece1b6afb 47-48,76,81-82,88,91-93,95-97,99-101,144-148,150-160,162-176,179-180,182-195,197-198,202-211,215-224,227-231,237-243,245-247,260-262,272
+  s_2ab4603a10f84e::t_c0ffcad69cc057 44-46
+  s_2ab4603a10f84e::t_bff783823c7a99 49-51
+  s_2ab4603a10f84e::t_d29353ec379b37 77-80
+  s_2ab4603a10f84e::t_037c675e94202d 83-87
+  s_2ab4603a10f84e::t_516bae2784dbeb 89-90
+  s_2ab4603a10f84e::t_96ccf894a9ea96 94
+  s_2ab4603a10f84e::t_6187d7376d5b8e 98
+  s_2ab4603a10f84e::t_ac6a472e80844f 141-143
+  s_2ab4603a10f84e::t_2ef5e5a1fdfa7f 248-250
+  s_2ab4603a10f84e::t_1f248ca4dcad61 257-259
+  s_2ab4603a10f84e::t_9d203aae6ea16a 263-265
+  s_2ab4603a10f84e::t_e8ddd234d4486a 273-275
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_2ab4603a10f84e::t_49f105edefc3bb 130
+Tests/SamplingCoreTests/MachinePageTests.swift
+  s_2ab4603a10f84e::t_5fd36181b0aa40 309,312-313
+Package.swift
+  s_2ab4603a10f84e::t_19ddcd0d85500e 57
+Tests/SamplingCoreTests/MachineOverviewTests.swift
+  s_2ab4603a10f84e::t_9519d5158febb1 105-109
+  s_2ab4603a10f84e::t_a918f40f5f8fa1 64,152-313
+  s_2ab4603a10f84e::t_c9d5f4e32d5f6f 61-63
+  s_2ab4603a10f84e::t_208c6c013dfa77 65-67,102-104
+  s_2ab4603a10f84e::t_f9d0598a8784a0 110-112,149-151
+  s_2ab4603a10f84e::t_e627fe01f5c156 314-316
+Tests/SamplingCoreTests/HistoryCurveWiringSourceTests.swift
+  s_2ab4603a10f84e::t_df214ac191d4d3 218-219
+Pulse/Models/MachineOverview.swift
+  s_e62be44d14760a::t_35a993c9de9756 1-284
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "35d73f594b087cb44b533a95cd0b5f2a74275181",
+  "prompts": {},
+  "sessions": {
+    "s_2ab4603a10f84e": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b3e9-dcbe-7151-81de-1e6180e6dbe6",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    },
+    "s_e62be44d14760a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c07c299b-10b6-401c-8be2-d5fa91920d49",
+        "model": "unknown"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
