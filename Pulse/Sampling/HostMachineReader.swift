@@ -6,14 +6,21 @@ enum HostMachineReader {
     static func read() -> MachineFacts {
         let info = ProcessInfo.processInfo
         let version = info.operatingSystemVersion
+        let uptime = info.systemUptime
+        let elapsed = uptime >= 0 ? uptime : 0
+        let memory = info.physicalMemory
         return MachineFacts(
             chipName: MachineInfo.chipName(),
+            modelName: MachineInfo.hardwareModel(),
+            coreCount: MachineInfo.processorCount,
+            physicalMemoryBytes: memory > 0 ? memory : nil,
             os: MachineOSVersion(
                 major: version.majorVersion,
                 minor: version.minorVersion,
                 patch: version.patchVersion
             ),
-            uptime: info.systemUptime,
+            uptime: uptime,
+            bootedAt: Date().addingTimeInterval(-elapsed),
             power: power(lowPowerMode: info.isLowPowerModeEnabled),
             volume: volume()
         )

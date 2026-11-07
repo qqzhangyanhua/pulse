@@ -74,7 +74,27 @@ struct MemorySnapshot: Sendable, Equatable {
     let pressureSeries: [ChartSample]
     let capturedAt: Date
     /// `vm.swapusage` used bytes. Nil is an unread sample. Zero is a real empty swap file.
-    let swapUsedBytes: UInt64? = nil
+    let swapUsedBytes: UInt64?
+
+    init(
+        usedBytes: UInt64,
+        totalBytes: UInt64,
+        breakdown: MemoryBreakdown,
+        pressure: PressureLevel,
+        pressureMetric: Double,
+        pressureSeries: [ChartSample],
+        capturedAt: Date,
+        swapUsedBytes: UInt64? = nil
+    ) {
+        self.usedBytes = usedBytes
+        self.totalBytes = totalBytes
+        self.breakdown = breakdown
+        self.pressure = pressure
+        self.pressureMetric = pressureMetric
+        self.pressureSeries = pressureSeries
+        self.capturedAt = capturedAt
+        self.swapUsedBytes = swapUsedBytes
+    }
 }
 
 struct ProcessRow: Identifiable, Sendable, Hashable {

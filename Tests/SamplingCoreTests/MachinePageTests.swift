@@ -115,10 +115,122 @@ final class MachinePageTests: XCTestCase {
         )
         let facts = sampleFacts()
         XCTAssertEqual(MachinePageCopy.factLines(facts).count, 5)
-        XCTAssertFalse(MachinePageCopy.accessibilityLabel(facts: facts, thermalNotice: nil).contains("降频"))
+        let label = MachinePageCopy.accessibilityLabel(facts: facts, thermalNotice: nil)
+        XCTAssertFalse(label.contains("降频"))
+        XCTAssertTrue(label.contains("机型 · Mac14,10"))
+        XCTAssertTrue(label.contains("12 核 · 18 GB"))
+        XCTAssertTrue(label.contains("开机"))
         XCTAssertTrue(
             MachinePageCopy.accessibilityLabel(facts: facts, thermalNotice: ThermalNotice.throttling)
                 .contains("系统正在降频以控制温度")
+        )
+    }
+
+    func testIdentityAndShortCaptionsDoNotRepeatTheBigNumber() {
+        XCTAssertEqual(MachinePageCopy.modelValue(nil), "—")
+        XCTAssertEqual(MachinePageCopy.modelValue("  Mac14,10  "), "Mac14,10")
+        XCTAssertEqual(
+            MachinePageCopy.capacityLine(coreCount: 12, physicalMemoryBytes: 18 * 1_073_741_824),
+            "12 核 · 18 GB"
+        )
+        XCTAssertEqual(
+            MachinePageCopy.capacityLine(coreCount: 0, physicalMemoryBytes: nil),
+            "— · —"
+        )
+        XCTAssertFalse(MachinePageCopy.capacityLine(coreCount: 0, physicalMemoryBytes: nil).contains("0 GB"))
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let booted = calendar.date(from: DateComponents(year: 2026, month: 11, day: 7, hour: 9, minute: 5))
+        XCTAssertEqual(MachinePageCopy.bootCaption(booted, calendar: calendar), "2026年11月7日 09:05 开机")
+        XCTAssertEqual(MachinePageCopy.bootCaption(nil, calendar: calendar), "—")
+
+        XCTAssertEqual(
+            MachinePageCopy.powerCaption(source: .battery, percent: 42, lowPowerMode: false),
+            "电池"
+        )
+        XCTAssertEqual(
+            MachinePageCopy.powerCaption(source: .battery, percent: 0, lowPowerMode: true),
+            "电池 · 低电量模式"
+        )
+        XCTAssertNil(MachinePageCopy.powerCaption(source: .adapter, percent: nil, lowPowerMode: false))
+        XCTAssertEqual(
+            MachinePageCopy.powerCaption(source: .adapter, percent: nil, lowPowerMode: true),
+            "低电量模式"
+        )
+        XCTAssertEqual(
+            MachinePageCopy.powerCaption(source: .unknown, percent: 80, lowPowerMode: false),
+            "—"
+        )
+
+        XCTAssertEqual(
+            MachinePageCopy.volumeCaption(available: 0, total: 100),
+            "共 100 字节 · 已用 100%"
+        )
+        XCTAssertEqual(
+            MachinePageCopy.volumeCaption(available: 100, total: 100),
+            "共 100 字节 · 已用 0%"
+        )
+        XCTAssertEqual(MachinePageCopy.volumeCaption(available: 150, total: 100), "共 100 字节")
+        XCTAssertEqual(MachinePageCopy.volumeCaption(available: nil, total: 100), "—")
+        XCTAssertEqual(MachinePageCopy.volumeCaption(available: 10, total: 0), "—")
+        XCTAssertEqual(
+            MachinePageCopy.volumeCaption(available: 1, total: 3),
+            "共 3 字节 · 已用 67%"
+        )
+    }
+
+    func testStatusRowKeepsAHeldSnapshotAndDoesNotInventZero() {
+        XCTAssertEqual(MachineStatusCopy.phase(snapshot: nil, loadState: .sampling), .sampling)
+        XCTAssertEqual(MachineStatusCopy.phase(snapshot: nil, loadState: .failed), .missing)
+        let held = sampleSnapshot()
+        XCTAssertEqual(MachineStatusCopy.phase(snapshot: held, loadState: .failed), .ready)
+
+        let sampling = MachineStatusCopy.pressure(snapshot: nil, loadState: .sampling)
+        XCTAssertNil(sampling.value)
+        XCTAssertEqual(sampling.caption, "正在采样…")
+        XCTAssertEqual(sampling.accessibilityValue, "正在采样…")
+
+        let missing = MachineStatusCopy.usedMemory(snapshot: nil, loadState: .failed)
+        XCTAssertEqual(missing.value, "—")
+        XCTAssertEqual(missing.caption, "暂时读不到")
+        XCTAssertFalse(missing.accessibilityValue.contains("0"))
+
+        let pressure = MachineStatusCopy.pressure(snapshot: held, loadState: .ready)
+        XCTAssertEqual(pressure.value, "正常")
+        XCTAssertEqual(pressure.caption, "42% · 余量充足")
+        let elevated = sampleSnapshot(pressure: .elevated, metric: 0.9)
+        XCTAssertEqual(
+            MachineStatusCopy.pressure(snapshot: elevated, loadState: .ready).caption,
+            "余量紧张"
+        )
+
+        let used = MachineStatusCopy.usedMemory(snapshot: held, loadState: .ready)
+        XCTAssertEqual(used.value, ByteFormat.memory(1_024))
+        XCTAssertEqual(used.caption, "共 \(ByteFormat.memory(2_048))")
+
+        let emptySwap = MachineStatusCopy.swap(snapshot: sampleSnapshot(swap: 0), loadState: .ready)
+        XCTAssertEqual(emptySwap.value, "0 字节")
+        XCTAssertEqual(emptySwap.caption, "已用")
+        let unreadSwap = MachineStatusCopy.swap(snapshot: sampleSnapshot(swap: nil), loadState: .ready)
+        XCTAssertEqual(unreadSwap.value, "—")
+        XCTAssertEqual(unreadSwap.caption, "未采样")
+
+        let cpu = MachineStatusCopy.cpu(snapshot: held, loadState: .ready, percent: 12)
+        XCTAssertEqual(cpu.value, "12.0%")
+        XCTAssertEqual(cpu.caption, "全机")
+        let missingCPU = MachineStatusCopy.cpu(snapshot: held, loadState: .ready, percent: nil)
+        XCTAssertEqual(missingCPU.value, "—")
+        XCTAssertEqual(missingCPU.caption, "未采样")
+        XCTAssertNotEqual(missingCPU.caption, "暂时读不到")
+
+        XCTAssertEqual(
+            MachineStatusCopy.buttonLabel(title: "压力", value: "正常", destination: MachineStatusCopy.memoryDestination),
+            "压力，正常，打开内存页"
+        )
+        XCTAssertEqual(
+            MachineStatusCopy.buttonLabel(title: "CPU", value: "12.0%", destination: MachineStatusCopy.cpuDestination),
+            "CPU，12.0%，打开 CPU 页"
         )
     }
 
@@ -186,15 +298,58 @@ final class MachinePageTests: XCTestCase {
 
         let quit = try repoText("Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift")
         XCTAssertEqual(occurrenceCount(of: "guard selectedPage.allowsProcessQuit else { return }", in: quit), 2)
+
+        let reader = try repoText("Pulse/Sampling/HostMachineReader.swift")
+        XCTAssertTrue(reader.contains("hardwareModel()"))
+        XCTAssertTrue(reader.contains("processorCount"))
+        XCTAssertTrue(reader.contains("physicalMemory"))
+        XCTAssertTrue(reader.contains("bootedAt"))
+
+        let overview = try repoText("Pulse/Views/MachineOverviewSection.swift")
+        XCTAssertEqual(occurrenceCount(of: "selectPage(.memory)", in: overview), 3)
+        XCTAssertEqual(occurrenceCount(of: "selectPage(.cpu)", in: overview), 1)
+        XCTAssertFalse(overview.contains("selectedPage ="))
+        XCTAssertFalse(overview.contains("SparklineChart"))
+        XCTAssertFalse(overview.contains("ProcessTablePane"))
+        XCTAssertTrue(overview.contains("vm.thermalNotice"))
     }
 
     private func sampleFacts() -> MachineFacts {
-        MachineFacts(
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let booted = calendar.date(from: DateComponents(year: 2026, month: 11, day: 7, hour: 9, minute: 5))
+        return MachineFacts(
             chipName: "Apple M3 Pro",
+            modelName: "Mac14,10",
+            coreCount: 12,
+            physicalMemoryBytes: 18 * 1_073_741_824,
             os: MachineOSVersion(major: 15, minor: 6, patch: 1),
             uptime: 90,
+            bootedAt: booted,
             power: MachinePower(source: .battery, batteryPercent: 42, lowPowerMode: false),
             volume: MachineVolume(availableBytes: 100, totalBytes: 200)
+        )
+    }
+
+    private func sampleSnapshot(
+        pressure: PressureLevel = .normal,
+        metric: Double = 0.42,
+        swap: UInt64? = 0
+    ) -> MemorySnapshot {
+        MemorySnapshot(
+            usedBytes: 1_024,
+            totalBytes: 2_048,
+            breakdown: MemoryBreakdown(
+                appBytes: 1_024,
+                wiredBytes: 0,
+                compressedBytes: 0,
+                cachedBytes: 0
+            ),
+            pressure: pressure,
+            pressureMetric: metric,
+            pressureSeries: [],
+            capturedAt: Date(timeIntervalSince1970: 0),
+            swapUsedBytes: swap
         )
     }
 
