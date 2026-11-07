@@ -26,6 +26,12 @@ struct MemoryDashboardView: View {
                             .controlSize(.small)
                             .help(WindowedAppChrome.help)
                     }
+                    if AppGroupChrome.showsToggle(page: vm.selectedPage) {
+                        Toggle(AppGroupChrome.toggleTitle, isOn: $vm.groupedByApp)
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                            .help(AppGroupChrome.help)
+                    }
                     if MemoryRisingOnlyChrome.showsToggle(page: vm.selectedPage) {
                         Toggle(MemoryRisingOnlyChrome.toggleTitle, isOn: $vm.risingOnlyFilter)
                             .toggleStyle(.switch)

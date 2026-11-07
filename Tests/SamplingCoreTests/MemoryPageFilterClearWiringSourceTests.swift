@@ -71,12 +71,12 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         let filterLine = try lineContaining("var filter", in: source)
         XCTAssertEqual(filterLine, "    @Published var filter = \"\"")
         XCTAssertFalse(filterLine.contains("didSet"), "do not add didSet on filter")
-        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 3, "windowedOnlyFilter adds one didSet")
+        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 4, "groupedByApp adds one didSet")
         XCTAssertFalse(source.contains("onChange"), "VM gains no onChange")
         XCTAssertEqual(
             occurrenceCount(of: "@Published", in: source),
-            27,
-            "windowed app filter adds windowedOnlyFilter"
+            28,
+            "app grouping adds groupedByApp"
         )
         XCTAssertEqual(
             try lineContaining("var topAppLocateReveal", in: source).trimmingCharacters(in: .whitespaces),

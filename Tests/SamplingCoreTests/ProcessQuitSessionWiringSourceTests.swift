@@ -59,8 +59,8 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         XCTAssertFalse(source.contains("Timer"))
         XCTAssertFalse(source.contains("NSAlert"))
         XCTAssertEqual(occurrenceCount(of: "ProcessQuitSession.applySample", in: source), 1)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 27, "windowed app filter adds windowedOnlyFilter")
-        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 3)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 28, "app grouping adds groupedByApp")
+        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 4)
     }
 
     func testSelectedPidDidSetDoesNotTouchTheQuitStore() throws {
@@ -211,7 +211,7 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         let source = try vmSource()
         let apply = try functionBody(named: "applySample", in: source)
         XCTAssertEqual(occurrenceCount(of: "usedBytes: frame.snapshot.usedBytes", in: apply), 1)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 27)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 28)
         XCTAssertTrue(source.contains("guard snapshot != nil, samplingFailed == false else { return nil }"))
         XCTAssertTrue(source.contains("return snapshot?.usedBytes"))
         let ordinary = try functionBody(named: "quitSelected", in: source)

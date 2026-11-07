@@ -106,13 +106,13 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         XCTAssertFalse(vm.contains(sentence))
         XCTAssertFalse(vm.contains("MemoryGrowthListCopy"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 27)
-        XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 3)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 28)
+        XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 4)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: vm), 1)
         let badge = try functionBody(named: "memoryGrowthListBadge", in: vm)
         XCTAssertTrue(compact(badge).contains("seriesByPid:topMemorySeries"))
         let sorted = try functionBody(named: "sortedRows", in: vm)
-        XCTAssertTrue(compact(sorted).contains("tableSort.ordered(visibleRows)"))
+        XCTAssertTrue(compact(sorted).contains("AppGroupProjection.apply(rows:visibleRows"))
         XCTAssertFalse(sorted.contains("@Published"))
     }
 
@@ -127,7 +127,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         XCTAssertFalse(package.contains("MemoryDashboardVM.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
-        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 61, "windowed app adds WindowedAppFilter and WindowedAppLookup")
+        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 62, "app grouping adds AppGroupProjection.swift")
         let build = try markedSection("PBXBuildFile", in: project)
         let refs = try markedSection("PBXFileReference", in: project)
         let models = try modelsGroup(in: project)

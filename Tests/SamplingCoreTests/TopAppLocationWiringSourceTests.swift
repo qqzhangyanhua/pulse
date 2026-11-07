@@ -68,8 +68,8 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
     func testLocateMethodSnapshotsThenWritesOnlyAfterThePlanGuard() throws {
         let source = try vmSource()
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: source), 1)
-        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 3)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 27)
+        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 4)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 28)
         XCTAssertEqual(occurrenceCount(of: "func locateMemoryTopApp(", in: source), 1)
         XCTAssertEqual(occurrenceCount(of: "topAppLocateReveal =", in: source), 1)
 
@@ -88,7 +88,7 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
         let sortedLine = try lineContaining("var sortedRows", in: source)
         XCTAssertFalse(sortedLine.contains("@Published"))
         let sortedBody = try functionBody(named: "sortedRows", in: source)
-        XCTAssertTrue(compact(sortedBody).contains("tableSort.ordered(visibleRows)"))
+        XCTAssertTrue(compact(sortedBody).contains("AppGroupProjection.apply(rows:visibleRows"))
         XCTAssertFalse(compact(sortedBody).contains("ordered(rows)"))
 
         let body = try functionBody(named: "locateMemoryTopApp", in: source)
