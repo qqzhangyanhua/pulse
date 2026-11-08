@@ -1,0 +1,19 @@
+Pulse/Views/CPUOverviewSection.swift
+  s_5cf659d3bbfde1::t_8ec46ebb9fa73a 91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "293aeb6b1a2abb9bd22c2a6b6ca3593a50194851",
+  "prompts": {},
+  "sessions": {
+    "s_5cf659d3bbfde1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "603adb66-9d63-45b2-ba7b-f010a161346d",
+        "model": "unknown"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
