@@ -64,6 +64,7 @@ let package = Package(
                 "Models/AppGroupProjection.swift",
                 "Models/ProcessGlossary.swift",
                 "Models/MenuBarReading.swift",
+                "Models/LoginItem.swift",
                 "Sampling/CPULoad.swift",
                 "Sampling/HostNetwork.swift",
                 "Sampling/HostDisk.swift",
