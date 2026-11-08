@@ -77,6 +77,7 @@ enum ProcessEnergyText {
     static let partial = "部分读数"
     static let impactTitle = "能耗影响"
     static let idleWakeTitle = "空闲唤醒"
+    private static let posix = Locale(identifier: "en_US_POSIX")
 
     static func caption(isPartial: Bool) -> String {
         isPartial ? partial : ""
@@ -84,11 +85,11 @@ enum ProcessEnergyText {
 
     static func watts(_ value: Double?) -> String {
         guard let value else { return missing }
-        return String(format: "%.1f W", locale: Locale(identifier: "en_US_POSIX"), value)
+        return String(format: "%.1f W", locale: posix, value)
     }
 
     static func wakeups(_ value: Double?) -> String {
         guard let value else { return missing }
-        return String(format: "%.1f 次/秒", locale: Locale(identifier: "en_US_POSIX"), value)
+        return String(format: "%.1f 次/秒", locale: posix, value)
     }
 }

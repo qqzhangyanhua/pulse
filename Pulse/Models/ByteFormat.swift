@@ -68,13 +68,28 @@ enum ByteFormat {
         return String(format: "%02d:%02d", hour, minute)
     }
 
+    // NumberFormatter is mutable. One instance per thread: toolbar byte text can run off the main thread.
     private static func grouped(_ value: Double, maxDecimals: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = maxDecimals
-        formatter.usesGroupingSeparator = abs(value) >= 1000
+        let grouping = abs(value) >= 1000
+        let formatter = groupedFormatter(maxDecimals: maxDecimals, grouping: grouping)
         return formatter.string(from: NSNumber(value: value)) ?? String(format: "%.\(maxDecimals)f", value)
     }
+
+    private static func groupedFormatter(maxDecimals: Int, grouping: Bool) -> NumberFormatter {
+        let key = "Pulse.ByteFormat.\(maxDecimals).\(grouping)"
+        let dictionary = Thread.current.threadDictionary
+        if let formatter = dictionary[key] as? NumberFormatter {
+            return formatter
+        }
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.locale = posix
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = maxDecimals
+        formatter.usesGroupingSeparator = grouping
+        dictionary[key] = formatter
+        return formatter
+    }
+
+    private static let posix = Locale(identifier: "en_US_POSIX")
 }
