@@ -88,7 +88,7 @@ struct CPUOverviewSection: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(height: 172)
+        .frame(height: 150)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(readyAccessibilityLabel)
     }

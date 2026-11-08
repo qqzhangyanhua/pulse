@@ -241,7 +241,7 @@ struct AppFilterField: View {
         .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(PulsePalette.hairline, lineWidth: 1)
+                .strokeBorder(isFocused ? PulsePalette.accent.opacity(0.65) : PulsePalette.hairline, lineWidth: 1)
         }
         .focusedSceneValue(\.focusNameFilter) { isFocused = true }
         .focusedSceneValue(\.nameFilterFocused, isFocused)
@@ -531,15 +531,17 @@ struct SidebarMetric: View {
 
     @ViewBuilder
     private var captionText: some View {
-        let text = Text(caption)
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
-        if let help {
-            text.help(help)
-        } else {
-            text
+        if !caption.isEmpty {
+            let text = Text(caption)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            if let help {
+                text.help(help)
+            } else {
+                text
+            }
         }
     }
 }

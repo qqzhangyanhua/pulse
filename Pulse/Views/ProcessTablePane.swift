@@ -19,6 +19,9 @@ struct ProcessTablePane: View {
         VStack(alignment: .leading, spacing: 4) {
             if showsColumnHeader {
                 columnHeader
+                Divider()
+                    .overlay(PulsePalette.hairline)
+                    .padding(.horizontal, 4)
             }
             tableBody
         }
@@ -365,6 +368,7 @@ struct ProcessTablePane: View {
             .foregroundStyle(active ? Color.white.opacity(0.88) : Color.secondary)
         }
         .buttonStyle(.plain)
+        .contentShape(Rectangle())
         .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: vm.tableSort)
     }
 }

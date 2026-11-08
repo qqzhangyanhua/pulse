@@ -60,5 +60,9 @@ struct ProcessDetailSidebarQuitControls: View {
         }
         .padding(16)
         .background(PulsePalette.sidebar)
+        .overlay(alignment: .top) {
+            Divider()
+                .overlay(PulsePalette.hairline)
+        }
     }
 }
