@@ -1,4 +1,4 @@
-# Pulse 一期发布（公证直装）
+# Pulse 发布（公证直装）
 
 macOS 14+、单 Target、bundle id `com.qqzhangyanhua.pulse`、版本 `0.1.0`（`CFBundleVersion` `1`）。分发是 **Developer ID + notarytool + stapler**，不是 Mac App Store。沙盒保持关闭，`Pulse/Pulse.entitlements` 保持空 dict。Hardened Runtime 已在工程打开。
 
@@ -23,7 +23,7 @@ macOS 14+、单 Target、bundle id `com.qqzhangyanhua.pulse`、版本 `0.1.0`（
 
 在 macOS 14+、Xcode 15+ 上打开 `Pulse.xcodeproj`，Scheme 选 Pulse，Run。Signing Team 可以留空。
 
-冷启动应落在内存页。验收条目见 [PRD](PRD.md) 与技术设计 [TECH.md](TECH.md)。这一步的包是 ad-hoc，不能当直装包发出去。
+冷启动应落在内存页。逐项检查见 [TECH.md「本机冒烟清单」](TECH.md#本机冒烟清单)，范围见 [PRD](PRD.md)。这一步的包是 ad-hoc，不能当直装包发出去。
 
 ## 2. 安装 Developer ID 证书
 
@@ -76,7 +76,7 @@ Team、钥匙串身份或公证凭据缺任何一项，这里就会失败，并�
 1. 确认本机是 macOS，且 `DEVELOPMENT_TEAM`、Developer ID Application 身份、公证凭据都在。
 2. `xcodebuild archive`（scheme `Pulse`，configuration `Release`）。这次构建覆盖为手动签名：指定的 Developer ID、`ENABLE_HARDENED_RUNTIME=YES`、`ENABLE_APP_SANDBOX=NO`、`CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO`，entitlements 仍是 `Pulse/Pulse.entitlements`。
 3. 写一份临时的 export options（`method` = `developer-id`，`signingStyle` = `manual`）到 `build/export/exportOptions.plist`，再 `xcodebuild -exportArchive`。
-4. 若 export 因描述文件失败，脚本会把失败打出来，并用同一身份对 archive 里的 `Pulse.app` 执行 `codesign --options runtime --timestamp`。一期没有沙盒、entitlements 为空，不需要 Mac App Store 描述文件。
+4. 若 export 因描述文件失败，脚本会把失败打出来，并用同一身份对 archive 里的 `Pulse.app` 执行 `codesign --options runtime --timestamp`。App 不开沙盒、entitlements 为空，不需要 Mac App Store 描述文件。
 5. `ditto` 打 zip，`xcrun notarytool submit --wait`。
 6. `xcrun stapler staple` / `stapler validate`，再用 `spctl --assess --type execute` 看 Gatekeeper。
 
@@ -133,14 +133,10 @@ spctl --assess --type execute --verbose=4 Pulse.app
 
 ## 出货前再对一遍
 
-用装订后的 `/Applications/Pulse.app` 走 [PRD](PRD.md) 验收，而不是只看 Debug ad-hoc：
+用装订后的 `/Applications/Pulse.app` 跑一遍 [TECH.md「本机冒烟清单」](TECH.md#本机冒烟清单)，不要只看 Debug ad-hoc 包。另外确认：
 
-- 冷启动在内存页，进程表按内存降序
-- 用量大数、分类条、压力「正常 / 偏高」和压力曲线
-- 名称过滤；无结果有空态
-- 侧栏内存主曲线、CPU 辅曲线；切换进程后曲线重采
-- 「退出」走 `terminate`；失败后再「强制退出」，并有系统确认
-- 文案没有恐吓措辞
-- 约 30 秒能定位并退出
+- 首次打开没有 Gatekeeper 拦截，`spctl --assess` 通过
+- 关掉主窗后菜单栏仍在，`⌘Q` 能退出
+- 典型路径约 30 秒能定位并退出（见 [PRD](PRD.md)）
 
 采样间隔、权限模型和界面不要为了发版改。公证完成前，Hardened Runtime 的本地包只用于自测。

@@ -9,7 +9,7 @@ Pulse is a native SwiftUI resource monitor for macOS 14+. `Pulse.xcodeproj` buil
 - `Pulse/Views/`, `ViewModels/`, `MenuBar/`, and `Actions/`: UI, dashboard state, menu bar integration, and process termination.
 - `Pulse/Assets.xcassets/`: app icons and colors.
 - `Tests/SamplingCoreTests/`: XCTest suites.
-- `docs/`: requirements, technical design, release instructions, and agent workflows.
+- `docs/`: `PRD.md` (current scope), `TECH.md` (current implementation and smoke checklist), `RELEASE.md`, `specs/` (archived per-phase design drafts), `adr/` (metric and design decisions), and `agents/` workflows.
 
 ## Build, Test, and Development Commands
 
@@ -27,11 +27,20 @@ Prefer minimal changes that preserve existing behavior. Before editing, confirm 
 
 ## Testing Guidelines
 
-Use XCTest with `<Feature>Tests.swift` filenames and descriptive `test...` methods. Add regression coverage for behavior changes and run `swift test`. No numeric coverage threshold is configured. UI and system-reader changes also need macOS smoke checks against `docs/PRD.md` and the relevant `docs/TECH.md` checklist.
+Use XCTest with `<Feature>Tests.swift` filenames and descriptive `test...` methods. Add regression coverage for behavior changes and run `swift test`. No numeric coverage threshold is configured. UI and system-reader changes also need macOS smoke checks against the 「本机冒烟清单」 in `docs/TECH.md`.
 
 ## Commit & Pull Request Guidelines
 
 Recent commits commonly use `feat:` or `docs:` with concise Chinese descriptions and references such as `(#68)`. Keep commits scoped. PRs should describe the resulting behavior, link the issue, report validation and limitations, and include screenshots for visible UI changes.
+
+## Documentation
+
+Keep docs current in the same PR as the change:
+
+- User-visible behavior or data-metric changes: update the matching section of `docs/TECH.md`, and its smoke checklist when the check changes. Edit in place; do not append a new phase section.
+- Scope changes: update `docs/PRD.md` and the feature list in `README.md`.
+- Reversing an earlier metric or design decision: add an ADR under `docs/adr/`.
+- `docs/specs/` is an archive. Add a new `NN-topic.md` draft there if a phase needs one, and register it in `docs/specs/README.md`; never rewrite old drafts beyond a superseded note at the top.
 
 ## Agent Workflows & Configuration
 
