@@ -228,6 +228,8 @@ struct SampledFrame: Sendable {
     let hostDiskRates: HostDiskRates
     /// Bounded Top N=5 memory series for this tick. Empty when the process list failed.
     let topMemorySeries: [Int32: [ChartSample]]
+    /// This frame only. Nil when the list failed or no task-info read was denied.
+    let permissionFootnote: String?
 
     init(
         snapshot: MemorySnapshot,
@@ -238,7 +240,8 @@ struct SampledFrame: Sendable {
         hostNetworkRates: HostNetworkRates,
         hostDiskRates: HostDiskRates,
         topMemorySeries: [Int32: [ChartSample]] = [:],
-        busiestCorePercent: Double? = nil
+        busiestCorePercent: Double? = nil,
+        permissionFootnote: String? = nil
     ) {
         self.snapshot = snapshot
         self.rows = rows
@@ -249,5 +252,6 @@ struct SampledFrame: Sendable {
         self.hostDiskRates = hostDiskRates
         self.topMemorySeries = topMemorySeries
         self.busiestCorePercent = busiestCorePercent
+        self.permissionFootnote = permissionFootnote
     }
 }

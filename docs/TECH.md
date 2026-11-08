@@ -28,7 +28,7 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
              HostMachineReader（只给本机页，不在采样器里）
 ```
 
-- `MemorySampler.sample()` 每次产出一帧不可变的 `SampledFrame`：主机内存快照、进程行、选中进程详情、整机 CPU、最忙一核、主机网络 / 磁盘速率、Top5 内存序列。主线程只读这帧。
+- `MemorySampler.sample()` 每次产出一帧不可变的 `SampledFrame`：主机内存快照、进程行、选中进程详情、整机 CPU、最忙一核、主机网络 / 磁盘速率、Top5 内存序列、权限脚注。主线程只读这帧。
 - 主窗、菜单栏、各资源页都读同一个 VM 的同一帧。没有第二个采样器，也没有第二条轮询。这个 VM 归 `PulseAppDelegate`，启动完成就 `start()`，关窗不释放。
 - `Models/` 里的类型是纯投影：输入现有字段，输出文案和状态，不采样、不存历史。
 
@@ -57,7 +57,7 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 
 ## 进程读数
 
-- 进程列表来自 `proc_listpids`，每个 pid 读 `proc_pidinfo(PROC_PIDTASKINFO)` 和一次 `proc_pid_rusage`。列表整个读失败时 `processListFailed = true`，表进失败空态。
+- 进程列表来自 `proc_listpids`，每个 pid 读 `proc_pidinfo(PROC_PIDTASKINFO)` 和一次 `proc_pid_rusage`。任务信息失败且 errno 为 EPERM 的进程不进表。这一帧这种失败的次数 N > 0 时，进程表底部写「另有 N 个系统进程没有读取权限」。ESRCH 不算，N 不跨帧累计，N 为 0 不写这句话。列表整个读失败时 `processListFailed = true`，表进失败空态，不写这句脚注，也不写 0。缺数仍是「—」。
 - CPU%：`proc_pidinfo` 的用户态和内核态是 Mach 绝对时间 tick。每帧读一次 Mach 时间基，换成纳秒后再做两帧求差。时间基读失败或换算缺失时这一帧是「—」，不把原始 tick 送进速率，也不写成 0。第一帧、新出现的进程、计数变小仍是「—」。多核可以超过 100%。整机 CPU 和最忙一核仍用 `host_statistics` 的 tick，不经过这次换算。排序用换算后的百分比。
 - 磁盘读取 / 写入：`proc_pid_rusage` 的累计字节两帧求差。读失败的进程显示「—」。
 - 能耗影响 / 唤醒：同一次 `proc_pid_rusage`（`rusage_info_v6`）的 `ri_energy_nj`（纳焦）和 `ri_interrupt_wkups`，两帧求差。瓦特 = 纳焦差 / 秒 / 1e9，唤醒 = 次数差 / 秒。第一帧、计数变小、读取失败都是「—」。没有替代来源。v6 失败不另读 v4：内存仍回退驻留内存，能耗和唤醒缺失。见 [ADR-0002](adr/0002-process-energy-wakeups.md)。列名不表示活动监视器的能耗影响分数。
@@ -155,6 +155,7 @@ Tab 选中胶囊、总览高度和工具栏里的页专属开关用同一段动�
 
 **内存页**
 - [ ] 冷启动落在内存页，表按内存降序；总用量和活动监视器同一数量级
+- [ ] 普通用户打开进程表，底部有「另有 N 个系统进程没有读取权限」，N 大于 0；这些进程没有被补进行。缺数仍是「—」
 - [ ] 用量大数、分类条、压力档与曲线、四格（交换读不到时显示「— / 未采样」）
 - [ ] 空闲且 `sysctl kern.memorystatus_vm_pressure_level` 为 1 时，总览压力档、菜单栏圆点、弹出条压力行都是正常；警告压力时三处变为偏高
 - [ ] 名称过滤、仅上涨、仅窗口 App、按 App 都能切换；过滤无结果有空态，「清空过滤」一次清干净

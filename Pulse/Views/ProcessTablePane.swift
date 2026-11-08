@@ -24,6 +24,7 @@ struct ProcessTablePane: View {
                     .padding(.horizontal, 4)
             }
             tableBody
+            ProcessPermissionFootnoteLabel(sentence: vm.processPermissionFootnote, processListFailed: vm.processListFailed, showsProcessTable: showsReadyProcessList)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }

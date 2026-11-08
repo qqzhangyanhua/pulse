@@ -104,7 +104,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         XCTAssertFalse(vm.contains(sentence))
         XCTAssertFalse(vm.contains("MemoryGrowthListCopy"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 28)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 29, "permission footnote adds processPermissionFootnote")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 4)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: vm), 1)
         let badge = try functionBody(named: "memoryGrowthListBadge", in: vm)
@@ -125,7 +125,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         XCTAssertFalse(package.contains("MemoryDashboardVM.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
-        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 75, "adds MenuBarReading.swift, PulseSettingsView.swift, BatteryMath.swift, ProcessEnergy.swift, ProcessRowCopy.swift, PressureNotice.swift, PressureNoticeCenter.swift, LoginItem.swift, and ProcessQuitRoute.swift")
+        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 77, "adds MenuBarReading.swift, PulseSettingsView.swift, BatteryMath.swift, ProcessEnergy.swift, ProcessRowCopy.swift, PressureNotice.swift, PressureNoticeCenter.swift, LoginItem.swift, ProcessQuitRoute.swift, ProcessPermissionFootnote.swift, and ProcessPermissionFootnoteLabel.swift")
         let build = try markedSection("PBXBuildFile", in: project)
         let refs = try markedSection("PBXFileReference", in: project)
         let models = try modelsGroup(in: project)
