@@ -17,7 +17,7 @@ enum ProcessQuitRoute: Equatable {
     /// Send this signal, then the existing wait.
     case signal(ProcessQuitSignal)
 
-    /// Equal to the prefix, or `prefix + "/"`. Not a raw string prefix.
+    /// String prefix. `/Systematic` and `/usr/libexecfoo` are refused, not only children.
     private static let systemPrefixes = ["/System", "/usr/libexec", "/usr/sbin", "/sbin"]
 
     static func decide(
@@ -50,8 +50,6 @@ enum ProcessQuitRoute: Equatable {
     }
 
     private static func isSystemPath(_ path: String) -> Bool {
-        systemPrefixes.contains { prefix in
-            path == prefix || path.hasPrefix(prefix + "/")
-        }
+        systemPrefixes.contains(where: path.hasPrefix)
     }
 }

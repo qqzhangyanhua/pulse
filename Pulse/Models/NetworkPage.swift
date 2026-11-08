@@ -26,15 +26,30 @@ enum NetworkRateText {
         return grouped(bytesPerSecond, maxDecimals: 0) + " 字节"
     }
 
+    // NumberFormatter is mutable. One instance per thread, same as ByteFormat.
     private static func grouped(_ value: Double, maxDecimals: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = maxDecimals
-        formatter.usesGroupingSeparator = abs(value) >= 1000
+        let grouping = abs(value) >= 1000
+        let formatter = groupedFormatter(maxDecimals: maxDecimals, grouping: grouping)
         return formatter.string(from: NSNumber(value: value)) ?? String(format: "%.\(maxDecimals)f", value)
     }
+
+    private static func groupedFormatter(maxDecimals: Int, grouping: Bool) -> NumberFormatter {
+        let key = "Pulse.NetworkRateText.\(maxDecimals).\(grouping)"
+        let dictionary = Thread.current.threadDictionary
+        if let formatter = dictionary[key] as? NumberFormatter {
+            return formatter
+        }
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.locale = posix
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = maxDecimals
+        formatter.usesGroupingSeparator = grouping
+        dictionary[key] = formatter
+        return formatter
+    }
+
+    private static let posix = Locale(identifier: "en_US_POSIX")
 }
 
 /// Calm network-page copy. Memory pressure wording stays on the memory page.

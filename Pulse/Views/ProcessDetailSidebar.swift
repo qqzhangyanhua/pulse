@@ -231,10 +231,10 @@ struct ProcessDetailSidebar: View {
             )
             SidebarMetric(
                 systemImage: "moon.zzz",
-                title: ProcessEnergyText.idleWakeTitle,
+                title: ProcessEnergyText.wakeTitle,
                 tint: PulsePalette.chartCPU,
-                value: ProcessEnergyText.wakeups(cpu.idleWakeupsPerSecond),
-                caption: ProcessEnergyText.caption(isPartial: cpu.idleWakeupReadingIsPartial)
+                value: ProcessEnergyText.wakeups(cpu.wakeupsPerSecond),
+                caption: ProcessEnergyText.caption(isPartial: cpu.wakeupReadingIsPartial)
             )
         }
         cpuChart(detail)

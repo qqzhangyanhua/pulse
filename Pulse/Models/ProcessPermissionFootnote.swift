@@ -35,7 +35,7 @@ enum ProcessPermissionFootnote {
         showsProcessTable: Bool
     ) -> String? {
         guard showsProcessTable, !processListFailed else { return nil }
-        guard let sentence, !sentence.isEmpty, sentence != "0" else { return nil }
+        guard let sentence, !sentence.isEmpty else { return nil }
         return sentence
     }
 }
