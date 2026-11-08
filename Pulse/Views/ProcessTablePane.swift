@@ -87,39 +87,50 @@ struct ProcessTablePane: View {
 
     private var tableBody: some View {
         Group {
-            switch vm.selectedPage {
-            case .cpu:
-                resourceTableBody(
-                    sampling: CPUPageCopy.sampling,
-                    failureTitle: CPUPageCopy.failureTitle,
-                    failureMessage: CPUPageCopy.failureMessage,
-                    emptyTitle: CPUPageCopy.emptyTitle,
-                    emptyMessage: CPUPageCopy.emptyMessage,
-                    systemImage: "cpu"
-                )
-            case .network:
-                resourceTableBody(
-                    sampling: NetworkPageCopy.sampling,
-                    failureTitle: NetworkPageCopy.failureTitle,
-                    failureMessage: NetworkPageCopy.failureMessage,
-                    emptyTitle: NetworkPageCopy.emptyTitle,
-                    emptyMessage: NetworkPageCopy.emptyMessage,
-                    systemImage: "network"
-                )
-            case .disk:
-                resourceTableBody(
-                    sampling: DiskPageCopy.sampling,
-                    failureTitle: DiskPageCopy.failureTitle,
-                    failureMessage: DiskPageCopy.failureMessage,
-                    emptyTitle: DiskPageCopy.emptyTitle,
-                    emptyMessage: DiskPageCopy.emptyMessage,
-                    systemImage: "internaldrive"
-                )
-            default:
-                memoryTableBody
+            if showsReadyProcessList {
+                processList
+            } else {
+                switch vm.selectedPage {
+                case .cpu:
+                    resourceTableBody(
+                        sampling: CPUPageCopy.sampling,
+                        failureTitle: CPUPageCopy.failureTitle,
+                        failureMessage: CPUPageCopy.failureMessage,
+                        emptyTitle: CPUPageCopy.emptyTitle,
+                        emptyMessage: CPUPageCopy.emptyMessage,
+                        systemImage: "cpu"
+                    )
+                case .network:
+                    resourceTableBody(
+                        sampling: NetworkPageCopy.sampling,
+                        failureTitle: NetworkPageCopy.failureTitle,
+                        failureMessage: NetworkPageCopy.failureMessage,
+                        emptyTitle: NetworkPageCopy.emptyTitle,
+                        emptyMessage: NetworkPageCopy.emptyMessage,
+                        systemImage: "network"
+                    )
+                case .disk:
+                    resourceTableBody(
+                        sampling: DiskPageCopy.sampling,
+                        failureTitle: DiskPageCopy.failureTitle,
+                        failureMessage: DiskPageCopy.failureMessage,
+                        emptyTitle: DiskPageCopy.emptyTitle,
+                        emptyMessage: DiskPageCopy.emptyMessage,
+                        systemImage: "internaldrive"
+                    )
+                default:
+                    memoryTableBody
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var showsReadyProcessList: Bool {
+        switch vm.selectedPage {
+        case .cpu, .network, .disk: cpuPhase == .ready
+        default: memoryPhase == .ready
+        }
     }
 
     private var memoryPhase: MemoryTablePhase {

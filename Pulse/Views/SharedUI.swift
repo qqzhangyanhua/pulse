@@ -79,13 +79,16 @@ enum ResourceTab: String, CaseIterable, Identifiable {
     }
 }
 
+/// Tab pill, overview height, and toolbar chips share one curve.
+enum PulseMotion {
+    static let page = Animation.smooth(duration: 0.28, extraBounce: 0)
+}
+
 struct ResourceTabs: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var selectionPill
     @State private var highlighted: DashboardPage?
-
-    private static let selectionAnimation = Animation.smooth(duration: 0.34, extraBounce: 0)
 
     private var shownPage: DashboardPage { highlighted ?? vm.selectedPage }
 
@@ -145,7 +148,7 @@ struct ResourceTabs: View {
         if reduceMotion {
             highlighted = page
         } else {
-            withAnimation(Self.selectionAnimation) {
+            withAnimation(PulseMotion.page) {
                 highlighted = page
             }
         }

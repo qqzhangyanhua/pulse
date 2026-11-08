@@ -3,17 +3,16 @@ import SwiftUI
 struct MemoryDashboardView: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var overviewPage: DashboardPage = .memory
-    @State private var showingMachine = false
 
     var body: some View {
         Group {
-            if showingMachine {
+            if vm.selectedPage == .machine {
                 machinePage.transition(.opacity)
             } else {
                 resourcePage.transition(.opacity)
             }
         }
+        .animation(reduceMotion ? nil : PulseMotion.page, value: vm.selectedPage == .machine)
         .background(PulsePalette.windowBackground)
         .navigationTitle("Pulse")
         .navigationSubtitle(vm.machineLabel ?? "机型读取中")
@@ -23,41 +22,40 @@ struct MemoryDashboardView: View {
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 if vm.selectedPage != .machine {
-                    if WindowedAppChrome.showsToggle(page: vm.selectedPage) {
-                        MemoryToolbarSwitch(
-                            title: WindowedAppChrome.toggleTitle,
-                            systemImage: "macwindow",
-                            isOn: $vm.windowedOnlyFilter
-                        )
-                        .help(WindowedAppChrome.help)
+                    HStack(spacing: 8) {
+                        if WindowedAppChrome.showsToggle(page: vm.selectedPage) {
+                            MemoryToolbarSwitch(
+                                title: WindowedAppChrome.toggleTitle,
+                                systemImage: "macwindow",
+                                isOn: $vm.windowedOnlyFilter
+                            )
+                            .help(WindowedAppChrome.help)
+                        }
+                        if AppGroupChrome.showsToggle(page: vm.selectedPage) {
+                            MemoryToolbarSwitch(
+                                title: AppGroupChrome.toggleTitle,
+                                systemImage: "square.stack.3d.up",
+                                isOn: $vm.groupedByApp
+                            )
+                            .help(AppGroupChrome.help)
+                        }
+                        if MemoryRisingOnlyChrome.showsToggle(page: vm.selectedPage) {
+                            MemoryToolbarSwitch(
+                                title: MemoryRisingOnlyChrome.toggleTitle,
+                                systemImage: "chart.line.uptrend.xyaxis",
+                                isOn: $vm.risingOnlyFilter
+                            )
+                            .help(MemoryGrowthListCopy.help)
+                        }
+                        AppFilterField(text: $vm.filter)
                     }
-                    if AppGroupChrome.showsToggle(page: vm.selectedPage) {
-                        MemoryToolbarSwitch(
-                            title: AppGroupChrome.toggleTitle,
-                            systemImage: "square.stack.3d.up",
-                            isOn: $vm.groupedByApp
-                        )
-                        .help(AppGroupChrome.help)
-                    }
-                    if MemoryRisingOnlyChrome.showsToggle(page: vm.selectedPage) {
-                        MemoryToolbarSwitch(
-                            title: MemoryRisingOnlyChrome.toggleTitle,
-                            systemImage: "chart.line.uptrend.xyaxis",
-                            isOn: $vm.risingOnlyFilter
-                        )
-                        .help(MemoryGrowthListCopy.help)
-                    }
-                    AppFilterField(text: $vm.filter)
+                    .animation(reduceMotion ? nil : PulseMotion.page, value: vm.selectedPage)
                 }
             }
         }
         .toolbarBackground(PulsePalette.windowBackground, for: .windowToolbar)
         .onAppear {
             vm.start()
-            applyPageMotion(vm.selectedPage, animated: false)
-        }
-        .onChange(of: vm.selectedPage) { _, newPage in
-            applyPageMotion(newPage, animated: !reduceMotion)
         }
     }
 
@@ -83,10 +81,12 @@ struct MemoryDashboardView: View {
         }
     }
 
-    /// Overview only. The process table follows the page immediately and does not fade.
+    /// Crossfade in a clipped slot. Memory is 148 + 12 + 104; other resource pages are 150.
+    /// The table is a sibling, so it only follows this height and is not faded or rebuilt.
     private var resourceOverview: some View {
-        Group {
-            switch overviewPage {
+        let page = vm.selectedPage
+        return ZStack(alignment: .topLeading) {
+            switch page {
             case .cpu:
                 CPUOverviewSection().transition(.opacity)
             case .network:
@@ -97,17 +97,18 @@ struct MemoryDashboardView: View {
                 OverviewSection().transition(.opacity)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(height: overviewHeight(page), alignment: .top)
+        .clipped()
+        .animation(reduceMotion ? nil : PulseMotion.page, value: page)
     }
 
-    private func applyPageMotion(_ page: DashboardPage, animated: Bool) {
-        let update = {
-            self.showingMachine = page == .machine
-            self.overviewPage = page
-        }
-        if animated {
-            withAnimation(.easeInOut(duration: 0.2), update)
-        } else {
-            update()
+    private func overviewHeight(_ page: DashboardPage) -> CGFloat {
+        switch page {
+        case .cpu, .network, .disk:
+            150
+        case .memory, .machine, .gpu:
+            264
         }
     }
 }
