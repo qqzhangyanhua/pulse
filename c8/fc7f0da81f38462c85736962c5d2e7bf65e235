@@ -1,0 +1,19 @@
+AGENTS.md
+  s_63f1c495532637::t_44116bfe314f0f 26-31,35-41,45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "c8fc7f0da81f38462c85736962c5d2e7bf65e235",
+  "prompts": {},
+  "sessions": {
+    "s_63f1c495532637": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "d09e96b6-91ce-434d-9929-2a8526f60756",
+        "model": "unknown"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
