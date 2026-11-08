@@ -1,0 +1,19 @@
+Pulse/ViewModels/MemoryDashboardVM.swift
+  s_41943dc5597f47::t_1f38a20f6f2ceb 98-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "33f03f9313507f85791b13d71a33473b102f5599",
+  "prompts": {},
+  "sessions": {
+    "s_41943dc5597f47": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b915-65bd-7bf2-8a8e-3743ce16991f",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
