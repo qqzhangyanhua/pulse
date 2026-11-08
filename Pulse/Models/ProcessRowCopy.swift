@@ -4,8 +4,14 @@ import Foundation
 enum ProcessRowCopy {
     static func line(page: DashboardPage, row: ProcessRow) -> String {
         switch page {
-        case .memory, .cpu:
+        case .memory:
             return joined(prefix(row) + [threads(row)])
+        case .cpu:
+            return joined(prefix(row) + [
+                ProcessEnergyText.watts(row.energyWatts),
+                ProcessEnergyText.wakeups(row.idleWakeupsPerSecond),
+                threads(row),
+            ])
         case .disk:
             return joined(prefix(row) + [
                 DiskRateText.string(row.diskReadBytesPerSecond),

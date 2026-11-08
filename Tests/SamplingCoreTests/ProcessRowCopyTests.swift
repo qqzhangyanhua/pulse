@@ -33,15 +33,58 @@ final class ProcessRowCopyTests: XCTestCase {
 
     func testCPULineUsesTheCPUTableReadingsAndKeepsMissingApartFromZero() {
         let row = makeRow(pid: 42, name: "Safari", memory: 1_048_576, threads: 4, cpu: 12.5)
-        XCTAssertEqual(ProcessRowCopy.line(page: .cpu, row: row), "Safari\t42\t12.5%\t1 MB\t4")
+        XCTAssertEqual(ProcessRowCopy.line(page: .cpu, row: row), "Safari\t42\t12.5%\t1 MB\t—\t—\t4")
 
         let missing = makeRow(pid: 42, name: "Safari", memory: 1_048_576, threads: 4, cpu: nil)
-        XCTAssertEqual(ProcessRowCopy.line(page: .cpu, row: missing), "Safari\t42\t—\t1 MB\t4")
+        XCTAssertEqual(ProcessRowCopy.line(page: .cpu, row: missing), "Safari\t42\t—\t1 MB\t—\t—\t4")
         XCTAssertEqual(ProcessRowCopy.line(page: .memory, row: missing), "Safari\t42\t—\t1 MB\t4")
         XCTAssertNotEqual(
             ProcessRowCopy.line(page: .cpu, row: missing),
             ProcessRowCopy.line(page: .cpu, row: makeRow(pid: 42, name: "Safari", memory: 1_048_576, threads: 4, cpu: 0))
         )
+    }
+
+    func testCPULineIncludesEnergyWattsAndIdleWakeups() {
+        let row = ProcessRow(
+            pid: 42,
+            name: "Safari",
+            bundleIdentifier: nil,
+            executablePath: nil,
+            cpuPercent: 12.5,
+            memoryBytes: 1_048_576,
+            threadCount: 4,
+            energyWatts: 1.5,
+            idleWakeupsPerSecond: 3
+        )
+        XCTAssertEqual(ProcessRowCopy.line(page: .cpu, row: row), "Safari\t42\t12.5%\t1 MB\t1.5 W\t3.0 次/秒\t4")
+        XCTAssertEqual(ProcessRowCopy.line(page: .memory, row: row), "Safari\t42\t12.5%\t1 MB\t4")
+
+        let missing = ProcessRow(
+            pid: 42,
+            name: "Safari",
+            bundleIdentifier: nil,
+            executablePath: nil,
+            cpuPercent: 12.5,
+            memoryBytes: 1_048_576,
+            threadCount: 4,
+            energyWatts: nil,
+            idleWakeupsPerSecond: nil
+        )
+        XCTAssertEqual(ProcessRowCopy.line(page: .cpu, row: missing), "Safari\t42\t12.5%\t1 MB\t—\t—\t4")
+
+        let idle = ProcessRow(
+            pid: 42,
+            name: "Safari",
+            bundleIdentifier: nil,
+            executablePath: nil,
+            cpuPercent: 12.5,
+            memoryBytes: 1_048_576,
+            threadCount: 4,
+            energyWatts: 0,
+            idleWakeupsPerSecond: 0
+        )
+        XCTAssertEqual(ProcessRowCopy.line(page: .cpu, row: idle), "Safari\t42\t12.5%\t1 MB\t0.0 W\t0.0 次/秒\t4")
+        XCTAssertNotEqual(ProcessRowCopy.line(page: .cpu, row: missing), ProcessRowCopy.line(page: .cpu, row: idle))
     }
 
     func testDiskLineIncludesReadAndWriteAndKeepsMissingApartFromZero() {
