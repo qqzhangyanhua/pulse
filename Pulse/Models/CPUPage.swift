@@ -3,10 +3,11 @@ import Foundation
 /// Display text for a CPU percent. Missing samples stay an em dash and are never shown as 0%.
 enum CPUPercentText {
     static let missing = "—"
+    private static let posix = Locale(identifier: "en_US_POSIX")
 
     static func string(_ value: Double?) -> String {
         guard let value else { return missing }
-        return String(format: "%.1f%%", locale: Locale(identifier: "en_US_POSIX"), value)
+        return String(format: "%.1f%%", locale: posix, value)
     }
 }
 
