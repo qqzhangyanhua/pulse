@@ -55,6 +55,7 @@ let package = Package(
                 "Models/NetworkPage.swift",
                 "Models/DiskPage.swift",
                 "Models/MachinePage.swift",
+                "Models/BatteryMath.swift",
                 "Models/MachineOverview.swift",
                 "Models/SwapUsage.swift",
                 "Models/KernelPressure.swift",

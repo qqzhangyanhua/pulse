@@ -43,6 +43,10 @@ struct MachineOverviewSection: View {
             }
             .frame(height: 148)
 
+            if let battery = model.battery {
+                batteryBlock(battery)
+            }
+
             Text(model.liveUpdate)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -210,6 +214,33 @@ struct MachineOverviewSection: View {
         } else if card.value == nil {
             SkeletonBlock(width: 72, height: 10)
         }
+    }
+
+    private func batteryBlock(_ battery: MachineOverview.Battery) -> some View {
+        PulseCard {
+            HStack(spacing: 12) {
+                batteryReading(title: "循环次数", value: battery.cycles)
+                batteryReading(title: "健康度", value: battery.health)
+                batteryReading(title: "功率", value: battery.power)
+            }
+        }
+        .frame(height: 72)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func batteryReading(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Text(value)
+                .font(.title3.weight(.semibold))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func batteryBar(percent: Int, tint: Color) -> some View {

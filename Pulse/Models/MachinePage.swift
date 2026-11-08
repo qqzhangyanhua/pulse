@@ -19,6 +19,18 @@ struct MachinePower: Equatable, Sendable {
     var lowPowerMode: Bool
 }
 
+/// Readings from an internal battery. Nil fields are unread. Zero is a real reading.
+struct MachineBattery: Equatable, Sendable {
+    var cycleCount: Int?
+    /// Full-charge capacity in mAh, not a percent.
+    var fullChargeCapacity: Int?
+    /// Design capacity in mAh. Zero is unread, not an empty battery.
+    var designCapacity: Int?
+    var millivolts: Int?
+    /// Signed milliamps. Negative is discharge.
+    var milliamps: Int?
+}
+
 struct MachineVolume: Equatable, Sendable {
     /// Nil is an unread key. Zero is a full volume.
     var availableBytes: UInt64?
@@ -40,6 +52,8 @@ struct MachineFacts: Equatable, Sendable {
     /// Read time minus a non-negative uptime. Nil when the caller has no clock.
     var bootedAt: Date?
     var power: MachinePower
+    /// Nil when this Mac has no internal battery. Present, with nil fields, when a reading is missing.
+    var battery: MachineBattery? = nil
     var volume: MachineVolume
 }
 
