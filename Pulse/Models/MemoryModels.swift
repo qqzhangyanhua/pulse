@@ -115,6 +115,14 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     /// `proc_pid_rusage` two-frame rates. Nil on first frame, EPERM, wrap, or a failed read.
     let diskReadBytesPerSecond: Double?
     let diskWriteBytesPerSecond: Double?
+    /// Watts from `ri_billed_energy`. Nil on first frame, a decreased counter, or a failed read.
+    let energyWatts: Double?
+    /// `ri_pkg_idle_wkups` per second. Nil on the same frames as `energyWatts`.
+    let idleWakeupsPerSecond: Double?
+    /// App-group row whose energy sum skipped a nil member. An ungrouped row stays false.
+    let energyReadingIsPartial: Bool
+    /// App-group row whose idle-wake sum skipped a nil member. An ungrouped row stays false.
+    let idleWakeupReadingIsPartial: Bool
 
     init(
         pid: Int32,
@@ -127,7 +135,11 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         residentMemoryIsPartial: Bool = false,
         threadCount: Int,
         diskReadBytesPerSecond: Double? = nil,
-        diskWriteBytesPerSecond: Double? = nil
+        diskWriteBytesPerSecond: Double? = nil,
+        energyWatts: Double? = nil,
+        idleWakeupsPerSecond: Double? = nil,
+        energyReadingIsPartial: Bool = false,
+        idleWakeupReadingIsPartial: Bool = false
     ) {
         self.pid = pid
         self.name = name
@@ -140,6 +152,10 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         self.threadCount = threadCount
         self.diskReadBytesPerSecond = diskReadBytesPerSecond
         self.diskWriteBytesPerSecond = diskWriteBytesPerSecond
+        self.energyWatts = energyWatts
+        self.idleWakeupsPerSecond = idleWakeupsPerSecond
+        self.energyReadingIsPartial = energyReadingIsPartial
+        self.idleWakeupReadingIsPartial = idleWakeupReadingIsPartial
     }
 
     /// Missing first-sample CPU sorts below real values without pretending it is 0%.

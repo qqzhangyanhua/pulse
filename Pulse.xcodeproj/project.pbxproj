@@ -55,6 +55,7 @@
 		B0000000000000000000001E /* HostNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001E /* HostNetwork.swift */; };
 		B0000000000000000000001F /* HostNetworkReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001F /* HostNetworkReader.swift */; };
 		B00000000000000000000022 /* HostDisk.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000022 /* HostDisk.swift */; };
+		B00000000000000000000048 /* ProcessEnergy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000048 /* ProcessEnergy.swift */; };
 		B00000000000000000000023 /* HostDiskReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000023 /* HostDiskReader.swift */; };
 		B00000000000000000000017 /* MenuBarStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000017 /* MenuBarStatus.swift */; };
 		B00000000000000000000018 /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000018 /* MenuBarController.swift */; };
@@ -127,6 +128,7 @@
 		A0000000000000000000001E /* HostNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostNetwork.swift; sourceTree = "<group>"; };
 		A0000000000000000000001F /* HostNetworkReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostNetworkReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000022 /* HostDisk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostDisk.swift; sourceTree = "<group>"; };
+		A00000000000000000000048 /* ProcessEnergy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessEnergy.swift; sourceTree = "<group>"; };
 		A00000000000000000000023 /* HostDiskReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostDiskReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000017 /* MenuBarStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatus.swift; sourceTree = "<group>"; };
 		A00000000000000000000018 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
@@ -228,6 +230,7 @@
 				A00000000000000000000014 /* CPULoad.swift */,
 				A0000000000000000000001E /* HostNetwork.swift */,
 				A00000000000000000000022 /* HostDisk.swift */,
+				A00000000000000000000048 /* ProcessEnergy.swift */,
 				A00000000000000000000015 /* SamplingPace.swift */,
 				A0000000000000000000002C /* SamplingRequestGate.swift */,
 				A0000000000000000000002D /* SamplingRetryChrome.swift */,
@@ -433,6 +436,7 @@
 				B0000000000000000000001E /* HostNetwork.swift in Sources */,
 				B0000000000000000000001F /* HostNetworkReader.swift in Sources */,
 				B00000000000000000000022 /* HostDisk.swift in Sources */,
+				B00000000000000000000048 /* ProcessEnergy.swift in Sources */,
 				B00000000000000000000023 /* HostDiskReader.swift in Sources */,
 				B00000000000000000000006 /* MachineInfo.swift in Sources */,
 				B00000000000000000000007 /* ProcessActions.swift in Sources */,

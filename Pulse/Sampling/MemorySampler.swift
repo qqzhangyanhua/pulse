@@ -11,6 +11,7 @@ actor MemorySampler {
     private var selectedCPUSeries: [ChartSample] = []
     private var cpuTicks: [Int32: CPUTick] = [:]
     private var diskTicks: [Int32: DiskTick] = [:]
+    private var energyTicks: [Int32: EnergyTick] = [:]
     private var previousHostCPU: HostCPUTicks?
     private var previousCoreCPU: [HostCPUTicks]?
     private var previousHostNetwork: HostNetworkSnapshot?
@@ -89,6 +90,7 @@ actor MemorySampler {
 
         var nextTicks: [Int32: CPUTick] = [:]
         var nextDiskTicks: [Int32: DiskTick] = [:]
+        var nextEnergyTicks: [Int32: EnergyTick] = [:]
         var nextIdentities: [Int32: ProcessIdentity] = [:]
         var rows: [ProcessRow] = []
         rows.reserveCapacity(rawProcesses.count)
@@ -119,6 +121,21 @@ actor MemorySampler {
                 nextDiskTicks[raw.pid] = baseline
             }
 
+            let energyReading: EnergyTick?
+            if let billedNanojoules = raw.billedEnergyNanojoules, let idleWakeups = raw.idleWakeups {
+                energyReading = EnergyTick(
+                    billedNanojoules: billedNanojoules,
+                    idleWakeups: idleWakeups,
+                    date: capturedAt
+                )
+            } else {
+                energyReading = nil
+            }
+            let energy = ProcessEnergyLoad.advance(previous: energyTicks[raw.pid], reading: energyReading)
+            if let baseline = energy.baseline {
+                nextEnergyTicks[raw.pid] = baseline
+            }
+
             let memory = ProcessMemoryChoice.project(
                 footprint: raw.footprintBytes,
                 resident: raw.residentBytes
@@ -134,13 +151,16 @@ actor MemorySampler {
                     memorySource: memory.source,
                     threadCount: raw.threadCount,
                     diskReadBytesPerSecond: disk.rates.readBytesPerSecond,
-                    diskWriteBytesPerSecond: disk.rates.writeBytesPerSecond
+                    diskWriteBytesPerSecond: disk.rates.writeBytesPerSecond,
+                    energyWatts: energy.rates.watts,
+                    idleWakeupsPerSecond: energy.rates.idleWakeupsPerSecond
                 )
             )
         }
 
         cpuTicks = nextTicks
         diskTicks = nextDiskTicks
+        energyTicks = nextEnergyTicks
         identityCache = nextIdentities
 
         rows.sort { lhs, rhs in

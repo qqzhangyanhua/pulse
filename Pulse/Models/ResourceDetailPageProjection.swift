@@ -19,6 +19,10 @@ struct CPUDetailProjection: Equatable, Sendable {
     let memory: MemoryDetailFieldCopy
     let memoryBytes: UInt64
     let memorySeries: [ChartSample]
+    let energyWatts: Double?
+    let idleWakeupsPerSecond: Double?
+    let energyReadingIsPartial: Bool
+    let idleWakeupReadingIsPartial: Bool
 }
 
 struct NetworkDetailProjection: Equatable, Sendable {
@@ -106,7 +110,11 @@ enum ResourceDetailPageProjection {
                         frozen: frozen
                     ),
                     memoryBytes: detail.row.memoryBytes,
-                    memorySeries: detail.memorySeries
+                    memorySeries: detail.memorySeries,
+                    energyWatts: detail.row.energyWatts,
+                    idleWakeupsPerSecond: detail.row.idleWakeupsPerSecond,
+                    energyReadingIsPartial: detail.row.energyReadingIsPartial,
+                    idleWakeupReadingIsPartial: detail.row.idleWakeupReadingIsPartial
                 )
             )
         case .network:
