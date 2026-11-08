@@ -1,0 +1,19 @@
+AGENTS.md
+  s_6d7986e41aa4f8::t_59040501c7f459 12,18-20,24,26,35,41-50,57,67,69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "1f3e3bb78e138c87862318826aef36519db6d192",
+  "prompts": {},
+  "sessions": {
+    "s_6d7986e41aa4f8": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "dffe4f43-630c-4724-aa4d-b4d96f6539d3",
+        "model": "unknown"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
