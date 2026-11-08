@@ -52,9 +52,51 @@ final class PressureNoticeWiringSourceTests: XCTestCase {
         XCTAssertTrue(install.contains("pressureNotices.install"))
         XCTAssertTrue(install.contains("self?.focusMemoryPage()"))
         let bind = try functionBody(named: "bind", in: delegate)
-        XCTAssertTrue(bind.contains("pressureNotices.observe(dashboard)"))
+        XCTAssertTrue(bind.contains("startSampling()"))
+        let sampling = try functionBody(named: "startSampling", in: delegate)
+        XCTAssertTrue(sampling.contains("pressureNotices.observe(dashboard)"))
         XCTAssertFalse(delegate.contains("UserDefaults"))
         XCTAssertFalse(delegate.contains("AppStorage"))
+    }
+
+    /// Launch owns the one dashboard. A window is not the only `start()`.
+    func testLaunchStartsTheSameDashboardWithoutWaitingForAWindow() throws {
+        let delegate = try repoText("Pulse/MenuBar/PulseAppDelegate.swift")
+        let launch = try functionBody(named: "didLaunch", in: delegate)
+        XCTAssertTrue(launch.contains("startSampling()"))
+        let sampling = try functionBody(named: "startSampling", in: delegate)
+        XCTAssertTrue(sampling.contains("dashboard.start()"))
+        XCTAssertTrue(sampling.contains("menuBar.observe(dashboard)"))
+        XCTAssertTrue(sampling.contains("pressureNotices.observe(dashboard)"))
+        XCTAssertTrue(sampling.contains("applyPace()"))
+        XCTAssertTrue(delegate.contains("let dashboard = MemoryDashboardVM()"))
+        XCTAssertEqual(occurrenceCount(of: "MemoryDashboardVM()", in: delegate), 1)
+        XCTAssertFalse(delegate.contains("MemoryDashboardVM?"))
+        XCTAssertTrue(delegate.contains("MenuBarSamplingGate(sceneActive: true, mainWindowVisible: false)"))
+
+        let bind = try functionBody(named: "bind", in: delegate)
+        XCTAssertTrue(bind.contains("startSampling()"))
+        XCTAssertTrue(bind.contains("openMainWindow = openWindow"))
+        XCTAssertTrue(bind.contains("dashboard === self.dashboard"))
+        XCTAssertFalse(bind.contains("MemoryDashboardVM()"))
+        let terminate = try functionBody(named: "applicationShouldTerminateAfterLastWindowClosed", in: delegate)
+        XCTAssertTrue(terminate.contains("MenuBarLifecycle.terminateAfterLastWindowClosed"))
+
+        let app = try repoText("Pulse/PulseApp.swift")
+        XCTAssertFalse(app.contains("MemoryDashboardVM()"))
+        XCTAssertTrue(app.contains("environmentObject(appDelegate.dashboard)"))
+        XCTAssertTrue(app.contains("PulseWindowCommands(dashboard: appDelegate.dashboard)"))
+        let hook = try structBody(named: "OpenWindowHook", in: app)
+        XCTAssertTrue(hook.contains("delegate.bind(dashboard)"))
+        XCTAssertTrue(hook.contains("openWindow(id: PulseWindowID.main)"))
+        let outsideHook = app.replacingOccurrences(of: hook, with: "")
+        XCTAssertTrue(outsideHook.contains("bindOpenWindow"))
+        XCTAssertTrue(outsideHook.contains("openWindow(id: PulseWindowID.main)"))
+
+        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let start = try functionBody(named: "start", in: vm)
+        XCTAssertTrue(start.contains("guard !started else { return }"))
+        XCTAssertEqual(occurrenceCount(of: "loopTask = Task", in: vm), 1)
     }
 
     func testPortableMachineIsRegisteredAndTheCenterIsExcluded() throws {
@@ -81,6 +123,18 @@ final class PressureNoticeWiringSourceTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
+    }
+
+    private func occurrenceCount(of needle: String, in haystack: String) -> Int {
+        haystack.components(separatedBy: needle).count - 1
+    }
+
+    private func structBody(named name: String, in source: String) throws -> String {
+        let pattern = "struct \(name)"
+        guard let range = source.range(of: pattern),
+              let brace = source[range.lowerBound...].firstIndex(of: "{")
+        else { throw PressureNoticeSourceError.missing(name) }
+        return try balancedSlice(from: brace, in: source, label: name)
     }
 
     private func functionBody(named name: String, in source: String) throws -> String {
