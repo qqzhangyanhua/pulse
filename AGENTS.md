@@ -23,15 +23,26 @@ Pulse is a native SwiftUI resource monitor for macOS 14+. `Pulse.xcodeproj` buil
 
 Match existing Swift style: four-space indentation, `UpperCamelCase` types/files, and `lowerCamelCase` members. Keep functions focused, nesting shallow, and files within 500 lines. Use icons rather than emoji. No formatter or linter is configured.
 
-Prefer minimal changes that preserve existing behavior. Before editing, confirm the problem is real, choose the simplest solution, and identify compatibility risks. Preserve missing/error states rather than substituting zero readings. Keep portable logic free of Darwin/AppKit dependencies; update the explicit source list in `Package.swift` when adding core files.
+Prefer minimal changes that preserve existing behavior. Before editing, confirm the problem is real, choose the simplest solution, and identify compatibility risks. Preserve missing/error states rather than substituting zero readings. Keep portable logic free of Darwin/AppKit dependencies.
+
+When adding a Swift file, register it in both places:
+
+- `Pulse.xcodeproj/project.pbxproj`: the project does not use synchronized folders, so new files are not picked up automatically.
+- `Package.swift`: add portable files to `sources`; add Darwin/AppKit-only files under `Sampling/` or `MenuBar/` to `exclude`.
 
 ## Testing Guidelines
 
-Use XCTest with `<Feature>Tests.swift` filenames and descriptive `test...` methods. Add regression coverage for behavior changes and run `swift test`. No numeric coverage threshold is configured. UI and system-reader changes also need macOS smoke checks against the 「本机冒烟清单」 in `docs/TECH.md`.
+Use XCTest with `<Feature>Tests.swift` filenames and descriptive `test...` methods. Add regression coverage for behavior changes and run `swift test`. No numeric coverage threshold is configured.
+
+`*WiringSourceTests` read app source as text through `WiringSourceText`, which finds files by type-name prefix. Renaming a type, moving a file, or changing locked copy can break them. When splitting a type, name extension files `TypeName+Topic.swift` (for example `MemoryDashboardVM+QuitSession.swift`).
+
+CI (`.github/workflows/ci.yml`, `macos-15`) runs `swift test` and an unsigned Debug `xcodebuild`; both must pass.
+
+UI and system-reader changes also need macOS smoke checks against the 「本机冒烟清单」 in `docs/TECH.md`.
 
 ## Commit & Pull Request Guidelines
 
-Recent commits commonly use `feat:` or `docs:` with concise Chinese descriptions and references such as `(#68)`. Keep commits scoped. PRs should describe the resulting behavior, link the issue, report validation and limitations, and include screenshots for visible UI changes.
+Recent commits commonly use `feat:` or `docs:` with concise Chinese descriptions and references such as `(#68)`. Numbered phases keep the phase name, e.g. `feat: 二十八期进程内存改用内存占用口径 (#88)` or `二十三期：拆分超限的详情侧栏与内存页 VM (#75)`. Keep commits scoped. PRs should describe the resulting behavior, link the issue, report validation and limitations, and include screenshots for visible UI changes.
 
 ## Documentation
 
