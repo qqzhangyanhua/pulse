@@ -1,0 +1,24 @@
+Tests/SamplingCoreTests/ProcessRowCopyTests.swift
+  s_11b69e8eb9ff9d::t_c8cd44e6934d22 36,39,47-87
+  s_11b69e8eb9ff9d::t_d14d576985e507 88-89
+Pulse/Models/ProcessRowCopy.swift
+  s_11b69e8eb9ff9d::t_35ee8b2099aeff 7,9-14
+docs/TECH.md
+  s_11b69e8eb9ff9d::t_6e525d2fe669f0 83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "311c7c0409a8881cc9823fc562d9a336d8d87ab4",
+  "prompts": {},
+  "sessions": {
+    "s_11b69e8eb9ff9d": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b9a9-7ec9-7e60-bef6-403cc9553aed",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
