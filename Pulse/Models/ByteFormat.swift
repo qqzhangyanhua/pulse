@@ -29,14 +29,6 @@ enum ByteFormat {
         CPUPercentText.string(value)
     }
 
-    static func networkRate(_ bytesPerSecond: Double?) -> String {
-        NetworkRateText.string(bytesPerSecond)
-    }
-
-    static func diskRate(_ bytesPerSecond: Double?) -> String {
-        DiskRateText.string(bytesPerSecond)
-    }
-
     static func wholePercent(value: Double) -> String {
         String(format: "%.0f%%", (value * 100).rounded())
     }
