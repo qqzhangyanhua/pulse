@@ -187,7 +187,7 @@ final class ProcessEnergyGroupTests: XCTestCase {
         XCTAssertEqual(ProcessEnergyText.caption(isPartial: true), "部分读数")
         XCTAssertEqual(ProcessEnergyText.caption(isPartial: false), "")
         XCTAssertEqual(ProcessEnergyText.impactTitle, "能耗影响")
-        XCTAssertEqual(ProcessEnergyText.idleWakeTitle, "空闲唤醒")
+        XCTAssertEqual(ProcessEnergyText.idleWakeTitle, "唤醒")
     }
 
     func testAppGroupSumsPresentMembersAndMarksPartialReadings() {
@@ -240,7 +240,7 @@ final class ProcessEnergyColumnTests: XCTestCase {
     func testCPUPageAddsEnergyAndIdleWakeColumns() {
         XCTAssertEqual(
             ProcessColumnTitle.cpuPage,
-            ["名称", "CPU", "内存", "能耗影响", "空闲唤醒", "线程"]
+            ["名称", "CPU", "内存", "能耗影响", "唤醒", "线程"]
         )
         XCTAssertEqual(ProcessColumnTitle.energy, ProcessEnergyText.impactTitle)
         XCTAssertEqual(ProcessColumnTitle.idleWakeups, ProcessEnergyText.idleWakeTitle)

@@ -115,9 +115,9 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     /// `proc_pid_rusage` two-frame rates. Nil on first frame, EPERM, wrap, or a failed read.
     let diskReadBytesPerSecond: Double?
     let diskWriteBytesPerSecond: Double?
-    /// Watts from `ri_billed_energy`. Nil on first frame, a decreased counter, or a failed read.
+    /// Watts from `ri_energy_nj`. Nil on first frame, a decreased counter, or a failed read.
     let energyWatts: Double?
-    /// `ri_pkg_idle_wkups` per second. Nil on the same frames as `energyWatts`.
+    /// `ri_interrupt_wkups` per second. Nil on the same frames as `energyWatts`.
     let idleWakeupsPerSecond: Double?
     /// App-group row whose energy sum skipped a nil member. An ungrouped row stays false.
     let energyReadingIsPartial: Bool

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Cumulative `ri_billed_energy` (nanojoules) and `ri_pkg_idle_wkups` for one process.
+/// Cumulative `ri_energy_nj` (nanojoules) and `ri_interrupt_wkups` for one process.
 struct EnergyTick: Sendable, Equatable {
     let billedNanojoules: UInt64
     let idleWakeups: UInt64
@@ -76,7 +76,7 @@ enum ProcessEnergyText {
     static let missing = "—"
     static let partial = "部分读数"
     static let impactTitle = "能耗影响"
-    static let idleWakeTitle = "空闲唤醒"
+    static let idleWakeTitle = "唤醒"
     private static let posix = Locale(identifier: "en_US_POSIX")
 
     static func caption(isPartial: Bool) -> String {
