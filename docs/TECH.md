@@ -521,7 +521,7 @@ enum MemoryGrowthSignal {
 
 不选 `host_statistics*`：Mach host 统计没有接口字节 flavor，仓库里的 `HostMemoryReader` / `HostCPUReader` 也覆盖不了网络。不选 Network.framework / IOKit / `NWPathMonitor`：那些给连通性，不给字节速率，还会多会话、多占用。不选 `sysctl(net.inet.ip.stats)`：只在 IP 层，漏接口、口径更不像总览。
 
-`sysctl(NET_RT_IFLIST2)` / `if_data64` 可作为「`getifaddrs` 在实机上宽度不够」时的同族备选，仍是 BSD 接口计数、仍无新 entitlement。首包默认 `getifaddrs`：macOS 14+ 64-bit 上 `ifi_ibytes` 宽度足够，且与现有 `import Darwin` 风格一致。
+`sysctl(NET_RT_IFLIST2)` / `if_data64` 可作为「`getifaddrs` 在实机上宽度不够」时的同族备选，仍是 BSD 接口计数、仍无新 entitlement。首包默认 `getifaddrs`，与现有 `import Darwin` 风格一致。`getifaddrs` 的 `ifi_ibytes` / `ifi_obytes` 是 32 位，每 4 GiB 回绕。
 
 ### 计数 → 速率
 
@@ -5666,3 +5666,15 @@ Linux 上可执行的证明用下面已有测试，调用真实的 `pids` / `eva
 帮助句没有第二句，禁词测试也不再拆分。还没发生的是：产品对本 head 的独立复核、主控 full gate、实现委托。Mac 上的 tooltip 与 VoiceOver 仍未验。
 
 已经定下来的是：一个静态属性、两字段徽标、`title` 仍为「上涨」、开关行为不改、Top5 仍是完整列表按当前内存页表头排序后取前 5、`badge` 按该 pid 的当前序列 `evaluate`、表的「仅上涨」只是 `badge != nil` 的投影。`count >= 80` 就判断，90 只是环上限。三处禁词测试保持原断言。根 `README.md` 不加二十二期。
+
+# Pulse 二十九期：压力档内核取值与主机网络 64 位计数
+
+## 主机网络 64 位计数
+
+`HostNetworkReader` 不再读 `getifaddrs` 的 `ifi_ibytes` / `ifi_obytes`。改为 `sysctl` MIB `[CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST2, 0]`，只取 `RTM_IFINFO2` 消息里的 `if_msghdr2`。入站和出站字节来自 Darwin `if_data64`（`ifm_data.ifi_ibytes` / `ifi_obytes`），是 64 位。接口名由 `if_indextoname(ifm_index)` 解析。是否启用、是否回环看 `ifm_flags` 的 `IFF_UP` / `IFF_LOOPBACK`，和原来一样写进快照。
+
+`if_data64` 在头文件里是 `#pragma pack(4)`，对齐是 4。不要在 Swift 里手写一份 `UInt64` 字段的结构体，否则按 8 字节对齐会读错字节。先查长度再读；数据那次失败就再做一次「查长度 + 读」，仍然失败则返回 nil，保留上一帧基准。不加 entitlement，不新开轮询，仍由 `MemorySampler` 同一次采样调用。`HostNetworkSnapshot` 不变。
+
+`HostNetworkLoad` 的两帧规则不变：只统计已启用、非回环的接口；按接口分别求差再求和；任何一个可比接口的计数变小，整帧缺失；第一帧、非正的时间间隔、读取失败都记为缺失。网卡重置导致计数变小，仍记为缺失，不写 0。
+
+四期曾写「macOS 14+ 上 `ifi_ibytes` 宽度足够」。该句已改：`getifaddrs` 的 `ifi_ibytes` / `ifi_obytes` 是 32 位，每 4 GiB 回绕。1 Gbps 持续流量大约 34 秒回绕一次；采样间隔约 1.5 秒时，每次回绕都会让一帧缺失。64 位计数在正常使用中不会再因为 4 GiB 归零而缺失。

@@ -1,64 +1,87 @@
 import Darwin
 import Foundation
 
-/// One cheap `getifaddrs()` + `AF_LINK` `ifi_ibytes` / `ifi_obytes` read.
-/// Only `MemorySampler.sample()` calls this. No entitlement, no Network.framework session.
+/// One `sysctl(NET_RT_IFLIST2)` read of 64-bit `if_data64` byte counters.
+/// Only `MemorySampler.sample()` calls this. No entitlement, no extra timer.
 enum HostNetworkReader {
     static func read(at date: Date) -> HostNetworkSnapshot? {
-        var ifaddrPointer: UnsafeMutablePointer<ifaddrs>?
-        guard getifaddrs(&ifaddrPointer) == 0, let first = ifaddrPointer else { return nil }
-        defer { freeifaddrs(first) }
-
-        var interfaces: [String: HostNetworkInterfaceCounters] = [:]
-        var cursor: UnsafeMutablePointer<ifaddrs>? = first
-        while let ifaPointer = cursor {
-            let ifa = ifaPointer.pointee
-            cursor = ifa.ifa_next
-            guard let addr = ifa.ifa_addr, addr.pointee.sa_family == sa_family_t(AF_LINK) else {
-                continue
-            }
-            guard let nameC = ifa.ifa_name else { continue }
-            let name = String(cString: nameC)
-            guard !name.isEmpty, let data = ifa.ifa_data else { continue }
-
-            let ifData = data.assumingMemoryBound(to: PulseIFData.self).pointee
-            let flags = UInt32(ifa.ifa_flags)
-            interfaces[name] = HostNetworkInterfaceCounters(
-                name: name,
-                inboundBytes: UInt64(ifData.ifi_ibytes),
-                outboundBytes: UInt64(ifData.ifi_obytes),
-                isUp: (flags & PulseIFFlags.up) != 0,
-                isLoopback: (flags & PulseIFFlags.loopback) != 0
-            )
+        guard let bytes = interfaceListBytes() else { return nil }
+        let parsed = bytes.withUnsafeBytes { raw in
+            interfaceCounters(in: raw)
         }
-        return HostNetworkSnapshot(interfaces: interfaces, capturedAt: date)
+        guard let parsed else { return nil }
+        return HostNetworkSnapshot(interfaces: parsed, capturedAt: date)
     }
-}
 
-/// Darwin `net/if.h` flag bits used by `getifaddrs`. Numeric to avoid overlay drift.
-private enum PulseIFFlags {
-    static let up: UInt32 = 0x1
-    static let loopback: UInt32 = 0x8
-}
+    /// Size, then read. A failed read gets one more size+read, then nil so the baseline stays.
+    private static func interfaceListBytes() -> [UInt8]? {
+        var name: [Int32] = [CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST2, 0]
+        for _ in 0..<2 {
+            var length = 0
+            guard routedSysctl(&name, into: nil, length: &length) == 0 else { return nil }
+            guard length > 0 else { return [] }
+            var buffer = [UInt8](repeating: 0, count: length)
+            let status = buffer.withUnsafeMutableBytes { raw in
+                routedSysctl(&name, into: raw.baseAddress, length: &length)
+            }
+            guard status == 0, length <= buffer.count else { continue }
+            return Array(buffer.prefix(length))
+        }
+        return nil
+    }
 
-/// Prefix of Darwin `struct if_data` (net/if.h). Only the byte counters are consumed.
-private struct PulseIFData {
-    var ifi_type: UInt8 = 0
-    var ifi_typelen: UInt8 = 0
-    var ifi_physical: UInt8 = 0
-    var ifi_addrlen: UInt8 = 0
-    var ifi_hdrlen: UInt8 = 0
-    var ifi_recvquota: UInt8 = 0
-    var ifi_xmitquota: UInt8 = 0
-    var ifi_unused1: UInt8 = 0
-    var ifi_mtu: UInt32 = 0
-    var ifi_metric: UInt32 = 0
-    var ifi_baudrate: UInt32 = 0
-    var ifi_ipackets: UInt32 = 0
-    var ifi_ierrors: UInt32 = 0
-    var ifi_opackets: UInt32 = 0
-    var ifi_oerrors: UInt32 = 0
-    var ifi_collisions: UInt32 = 0
-    var ifi_ibytes: UInt32 = 0
-    var ifi_obytes: UInt32 = 0
+    private static func routedSysctl(
+        _ name: inout [Int32],
+        into destination: UnsafeMutableRawPointer?,
+        length: inout Int
+    ) -> Int32 {
+        name.withUnsafeMutableBufferPointer { names in
+            sysctl(names.baseAddress, u_int(names.count), destination, &length, nil, 0)
+        }
+    }
+
+    private static func interfaceCounters(
+        in buffer: UnsafeRawBufferPointer
+    ) -> [String: HostNetworkInterfaceCounters]? {
+        var interfaces: [String: HostNetworkInterfaceCounters] = [:]
+        var offset = 0
+        while offset < buffer.count {
+            let remaining = buffer.count - offset
+            guard remaining >= MemoryLayout<UInt16>.size else { return nil }
+            let messageLength = Int(buffer.loadUnaligned(fromByteOffset: offset, as: UInt16.self))
+            guard messageLength > 0, messageLength <= remaining else { return nil }
+            if let counters = counters(in: buffer, messageAt: offset, length: messageLength) {
+                interfaces[counters.name] = counters
+            }
+            offset += messageLength
+        }
+        return interfaces
+    }
+
+    /// `if_data64` is `#pragma pack(4)`. Use the Darwin type; a Swift `UInt64` struct aligns to 8.
+    private static func counters(
+        in buffer: UnsafeRawBufferPointer,
+        messageAt offset: Int,
+        length: Int
+    ) -> HostNetworkInterfaceCounters? {
+        guard length >= MemoryLayout<if_msghdr2>.size else { return nil }
+        let header = buffer.loadUnaligned(fromByteOffset: offset, as: if_msghdr2.self)
+        guard header.ifm_type == UInt8(RTM_IFINFO2) else { return nil }
+        return counters(from: header)
+    }
+
+    private static func counters(from header: if_msghdr2) -> HostNetworkInterfaceCounters? {
+        var nameBytes = [CChar](repeating: 0, count: Int(IF_NAMESIZE))
+        guard if_indextoname(UInt32(header.ifm_index), &nameBytes) != nil else { return nil }
+        let name = String(cString: nameBytes)
+        guard !name.isEmpty else { return nil }
+        let flags = header.ifm_flags
+        return HostNetworkInterfaceCounters(
+            name: name,
+            inboundBytes: header.ifm_data.ifi_ibytes,
+            outboundBytes: header.ifm_data.ifi_obytes,
+            isUp: (flags & IFF_UP) != 0,
+            isLoopback: (flags & IFF_LOOPBACK) != 0
+        )
+    }
 }

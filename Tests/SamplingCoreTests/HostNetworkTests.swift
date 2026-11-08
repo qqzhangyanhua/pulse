@@ -128,6 +128,35 @@ final class HostNetworkLoadTests: XCTestCase {
         XCTAssertNotEqual(rates.outboundBytesPerSecond, 0)
     }
 
+    func testBothFramesAboveUInt32MaxYieldTheDeltaRate() {
+        let previous = snapshot(
+            at: 0,
+            interfaces: [up("en0", inbound: 5_000_000_000, outbound: 6_000_000_000)]
+        )
+        let current = snapshot(
+            at: 2,
+            interfaces: [up("en0", inbound: 5_000_003_000, outbound: 6_000_000_800)]
+        )
+        let rates = HostNetworkLoad.rates(previous: previous, current: current)
+        XCTAssertEqual(rates.inboundBytesPerSecond ?? -1, 1_500, accuracy: 0.000_001)
+        XCTAssertEqual(rates.outboundBytesPerSecond ?? -1, 400, accuracy: 0.000_001)
+    }
+
+    func testCounterCrossingUInt32MaxYieldsTheDeltaRateAndIsNotMissing() {
+        let previous = snapshot(
+            at: 0,
+            interfaces: [up("en0", inbound: 4_294_967_000, outbound: 4_294_967_100)]
+        )
+        let current = snapshot(
+            at: 2,
+            interfaces: [up("en0", inbound: 4_294_968_000, outbound: 4_294_967_500)]
+        )
+        let rates = HostNetworkLoad.rates(previous: previous, current: current)
+        XCTAssertNotEqual(rates, .missing)
+        XCTAssertEqual(rates.inboundBytesPerSecond ?? -1, 500, accuracy: 0.000_001)
+        XCTAssertEqual(rates.outboundBytesPerSecond ?? -1, 200, accuracy: 0.000_001)
+    }
+
     func testZeroOrNegativeWallClockIsNil() {
         let date = Date(timeIntervalSince1970: 5)
         let previous = HostNetworkSnapshot(
