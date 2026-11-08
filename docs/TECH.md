@@ -477,7 +477,7 @@ enum MemoryGrowthSignal {
 
 - `SwiftUI Views`（网络总览 + 既有 Tab 壳 / 进程表 / 侧栏）←观察→ 同一 `MemoryDashboardVM`
 - VM ←订阅快照→ `MemorySampler`（同一 Actor）
-- Sampler 同一 `sample()` tick：既有 `host_statistics64` / `HOST_CPU_LOAD_INFO` + `ProcessEnumerator`；系统网络若采，也在这一 tick 内用 `getifaddrs` 读 `AF_LINK` 的 `ifi_ibytes` / `ifi_obytes`
+- Sampler 同一 `sample()` tick：既有 `host_statistics64` / `HOST_CPU_LOAD_INFO` + `ProcessEnumerator`；系统网络若采，也在这一 tick 内用 `sysctl` `NET_RT_IFLIST2` 读 64 位 `if_data64` 的 `ifi_ibytes` / `ifi_obytes`（二十九期；不要再用 `getifaddrs`）
 - Views → `ProcessActions` → `NSRunningApplication`（按 pid）——退出链路不新开
 
 约束：
@@ -517,11 +517,11 @@ enum MemoryGrowthSignal {
 
 ## 系统网络采样（第一刀，已选 API）
 
-结论：用 **`getifaddrs()` + `AF_LINK` 的 `struct if_data`（`ifi_ibytes` / `ifi_obytes`）**。与现有 CPU 路径同构：一次便宜的 Darwin 计数、两帧墙钟差值、挂在同一 `sample()`、第一帧 `nil`。
+结论：不要再用 **`getifaddrs()` + `AF_LINK` 的 `struct if_data`**。二十九期读 `sysctl` `NET_RT_IFLIST2` / `if_data64` 的 `ifi_ibytes` / `ifi_obytes`。与现有 CPU 路径同构：一次便宜的 Darwin 计数、两帧墙钟差值、挂在同一 `sample()`、第一帧 `nil`。
 
 不选 `host_statistics*`：Mach host 统计没有接口字节 flavor，仓库里的 `HostMemoryReader` / `HostCPUReader` 也覆盖不了网络。不选 Network.framework / IOKit / `NWPathMonitor`：那些给连通性，不给字节速率，还会多会话、多占用。不选 `sysctl(net.inet.ip.stats)`：只在 IP 层，漏接口、口径更不像总览。
 
-`sysctl(NET_RT_IFLIST2)` / `if_data64` 可作为「`getifaddrs` 在实机上宽度不够」时的同族备选，仍是 BSD 接口计数、仍无新 entitlement。首包默认 `getifaddrs`，与现有 `import Darwin` 风格一致。`getifaddrs` 的 `ifi_ibytes` / `ifi_obytes` 是 32 位，每 4 GiB 回绕。
+二十九期读 `sysctl` `NET_RT_IFLIST2` / `if_data64`，不是「`getifaddrs` 在实机上宽度不够」时的备选，也不再首包默认 `getifaddrs`。它仍是 BSD 接口计数、仍无新 entitlement。`getifaddrs` 的 `ifi_ibytes` / `ifi_obytes` 是 32 位，每 4 GiB 回绕。
 
 ### 计数 → 速率
 
@@ -542,7 +542,7 @@ struct HostNetworkRates {
 规则与 `SystemCPULoad.advance` 对齐：
 
 - 第一帧：记下 counters，速率 `nil`，UI「—」。
-- 其后：`Δbytes / Δseconds`。墙钟 ≤ 0、当前计数 < 上一帧（接口重置 / 回绕）、`getifaddrs` 失败 → 该帧 `nil`，**不写 0**。
+- 其后：`Δbytes / Δseconds`。墙钟 ≤ 0、当前计数 < 上一帧（接口重置 / 回绕）、接口列表读取失败 → 该帧 `nil`，**不写 0**。
 - 失败读保留上一帧 baseline（与 CPU `advance` 相同），不要用 0 覆盖。
 - 只累加 `AF_LINK`、`IFF_UP`、非 `IFF_LOOPBACK`。`lo0` 不计。首包不拆 Wi-Fi / 有线 / utun 分项（避免做成磁盘式深页）。
 - 接口集合变化（新插网线、VPN 起来）：按名字做 per-iface 差值再加总更稳；新接口第一帧跳过。若实现成「先加总再差值」，须单测钉住「集合变化不得喷出天文数字」。
@@ -630,7 +630,7 @@ struct HostNetworkRates {
 产品 Must：
 
 - [ ] 网络 Tab 可点；信息架构为总览 → 进程表 → 详情 → 退出，与内存 / CPU 同构
-- [ ] 总览展示系统接收 / 发送速率（`getifaddrs` 接口计数两帧差）；第一帧或失败为「—」，不装 0
+- [ ] 总览展示系统接收 / 发送速率（64 位 `NET_RT_IFLIST2` 计数两帧差）；第一帧或失败为「—」，不装 0
 - [ ] 进程网络无可靠来源时：列上「暂不可用」或等价明示，**不**编造字节；默认按其它已有指标（cpu% 降序）
 - [ ] 侧栏仍是内存主 + CPU 辅 + 既有退出链路；无自动杀
 - [ ] 文案冷静：无「泄漏」「危险」「超速」及假权限墙
@@ -694,7 +694,7 @@ struct HostNetworkRates {
 
 - `SwiftUI Views`（磁盘总览 + 既有 Tab 壳 / 进程表 / 侧栏）←观察→ 同一 `MemoryDashboardVM`
 - VM ←订阅快照→ `MemorySampler`（同一 Actor）
-- Sampler 同一 `sample()` tick：既有 `host_statistics64` / `HOST_CPU_LOAD_INFO` / `getifaddrs` + `ProcessEnumerator`；系统磁盘若采，也在这一 tick 内读 IOKit `IOBlockStorageDriver` 的 `Statistics`；进程磁盘在**同一趟**枚举里加一次 `proc_pid_rusage`，不新开 `proc_listpids`
+- Sampler 同一 `sample()` tick：既有 `host_statistics64` / `HOST_CPU_LOAD_INFO` / `HostNetworkReader`（二十九期把 `getifaddrs` 换成 `NET_RT_IFLIST2` / `if_data64`）+ `ProcessEnumerator`；系统磁盘若采，也在这一 tick 内读 IOKit `IOBlockStorageDriver` 的 `Statistics`；进程磁盘在**同一趟**枚举里加一次 `proc_pid_rusage`，不新开 `proc_listpids`
 - Views → `ProcessActions` → `NSRunningApplication`（按 pid）——退出链路不新开
 
 约束：
@@ -720,7 +720,7 @@ struct HostNetworkRates {
 | --- | --- | --- |
 | `host_statistics64` / `vm_statistics64` | `HostMemoryReader` | **否**。`pageins` / `pageouts` / swap 是 VM pager，不是块设备读写。禁止当系统磁盘速率 |
 | `host_statistics(HOST_CPU_LOAD_INFO)` | `HostCPUReader` | 否，主机 CPU |
-| `getifaddrs` `ifi_ibytes` / `ifi_obytes` | `HostNetworkReader` | 否，主机网络。禁止当磁盘 |
+| `ifi_ibytes` / `ifi_obytes`（二十九期起为 `NET_RT_IFLIST2` / `if_data64`，不再是 `getifaddrs`） | `HostNetworkReader` | 否，主机网络。禁止当磁盘 |
 | `proc_listpids` + `proc_pidinfo(PROC_PIDTASKINFO=4)` | `ProcessEnumerator` | **否**。`pti_pageins` / `pti_faults` 是 VM；`pti_messages_*` 是 Mach IPC。四期已禁止当网络，五期同样禁止当磁盘 |
 | `proc_pid_rusage` | **现未调用** | **是**。公开 `ri_diskio_bytesread` / `ri_diskio_byteswritten`（`RUSAGE_INFO_V2` 起，V4–V6 / `CURRENT` 仍在） |
 | `ProcessRow` | `MemoryModels` | pid、name、icon 路径、`cpuPercent`、`memoryBytes`、`threadCount`；`networkAvailability` 恒为 `.unavailable`。**无**磁盘字段 |

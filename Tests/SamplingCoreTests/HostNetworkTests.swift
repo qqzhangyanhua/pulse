@@ -342,3 +342,20 @@ final class SampledFrameNetworkTests: XCTestCase {
         )
     }
 }
+
+final class HostNetworkReaderSourceTests: XCTestCase {
+    func testReaderSourceUsesSixtyFourBitInterfaceListNotGetifaddrs() throws {
+        let reader = try source("Pulse/Sampling/HostNetworkReader.swift")
+        XCTAssertTrue(reader.contains("NET_RT_IFLIST2"))
+        XCTAssertTrue(reader.contains("if_data64"))
+        XCTAssertFalse(reader.contains("getifaddrs("))
+    }
+
+    private func source(_ relative: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        return try String(contentsOf: root.appendingPathComponent(relative), encoding: .utf8)
+    }
+}

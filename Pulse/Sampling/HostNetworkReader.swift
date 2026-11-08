@@ -18,11 +18,11 @@ enum HostNetworkReader {
         var name: [Int32] = [CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST2, 0]
         for _ in 0..<2 {
             var length = 0
-            guard routedSysctl(&name, into: nil, length: &length) == 0 else { return nil }
+            guard routeMIBSysctl(&name, into: nil, length: &length) == 0 else { return nil }
             guard length > 0 else { return [] }
             var buffer = [UInt8](repeating: 0, count: length)
             let status = buffer.withUnsafeMutableBytes { raw in
-                routedSysctl(&name, into: raw.baseAddress, length: &length)
+                routeMIBSysctl(&name, into: raw.baseAddress, length: &length)
             }
             guard status == 0, length <= buffer.count else { continue }
             return Array(buffer.prefix(length))
@@ -30,7 +30,7 @@ enum HostNetworkReader {
         return nil
     }
 
-    private static func routedSysctl(
+    private static func routeMIBSysctl(
         _ name: inout [Int32],
         into destination: UnsafeMutableRawPointer?,
         length: inout Int
