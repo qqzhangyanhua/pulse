@@ -118,7 +118,7 @@ extension MemoryDashboardVM {
             current: selectedPid,
             page: selectedPage,
             windowedOnly: windowedOnlyFilter,
-            windowedPids: WindowedAppLookup.pids(in: rows)
+            windowedPids: { WindowedAppLookup.pids(in: rows) }
         )
         guard next != selectedPid else { return }
         let effect = ProcessQuitSession.risingOnlySelection(

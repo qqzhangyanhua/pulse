@@ -116,7 +116,7 @@ final class MemoryDashboardVM: ObservableObject {
             rows: named,
             page: selectedPage,
             windowedOnly: windowedOnlyFilter,
-            windowedPids: WindowedAppLookup.pids(in: rows)
+            windowedPids: { WindowedAppLookup.pids(in: rows) }
         )
     }
 

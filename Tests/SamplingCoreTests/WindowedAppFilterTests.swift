@@ -10,14 +10,62 @@ final class WindowedAppFilterTests: XCTestCase {
         }
     }
 
+    func testOffDoesNotQueryWindowedPids() {
+        let rows = [row(1, "Chrome"), row(2, "kernel_task")]
+        var calls = 0
+        let kept = WindowedAppFilter.apply(
+            rows: rows,
+            page: .memory,
+            windowedOnly: false,
+            windowedPids: {
+                calls += 1
+                return [1]
+            }
+        )
+        XCTAssertEqual(calls, 0)
+        XCTAssertEqual(kept, rows)
+    }
+
+    func testOtherPageDoesNotQueryWindowedPids() {
+        let rows = [row(1, "Chrome"), row(2, "kernel_task")]
+        var calls = 0
+        let kept = WindowedAppFilter.apply(
+            rows: rows,
+            page: .cpu,
+            windowedOnly: true,
+            windowedPids: {
+                calls += 1
+                return [1]
+            }
+        )
+        XCTAssertEqual(calls, 0)
+        XCTAssertEqual(kept, rows)
+    }
+
+    func testOpenMemoryPageQueriesWindowedPidsOnce() {
+        let rows = [row(1, "Chrome"), row(2, "kernel_task"), row(3, "Stats")]
+        var calls = 0
+        let kept = WindowedAppFilter.apply(
+            rows: rows,
+            page: .memory,
+            windowedOnly: true,
+            windowedPids: {
+                calls += 1
+                return [1, 3]
+            }
+        )
+        XCTAssertEqual(calls, 1)
+        XCTAssertEqual(kept.map(\.pid), [1, 3])
+    }
+
     func testOffAndOtherPagesKeepEveryRow() {
         let rows = [row(1, "Chrome"), row(2, "kernel_task")]
         XCTAssertEqual(
-            WindowedAppFilter.apply(rows: rows, page: .memory, windowedOnly: false, windowedPids: [1]),
+            WindowedAppFilter.apply(rows: rows, page: .memory, windowedOnly: false, windowedPids: { [1] }),
             rows
         )
         XCTAssertEqual(
-            WindowedAppFilter.apply(rows: rows, page: .cpu, windowedOnly: true, windowedPids: [1]),
+            WindowedAppFilter.apply(rows: rows, page: .cpu, windowedOnly: true, windowedPids: { [1] }),
             rows
         )
     }
@@ -28,25 +76,96 @@ final class WindowedAppFilterTests: XCTestCase {
             rows: rows,
             page: .memory,
             windowedOnly: true,
-            windowedPids: [1, 3]
+            windowedPids: { [1, 3] }
         )
         XCTAssertEqual(kept.map(\.pid), [1, 3])
     }
 
+    func testClosedSelectionDoesNotQueryWindowedPids() {
+        var calls = 0
+        let pid = WindowedAppFilter.selectedPid(
+            current: 2,
+            page: .memory,
+            windowedOnly: false,
+            windowedPids: {
+                calls += 1
+                return [1]
+            }
+        )
+        XCTAssertEqual(calls, 0)
+        XCTAssertEqual(pid, 2)
+    }
+
+    func testOtherPageSelectionDoesNotQueryWindowedPids() {
+        var calls = 0
+        let pid = WindowedAppFilter.selectedPid(
+            current: 2,
+            page: .cpu,
+            windowedOnly: true,
+            windowedPids: {
+                calls += 1
+                return [1]
+            }
+        )
+        XCTAssertEqual(calls, 0)
+        XCTAssertEqual(pid, 2)
+    }
+
+    func testOpenMemorySelectionQueriesWindowedPidsOnce() {
+        var calls = 0
+        let hidden = WindowedAppFilter.selectedPid(
+            current: 2,
+            page: .memory,
+            windowedOnly: true,
+            windowedPids: {
+                calls += 1
+                return [1]
+            }
+        )
+        XCTAssertEqual(calls, 1)
+        XCTAssertNil(hidden)
+
+        calls = 0
+        let kept = WindowedAppFilter.selectedPid(
+            current: 1,
+            page: .memory,
+            windowedOnly: true,
+            windowedPids: {
+                calls += 1
+                return [1]
+            }
+        )
+        XCTAssertEqual(calls, 1)
+        XCTAssertEqual(kept, 1)
+
+        calls = 0
+        let missing = WindowedAppFilter.selectedPid(
+            current: nil,
+            page: .memory,
+            windowedOnly: true,
+            windowedPids: {
+                calls += 1
+                return [1]
+            }
+        )
+        XCTAssertEqual(calls, 1)
+        XCTAssertNil(missing)
+    }
+
     func testSelectionDropsAHiddenPidAndOffDoesNotRestore() {
         XCTAssertEqual(
-            WindowedAppFilter.selectedPid(current: 2, page: .memory, windowedOnly: true, windowedPids: [1]),
+            WindowedAppFilter.selectedPid(current: 2, page: .memory, windowedOnly: true, windowedPids: { [1] }),
             nil
         )
         XCTAssertEqual(
-            WindowedAppFilter.selectedPid(current: 2, page: .memory, windowedOnly: false, windowedPids: [1]),
+            WindowedAppFilter.selectedPid(current: 2, page: .memory, windowedOnly: false, windowedPids: { [1] }),
             2
         )
         XCTAssertEqual(
-            WindowedAppFilter.selectedPid(current: 1, page: .memory, windowedOnly: true, windowedPids: [1]),
+            WindowedAppFilter.selectedPid(current: 1, page: .memory, windowedOnly: true, windowedPids: { [1] }),
             1
         )
-        XCTAssertNil(WindowedAppFilter.selectedPid(current: nil, page: .memory, windowedOnly: true, windowedPids: [1]))
+        XCTAssertNil(WindowedAppFilter.selectedPid(current: nil, page: .memory, windowedOnly: true, windowedPids: { [1] }))
     }
 
     func testWindowedEmptyUsesTheNameFilterCopy() {
@@ -109,6 +228,11 @@ final class WindowedAppFilterTests: XCTestCase {
         let visible = try functionBody(named: "visibleRows", in: vm)
         XCTAssertTrue(visible.contains("WindowedAppFilter.apply"))
         XCTAssertTrue(visible.contains("WindowedAppLookup.pids(in: rows)"))
+        XCTAssertTrue(visible.contains("windowedPids: { WindowedAppLookup.pids(in: rows) }"))
+        let quit = try source("Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift")
+        let selection = try functionBody(named: "applyWindowedOnlySelection", in: quit)
+        XCTAssertTrue(selection.contains("WindowedAppFilter.selectedPid"))
+        XCTAssertTrue(selection.contains("windowedPids: { WindowedAppLookup.pids(in: rows) }"))
         let menu = try functionBody(named: "menuBarPopover", in: vm)
         XCTAssertTrue(menu.contains("rows: rows"))
         XCTAssertFalse(menu.contains("WindowedAppFilter"))
