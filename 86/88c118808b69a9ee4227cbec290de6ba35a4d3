@@ -1,0 +1,49 @@
+docs/TECH.md
+  s_51371e9dc0fcad::t_f7199f89d2511f 133-137,178-179
+Tests/SamplingCoreTests/LoginItemWiringSourceTests.swift
+  s_51371e9dc0fcad::t_f7199f89d2511f 1-65
+Tests/SamplingCoreTests/MenuBarReadingWiringSourceTests.swift
+  s_51371e9dc0fcad::t_87d6db13a135d2 20
+  s_51371e9dc0fcad::t_f7199f89d2511f 17
+Package.swift
+  s_51371e9dc0fcad::t_f7199f89d2511f 69
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_51371e9dc0fcad::t_6818eff744bb5b 128
+Pulse/Models/LoginItem.swift
+  s_51371e9dc0fcad::t_f7199f89d2511f 1-44
+README.md
+  s_51371e9dc0fcad::t_f7199f89d2511f 17
+Tests/SamplingCoreTests/LoginItemTests.swift
+  s_51371e9dc0fcad::t_f7199f89d2511f 1-60
+Pulse.xcodeproj/project.pbxproj
+  s_51371e9dc0fcad::t_db08f27c654b08 38,115,229,426
+Pulse/Views/PulseSettingsView.swift
+  s_51371e9dc0fcad::t_f7199f89d2511f 1-2,6,11-12,32-45,57-59,67-114
+  s_04fa358283b48d::t_b493bef6c03395 115-116
+docs/PRD.md
+  s_51371e9dc0fcad::t_f7199f89d2511f 37,61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "8688c118808b69a9ee4227cbec290de6ba35a4d3",
+  "prompts": {},
+  "sessions": {
+    "s_04fa358283b48d": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b9a9-b323-7611-a03f-e85449ea74ce",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    },
+    "s_51371e9dc0fcad": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b9ba-c781-7de1-bab6-454fb7fd3146",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
