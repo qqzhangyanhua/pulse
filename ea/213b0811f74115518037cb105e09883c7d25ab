@@ -1,0 +1,39 @@
+Pulse/ViewModels/MemoryDashboardVM.swift
+  s_49465ad78dbbdc::t_391e694f86fcc8 50,126
+Pulse/Models/AppGroupProjection.swift
+  s_49465ad78dbbdc::t_6856b11b03c3f0 3,6-10,13
+Tests/SamplingCoreTests/ProcessEnergyWiringSourceTests.swift
+  s_49465ad78dbbdc::t_a33bbd7efddc65 50-59
+Pulse/Views/ProcessDetailSidebar.swift
+  s_49465ad78dbbdc::t_eb52d090cfb6b0 198-203,205,210-211,398,400
+Tests/SamplingCoreTests/BatteryMathTests.swift
+  s_49465ad78dbbdc::t_7e41f0be191d61 37-46
+Tests/SamplingCoreTests/MachinePageTests.swift
+  s_49465ad78dbbdc::t_e3c7d2630cf274 327-332
+Tests/SamplingCoreTests/AppGroupProjectionTests.swift
+  s_49465ad78dbbdc::t_1eb49a813a1f23 9-24,143,145-150,200-214,217
+Pulse/Models/BatteryMath.swift
+  s_49465ad78dbbdc::t_576d5e9952d1ab 22-27
+Pulse/Sampling/HostMachineReader.swift
+  s_49465ad78dbbdc::t_906d45d089b63f 87,105,107-112
+docs/TECH.md
+  s_49465ad78dbbdc::t_9a7a24e84c86c3 84-87,102,164
+Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift
+  s_49465ad78dbbdc::t_0816a314674499 143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "ea213b0811f74115518037cb105e09883c7d25ab",
+  "prompts": {},
+  "sessions": {
+    "s_49465ad78dbbdc": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b9c6-1361-7d52-957c-ffd65ea5198f",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
