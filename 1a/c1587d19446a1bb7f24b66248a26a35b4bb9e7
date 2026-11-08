@@ -1,0 +1,16 @@
+Pulse/Views/OverviewCards.swift
+  h_4132837b09b7e7 352,364,366,372-373,375
+Pulse/Views/SharedUI.swift
+  h_4132837b09b7e7 424,455-462,468-477
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "1ac1587d19446a1bb7f24b66248a26a35b4bb9e7",
+  "prompts": {},
+  "humans": {
+    "h_4132837b09b7e7": {
+      "author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
