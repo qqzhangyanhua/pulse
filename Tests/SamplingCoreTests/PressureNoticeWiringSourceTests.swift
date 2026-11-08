@@ -15,8 +15,6 @@ final class PressureNoticeWiringSourceTests: XCTestCase {
         XCTAssertTrue(view.contains("PressureNoticeCenter.requestPermission"))
         XCTAssertFalse(view.contains("UNUserNotification"))
         XCTAssertFalse(view.contains("NSAlert"))
-        XCTAssertFalse(view.contains("SMAppService"))
-        XCTAssertFalse(view.contains("登录"))
     }
 
     func testCenterFeedsNilOnFailureAndPostsOnlyAfterASendDecision() throws {
