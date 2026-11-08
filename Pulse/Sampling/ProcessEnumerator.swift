@@ -22,6 +22,12 @@ struct RawProcessSample: Sendable, Equatable {
     let idleWakeups: UInt64?
 }
 
+/// One `list()` walk. Denied pids are a count, not rows.
+struct ProcessListReading: Sendable {
+    let samples: [RawProcessSample]
+    let permissionDeniedCount: Int
+}
+
 /// `proc_listpids` / `proc_pidinfo` walk. Display names are resolved later with a cache.
 enum ProcessEnumerator {
     private static let procAllPids: UInt32 = 1
@@ -29,7 +35,7 @@ enum ProcessEnumerator {
     private static let rusageInfoV6: Int32 = 6
     private static let pathBufferSize: Int32 = 4_096
 
-    static func list() -> [RawProcessSample]? {
+    static func list() -> ProcessListReading? {
         let bytesNeeded = pulse_proc_listpids(procAllPids, 0, nil, 0)
         guard bytesNeeded > 0 else { return nil }
 
@@ -49,25 +55,45 @@ enum ProcessEnumerator {
         let timebase = readMachTimebase()
         var samples: [RawProcessSample] = []
         samples.reserveCapacity(count)
+        var permissionDeniedCount = 0
 
         for index in 0..<count {
             let pid = pids[index]
-            guard pid > 0, let sample = inspect(pid: pid, timebase: timebase) else { continue }
-            samples.append(sample)
+            guard pid > 0 else { continue }
+            let inspected = inspect(pid: pid, timebase: timebase)
+            if let sample = inspected.sample {
+                samples.append(sample)
+            } else if inspected.permissionDenied {
+                permissionDeniedCount += 1
+            }
         }
-        return samples
+        return ProcessListReading(
+            samples: samples,
+            permissionDeniedCount: permissionDeniedCount
+        )
     }
 
     private static func inspect(
         pid: pid_t,
         timebase: (numer: Int64, denom: Int64)?
-    ) -> RawProcessSample? {
+    ) -> InspectedTask {
         var info = ProcTaskInfo()
         let infoSize = Int32(MemoryLayout<ProcTaskInfo>.stride)
-        let filled = withUnsafeMutablePointer(to: &info) { pointer in
-            pulse_proc_pidinfo(pid, procPidTaskInfo, 0, pointer, infoSize)
+        var taskInfoErrno: Int32 = 0
+        let filled = withUnsafeMutablePointer(to: &info) { pointer -> Int32 in
+            errno = 0
+            let written = pulse_proc_pidinfo(pid, procPidTaskInfo, 0, pointer, infoSize)
+            if written != infoSize {
+                taskInfoErrno = errno
+            }
+            return written
         }
-        guard filled == infoSize else { return nil }
+        guard filled == infoSize else {
+            return InspectedTask(
+                sample: nil,
+                permissionDenied: ProcessPermissionFootnote.countsTaskInfoFailure(errno: taskInfoErrno)
+            )
+        }
 
         var nameBuffer = [CChar](repeating: 0, count: 256)
         _ = nameBuffer.withUnsafeMutableBufferPointer { buffer in
@@ -88,19 +114,22 @@ enum ProcessEnumerator {
             timebase: timebase
         )
 
-        return RawProcessSample(
-            pid: pid,
-            comm: name,
-            path: path,
-            residentBytes: info.pti_resident_size,
-            footprintBytes: rusage?.footprintBytes,
-            threadCount: max(0, Int(info.pti_threadnum)),
-            userTimeNs: cpu?.user,
-            systemTimeNs: cpu?.system,
-            diskBytesRead: rusage?.bytesRead,
-            diskBytesWritten: rusage?.bytesWritten,
-            billedEnergyNanojoules: rusage?.billedEnergyNanojoules,
-            idleWakeups: rusage?.idleWakeups
+        return InspectedTask(
+            sample: RawProcessSample(
+                pid: pid,
+                comm: name,
+                path: path,
+                residentBytes: info.pti_resident_size,
+                footprintBytes: rusage?.footprintBytes,
+                threadCount: max(0, Int(info.pti_threadnum)),
+                userTimeNs: cpu?.user,
+                systemTimeNs: cpu?.system,
+                diskBytesRead: rusage?.bytesRead,
+                diskBytesWritten: rusage?.bytesWritten,
+                billedEnergyNanojoules: rusage?.billedEnergyNanojoules,
+                idleWakeups: rusage?.idleWakeups
+            ),
+            permissionDenied: false
         )
     }
 
@@ -143,6 +172,11 @@ enum ProcessEnumerator {
             idleWakeups: info.ri_interrupt_wkups
         )
     }
+}
+
+private struct InspectedTask {
+    let sample: RawProcessSample?
+    let permissionDenied: Bool
 }
 
 private struct ProcessRusageSample {

@@ -70,7 +70,7 @@ actor MemorySampler {
         let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
         let hostDiskRates = consumeSystemDisk(at: capturedAt)
 
-        guard let rawProcesses = ProcessEnumerator.list() else {
+        guard let listed = ProcessEnumerator.list() else {
             lastRows = []
             topMemoryStore.retain(only: [])
             return .success(
@@ -83,7 +83,11 @@ actor MemorySampler {
                     hostNetworkRates: hostNetworkRates,
                     hostDiskRates: hostDiskRates,
                     topMemorySeries: topMemoryStore.seriesByPid,
-                    busiestCorePercent: busiestCorePercent
+                    busiestCorePercent: busiestCorePercent,
+                    permissionFootnote: ProcessPermissionFootnote.published(
+                        deniedCount: 0,
+                        processListFailed: true
+                    )
                 )
             )
         }
@@ -93,9 +97,9 @@ actor MemorySampler {
         var nextEnergyTicks: [Int32: EnergyTick] = [:]
         var nextIdentities: [Int32: ProcessIdentity] = [:]
         var rows: [ProcessRow] = []
-        rows.reserveCapacity(rawProcesses.count)
+        rows.reserveCapacity(listed.samples.count)
 
-        for raw in rawProcesses {
+        for raw in listed.samples {
             let identity = ProcessIdentityResolver.resolve(
                 sample: raw,
                 cached: identityCache[raw.pid]
@@ -207,7 +211,11 @@ actor MemorySampler {
                 hostNetworkRates: hostNetworkRates,
                 hostDiskRates: hostDiskRates,
                 topMemorySeries: topMemoryStore.seriesByPid,
-                busiestCorePercent: busiestCorePercent
+                busiestCorePercent: busiestCorePercent,
+                permissionFootnote: ProcessPermissionFootnote.published(
+                    deniedCount: listed.permissionDeniedCount,
+                    processListFailed: false
+                )
             )
         )
     }
