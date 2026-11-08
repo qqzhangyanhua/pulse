@@ -1,0 +1,91 @@
+docs/TECH.md
+  s_41943dc5597f47::t_5778395eff92b4 24-28,31-33,35,37-40,42,44,46-51,158
+  s_41943dc5597f47::t_4584dadd3cd4c8 149
+  s_41943dc5597f47::t_803e7d2453aac3 21-23
+  s_41943dc5597f47::t_73f967a29722c2 52-53
+  s_41943dc5597f47::t_c79d05ee09d0ef 146-148
+  s_41943dc5597f47::t_b6788d4002f899 150-152,155-157
+  s_41943dc5597f47::t_0e78e49a5216da 159-161
+docs/specs/04-network-tab.md
+  s_41943dc5597f47::t_5cd60a2d364399 76
+  s_41943dc5597f47::t_dacfbba4d672db 80
+  s_41943dc5597f47::t_183645647f3279 73-75
+  s_41943dc5597f47::t_f9c7066cc62aa8 77-79
+  s_41943dc5597f47::t_1be0306dba183f 81-83
+.github/workflows/ci.yml
+  s_41943dc5597f47::t_a185e9b2a5b103 1-30
+AGENTS.md
+  s_41943dc5597f47::t_1f1b6e74f3ad27 12,26-31,35-41,45-54
+README.md
+  s_41943dc5597f47::t_aee1a815120779 3,5-8,10,12-17,19,25,27-32,36,41-51,53,55,58-72
+docs/PRD.md
+  s_41943dc5597f47::t_84556e2c4b630f 1,3,5,7,11,15-18,22-24,26,30-38,40,42,46,48-54,56,58-62
+docs/RELEASE.md
+  s_41943dc5597f47::t_5613f9526178bb 1,26,79,136,138-140
+docs/adr/0001-process-memory-footprint.md
+  s_41943dc5597f47::t_cc31e1b0d55c21 1-22
+docs/design/README.md
+  s_41943dc5597f47::t_07ac1d8a892992 3-4
+docs/specs/00-prd.md
+  s_41943dc5597f47::t_a58ed1af6328da 1-74
+docs/specs/01-memory-mvp.md
+  s_41943dc5597f47::t_1b0a79f85317c0 1-99
+docs/specs/02-menubar-and-cpu.md
+  s_41943dc5597f47::t_129a09d3635013 1-168
+docs/specs/03-growth-signal.md
+  s_41943dc5597f47::t_ad55cf8ec97753 1-178
+docs/specs/05-disk-tab.md
+  s_41943dc5597f47::t_f87543d579916c 1-255
+docs/specs/06-list-growth-badge.md
+  s_41943dc5597f47::t_0e2159b7dda585 1-173
+docs/specs/07-menubar-strip-b.md
+  s_41943dc5597f47::t_175392bd40a497 1-189
+docs/specs/08-polish-smoke.md
+  s_41943dc5597f47::t_9c7973ca6fdca0 1-114
+docs/specs/09-growth-badge-top5.md
+  s_41943dc5597f47::t_d7fb6217bdd49b 1-204
+docs/specs/10-menubar-used-memory.md
+  s_41943dc5597f47::t_c859551ce9e112 1-206
+docs/specs/11-menubar-top3-select.md
+  s_41943dc5597f47::t_1da8f1734df38b 1-227
+docs/specs/12-rising-only-filter.md
+  s_41943dc5597f47::t_1c2a25b32c9022 1-242
+docs/specs/13-sampling-retry.md
+  s_41943dc5597f47::t_58544ba67c05b5 1-286
+docs/specs/14-menubar-top3-sort.md
+  s_41943dc5597f47::t_503ef4b630b43c 1-329
+docs/specs/15-filter-empty-clear.md
+  s_41943dc5597f47::t_ece825b26c7d5f 1-346
+docs/specs/16-quit-outcome-per-pid.md
+  s_41943dc5597f47::t_78d27e1c3e2737 1-493
+docs/specs/17-memory-detail-resident.md
+  s_41943dc5597f47::t_7c2036baf48859 1-310
+docs/specs/18-resource-detail-projection.md
+  s_41943dc5597f47::t_cbe7594877aa14 1-343
+docs/specs/19-disk-read-write-sort.md
+  s_41943dc5597f47::t_b92502f6f39a60 1-266
+docs/specs/20-top-app-locate.md
+  s_41943dc5597f47::t_bdb966394b1b27 1-409
+docs/specs/21-history-curve-missing.md
+  s_41943dc5597f47::t_accbd4cc54de6e 1-329
+docs/specs/22-growth-help-copy.md
+  s_41943dc5597f47::t_60d3bb8c69da04 1-273
+docs/specs/README.md
+  s_41943dc5597f47::t_a0aa694b4af5af 1-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "cb226280bf928a533688444839e8d9610ba7bcac",
+  "prompts": {},
+  "sessions": {
+    "s_41943dc5597f47": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b915-65bd-7bf2-8a8e-3743ce16991f",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
