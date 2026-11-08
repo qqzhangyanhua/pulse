@@ -33,6 +33,8 @@
 		B0000000000000000000003D /* SwapUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003D /* SwapUsage.swift */; };
 		B00000000000000000000044 /* KernelPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000044 /* KernelPressure.swift */; };
 		B00000000000000000000047 /* MenuBarReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000047 /* MenuBarReading.swift */; };
+		B0000000000000000000004A /* PressureNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004A /* PressureNotice.swift */; };
+		B0000000000000000000004B /* PressureNoticeCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004B /* PressureNoticeCenter.swift */; };
 		B00000000000000000000046 /* PulseSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000046 /* PulseSettingsView.swift */; };
 		B0000000000000000000003E /* WindowedAppFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003E /* WindowedAppFilter.swift */; };
 		B0000000000000000000003F /* WindowedAppLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003F /* WindowedAppLookup.swift */; };
@@ -107,6 +109,8 @@
 		A0000000000000000000003D /* SwapUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapUsage.swift; sourceTree = "<group>"; };
 		A00000000000000000000044 /* KernelPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KernelPressure.swift; sourceTree = "<group>"; };
 		A00000000000000000000047 /* MenuBarReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarReading.swift; sourceTree = "<group>"; };
+		A0000000000000000000004A /* PressureNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PressureNotice.swift; sourceTree = "<group>"; };
+		A0000000000000000000004B /* PressureNoticeCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PressureNoticeCenter.swift; sourceTree = "<group>"; };
 		A00000000000000000000046 /* PulseSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseSettingsView.swift; sourceTree = "<group>"; };
 		A0000000000000000000003E /* WindowedAppFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowedAppFilter.swift; sourceTree = "<group>"; };
 		A0000000000000000000003F /* WindowedAppLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowedAppLookup.swift; sourceTree = "<group>"; };
@@ -219,6 +223,7 @@
 				A00000000000000000000040 /* AppGroupProjection.swift */,
 				A00000000000000000000041 /* ProcessGlossary.swift */,
 				A00000000000000000000047 /* MenuBarReading.swift */,
+				A0000000000000000000004A /* PressureNotice.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -272,6 +277,7 @@
 				A00000000000000000000026 /* MenuBarPopoverView.swift */,
 				A00000000000000000000019 /* MainWindowAnchor.swift */,
 				A0000000000000000000001A /* PulseAppDelegate.swift */,
+				A0000000000000000000004B /* PressureNoticeCenter.swift */,
 			);
 			path = MenuBar;
 			sourceTree = "<group>";
@@ -413,6 +419,7 @@
 				B0000000000000000000003D /* SwapUsage.swift in Sources */,
 				B00000000000000000000044 /* KernelPressure.swift in Sources */,
 				B00000000000000000000047 /* MenuBarReading.swift in Sources */,
+				B0000000000000000000004A /* PressureNotice.swift in Sources */,
 				B00000000000000000000046 /* PulseSettingsView.swift in Sources */,
 				B0000000000000000000003E /* WindowedAppFilter.swift in Sources */,
 				B0000000000000000000003F /* WindowedAppLookup.swift in Sources */,
@@ -460,6 +467,7 @@
 				B00000000000000000000026 /* MenuBarPopoverView.swift in Sources */,
 				B00000000000000000000019 /* MainWindowAnchor.swift in Sources */,
 				B0000000000000000000001A /* PulseAppDelegate.swift in Sources */,
+				B0000000000000000000004B /* PressureNoticeCenter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

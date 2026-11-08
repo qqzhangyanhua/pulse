@@ -8,6 +8,7 @@ enum PulseWindowID {
 @MainActor
 final class PulseAppDelegate: NSObject, NSApplicationDelegate {
     private let menuBar = MenuBarController()
+    private let pressureNotices = PressureNoticeCenter()
     private var dashboard: MemoryDashboardVM?
     private var openMainWindow: (() -> Void)?
     private var gate = MenuBarSamplingGate(sceneActive: true, mainWindowVisible: false)
@@ -50,6 +51,13 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         )
+        installPressureNotices()
+    }
+
+    private func installPressureNotices() {
+        pressureNotices.install { [weak self] in
+            self?.focusMemoryPage()
+        }
     }
 
     func bind(_ dashboard: MemoryDashboardVM, openWindow: @escaping () -> Void) {
@@ -57,6 +65,7 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate {
         openMainWindow = openWindow
         dashboard.start()
         menuBar.observe(dashboard)
+        pressureNotices.observe(dashboard)
         applyPace()
     }
 

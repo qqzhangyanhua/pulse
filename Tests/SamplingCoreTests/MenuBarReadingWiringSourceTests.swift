@@ -17,8 +17,9 @@ final class MenuBarReadingWiringSourceTests: XCTestCase {
     func testSettingsPageIsOneMenuBarSection() throws {
         let view = try repoText("Pulse/Views/PulseSettingsView.swift")
         XCTAssertEqual(occurrenceCount(of: "Form {", in: view), 1)
-        XCTAssertEqual(occurrenceCount(of: "Section(", in: view), 1)
+        XCTAssertEqual(occurrenceCount(of: "Section(", in: view), 2)
         XCTAssertTrue(view.contains("Section(\"菜单栏\")"))
+        XCTAssertTrue(view.contains("Section(\"通知\")"))
         XCTAssertTrue(view.contains("Picker("))
         XCTAssertTrue(view.contains("MenuBarReadingMode.allCases"))
         XCTAssertTrue(view.contains("@AppStorage(MenuBarReadingPreference.defaultsKey)"))

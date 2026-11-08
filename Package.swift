@@ -32,6 +32,7 @@ let package = Package(
                 "MenuBar/MenuBarPopoverView.swift",
                 "MenuBar/MainWindowAnchor.swift",
                 "MenuBar/PulseAppDelegate.swift",
+                "MenuBar/PressureNoticeCenter.swift",
             ],
             sources: [
                 "Models/MemoryModels.swift",
@@ -64,6 +65,7 @@ let package = Package(
                 "Models/AppGroupProjection.swift",
                 "Models/ProcessGlossary.swift",
                 "Models/MenuBarReading.swift",
+                "Models/PressureNotice.swift",
                 "Sampling/CPULoad.swift",
                 "Sampling/HostNetwork.swift",
                 "Sampling/HostDisk.swift",
