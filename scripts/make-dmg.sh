@@ -79,7 +79,7 @@ pulse_dmg_main() {
   local version
   version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${app}/Contents/Info.plist" 2>/dev/null || true)"
   if [[ -z "$version" ]]; then
-    version="0.1.0"
+    version="0.0.1"
   fi
   if [[ -z "$output" ]]; then
     output="${ROOT}/build/Pulse-${version}.dmg"

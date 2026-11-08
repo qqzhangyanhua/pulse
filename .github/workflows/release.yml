@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Release
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project Pulse.xcodeproj \
+            -scheme Pulse \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Zip and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          app="$RUNNER_TEMP/DerivedData/Build/Products/Release/Pulse.app"
+          plist_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")"
+          if [[ "$plist_version" != "$version" ]]; then
+            echo "tag ${GITHUB_REF_NAME} does not match CFBundleShortVersionString ${plist_version}"
+            exit 1
+          fi
+          codesign --force --sign - "$app"
+          arch="$(lipo -archs "$app/Contents/MacOS/Pulse")"
+          zip="Pulse-${version}.zip"
+          ditto -c -k --keepParent "$app" "$zip"
+          notes="$(mktemp)"
+          {
+            echo "Pulse ${version}（macOS 14+，${arch}）。"
+            echo
+            echo "这是 GitHub Actions 打的 Release 包：临时签名，没有 Developer ID，也没有公证。从浏览器下载后，系统会拦截。解压后执行："
+            echo
+            echo '```bash'
+            echo 'xattr -dr com.apple.quarantine Pulse.app'
+            echo '```'
+            echo
+            echo "然后打开 Pulse.app。可直接安装、通过 Gatekeeper 的包仍要按 docs/RELEASE.md 做公证。仓库里目前没有签名和公证密钥。"
+          } > "$notes"
+          gh release create "$GITHUB_REF_NAME" "$zip" \
+            --title "Pulse ${version}" \
+            --notes-file "$notes"

@@ -49,7 +49,7 @@ swift test --filter SamplingPaceTests        # 跑单个测试类
 xcodebuild -project Pulse.xcodeproj -scheme Pulse -configuration Debug build
 ```
 
-CI（`.github/workflows/ci.yml`，运行在 `macos-15`）会跑 `swift test`，再在不签名的情况下构建 App。
+CI（`.github/workflows/ci.yml`，运行在 `macos-15`）会跑 `swift test`，再在不签名的情况下构建 App。推送 `v*` 标签时，`.github/workflows/release.yml` 会构建 Release 并上传未公证的 zip。
 
 ## 在 Mac 上本地运行
 

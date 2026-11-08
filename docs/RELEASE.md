@@ -1,8 +1,10 @@
 # Pulse 发布（公证直装）
 
-macOS 14+、单 Target、bundle id `com.qqzhangyanhua.pulse`、版本 `0.1.0`（`CFBundleVersion` `1`）。分发是 **Developer ID + notarytool + stapler**，不是 Mac App Store。沙盒保持关闭，`Pulse/Pulse.entitlements` 保持空 dict。Hardened Runtime 已在工程打开。
+macOS 14+、单 Target、bundle id `com.qqzhangyanhua.pulse`、版本 `0.0.1`（`CFBundleVersion` `1`）。分发是 **Developer ID + notarytool + stapler**，不是 Mac App Store。沙盒保持关闭，`Pulse/Pulse.entitlements` 保持空 dict。Hardened Runtime 已在工程打开。
 
 本仓库不存放证书、Team ID、Apple ID 或 app 专用密码。没有 Developer ID Application 证书时，`scripts/notarize.sh` 会在 archive 之前退出。
+
+推送 `v*` 标签会跑 `.github/workflows/release.yml`：在 `macos-15` 上构建 Release，临时签名后把 zip 挂到同名 GitHub Release。仓库里没有公证密钥，这个包过不了 Gatekeeper。下载后执行 `xattr -dr com.apple.quarantine Pulse.app` 再打开。要发出可直接安装的包，仍走下面的公证流程，并且标签版本必须和 `CFBundleShortVersionString` 一致。
 
 本地 Debug 冒烟继续用工程里的 ad-hoc：`CODE_SIGN_IDENTITY = "-"`（Debug 与 Release 都是这个值，方便没有证书的机器 Run）。公证脚本只在自己的那次 `xcodebuild archive` 上覆盖身份，不改工程文件。
 
@@ -115,7 +117,7 @@ ditto "build/export/Pulse.app" /Applications/Pulse.app
 ./scripts/make-dmg.sh --notarize
 ```
 
-默认产物：`build/Pulse-0.1.0.dmg`（版本读自 app 的 `CFBundleShortVersionString`）。`--notarize` 会用同一套环境变量提交 DMG 并 `stapler staple`。发出去的 DMG 用带 `--notarize` 的那一份。
+默认产物：`build/Pulse-0.0.1.dmg`（版本读自 app 的 `CFBundleShortVersionString`）。`--notarize` 会用同一套环境变量提交 DMG 并 `stapler staple`。发出去的 DMG 用带 `--notarize` 的那一份。
 
 ## 7. 在 Xcode 里做同样的事
 
