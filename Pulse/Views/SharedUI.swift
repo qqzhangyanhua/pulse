@@ -421,6 +421,7 @@ struct SparklineChart: View {
     var tint: Color
     var domain: ClosedRange<Double>
     var formatY: (Double) -> String
+    var showsAxes: Bool = true
 
     var body: some View {
         Chart(samples) { sample in
@@ -451,25 +452,29 @@ struct SparklineChart: View {
             plot.background(Color.clear)
         }
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 3)) { value in
-                AxisValueLabel {
-                    if let date = value.as(Date.self) {
-                        Text(ByteFormat.clock(date))
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Color.white.opacity(0.42))
+            if showsAxes {
+                AxisMarks(values: .automatic(desiredCount: 3)) { value in
+                    AxisValueLabel {
+                        if let date = value.as(Date.self) {
+                            Text(ByteFormat.clock(date))
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Color.white.opacity(0.42))
+                        }
                     }
                 }
             }
         }
         .chartYAxis {
-            AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                    .foregroundStyle(Color.white.opacity(0.06))
-                AxisValueLabel {
-                    if let number = value.as(Double.self) {
-                        Text(formatY(number))
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Color.white.opacity(0.42))
+            if showsAxes {
+                AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                        .foregroundStyle(Color.white.opacity(0.06))
+                    AxisValueLabel {
+                        if let number = value.as(Double.self) {
+                            Text(formatY(number))
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Color.white.opacity(0.42))
+                        }
                     }
                 }
             }

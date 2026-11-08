@@ -349,7 +349,7 @@ struct PressureLevelCard: View {
                             .monospacedDigit()
                     }
                 }
-                HStack(alignment: .bottom, spacing: 8) {
+                HStack(alignment: .center, spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(snapshot.pressure.title)
                             .font(.system(size: 22, weight: .semibold))
@@ -361,15 +361,18 @@ struct PressureLevelCard: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
+                    .fixedSize(horizontal: true, vertical: false)
                     if snapshot.pressureSeries.count >= 2 {
                         SparklineChart(
                             samples: snapshot.pressureSeries,
                             tint: tone,
                             domain: 0...1,
-                            formatY: { ByteFormat.wholePercent(value: $0) }
+                            formatY: { ByteFormat.wholePercent(value: $0) },
+                            showsAxes: false
                         )
-                        .frame(maxHeight: 46)
+                        .frame(height: 32)
                     }
                 }
                 Spacer(minLength: 0)
