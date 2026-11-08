@@ -10,8 +10,9 @@ struct RawProcessSample: Sendable, Equatable {
     /// `ri_phys_footprint` from the same rusage read as disk IO. Nil when that call fails.
     let footprintBytes: UInt64?
     let threadCount: Int
-    let userTimeNs: UInt64
-    let systemTimeNs: UInt64
+    /// Nanoseconds from Mach ticks. Nil when the timebase or either conversion is missing.
+    let userTimeNs: UInt64?
+    let systemTimeNs: UInt64?
     /// `ri_diskio_*` from `proc_pid_rusage`. Nil when the call fails (EPERM / ESRCH / other).
     let diskBytesRead: UInt64?
     let diskBytesWritten: UInt64?
@@ -45,18 +46,22 @@ enum ProcessEnumerator {
         guard written > 0 else { return nil }
 
         let count = Int(written) / MemoryLayout<pid_t>.stride
+        let timebase = readMachTimebase()
         var samples: [RawProcessSample] = []
         samples.reserveCapacity(count)
 
         for index in 0..<count {
             let pid = pids[index]
-            guard pid > 0, let sample = inspect(pid: pid) else { continue }
+            guard pid > 0, let sample = inspect(pid: pid, timebase: timebase) else { continue }
             samples.append(sample)
         }
         return samples
     }
 
-    private static func inspect(pid: pid_t) -> RawProcessSample? {
+    private static func inspect(
+        pid: pid_t,
+        timebase: (numer: Int64, denom: Int64)?
+    ) -> RawProcessSample? {
         var info = ProcTaskInfo()
         let infoSize = Int32(MemoryLayout<ProcTaskInfo>.stride)
         let filled = withUnsafeMutablePointer(to: &info) { pointer in
@@ -77,6 +82,11 @@ enum ProcessEnumerator {
         }
         let path = pathLen > 0 ? String(cString: pathBuffer) : nil
         let rusage = readRusage(pid: pid)
+        let cpu = convertedCPU(
+            user: info.pti_total_user,
+            system: info.pti_total_system,
+            timebase: timebase
+        )
 
         return RawProcessSample(
             pid: pid,
@@ -85,13 +95,35 @@ enum ProcessEnumerator {
             residentBytes: info.pti_resident_size,
             footprintBytes: rusage?.footprintBytes,
             threadCount: max(0, Int(info.pti_threadnum)),
-            userTimeNs: info.pti_total_user,
-            systemTimeNs: info.pti_total_system,
+            userTimeNs: cpu?.user,
+            systemTimeNs: cpu?.system,
             diskBytesRead: rusage?.bytesRead,
             diskBytesWritten: rusage?.bytesWritten,
             billedEnergyNanojoules: rusage?.billedEnergyNanojoules,
             idleWakeups: rusage?.idleWakeups
         )
+    }
+
+    /// One read per `list()` frame. A failure leaves every process CPU time missing.
+    private static func readMachTimebase() -> (numer: Int64, denom: Int64)? {
+        var info = mach_timebase_info_data_t()
+        guard mach_timebase_info(&info) == KERN_SUCCESS else { return nil }
+        return (Int64(info.numer), Int64(info.denom))
+    }
+
+    /// Both counters convert, or both are missing. A failed conversion is not stored as 0.
+    private static func convertedCPU(
+        user userTick: UInt64,
+        system systemTick: UInt64,
+        timebase: (numer: Int64, denom: Int64)?
+    ) -> (user: UInt64, system: UInt64)? {
+        guard let timebase,
+              let user = MachTimebase.nanoseconds(tick: userTick, numer: timebase.numer, denom: timebase.denom),
+              let system = MachTimebase.nanoseconds(tick: systemTick, numer: timebase.numer, denom: timebase.denom)
+        else {
+            return nil
+        }
+        return (user, system)
     }
 
     /// rusage failure must not drop the row. SIP / kernel tasks often return EPERM.
@@ -166,7 +198,7 @@ enum ProcessIdentityResolver {
     }
 }
 
-/// Matches Darwin `struct proc_taskinfo` (libproc.h). Times are nanoseconds.
+/// Matches Darwin `struct proc_taskinfo` (libproc.h). Times are Mach absolute ticks.
 struct ProcTaskInfo {
     var pti_virtual_size: UInt64 = 0
     var pti_resident_size: UInt64 = 0

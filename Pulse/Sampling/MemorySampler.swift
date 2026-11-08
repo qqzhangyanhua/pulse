@@ -102,13 +102,22 @@ actor MemorySampler {
             )
             nextIdentities[raw.pid] = identity
 
-            let tick = CPUTick(
-                userTimeNs: raw.userTimeNs,
-                systemTimeNs: raw.systemTimeNs,
-                date: capturedAt
-            )
-            let cpu = ProcessCPUPercent.percent(previous: cpuTicks[raw.pid], current: tick)
-            nextTicks[raw.pid] = tick
+            let cpuTick: CPUTick?
+            if let userTimeNs = raw.userTimeNs, let systemTimeNs = raw.systemTimeNs {
+                cpuTick = CPUTick(
+                    userTimeNs: userTimeNs,
+                    systemTimeNs: systemTimeNs,
+                    date: capturedAt
+                )
+            } else {
+                cpuTick = nil
+            }
+            let cpu = cpuTick.flatMap { tick in
+                ProcessCPUPercent.percent(previous: cpuTicks[raw.pid], current: tick)
+            }
+            if let cpuTick {
+                nextTicks[raw.pid] = cpuTick
+            }
 
             let diskReading: DiskTick?
             if let bytesRead = raw.diskBytesRead, let bytesWritten = raw.diskBytesWritten {
