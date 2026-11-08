@@ -14,10 +14,10 @@ final class MenuBarReadingWiringSourceTests: XCTestCase {
         XCTAssertFalse(app.contains("SceneStorage"))
     }
 
-    func testSettingsPageIsOneMenuBarSection() throws {
+    func testSettingsPageKeepsTheMenuBarSection() throws {
         let view = try repoText("Pulse/Views/PulseSettingsView.swift")
         XCTAssertEqual(occurrenceCount(of: "Form {", in: view), 1)
-        XCTAssertEqual(occurrenceCount(of: "Section(", in: view), 2)
+        XCTAssertEqual(occurrenceCount(of: "Section(", in: view), 3)
         XCTAssertTrue(view.contains("Section(\"菜单栏\")"))
         XCTAssertTrue(view.contains("Section(\"通知\")"))
         XCTAssertTrue(view.contains("Picker("))
@@ -25,8 +25,6 @@ final class MenuBarReadingWiringSourceTests: XCTestCase {
         XCTAssertTrue(view.contains("@AppStorage(MenuBarReadingPreference.defaultsKey)"))
         XCTAssertTrue(view.contains(".pickerStyle(.radioGroup)"))
         XCTAssertFalse(view.contains("UNUserNotification"))
-        XCTAssertFalse(view.contains("SMAppService"))
-        XCTAssertFalse(view.contains("登录"))
     }
 
     func testPreferenceStorageStaysOutOfTheForbiddenFiles() throws {
