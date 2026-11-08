@@ -5,8 +5,13 @@ final class ProcessEnergyWiringSourceTests: XCTestCase {
     func testEnergyUsesTheExistingRusageCallAndSamplerTicks() throws {
         let reader = try repoText("Pulse/Sampling/ProcessEnumerator.swift")
         XCTAssertEqual(occurrenceCount(of: "pulse_proc_pid_rusage(", in: reader), 2)
-        XCTAssertTrue(reader.contains("billedEnergyNanojoules: info.ri_billed_energy"))
-        XCTAssertTrue(reader.contains("idleWakeups: info.ri_pkg_idle_wkups"))
+        XCTAssertTrue(reader.contains("private static let rusageInfoV6: Int32 = 6"))
+        XCTAssertTrue(reader.contains("pulse_proc_pid_rusage(pid, rusageInfoV6, pointer)"))
+        XCTAssertFalse(reader.contains("rusageInfoV4"))
+        XCTAssertTrue(reader.contains("billedEnergyNanojoules: info.ri_energy_nj"))
+        XCTAssertTrue(reader.contains("idleWakeups: info.ri_interrupt_wkups"))
+        XCTAssertFalse(reader.contains("info.ri_billed_energy"))
+        XCTAssertFalse(reader.contains("info.ri_pkg_idle_wkups"))
         XCTAssertTrue(reader.contains("billedEnergyNanojoules: rusage?.billedEnergyNanojoules"))
         XCTAssertTrue(reader.contains("idleWakeups: rusage?.idleWakeups"))
 

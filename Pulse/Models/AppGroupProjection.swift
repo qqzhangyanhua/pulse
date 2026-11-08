@@ -3,7 +3,7 @@ import Foundation
 /// Memory and CPU toolbar chrome. Groups the rows already left by name, rising, and windowed filters.
 enum AppGroupChrome {
     static let toggleTitle = "按 App"
-    static let help = "同名进程合为一行。内存、线程、CPU、能耗和空闲唤醒相加。"
+    static let help = "同名进程合为一行。内存、线程、CPU、能耗和唤醒相加。"
 
     static func applies(on page: DashboardPage) -> Bool {
         page == .memory || page == .cpu
