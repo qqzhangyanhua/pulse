@@ -1,12 +1,16 @@
 import Foundation
 
-/// Memory-tab toolbar chrome. Groups the rows already left by name, rising, and windowed filters.
+/// Memory and CPU toolbar chrome. Groups the rows already left by name, rising, and windowed filters.
 enum AppGroupChrome {
     static let toggleTitle = "按 App"
-    static let help = "同名进程合为一行。内存和线程相加。"
+    static let help = "同名进程合为一行。内存、线程、CPU、能耗和空闲唤醒相加。"
+
+    static func applies(on page: DashboardPage) -> Bool {
+        page == .memory || page == .cpu
+    }
 
     static func showsToggle(page: DashboardPage) -> Bool {
-        page == .memory
+        applies(on: page)
     }
 }
 
@@ -44,6 +48,8 @@ enum AppGroupProjection {
             return lhs.pid > rhs.pid
         } ?? members[0]
         let anyResident = members.contains { $0.memorySource == .resident }
+        let energy = ProcessEnergyGroup.sum(members.map(\.energyWatts))
+        let wakeups = ProcessEnergyGroup.sum(members.map(\.idleWakeupsPerSecond))
         return ProcessRow(
             pid: lead.pid,
             name: lead.name,
@@ -55,7 +61,12 @@ enum AppGroupProjection {
             residentMemoryIsPartial: anyResident,
             threadCount: members.reduce(0) { $0 + $1.threadCount },
             diskReadBytesPerSecond: sum(members.map(\.diskReadBytesPerSecond)),
-            diskWriteBytesPerSecond: sum(members.map(\.diskWriteBytesPerSecond))
+            diskWriteBytesPerSecond: sum(members.map(\.diskWriteBytesPerSecond)),
+            energyWatts: energy.value,
+            idleWakeupsPerSecond: wakeups.value,
+            energyReadingIsPartial: energy.isPartial,
+            idleWakeupReadingIsPartial: wakeups.isPartial,
+            groupedMemberCount: members.count
         )
     }
 

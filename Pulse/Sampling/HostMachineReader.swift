@@ -1,4 +1,5 @@
 import Foundation
+import IOKit
 import IOKit.ps
 
 /// One host read for the machine page. Not called from `MemorySampler`.
@@ -22,6 +23,7 @@ enum HostMachineReader {
             uptime: uptime,
             bootedAt: Date().addingTimeInterval(-elapsed),
             power: power(lowPowerMode: info.isLowPowerModeEnabled),
+            battery: internalBatteryDetails(),
             volume: volume()
         )
     }
@@ -69,6 +71,56 @@ enum HostMachineReader {
         if batteryState == adapter { return .adapter }
         return .unknown
     }
+
+    /// Nil when this Mac has no `AppleSmartBattery`. Missing keys stay nil on a present battery.
+    private static func internalBatteryDetails() -> MachineBattery? {
+        let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
+        guard service != 0 else { return nil }
+        defer { IOObjectRelease(service) }
+        guard let properties = copyProperties(service) else { return blankBattery }
+        let data = properties["BatteryData"] as? NSDictionary
+        return MachineBattery(
+            cycleCount: integer(properties["CycleCount"]),
+            fullChargeCapacity: fullChargeCapacity(properties, data),
+            designCapacity: integer(properties["DesignCapacity"]) ?? integer(data?["DesignCapacity"]),
+            millivolts: integer(properties["Voltage"]),
+            milliamps: milliamps(properties["InstantAmperage"]) ?? milliamps(properties["Amperage"])
+        )
+    }
+
+    /// `AppleRawMaxCapacity` is mAh. Top-level MaxCapacity is a percent on Apple Silicon, so it is not read.
+    private static func fullChargeCapacity(_ properties: NSDictionary, _ data: NSDictionary?) -> Int? {
+        integer(properties["AppleRawMaxCapacity"])
+            ?? integer(data?["AppleRawMaxCapacity"])
+            ?? integer(data?["FullChargeCapacity"])
+    }
+
+    private static func copyProperties(_ service: io_registry_entry_t) -> NSDictionary? {
+        var properties: Unmanaged<CFMutableDictionary>?
+        let status = IORegistryEntryCreateCFProperties(service, &properties, kCFAllocatorDefault, 0)
+        guard status == KERN_SUCCESS, let raw = properties?.takeRetainedValue() else { return nil }
+        return raw
+    }
+
+    /// Positive keys. A current that may be a two's-complement bit pattern uses `milliamps`.
+    private static func integer(_ value: Any?) -> Int? {
+        guard let number = value as? NSNumber else { return nil }
+        return BatteryMath.plainInteger(uint64: number.uint64Value)
+    }
+
+    /// `InstantAmperage` may be a 64-bit two's-complement bit pattern. A real 0 stays 0.
+    private static func milliamps(_ value: Any?) -> Int? {
+        guard let number = value as? NSNumber else { return nil }
+        return BatteryMath.signedMilliamps(number.uint64Value)
+    }
+
+    private static let blankBattery = MachineBattery(
+        cycleCount: nil,
+        fullChargeCapacity: nil,
+        designCapacity: nil,
+        millivolts: nil,
+        milliamps: nil
+    )
 
     /// `maximum == 0` is unread. A real empty battery is `current == 0` with `maximum > 0`.
     private static func percent(current: Int?, maximum: Int?) -> Int? {

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		B00000000000000000000001 /* PulseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000001 /* PulseApp.swift */; };
 		B00000000000000000000002 /* MemoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000002 /* MemoryModels.swift */; };
+		B00000000000000000000049 /* ProcessRowCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000049 /* ProcessRowCopy.swift */; };
 		B00000000000000000000043 /* ProcessMemoryChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000043 /* ProcessMemoryChoice.swift */; };
 		B00000000000000000000028 /* ByteFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000028 /* ByteFormat.swift */; };
 		B0000000000000000000001B /* CPUPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001B /* CPUPage.swift */; };
@@ -25,11 +26,17 @@
 		B00000000000000000000035 /* HistoryCurvePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000035 /* HistoryCurvePresentation.swift */; };
 		B00000000000000000000039 /* ThermalNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000039 /* ThermalNotice.swift */; };
 		B0000000000000000000003A /* MachinePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003A /* MachinePage.swift */; };
+		B00000000000000000000045 /* BatteryMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000045 /* BatteryMath.swift */; };
 		B00000000000000000000042 /* MachineOverview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000042 /* MachineOverview.swift */; };
 		B0000000000000000000003B /* HostMachineReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003B /* HostMachineReader.swift */; };
 		B0000000000000000000003C /* MachineOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003C /* MachineOverviewSection.swift */; };
 		B0000000000000000000003D /* SwapUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003D /* SwapUsage.swift */; };
 		B00000000000000000000044 /* KernelPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000044 /* KernelPressure.swift */; };
+		B00000000000000000000047 /* MenuBarReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000047 /* MenuBarReading.swift */; };
+		B0000000000000000000004A /* PressureNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004A /* PressureNotice.swift */; };
+		B0000000000000000000004B /* PressureNoticeCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004B /* PressureNoticeCenter.swift */; };
+		B0000000000000000000004C /* LoginItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004C /* LoginItem.swift */; };
+		B00000000000000000000046 /* PulseSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000046 /* PulseSettingsView.swift */; };
 		B0000000000000000000003E /* WindowedAppFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003E /* WindowedAppFilter.swift */; };
 		B0000000000000000000003F /* WindowedAppLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003F /* WindowedAppLookup.swift */; };
 		B00000000000000000000040 /* AppGroupProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000040 /* AppGroupProjection.swift */; };
@@ -52,6 +59,7 @@
 		B0000000000000000000001E /* HostNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001E /* HostNetwork.swift */; };
 		B0000000000000000000001F /* HostNetworkReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001F /* HostNetworkReader.swift */; };
 		B00000000000000000000022 /* HostDisk.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000022 /* HostDisk.swift */; };
+		B00000000000000000000048 /* ProcessEnergy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000048 /* ProcessEnergy.swift */; };
 		B00000000000000000000023 /* HostDiskReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000023 /* HostDiskReader.swift */; };
 		B00000000000000000000017 /* MenuBarStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000017 /* MenuBarStatus.swift */; };
 		B00000000000000000000018 /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000018 /* MenuBarController.swift */; };
@@ -78,6 +86,7 @@
 /* Begin PBXFileReference section */
 		A00000000000000000000001 /* PulseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseApp.swift; sourceTree = "<group>"; };
 		A00000000000000000000002 /* MemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryModels.swift; sourceTree = "<group>"; };
+		A00000000000000000000049 /* ProcessRowCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRowCopy.swift; sourceTree = "<group>"; };
 		A00000000000000000000043 /* ProcessMemoryChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessMemoryChoice.swift; sourceTree = "<group>"; };
 		A00000000000000000000028 /* ByteFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteFormat.swift; sourceTree = "<group>"; };
 		A0000000000000000000001B /* CPUPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUPage.swift; sourceTree = "<group>"; };
@@ -94,11 +103,17 @@
 		A00000000000000000000035 /* HistoryCurvePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCurvePresentation.swift; sourceTree = "<group>"; };
 		A00000000000000000000039 /* ThermalNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalNotice.swift; sourceTree = "<group>"; };
 		A0000000000000000000003A /* MachinePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinePage.swift; sourceTree = "<group>"; };
+		A00000000000000000000045 /* BatteryMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryMath.swift; sourceTree = "<group>"; };
 		A00000000000000000000042 /* MachineOverview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineOverview.swift; sourceTree = "<group>"; };
 		A0000000000000000000003B /* HostMachineReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostMachineReader.swift; sourceTree = "<group>"; };
 		A0000000000000000000003C /* MachineOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineOverviewSection.swift; sourceTree = "<group>"; };
 		A0000000000000000000003D /* SwapUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapUsage.swift; sourceTree = "<group>"; };
 		A00000000000000000000044 /* KernelPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KernelPressure.swift; sourceTree = "<group>"; };
+		A00000000000000000000047 /* MenuBarReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarReading.swift; sourceTree = "<group>"; };
+		A0000000000000000000004A /* PressureNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PressureNotice.swift; sourceTree = "<group>"; };
+		A0000000000000000000004B /* PressureNoticeCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PressureNoticeCenter.swift; sourceTree = "<group>"; };
+		A0000000000000000000004C /* LoginItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItem.swift; sourceTree = "<group>"; };
+		A00000000000000000000046 /* PulseSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseSettingsView.swift; sourceTree = "<group>"; };
 		A0000000000000000000003E /* WindowedAppFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowedAppFilter.swift; sourceTree = "<group>"; };
 		A0000000000000000000003F /* WindowedAppLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowedAppLookup.swift; sourceTree = "<group>"; };
 		A00000000000000000000040 /* AppGroupProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroupProjection.swift; sourceTree = "<group>"; };
@@ -121,6 +136,7 @@
 		A0000000000000000000001E /* HostNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostNetwork.swift; sourceTree = "<group>"; };
 		A0000000000000000000001F /* HostNetworkReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostNetworkReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000022 /* HostDisk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostDisk.swift; sourceTree = "<group>"; };
+		A00000000000000000000048 /* ProcessEnergy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessEnergy.swift; sourceTree = "<group>"; };
 		A00000000000000000000023 /* HostDiskReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostDiskReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000017 /* MenuBarStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatus.swift; sourceTree = "<group>"; };
 		A00000000000000000000018 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
@@ -180,6 +196,7 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000002 /* MemoryModels.swift */,
+				A00000000000000000000049 /* ProcessRowCopy.swift */,
 				A00000000000000000000043 /* ProcessMemoryChoice.swift */,
 				A00000000000000000000028 /* ByteFormat.swift */,
 				A0000000000000000000001D /* MemoryGrowthSignal.swift */,
@@ -200,12 +217,16 @@
 				A00000000000000000000020 /* NetworkPage.swift */,
 				A00000000000000000000024 /* DiskPage.swift */,
 				A0000000000000000000003A /* MachinePage.swift */,
+				A00000000000000000000045 /* BatteryMath.swift */,
 				A00000000000000000000042 /* MachineOverview.swift */,
 				A0000000000000000000003D /* SwapUsage.swift */,
 				A00000000000000000000044 /* KernelPressure.swift */,
 				A0000000000000000000003E /* WindowedAppFilter.swift */,
 				A00000000000000000000040 /* AppGroupProjection.swift */,
 				A00000000000000000000041 /* ProcessGlossary.swift */,
+				A00000000000000000000047 /* MenuBarReading.swift */,
+				A0000000000000000000004A /* PressureNotice.swift */,
+				A0000000000000000000004C /* LoginItem.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -220,6 +241,7 @@
 				A00000000000000000000014 /* CPULoad.swift */,
 				A0000000000000000000001E /* HostNetwork.swift */,
 				A00000000000000000000022 /* HostDisk.swift */,
+				A00000000000000000000048 /* ProcessEnergy.swift */,
 				A00000000000000000000015 /* SamplingPace.swift */,
 				A0000000000000000000002C /* SamplingRequestGate.swift */,
 				A0000000000000000000002D /* SamplingRetryChrome.swift */,
@@ -258,6 +280,7 @@
 				A00000000000000000000026 /* MenuBarPopoverView.swift */,
 				A00000000000000000000019 /* MainWindowAnchor.swift */,
 				A0000000000000000000001A /* PulseAppDelegate.swift */,
+				A0000000000000000000004B /* PressureNoticeCenter.swift */,
 			);
 			path = MenuBar;
 			sourceTree = "<group>";
@@ -277,6 +300,7 @@
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
 				A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */,
 				A0000000000000000000000E /* SharedUI.swift */,
+				A00000000000000000000046 /* PulseSettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -378,6 +402,7 @@
 			files = (
 				B00000000000000000000001 /* PulseApp.swift in Sources */,
 				B00000000000000000000002 /* MemoryModels.swift in Sources */,
+				B00000000000000000000049 /* ProcessRowCopy.swift in Sources */,
 				B00000000000000000000043 /* ProcessMemoryChoice.swift in Sources */,
 				B00000000000000000000028 /* ByteFormat.swift in Sources */,
 				B0000000000000000000001D /* MemoryGrowthSignal.swift in Sources */,
@@ -392,9 +417,14 @@
 				B00000000000000000000035 /* HistoryCurvePresentation.swift in Sources */,
 				B00000000000000000000039 /* ThermalNotice.swift in Sources */,
 				B0000000000000000000003A /* MachinePage.swift in Sources */,
+				B00000000000000000000045 /* BatteryMath.swift in Sources */,
 				B00000000000000000000042 /* MachineOverview.swift in Sources */,
 				B0000000000000000000003D /* SwapUsage.swift in Sources */,
 				B00000000000000000000044 /* KernelPressure.swift in Sources */,
+				B00000000000000000000047 /* MenuBarReading.swift in Sources */,
+				B0000000000000000000004A /* PressureNotice.swift in Sources */,
+				B0000000000000000000004C /* LoginItem.swift in Sources */,
+				B00000000000000000000046 /* PulseSettingsView.swift in Sources */,
 				B0000000000000000000003E /* WindowedAppFilter.swift in Sources */,
 				B0000000000000000000003F /* WindowedAppLookup.swift in Sources */,
 				B00000000000000000000040 /* AppGroupProjection.swift in Sources */,
@@ -421,6 +451,7 @@
 				B0000000000000000000001E /* HostNetwork.swift in Sources */,
 				B0000000000000000000001F /* HostNetworkReader.swift in Sources */,
 				B00000000000000000000022 /* HostDisk.swift in Sources */,
+				B00000000000000000000048 /* ProcessEnergy.swift in Sources */,
 				B00000000000000000000023 /* HostDiskReader.swift in Sources */,
 				B00000000000000000000006 /* MachineInfo.swift in Sources */,
 				B00000000000000000000007 /* ProcessActions.swift in Sources */,
@@ -440,6 +471,7 @@
 				B00000000000000000000026 /* MenuBarPopoverView.swift in Sources */,
 				B00000000000000000000019 /* MainWindowAnchor.swift in Sources */,
 				B0000000000000000000001A /* PulseAppDelegate.swift in Sources */,
+				B0000000000000000000004B /* PressureNoticeCenter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

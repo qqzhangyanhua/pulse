@@ -15,6 +15,10 @@ struct RawProcessSample: Sendable, Equatable {
     /// `ri_diskio_*` from `proc_pid_rusage`. Nil when the call fails (EPERM / ESRCH / other).
     let diskBytesRead: UInt64?
     let diskBytesWritten: UInt64?
+    /// `ri_billed_energy` nanojoules from the same rusage read. Nil when that call fails.
+    let billedEnergyNanojoules: UInt64?
+    /// `ri_pkg_idle_wkups` from the same rusage read. Nil when that call fails. No resident fallback.
+    let idleWakeups: UInt64?
 }
 
 /// `proc_listpids` / `proc_pidinfo` walk. Display names are resolved later with a cache.
@@ -84,12 +88,15 @@ enum ProcessEnumerator {
             userTimeNs: info.pti_total_user,
             systemTimeNs: info.pti_total_system,
             diskBytesRead: rusage?.bytesRead,
-            diskBytesWritten: rusage?.bytesWritten
+            diskBytesWritten: rusage?.bytesWritten,
+            billedEnergyNanojoules: rusage?.billedEnergyNanojoules,
+            idleWakeups: rusage?.idleWakeups
         )
     }
 
     /// rusage failure must not drop the row. SIP / kernel tasks often return EPERM.
-    /// One call supplies disk counters and footprint. A zero footprint is a real reading.
+    /// One call supplies disk counters, footprint, billed energy, and idle wakeups.
+    /// A zero footprint is a real reading. Energy has no fallback: failure leaves both nil.
     private static func readRusage(pid: pid_t) -> ProcessRusageSample? {
         var info = PulseRusageInfoV4()
         let status = withUnsafeMutablePointer(to: &info) { pointer in
@@ -99,7 +106,9 @@ enum ProcessEnumerator {
         return ProcessRusageSample(
             bytesRead: info.ri_diskio_bytesread,
             bytesWritten: info.ri_diskio_byteswritten,
-            footprintBytes: info.ri_phys_footprint
+            footprintBytes: info.ri_phys_footprint,
+            billedEnergyNanojoules: info.ri_billed_energy,
+            idleWakeups: info.ri_pkg_idle_wkups
         )
     }
 }
@@ -108,6 +117,8 @@ private struct ProcessRusageSample {
     let bytesRead: UInt64
     let bytesWritten: UInt64
     let footprintBytes: UInt64
+    let billedEnergyNanojoules: UInt64
+    let idleWakeups: UInt64
 }
 
 struct ProcessIdentity: Sendable, Equatable {

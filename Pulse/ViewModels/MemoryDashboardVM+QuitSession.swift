@@ -140,7 +140,7 @@ extension MemoryDashboardVM {
         let next = AppGroupProjection.selectedPid(
             current: selectedPid,
             rows: visibleRows,
-            grouped: groupedByApp && selectedPage == .memory
+            grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage)
         )
         guard next != selectedPid else { return }
         let effect = ProcessQuitSession.risingOnlySelection(
