@@ -30,6 +30,8 @@
 		B0000000000000000000003C /* MachineOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003C /* MachineOverviewSection.swift */; };
 		B0000000000000000000003D /* SwapUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003D /* SwapUsage.swift */; };
 		B00000000000000000000044 /* KernelPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000044 /* KernelPressure.swift */; };
+		B00000000000000000000045 /* MenuBarReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000045 /* MenuBarReading.swift */; };
+		B00000000000000000000046 /* PulseSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000046 /* PulseSettingsView.swift */; };
 		B0000000000000000000003E /* WindowedAppFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003E /* WindowedAppFilter.swift */; };
 		B0000000000000000000003F /* WindowedAppLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003F /* WindowedAppLookup.swift */; };
 		B00000000000000000000040 /* AppGroupProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000040 /* AppGroupProjection.swift */; };
@@ -99,6 +101,8 @@
 		A0000000000000000000003C /* MachineOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineOverviewSection.swift; sourceTree = "<group>"; };
 		A0000000000000000000003D /* SwapUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapUsage.swift; sourceTree = "<group>"; };
 		A00000000000000000000044 /* KernelPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KernelPressure.swift; sourceTree = "<group>"; };
+		A00000000000000000000045 /* MenuBarReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarReading.swift; sourceTree = "<group>"; };
+		A00000000000000000000046 /* PulseSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseSettingsView.swift; sourceTree = "<group>"; };
 		A0000000000000000000003E /* WindowedAppFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowedAppFilter.swift; sourceTree = "<group>"; };
 		A0000000000000000000003F /* WindowedAppLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowedAppLookup.swift; sourceTree = "<group>"; };
 		A00000000000000000000040 /* AppGroupProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroupProjection.swift; sourceTree = "<group>"; };
@@ -206,6 +210,7 @@
 				A0000000000000000000003E /* WindowedAppFilter.swift */,
 				A00000000000000000000040 /* AppGroupProjection.swift */,
 				A00000000000000000000041 /* ProcessGlossary.swift */,
+				A00000000000000000000045 /* MenuBarReading.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -277,6 +282,7 @@
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
 				A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */,
 				A0000000000000000000000E /* SharedUI.swift */,
+				A00000000000000000000046 /* PulseSettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -395,6 +401,8 @@
 				B00000000000000000000042 /* MachineOverview.swift in Sources */,
 				B0000000000000000000003D /* SwapUsage.swift in Sources */,
 				B00000000000000000000044 /* KernelPressure.swift in Sources */,
+				B00000000000000000000045 /* MenuBarReading.swift in Sources */,
+				B00000000000000000000046 /* PulseSettingsView.swift in Sources */,
 				B0000000000000000000003E /* WindowedAppFilter.swift in Sources */,
 				B0000000000000000000003F /* WindowedAppLookup.swift in Sources */,
 				B00000000000000000000040 /* AppGroupProjection.swift in Sources */,

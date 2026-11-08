@@ -7,6 +7,7 @@ import SwiftUI
 struct MenuBarPopoverView: View {
     @ObservedObject var dashboard: MemoryDashboardVM
     var onOpenPulse: () -> Void
+    var onOpenSettings: () -> Void
     var onSelectProcess: (Int32) -> Void
 
     private var strip: MenuBarPopoverSnapshot {
@@ -58,15 +59,26 @@ struct MenuBarPopoverView: View {
         case .topProcesses:
             topProcessesSlot
         case .openPulse:
-            Button(action: onOpenPulse) {
-                Text(MenuBarCopy.openPulseTitle)
-                    .font(.callout.weight(.medium))
-                    .foregroundStyle(Color.white.opacity(0.86))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
+            VStack(alignment: .leading, spacing: 6) {
+                Button(action: onOpenPulse) {
+                    Text(MenuBarCopy.openPulseTitle)
+                        .font(.callout.weight(.medium))
+                        .foregroundStyle(Color.white.opacity(0.86))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(MenuBarCopy.openPulseTitle)
+                Button(action: onOpenSettings) {
+                    Text(MenuBarReadingCopy.openSettingsTitle)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(MenuBarReadingCopy.openSettingsTitle)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(MenuBarCopy.openPulseTitle)
         }
     }
 

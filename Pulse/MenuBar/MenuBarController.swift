@@ -22,6 +22,7 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
     /// Transient popovers close on the mouse-down that also hits the status button.
     /// Ignore that same click so the strip does not bounce back open.
     private var popoverClosedAt: Date?
+    private var defaultsObserver: NSObjectProtocol?
 
     func install(
         currentDot: @escaping @MainActor () -> MenuBarDot,
@@ -41,6 +42,17 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
             item.button?.setAccessibilityLabel("Pulse")
             statusItem = item
         }
+        if defaultsObserver == nil {
+            defaultsObserver = NotificationCenter.default.addObserver(
+                forName: UserDefaults.didChangeNotification,
+                object: UserDefaults.standard,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.render()
+                }
+            }
+        }
         render()
     }
 
@@ -57,6 +69,10 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
     /// ⌘Q and 「退出 Pulse」 both end here, via `applicationWillTerminate`.
     func uninstall() {
         dismissPopover()
+        if let defaultsObserver {
+            NotificationCenter.default.removeObserver(defaultsObserver)
+            self.defaultsObserver = nil
+        }
         cancellable = nil
         dashboard = nil
         rendered = nil
@@ -67,9 +83,28 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
 
     private func render() {
         let dot = currentDot()
-        guard let button = statusItem?.button else { return }
-        button.title = dot.statusItemTitle
-        button.imagePosition = .imageOnly
+        guard let button = statusItem?.button, let item = statusItem else { return }
+        let mode = MenuBarReadingPreference.mode()
+        // A failed sample leaves the last snapshot in place. The title treats that as missing.
+        let readable = dashboard?.samplingFailed == false
+        let title = MenuBarReadingTitle.string(
+            mode: mode,
+            usedBytes: readable ? dashboard?.snapshot?.usedBytes : nil,
+            cpuPercent: readable ? dashboard?.systemCpuPercent : nil
+        )
+        button.title = title
+        switch MenuBarStatusItemLayout.resolve(mode: mode) {
+        case .dot:
+            item.length = NSStatusItem.squareLength
+            button.imagePosition = .imageOnly
+        case .reading:
+            item.length = NSStatusItem.variableLength
+            button.imagePosition = .imageLeading
+            button.font = NSFont.monospacedDigitSystemFont(
+                ofSize: NSFont.systemFontSize,
+                weight: .regular
+            )
+        }
         button.toolTip = dot.tooltip
         guard dot != rendered else { return }
         rendered = dot
@@ -123,6 +158,9 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
                 onOpenPulse: { [weak self] in
                     self?.handlePopoverTap(.openPulse)
                 },
+                onOpenSettings: { [weak self] in
+                    self?.openSettings()
+                },
                 onSelectProcess: { [weak self] pid in
                     self?.handlePopoverTap(.process(pid))
                 }
@@ -145,6 +183,11 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
                 onOpenPulse()
             }
         }
+    }
+
+    private func openSettings() {
+        dismissPopover()
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 
     private func dismissPopover() {

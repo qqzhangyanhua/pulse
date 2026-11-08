@@ -25,6 +25,10 @@ struct PulseApp: App {
         .commands {
             PulseWindowCommands(dashboard: dashboard)
         }
+
+        Settings {
+            PulseSettingsView()
+        }
     }
 }
 
