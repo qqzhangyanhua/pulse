@@ -115,6 +115,8 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     /// `proc_pid_rusage` two-frame rates. Nil on first frame, EPERM, wrap, or a failed read.
     let diskReadBytesPerSecond: Double?
     let diskWriteBytesPerSecond: Double?
+    /// Nil on an ungrouped row. A grouped row stores `members.count`, including 1.
+    let groupedMemberCount: Int?
 
     init(
         pid: Int32,
@@ -127,7 +129,8 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         residentMemoryIsPartial: Bool = false,
         threadCount: Int,
         diskReadBytesPerSecond: Double? = nil,
-        diskWriteBytesPerSecond: Double? = nil
+        diskWriteBytesPerSecond: Double? = nil,
+        groupedMemberCount: Int? = nil
     ) {
         self.pid = pid
         self.name = name
@@ -140,6 +143,7 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         self.threadCount = threadCount
         self.diskReadBytesPerSecond = diskReadBytesPerSecond
         self.diskWriteBytesPerSecond = diskWriteBytesPerSecond
+        self.groupedMemberCount = groupedMemberCount
     }
 
     /// Missing first-sample CPU sorts below real values without pretending it is 0%.

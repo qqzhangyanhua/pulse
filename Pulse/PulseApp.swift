@@ -35,6 +35,21 @@ private struct PulseWindowCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {}
+        CommandGroup(replacing: .pasteboard) {
+            Button("剪切") {
+                NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: nil)
+            }
+            .keyboardShortcut("x", modifiers: .command)
+            copyProcessRowCommand
+            Button("粘贴") {
+                NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil)
+            }
+            .keyboardShortcut("v", modifiers: .command)
+            Button("全选") {
+                NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
+            }
+            .keyboardShortcut("a", modifiers: .command)
+        }
         CommandMenu("视图") {
             Button("内存") { dashboard.selectPage(.memory) }
                 .keyboardShortcut("1", modifiers: .command)
@@ -78,6 +93,46 @@ private struct PulseWindowCommands: Commands {
             Task { await dashboard.quitSelected() }
         }
         .disabled(!dashboard.selectedPage.allowsProcessQuit)
+    }
+
+    /// ⌘C stays with the name filter. An empty selection returns before the pasteboard.
+    @ViewBuilder
+    private var copyProcessRowCommand: some View {
+        if nameFilterFocused == true {
+            copyProcessRowButton
+        } else {
+            copyProcessRowButton
+                .keyboardShortcut("c", modifiers: .command)
+        }
+    }
+
+    private var copyProcessRowButton: some View {
+        Button("复制") {
+            copySelectedProcessRow()
+        }
+        .disabled(copyProcessRowDisabled)
+    }
+
+    private var copyProcessRowDisabled: Bool {
+        nameFilterFocused != true && dashboard.selectedRow == nil
+    }
+
+    private func copySelectedProcessRow() {
+        if nameFilterFocused == true {
+            NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: nil)
+            return
+        }
+        guard let row = dashboard.selectedRow else { return }
+        let line = ProcessRowCopy.line(page: dashboard.selectedPage, row: row)
+        switch dashboard.selectedPage {
+        case .memory, .cpu, .disk, .network:
+            break
+        case .machine, .gpu:
+            return
+        }
+        let board = NSPasteboard.general
+        board.clearContents()
+        board.setString(line, forType: .string)
     }
 }
 

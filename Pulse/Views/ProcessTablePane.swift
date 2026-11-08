@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 private enum ProcessColumn {
@@ -256,6 +257,14 @@ struct ProcessTablePane: View {
                     showsDisk: showsDiskColumns,
                     growthBadge: vm.memoryGrowthListBadge(for: row.pid)
                 )
+                    .contextMenu {
+                        Button("复制") {
+                            let line = ProcessRowCopy.line(page: vm.selectedPage, row: row)
+                            let board = NSPasteboard.general
+                            board.clearContents()
+                            board.setString(line, forType: .string)
+                        }
+                    }
                     .id(row.pid)
                     .listRowInsets(EdgeInsets(top: 3, leading: 10, bottom: 3, trailing: 10))
                     .listRowSeparator(.hidden)

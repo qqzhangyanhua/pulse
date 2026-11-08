@@ -55,7 +55,8 @@ enum AppGroupProjection {
             residentMemoryIsPartial: anyResident,
             threadCount: members.reduce(0) { $0 + $1.threadCount },
             diskReadBytesPerSecond: sum(members.map(\.diskReadBytesPerSecond)),
-            diskWriteBytesPerSecond: sum(members.map(\.diskWriteBytesPerSecond))
+            diskWriteBytesPerSecond: sum(members.map(\.diskWriteBytesPerSecond)),
+            groupedMemberCount: members.count
         )
     }
 
