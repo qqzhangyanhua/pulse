@@ -5666,3 +5666,22 @@ Linux 上可执行的证明用下面已有测试，调用真实的 `pids` / `eva
 帮助句没有第二句，禁词测试也不再拆分。还没发生的是：产品对本 head 的独立复核、主控 full gate、实现委托。Mac 上的 tooltip 与 VoiceOver 仍未验。
 
 已经定下来的是：一个静态属性、两字段徽标、`title` 仍为「上涨」、开关行为不改、Top5 仍是完整列表按当前内存页表头排序后取前 5、`badge` 按该 pid 的当前序列 `evaluate`、表的「仅上涨」只是 `badge != nil` 的投影。`count >= 80` 就判断，90 只是环上限。三处禁词测试保持原断言。根 `README.md` 不加二十二期。
+
+# Pulse 二十九期：压力档内核取值与主机网络 64 位计数
+
+## 压力取值
+
+内核 `kern.memorystatus_vm_pressure_level` 用 1 表示正常、2 表示警告、4 表示严重。空闲机器读到 1。`PressureLevel` 仍只有 `normal | elevated` 两档，文案仍是「正常 / 偏高」「余量充足 / 余量紧张」。不加第三档，不改颜色，不改菜单栏绑定。
+
+`KernelPressure.level(from:)` 把这个整数映射成可选压力档：
+
+| 内核值 | 结果 |
+| --- | --- |
+| 1 | `normal` |
+| 2、4 | `elevated` |
+| 0、3、负数，以及其他未知值 | `nil` |
+
+解析在 `KernelPressure.resolve`。Darwin 侧 `PressureProvider.read()` 只交出原始 `Int32` 和 sysctl 状态，不再把 0 当成正常、把其余成功值当成偏高。
+
+1. 读取成功（status 为 0）且上面的映射不是 nil 时，用该档。用量比例和压缩比例都不参与。
+2. 读取失败，或映射为 nil 时，沿用原估算：`usedRatio >= 0.88` 或 `compressedRatio >= 0.18` 为偏高，否则正常。两个阈值不变。
