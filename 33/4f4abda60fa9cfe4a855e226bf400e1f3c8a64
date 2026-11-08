@@ -1,0 +1,49 @@
+docs/TECH.md
+  s_11b69e8eb9ff9d::t_5264340014a994 112,161-162
+Pulse/Views/MachineOverviewSection.swift
+  s_11b69e8eb9ff9d::t_5264340014a994 46-49,219-244
+  s_11b69e8eb9ff9d::t_cd6e45de5e12e2 245
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_11b69e8eb9ff9d::t_32b13cd87efc13 128
+Pulse/Sampling/HostMachineReader.swift
+  s_11b69e8eb9ff9d::t_5264340014a994 2,26,75-117
+  s_11b69e8eb9ff9d::t_96b1ad18e24865 118
+README.md
+  s_11b69e8eb9ff9d::t_5264340014a994 15
+Package.swift
+  s_11b69e8eb9ff9d::t_5264340014a994 58
+Tests/SamplingCoreTests/MachineOverviewTests.swift
+  s_11b69e8eb9ff9d::t_5264340014a994 139-207,408-410,423-424,429
+Pulse/Models/MachineOverview.swift
+  s_11b69e8eb9ff9d::t_5264340014a994 64-65,71-76,116,219-243
+  s_11b69e8eb9ff9d::t_ca546b87f8494d 244
+Pulse/Models/MachinePage.swift
+  s_11b69e8eb9ff9d::t_5264340014a994 22-33,55-56
+Pulse/Models/BatteryMath.swift
+  s_11b69e8eb9ff9d::t_5264340014a994 1-22
+Pulse.xcodeproj/project.pbxproj
+  s_11b69e8eb9ff9d::t_0c21a183937977 34,106,216,408
+  s_11b69e8eb9ff9d::t_5264340014a994 28,100,209,404
+Tests/SamplingCoreTests/BatteryMathTests.swift
+  s_11b69e8eb9ff9d::t_5264340014a994 1-37
+Tests/SamplingCoreTests/MachinePageTests.swift
+  s_11b69e8eb9ff9d::t_5264340014a994 318-350
+docs/PRD.md
+  s_11b69e8eb9ff9d::t_5264340014a994 35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "334f4abda60fa9cfe4a855e226bf400e1f3c8a64",
+  "prompts": {},
+  "sessions": {
+    "s_11b69e8eb9ff9d": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b9a9-7ec9-7e60-bef6-403cc9553aed",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
