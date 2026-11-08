@@ -1,0 +1,83 @@
+docs/specs/00-prd.md
+  s_63f1c495532637::t_79acbcba303196 3-7
+docs/specs/01-memory-mvp.md
+  s_63f1c495532637::t_f50149137f8a7a 3
+docs/specs/02-menubar-and-cpu.md
+  s_63f1c495532637::t_035d797e379c18 3-9
+docs/specs/03-growth-signal.md
+  s_63f1c495532637::t_148477ab856d6f 3-7
+docs/specs/04-network-tab.md
+  s_63f1c495532637::t_415efb699925a1 3
+docs/specs/05-disk-tab.md
+  s_63f1c495532637::t_c57d7c56483f2c 3-7
+docs/specs/06-list-growth-badge.md
+  s_63f1c495532637::t_9c127230684cd0 3-7
+docs/specs/07-menubar-strip-b.md
+  s_63f1c495532637::t_4889efd23eafd7 3-11
+docs/specs/08-polish-smoke.md
+  s_63f1c495532637::t_41898dde13b079 3-13
+docs/specs/09-growth-badge-top5.md
+  s_63f1c495532637::t_27322b8d3b6c52 3-7
+docs/specs/10-menubar-used-memory.md
+  s_63f1c495532637::t_7dd475deaa7197 3-7
+docs/specs/11-menubar-top3-select.md
+  s_63f1c495532637::t_04e3e3854832ac 3-7
+docs/specs/12-rising-only-filter.md
+  s_63f1c495532637::t_27924fc0e05877 3-9
+docs/specs/13-sampling-retry.md
+  s_63f1c495532637::t_885c5d0d42feac 3
+docs/specs/14-menubar-top3-sort.md
+  s_63f1c495532637::t_81d9e6278b3361 3-5
+docs/specs/15-filter-empty-clear.md
+  s_63f1c495532637::t_23252b2d9405b3 3-7
+docs/specs/16-quit-outcome-per-pid.md
+  s_63f1c495532637::t_c573c5126c9421 3
+docs/specs/17-memory-detail-resident.md
+  s_63f1c495532637::t_51e35155d2dae9 3,6-7
+docs/specs/18-resource-detail-projection.md
+  s_63f1c495532637::t_5676501036b8bf 3-5
+docs/specs/19-disk-read-write-sort.md
+  s_63f1c495532637::t_bf0f789460c520 3
+docs/specs/20-top-app-locate.md
+  s_63f1c495532637::t_f1c5d9194da490 3-5
+docs/specs/21-history-curve-missing.md
+  s_63f1c495532637::t_aca2374d28ac80 3-5
+docs/specs/22-growth-help-copy.md
+  s_63f1c495532637::t_40cb9a83f470ff 3
+docs/specs/README.md
+  s_04f46023acfa1c::t_7dffb3eb11f066 3,5-12
+AGENTS.md
+  s_63f1c495532637::t_9bb5b182f6c4bf 54
+README.md
+  s_63f1c495532637::t_46953a499e3970 17
+docs/PRD.md
+  s_63f1c495532637::t_da17ad2b4cd8bd 58
+docs/TECH.md
+  s_63f1c495532637::t_91646fe1042fe6 5,75,88-89,106,129,160
+docs/design/README.md
+  s_63f1c495532637::t_1f4bbc17d0fea3 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "9fa9cd1853f3cda9b39b198ff01bd724383b7db1",
+  "prompts": {},
+  "sessions": {
+    "s_04f46023acfa1c": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "b19b3457-7287-423c-893c-73df25855d2e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    },
+    "s_63f1c495532637": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "d09e96b6-91ce-434d-9929-2a8526f60756",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
