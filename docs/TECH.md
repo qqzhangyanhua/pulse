@@ -117,7 +117,9 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 ### 详情侧栏与退出
 
 - 选中一行打开侧栏：图标、名称、内存 / CPU 大数、内存主曲线、CPU 辅曲线。切进程时两条曲线清空重采。常见系统进程附一句本地说明（`ProcessGlossary`），表里没有的名字不显示。
-- 「退出」走 `NSRunningApplication.terminate()`，等待最多 2.5 秒。失败后显示「强制退出」，先弹系统 `NSAlert` 确认，再 `forceTerminate()`。
+- 有应用对象的进程，包括登录窗口、程序坞、访达：「退出」走 `NSRunningApplication.terminate()`，等待最多 2.5 秒。失败后显示「强制退出」，先弹系统 `NSAlert` 确认，再 `forceTerminate()`。这条路径不发信号。
+- 没有应用对象时，在 `ProcessActions` 里用 `proc_pidpath` 读可执行路径。路径缺失，或路径等于 `/System`、`/usr/libexec`、`/usr/sbin`、`/sbin`，或以这些前缀加 `/` 开头：不发信号。进程还在则请求失败，已经不在则未找到。其余普通退出发 SIGTERM，不另加确认；强制退出仍先弹原来的确认框，确认后发 SIGKILL，取消不发信号。
+- 信号发出后仍用原来的等待、超时和退出记录（普通 2.5 秒，强制 2 秒）。`kill` 返回 ESRCH 视为未找到，其它失败视为请求失败。侧栏失败文案仍是「未能退出。可以请系统立即结束该进程。」和「系统未能结束该进程。」不按 uid 再拒绝，按钮可点规则不变。
 - 退出结果按 pid 记在会话内（`ProcessQuitOutcome`）。进程消失后侧栏冻结在最后一帧，失败卡留在原处可重试。冻结卡的占比分母用消失前最后一次有效总量（`LastLiveTotalReducer`）。
 - 退出成功、进程从列表消失后，在第 3 个成功采样点比较整机已用内存：减少达到 50 MiB 写「已用内存约减少 X」，否则写「已用内存变化不明显」。基准缺失、中途失败或切走时不显示。
 
@@ -141,7 +143,7 @@ Tab 选中胶囊、总览高度和工具栏里的页专属开关用同一段动�
 
 ## 测试
 
-- `swift test` 编译 `SamplingCore` 并跑 `Tests/SamplingCoreTests/`，覆盖纯投影、采样节奏、请求门闩、退出会话等。
+- `swift test` 编译 `SamplingCore` 并跑 `Tests/SamplingCoreTests/`，覆盖纯投影、采样节奏、请求门闩、退出会话和退出路由等。
 - 部分 `*WiringSourceTests` 直接读 App 源码文本，校验视图接线。
 - CI（`.github/workflows/ci.yml`，`macos-15`）跑 `swift test`，再以 `CODE_SIGNING_ALLOWED=NO` 构建 App。
 - 读取系统的代码和视图不在 `swift test` 里，需要按下面的清单在本机冒烟。
@@ -159,6 +161,7 @@ Tab 选中胶囊、总览高度和工具栏里的页专属开关用同一段动�
 - [ ] 详情：内存主曲线 + CPU 辅曲线；切进程后重采；标题「内存占用」；系统进程有一句说明
 - [ ] 详情「内存趋势」三态：样本不足 / 上涨 / 不显示；列表「上涨」徽标只出现在前 5 里
 - [ ] 退出走 `terminate`，失败后强制退出有系统确认；退出后出现已用内存变化句
+- [ ] 一个没有应用对象的用户态辅助进程可以从侧栏退出；一个系统路径进程（`/System`、`/usr/libexec`、`/usr/sbin` 或 `/sbin`）点退出后仍在，并看到「未能退出。可以请系统立即结束该进程。」
 
 **其它页**
 - [ ] CPU 页：整机 CPU、最忙一核、曲线；第一帧 CPU 列是「—」；能耗影响和空闲唤醒两列，第一帧是「—」；「按 App」可切换，有成员缺失时详情注明「部分读数」

@@ -2,15 +2,15 @@ import AppKit
 import Darwin
 import Foundation
 
-/// Maps a pid to `NSRunningApplication` and performs quit / force-quit.
+/// Quit and force-quit. An application object stays on AppKit. Otherwise the path decides.
 enum ProcessActions {
     @MainActor
     static func terminate(pid: pid_t) async -> ProcessActionResult {
-        guard let app = NSRunningApplication(processIdentifier: pid) else {
-            return isAlive(pid) ? .requestFailed : .notFound
+        if let app = NSRunningApplication(processIdentifier: pid) {
+            guard app.terminate() else { return .requestFailed }
+            return await waitForExit(pid: pid, timeoutNanoseconds: 2_500_000_000)
         }
-        guard app.terminate() else { return .requestFailed }
-        return await waitForExit(pid: pid, timeoutNanoseconds: 2_500_000_000)
+        return await signalOrRefuse(pid: pid, force: false, timeoutNanoseconds: 2_500_000_000)
     }
 
     @MainActor
@@ -26,11 +26,44 @@ enum ProcessActions {
 
     @MainActor
     static func forceTerminate(pid: pid_t) async -> ProcessActionResult {
-        guard let app = NSRunningApplication(processIdentifier: pid) else {
-            return isAlive(pid) ? .requestFailed : .notFound
+        if let app = NSRunningApplication(processIdentifier: pid) {
+            guard app.forceTerminate() else { return .requestFailed }
+            return await waitForExit(pid: pid, timeoutNanoseconds: 2_000_000_000)
         }
-        guard app.forceTerminate() else { return .requestFailed }
-        return await waitForExit(pid: pid, timeoutNanoseconds: 2_000_000_000)
+        return await signalOrRefuse(pid: pid, force: true, timeoutNanoseconds: 2_000_000_000)
+    }
+
+    @MainActor
+    private static func signalOrRefuse(
+        pid: pid_t,
+        force: Bool,
+        timeoutNanoseconds: UInt64
+    ) async -> ProcessActionResult {
+        let route = ProcessQuitRoute.decide(
+            hasApplication: false,
+            executablePath: executablePath(pid: pid),
+            force: force
+        )
+        switch route {
+        case .application, .refused:
+            return ProcessQuitRoute.refusedResult(isAlive: isAlive(pid))
+        case .signal(.sigterm):
+            return await deliver(SIGTERM, pid: pid, timeoutNanoseconds: timeoutNanoseconds)
+        case .signal(.sigkill):
+            return await deliver(SIGKILL, pid: pid, timeoutNanoseconds: timeoutNanoseconds)
+        }
+    }
+
+    @MainActor
+    private static func deliver(
+        _ signal: Int32,
+        pid: pid_t,
+        timeoutNanoseconds: UInt64
+    ) async -> ProcessActionResult {
+        if kill(pid, signal) != 0 {
+            return ProcessQuitRoute.signalFailure(noSuchProcess: errno == ESRCH)
+        }
+        return await waitForExit(pid: pid, timeoutNanoseconds: timeoutNanoseconds)
     }
 
     @MainActor
@@ -56,4 +89,21 @@ enum ProcessActions {
         }
         return errno == EPERM
     }
+
+    private static func executablePath(pid: pid_t) -> String? {
+        let capacity = 4_096
+        var buffer = [CChar](repeating: 0, count: capacity)
+        let length = buffer.withUnsafeMutableBufferPointer { raw -> Int32 in
+            pulse_proc_pidpath(pid, raw.baseAddress, UInt32(capacity))
+        }
+        guard length > 0 else { return nil }
+        return String(cString: buffer)
+    }
 }
+
+@_silgen_name("proc_pidpath")
+private func pulse_proc_pidpath(
+    _ pid: Int32,
+    _ buffer: UnsafeMutableRawPointer?,
+    _ buffersize: UInt32
+) -> Int32

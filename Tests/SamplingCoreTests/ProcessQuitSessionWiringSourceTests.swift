@@ -237,6 +237,76 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         XCTAssertEqual(occurrenceCount(of: "sidebar.releaseNote", in: sidebar), 1)
     }
 
+    /// Source shape only. Does not send SIGTERM, SIGKILL, or signal 0.
+    func testNonAppSignalIsRoutedInsideProcessActions() throws {
+        let actions = try repoText("Pulse/Actions/ProcessActions.swift")
+        let terminate = try functionBody(named: "terminate", in: actions)
+        XCTAssertTrue(terminate.contains("app.terminate()"))
+        XCTAssertTrue(terminate.contains("2_500_000_000"))
+        XCTAssertFalse(terminate.contains("confirmForceQuit"))
+        XCTAssertFalse(terminate.contains("kill("))
+        XCTAssertFalse(terminate.contains("SIGTERM"))
+        XCTAssertFalse(terminate.contains("SIGKILL"))
+
+        let force = try functionBody(named: "forceTerminate", in: actions)
+        XCTAssertTrue(force.contains("app.forceTerminate()"))
+        XCTAssertTrue(force.contains("2_000_000_000"))
+        XCTAssertFalse(force.contains("confirmForceQuit"))
+        XCTAssertFalse(force.contains("kill("))
+        XCTAssertFalse(force.contains("SIGTERM"))
+        XCTAssertFalse(force.contains("SIGKILL"))
+
+        let routed = try functionBody(named: "signalOrRefuse", in: actions)
+        XCTAssertTrue(routed.contains("hasApplication: false"))
+        XCTAssertTrue(routed.contains("executablePath(pid: pid)"))
+        XCTAssertTrue(routed.contains("case .signal(.sigterm):"))
+        XCTAssertTrue(routed.contains("SIGTERM"))
+        XCTAssertTrue(routed.contains("case .signal(.sigkill):"))
+        XCTAssertTrue(routed.contains("SIGKILL"))
+        XCTAssertTrue(routed.contains("refusedResult"))
+        XCTAssertFalse(routed.contains("confirmForceQuit"))
+        XCTAssertFalse(routed.contains("NSAlert"))
+        XCTAssertFalse(routed.contains("getuid"))
+
+        let deliver = try functionBody(named: "deliver", in: actions)
+        XCTAssertTrue(deliver.contains("kill(pid, signal)"))
+        XCTAssertTrue(deliver.contains("errno == ESRCH"))
+        XCTAssertTrue(deliver.contains("signalFailure"))
+        XCTAssertTrue(deliver.contains("waitForExit"))
+        XCTAssertTrue(actions.contains("proc_pidpath"))
+        XCTAssertFalse(actions.contains("getuid"))
+
+        let route = try repoText("Pulse/Models/ProcessQuitRoute.swift")
+        XCTAssertFalse(route.contains("import Darwin"))
+        XCTAssertFalse(route.contains("import AppKit"))
+        XCTAssertFalse(route.contains("import IOKit"))
+        XCTAssertFalse(route.contains("import SwiftUI"))
+        for prefix in ["/System", "/usr/libexec", "/usr/sbin", "/sbin"] {
+            XCTAssertTrue(route.contains("\"\(prefix)\""))
+        }
+        let package = try repoText("Package.swift")
+        XCTAssertTrue(package.contains("\"Models/ProcessQuitRoute.swift\""))
+        let project = try repoText("Pulse.xcodeproj/project.pbxproj")
+        XCTAssertEqual(occurrenceCount(of: "ProcessQuitRoute.swift", in: project), 6)
+        XCTAssertTrue(project.contains("ProcessQuitRoute.swift in Sources"))
+
+        let quit = try repoText("Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift")
+        XCTAssertTrue(quit.contains("ProcessActions.terminate(pid: issued.pid)"))
+        XCTAssertTrue(quit.contains("ProcessActions.forceTerminate(pid: issued.pid)"))
+        XCTAssertTrue(quit.contains("ProcessActions.confirmForceQuit(displayName: request.displayName)"))
+        XCTAssertFalse(quit.contains("proc_pidpath"))
+        XCTAssertFalse(quit.contains("ProcessQuitRoute"))
+        XCTAssertFalse(quit.contains("SIGTERM"))
+        XCTAssertFalse(quit.contains("SIGKILL"))
+        let ordinary = try functionBody(named: "quitSelected", in: quit)
+        XCTAssertFalse(ordinary.contains("confirmForceQuit"))
+        let forceQuit = try functionBody(named: "forceQuitSelected", in: quit)
+        XCTAssertLessThan(
+            try index(of: "if !confirmed", in: forceQuit),
+            try index(of: "ProcessActions.forceTerminate(pid: issued.pid)", in: forceQuit)
+        )
+    }
+
     /// Source shape only. Not a VM instance, not NSAlert, not MainActor, not a real quit.
     func testClosedConfirmHelperIsGenerationScopedAndWrittenBack() throws {
         let session = try repoText("Pulse/Models/ProcessQuitSession.swift")
