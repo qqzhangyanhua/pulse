@@ -1,0 +1,47 @@
+Pulse/Models/MemoryModels.swift
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 126-127,145,162
+  s_11b69e8eb9ff9d::t_295eba2e7bfaa1 144
+Pulse/Models/AppGroupProjection.swift
+  s_11b69e8eb9ff9d::t_9ad8895a707d47 64
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 65
+Pulse/Models/ProcessRowCopy.swift
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 1-38
+Pulse/PulseApp.swift
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 42-56,101-140
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_11b69e8eb9ff9d::t_44c18b58ce76b6 128
+docs/PRD.md
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 37
+Pulse/Views/ProcessTablePane.swift
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 1,273-280
+docs/TECH.md
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 78,83,165
+Package.swift
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 38
+Pulse/ViewModels/MemoryDashboardVM.swift
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 147
+Pulse.xcodeproj/project.pbxproj
+  s_11b69e8eb9ff9d::t_a9e550a3e78c6f 12,86,193,396
+Tests/SamplingCoreTests/ProcessRowCopyTests.swift
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 1-99
+README.md
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 17
+Tests/SamplingCoreTests/ProcessRowCopyWiringSourceTests.swift
+  s_11b69e8eb9ff9d::t_312a53d3c52c16 1-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "4f2f6cae84fd4c83f82a07f72bb516774e09e630",
+  "prompts": {},
+  "sessions": {
+    "s_11b69e8eb9ff9d": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b9a9-7ec9-7e60-bef6-403cc9553aed",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
