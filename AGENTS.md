@@ -51,6 +51,7 @@ Keep docs current in the same PR as the change:
 - User-visible behavior or data-metric changes: update the matching section of `docs/TECH.md`, and its smoke checklist when the check changes. Edit in place; do not append a new phase section.
 - Scope changes: update `docs/PRD.md` and the feature list in `README.md`.
 - Reversing an earlier metric or design decision: add an ADR under `docs/adr/`.
+- Source of truth, in order: code on `main`, `docs/adr/`, `docs/TECH.md` / `docs/PRD.md`, then `docs/specs/`. Never base a decision on an archived draft alone; confirm the rule still holds in code or `docs/TECH.md` first.
 - `docs/specs/` is an archive. Add a new `NN-topic.md` draft there if a phase needs one, and register it in `docs/specs/README.md`; never rewrite old drafts beyond a superseded note at the top.
 
 ## Agent Workflows & Configuration
