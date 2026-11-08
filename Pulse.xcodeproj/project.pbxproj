@@ -589,10 +589,6 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
-				OTHER_SWIFT_FLAGS = (
-					"-enable-experimental-feature",
-					"IsolatedDeinit",
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.qqzhangyanhua.pulse;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
@@ -627,10 +623,6 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
-				OTHER_SWIFT_FLAGS = (
-					"-enable-experimental-feature",
-					"IsolatedDeinit",
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.qqzhangyanhua.pulse;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
