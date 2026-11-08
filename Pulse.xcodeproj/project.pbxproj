@@ -25,6 +25,7 @@
 		B00000000000000000000035 /* HistoryCurvePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000035 /* HistoryCurvePresentation.swift */; };
 		B00000000000000000000039 /* ThermalNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000039 /* ThermalNotice.swift */; };
 		B0000000000000000000003A /* MachinePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003A /* MachinePage.swift */; };
+		B00000000000000000000045 /* BatteryMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000045 /* BatteryMath.swift */; };
 		B00000000000000000000042 /* MachineOverview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000042 /* MachineOverview.swift */; };
 		B0000000000000000000003B /* HostMachineReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003B /* HostMachineReader.swift */; };
 		B0000000000000000000003C /* MachineOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003C /* MachineOverviewSection.swift */; };
@@ -94,6 +95,7 @@
 		A00000000000000000000035 /* HistoryCurvePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCurvePresentation.swift; sourceTree = "<group>"; };
 		A00000000000000000000039 /* ThermalNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalNotice.swift; sourceTree = "<group>"; };
 		A0000000000000000000003A /* MachinePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinePage.swift; sourceTree = "<group>"; };
+		A00000000000000000000045 /* BatteryMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryMath.swift; sourceTree = "<group>"; };
 		A00000000000000000000042 /* MachineOverview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineOverview.swift; sourceTree = "<group>"; };
 		A0000000000000000000003B /* HostMachineReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostMachineReader.swift; sourceTree = "<group>"; };
 		A0000000000000000000003C /* MachineOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineOverviewSection.swift; sourceTree = "<group>"; };
@@ -200,6 +202,7 @@
 				A00000000000000000000020 /* NetworkPage.swift */,
 				A00000000000000000000024 /* DiskPage.swift */,
 				A0000000000000000000003A /* MachinePage.swift */,
+				A00000000000000000000045 /* BatteryMath.swift */,
 				A00000000000000000000042 /* MachineOverview.swift */,
 				A0000000000000000000003D /* SwapUsage.swift */,
 				A00000000000000000000044 /* KernelPressure.swift */,
@@ -392,6 +395,7 @@
 				B00000000000000000000035 /* HistoryCurvePresentation.swift in Sources */,
 				B00000000000000000000039 /* ThermalNotice.swift in Sources */,
 				B0000000000000000000003A /* MachinePage.swift in Sources */,
+				B00000000000000000000045 /* BatteryMath.swift in Sources */,
 				B00000000000000000000042 /* MachineOverview.swift in Sources */,
 				B0000000000000000000003D /* SwapUsage.swift in Sources */,
 				B00000000000000000000044 /* KernelPressure.swift in Sources */,

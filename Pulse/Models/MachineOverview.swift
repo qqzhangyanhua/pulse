@@ -61,9 +61,17 @@ enum MachineOverview {
         var power: Card
         var uptime: Card
         var swap: Card
+        /// Nil hides the cycle / health / power block. A desktop Mac stays nil.
+        var battery: Battery?
         var liveUpdate: String
         var diagnostics: [Diagnostic]
         var thermalNotice: String?
+    }
+
+    struct Battery: Equatable {
+        var cycles: String
+        var health: String
+        var power: String
     }
 
     static func project(
@@ -105,6 +113,7 @@ enum MachineOverview {
             power: power(facts),
             uptime: uptime(facts, calendar: calendar),
             swap: Card(title: "交换", value: swapCell.value, caption: swapCell.caption, page: .memory),
+            battery: battery(facts?.battery),
             liveUpdate: liveUpdate(snapshot: snapshot, loadState: loadState, calendar: calendar),
             diagnostics: diagnostics(
                 facts: facts,
@@ -205,6 +214,32 @@ enum MachineOverview {
     private static func batteryPercent(_ power: MachinePower) -> Int? {
         guard power.source != .unknown, let percent = power.batteryPercent, percent >= 0 else { return nil }
         return percent
+    }
+
+    private static func battery(_ reading: MachineBattery?) -> Battery? {
+        guard let reading else { return nil }
+        let ratio = BatteryMath.healthPercent(
+            fullChargeCapacity: reading.fullChargeCapacity,
+            designCapacity: reading.designCapacity
+        )
+        let watts = BatteryMath.powerWatts(millivolts: reading.millivolts, milliamps: reading.milliamps)
+        return Battery(cycles: cycleText(reading.cycleCount), health: healthText(ratio), power: wattText(watts))
+    }
+
+    private static func cycleText(_ count: Int?) -> String {
+        guard let count else { return MachineStatusCopy.missingValue }
+        return "\(count)"
+    }
+
+    private static func healthText(_ ratio: Double?) -> String {
+        guard let ratio else { return MachineStatusCopy.missingValue }
+        return "\(Int((ratio * 100).rounded()))%"
+    }
+
+    private static func wattText(_ watts: Double?) -> String {
+        guard let watts else { return MachineStatusCopy.missingValue }
+        let text = String(format: "%.1f W", locale: posix, watts)
+        return text == "-0.0 W" ? "0.0 W" : text
     }
 
     private static func uptime(_ facts: MachineFacts?, calendar: Calendar) -> Card {

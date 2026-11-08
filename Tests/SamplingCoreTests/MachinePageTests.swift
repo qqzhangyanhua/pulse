@@ -315,6 +315,39 @@ final class MachinePageTests: XCTestCase {
         XCTAssertTrue(overview.contains("vm.thermalNotice"))
     }
 
+    func testBatteryReadStaysOnTheMachinePage() throws {
+        let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
+        XCTAssertFalse(sampler.contains("AppleSmartBattery"))
+        XCTAssertFalse(sampler.contains("BatteryMath"))
+
+        let reader = try repoText("Pulse/Sampling/HostMachineReader.swift")
+        XCTAssertEqual(occurrenceCount(of: "internalBatteryDetails()", in: reader), 2)
+        XCTAssertTrue(reader.contains("AppleSmartBattery"))
+        XCTAssertTrue(reader.contains("signedMilliamps"))
+        XCTAssertFalse(reader.contains("电池损坏"))
+
+        let project = try repoText("Pulse.xcodeproj/project.pbxproj")
+        XCTAssertEqual(occurrenceCount(of: "BatteryMath.swift in Sources", in: project), 2)
+        XCTAssertEqual(occurrenceCount(of: "path = BatteryMath.swift;", in: project), 1)
+        XCTAssertEqual(occurrenceCount(of: "A00000000000000000000045 /* BatteryMath.swift */,", in: project), 1)
+
+        let package = try repoText("Package.swift")
+        XCTAssertTrue(package.contains("\"Models/BatteryMath.swift\""))
+        let excluded = package.components(separatedBy: "exclude:")[1].components(separatedBy: "sources:")[0]
+        XCTAssertFalse(excluded.contains("BatteryMath.swift"))
+
+        let dashboard = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        XCTAssertTrue(dashboard.contains("HostMachineReader.read()"))
+        XCTAssertFalse(dashboard.contains("AppleSmartBattery"))
+
+        let overview = try repoText("Pulse/Views/MachineOverviewSection.swift")
+        XCTAssertTrue(overview.contains("model.battery"))
+        XCTAssertTrue(overview.contains("循环次数"))
+        XCTAssertTrue(overview.contains("健康度"))
+        XCTAssertTrue(overview.contains("功率"))
+        XCTAssertFalse(overview.contains("电池损坏"))
+    }
+
     private func sampleFacts() -> MachineFacts {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

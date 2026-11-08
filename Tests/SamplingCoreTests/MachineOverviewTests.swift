@@ -136,6 +136,75 @@ final class MachineOverviewTests: XCTestCase {
         XCTAssertFalse(visibleText(low).contains("预计"))
     }
 
+    func testBatteryBlockHidesWithoutAnInternalBattery() {
+        let desktop = overview(facts: facts(
+            power: MachinePower(source: .adapter, batteryPercent: nil, lowPowerMode: false)
+        ))
+        XCTAssertEqual(desktop.power.value, "外接电源")
+        XCTAssertNil(desktop.power.batteryPercent)
+        XCTAssertNil(desktop.battery)
+
+        let loading = overview(facts: nil)
+        XCTAssertNil(loading.battery)
+        XCTAssertNil(loading.power.value)
+
+        let charged = overview(facts: facts(battery: MachineBattery(
+            cycleCount: 312,
+            fullChargeCapacity: 4_500,
+            designCapacity: 5_000,
+            millivolts: 12_000,
+            milliamps: -1_500
+        )))
+        XCTAssertEqual(charged.power.value, "42%")
+        XCTAssertEqual(charged.battery?.cycles, "312")
+        XCTAssertEqual(charged.battery?.health, "90%")
+        XCTAssertEqual(charged.battery?.power, "-18.0 W")
+        XCTAssertFalse(visibleText(charged).contains("电池损坏"))
+
+        let partial = overview(facts: facts(battery: MachineBattery(
+            cycleCount: 0,
+            fullChargeCapacity: nil,
+            designCapacity: 5_000,
+            millivolts: 12_000,
+            milliamps: 2_000
+        )))
+        XCTAssertEqual(partial.battery?.cycles, "0")
+        XCTAssertEqual(partial.battery?.health, "—")
+        XCTAssertEqual(partial.battery?.power, "24.0 W")
+
+        let unread = overview(facts: facts(battery: MachineBattery(
+            cycleCount: nil,
+            fullChargeCapacity: 100,
+            designCapacity: 0,
+            millivolts: nil,
+            milliamps: -1_500
+        )))
+        XCTAssertNotNil(unread.battery)
+        XCTAssertEqual(unread.battery?.cycles, "—")
+        XCTAssertEqual(unread.battery?.health, "—")
+        XCTAssertEqual(unread.battery?.power, "—")
+
+        let empty = overview(facts: facts(battery: MachineBattery(
+            cycleCount: 1,
+            fullChargeCapacity: 0,
+            designCapacity: 5_000,
+            millivolts: 0,
+            milliamps: -1_500
+        )))
+        XCTAssertEqual(empty.battery?.health, "0%")
+        XCTAssertEqual(empty.battery?.power, "0.0 W")
+
+        let over = overview(facts: facts(battery: MachineBattery(
+            cycleCount: 2,
+            fullChargeCapacity: 5_100,
+            designCapacity: 5_000,
+            millivolts: 11_000,
+            milliamps: 1_000
+        )))
+        XCTAssertEqual(over.battery?.health, "102%")
+        XCTAssertEqual(over.battery?.power, "11.0 W")
+    }
+
     func testPressureRingHasNoScore() {
         let normal = overview(snapshot: sampleSnapshot(pressure: .normal, metric: 0.42))
         XCTAssertEqual(normal.ring.tone, .normal)
@@ -336,6 +405,9 @@ final class MachineOverviewTests: XCTestCase {
             parts.append(item.title)
             parts.append(item.status)
         }
+        if let battery = model.battery {
+            parts.append(contentsOf: [battery.cycles, battery.health, battery.power])
+        }
         return parts.joined(separator: "\n")
     }
 
@@ -348,11 +420,13 @@ final class MachineOverviewTests: XCTestCase {
     private func facts(
         available: UInt64? = 100,
         total: UInt64? = 200,
-        power: MachinePower = MachinePower(source: .battery, batteryPercent: 42, lowPowerMode: false)
+        power: MachinePower = MachinePower(source: .battery, batteryPercent: 42, lowPowerMode: false),
+        battery: MachineBattery? = nil
     ) -> MachineFacts {
         var facts = sampleFacts()
         facts.volume = MachineVolume(availableBytes: available, totalBytes: total)
         facts.power = power
+        facts.battery = battery
         return facts
     }
 
