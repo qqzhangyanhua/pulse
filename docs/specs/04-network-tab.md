@@ -73,11 +73,11 @@
 
 ## 系统网络采样（第一刀，已选 API）
 
-结论：用 **`getifaddrs()` + `AF_LINK` 的 `struct if_data`（`ifi_ibytes` / `ifi_obytes`）**。与现有 CPU 路径同构：一次便宜的 Darwin 计数、两帧墙钟差值、挂在同一 `sample()`、第一帧 `nil`。
+结论：四期首包用 **`getifaddrs()` + `AF_LINK` 的 `struct if_data`（`ifi_ibytes` / `ifi_obytes`）**。与现有 CPU 路径同构：一次便宜的 Darwin 计数、两帧墙钟差值、挂在同一 `sample()`、第一帧 `nil`。二十九期已改读 `NET_RT_IFLIST2` / `if_data64`。
 
 不选 `host_statistics*`：Mach host 统计没有接口字节 flavor，仓库里的 `HostMemoryReader` / `HostCPUReader` 也覆盖不了网络。不选 Network.framework / IOKit / `NWPathMonitor`：那些给连通性，不给字节速率，还会多会话、多占用。不选 `sysctl(net.inet.ip.stats)`：只在 IP 层，漏接口、口径更不像总览。
 
-`sysctl(NET_RT_IFLIST2)` / `if_data64` 可作为「`getifaddrs` 在实机上宽度不够」时的同族备选，仍是 BSD 接口计数、仍无新 entitlement。首包默认 `getifaddrs`：macOS 14+ 64-bit 上 `ifi_ibytes` 宽度足够，且与现有 `import Darwin` 风格一致。
+`sysctl(NET_RT_IFLIST2)` / `if_data64` 是同族的 BSD 接口计数，仍无新 entitlement。四期首包当时默认 `getifaddrs`，并写过「macOS 14+ 64-bit 上 `ifi_ibytes` 宽度足够」。这个结论不成立：`ifi_ibytes` / `ifi_obytes` 是 32 位，每 4 GiB 回绕。现行实现见 [TECH.md](../TECH.md)，读的是 `NET_RT_IFLIST2` / `if_data64`。
 
 ### 计数 → 速率
 

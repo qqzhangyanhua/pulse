@@ -95,9 +95,13 @@ final class MemoryDashboardVM: ObservableObject {
         beginThermalWatch()
     }
 
-    isolated deinit {
-        machineRefreshTask?.cancel()
-        endThermalWatch()
+    // `isolated deinit` is Swift 6.2. Xcode 16.4 rejects it, and that
+    // production compiler cannot enable the IsolatedDeinit experiment.
+    deinit {
+        MainActor.assumeIsolated {
+            machineRefreshTask?.cancel()
+            endThermalWatch()
+        }
     }
 
     var visibleRows: [ProcessRow] {

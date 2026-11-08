@@ -21,7 +21,7 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
                  │ 采样循环：SamplingRequestGate + SamplingClock + SamplingSession
                  ▼
              MemorySampler（actor，唯一采样器）
-                 ├─ HostMemoryReader / SwapUsageReader / PressureProvider
+                 ├─ HostMemoryReader / SwapUsageReader / PressureProvider / KernelPressure
                  ├─ HostCPUReader（整机 + 每核）
                  ├─ HostNetworkReader / HostDiskReader
                  └─ ProcessEnumerator（proc_listpids / proc_pidinfo / proc_pid_rusage）
@@ -44,11 +44,11 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 | 读数 | 来源 | 缺失时 |
 | --- | --- | --- |
 | 已用 / 总量 / 分类条（App、联动、被压缩、已缓存） | `host_statistics64` + 页大小，按活动监视器的分类映射 | 整帧失败 |
-| 压力档 | `kern.memorystatus_vm_pressure_level`，0 为正常，其它为偏高；读不到时回退启发式（已用 ≥ 88% 或压缩 ≥ 18% 为偏高） | — |
+| 压力档 | `kern.memorystatus_vm_pressure_level`：1 为正常，2 和 4 为偏高。读不到或未知值（含 0、3）不硬判，回退启发式（已用 ≥ 88% 或压缩 ≥ 18% 为偏高）。仍只有两档 | — |
 | 交换已用 | `vm.swapusage`，返回长度必须一致 | 「— / 未采样」，不算整帧失败 |
 | 整机 CPU | `host_statistics(HOST_CPU_LOAD_INFO)`，两帧求差 | 第一帧「—」 |
 | 最忙一核 | `host_processor_info`，两帧求差取最大 | 「—」 |
-| 网络上行 / 下行 | `getifaddrs` 的 `AF_LINK` 计数，两帧求差 | 「—」 |
+| 网络上行 / 下行 | `sysctl` `NET_RT_IFLIST2` 的 64 位 `if_data64` 计数，两帧求差。`getifaddrs` 的 `ifi_ibytes` / `ifi_obytes` 是 32 位，每 4 GiB 回绕，不再使用 | 「—」 |
 | 磁盘读取 / 写入 | IOKit `IOBlockStorageDriver` Statistics，两帧求差 | 「—」 |
 | 降频 | `ProcessInfo.thermalState`，`serious` / `critical` 时显示「系统正在降频以控制温度」 | 不显示 |
 
@@ -146,6 +146,7 @@ Tab 选中胶囊滑动，总览交叉淡入；行选中、侧栏、排序箭头�
 **内存页**
 - [ ] 冷启动落在内存页，表按内存降序；总用量和活动监视器同一数量级
 - [ ] 用量大数、分类条、压力档与曲线、四格（交换读不到时显示「— / 未采样」）
+- [ ] 空闲且 `sysctl kern.memorystatus_vm_pressure_level` 为 1 时，总览压力档、菜单栏圆点、弹出条压力行都是正常；警告压力时三处变为偏高
 - [ ] 名称过滤、仅上涨、仅窗口 App、按 App 都能切换；过滤无结果有空态，「清空过滤」一次清干净
 - [ ] 「占用最多的 App」可点，定位并选中该行
 - [ ] 详情：内存主曲线 + CPU 辅曲线；切进程后重采；标题「内存占用」；系统进程有一句说明
@@ -154,7 +155,7 @@ Tab 选中胶囊滑动，总览交叉淡入；行选中、侧栏、排序箭头�
 
 **其它页**
 - [ ] CPU 页：整机 CPU、最忙一核、曲线；第一帧 CPU 列是「—」
-- [ ] 网络页：主机上 / 下行；进程列「暂不可用」
+- [ ] 网络页：主机上 / 下行；进程列「暂不可用」；累计超过 4 GiB 后总览和历史曲线不周期性缺失
 - [ ] 磁盘页：主机读取 / 写入；读取、写入分列排序；缺数为「—」
 - [ ] 本机页：机型、芯片、系统、容量、开机时间、电源、磁盘、诊断三行；能点的项跳转正确
 - [ ] Tab 栏没有 GPU；`⌘1`–`⌘5`、`⌘F`、`⌘⌫` 可用

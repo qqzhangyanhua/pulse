@@ -63,7 +63,8 @@ enum HostMemoryReader {
         let usedBytes = appBytes &+ wiredBytes &+ compressedBytes
 
         let usedRatio = min(1, Double(usedBytes) / Double(totalBytes))
-        let pressure = PressureProvider.resolve(
+        let pressure = KernelPressure.resolve(
+            reading: PressureProvider.read(),
             usedRatio: usedRatio,
             compressedRatio: Double(compressedBytes) / Double(totalBytes)
         )
@@ -123,23 +124,12 @@ enum SwapUsageReader {
     }
 }
 
-/// UI only binds `normal | elevated`. Sysctl first, heuristic fallback if the key is missing.
+/// Raw `kern.memorystatus_vm_pressure_level`. Mapping and the ratio fallback live in `KernelPressure`.
 enum PressureProvider {
-    static func resolve(usedRatio: Double, compressedRatio: Double) -> PressureLevel {
-        if let level = sysctlLevel() {
-            return level
-        }
-        if usedRatio >= 0.88 || compressedRatio >= 0.18 {
-            return .elevated
-        }
-        return .normal
-    }
-
-    private static func sysctlLevel() -> PressureLevel? {
+    static func read() -> KernelPressureSample {
         var value: Int32 = 0
         var size = MemoryLayout<Int32>.size
         let status = sysctlbyname("kern.memorystatus_vm_pressure_level", &value, &size, nil, 0)
-        guard status == 0 else { return nil }
-        return value == 0 ? .normal : .elevated
+        return KernelPressureSample(status: status, value: value)
     }
 }

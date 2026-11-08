@@ -29,6 +29,7 @@
 		B0000000000000000000003B /* HostMachineReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003B /* HostMachineReader.swift */; };
 		B0000000000000000000003C /* MachineOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003C /* MachineOverviewSection.swift */; };
 		B0000000000000000000003D /* SwapUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003D /* SwapUsage.swift */; };
+		B00000000000000000000044 /* KernelPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000044 /* KernelPressure.swift */; };
 		B0000000000000000000003E /* WindowedAppFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003E /* WindowedAppFilter.swift */; };
 		B0000000000000000000003F /* WindowedAppLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003F /* WindowedAppLookup.swift */; };
 		B00000000000000000000040 /* AppGroupProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000040 /* AppGroupProjection.swift */; };
@@ -97,6 +98,7 @@
 		A0000000000000000000003B /* HostMachineReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostMachineReader.swift; sourceTree = "<group>"; };
 		A0000000000000000000003C /* MachineOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineOverviewSection.swift; sourceTree = "<group>"; };
 		A0000000000000000000003D /* SwapUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapUsage.swift; sourceTree = "<group>"; };
+		A00000000000000000000044 /* KernelPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KernelPressure.swift; sourceTree = "<group>"; };
 		A0000000000000000000003E /* WindowedAppFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowedAppFilter.swift; sourceTree = "<group>"; };
 		A0000000000000000000003F /* WindowedAppLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowedAppLookup.swift; sourceTree = "<group>"; };
 		A00000000000000000000040 /* AppGroupProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroupProjection.swift; sourceTree = "<group>"; };
@@ -200,6 +202,7 @@
 				A0000000000000000000003A /* MachinePage.swift */,
 				A00000000000000000000042 /* MachineOverview.swift */,
 				A0000000000000000000003D /* SwapUsage.swift */,
+				A00000000000000000000044 /* KernelPressure.swift */,
 				A0000000000000000000003E /* WindowedAppFilter.swift */,
 				A00000000000000000000040 /* AppGroupProjection.swift */,
 				A00000000000000000000041 /* ProcessGlossary.swift */,
@@ -391,6 +394,7 @@
 				B0000000000000000000003A /* MachinePage.swift in Sources */,
 				B00000000000000000000042 /* MachineOverview.swift in Sources */,
 				B0000000000000000000003D /* SwapUsage.swift in Sources */,
+				B00000000000000000000044 /* KernelPressure.swift in Sources */,
 				B0000000000000000000003E /* WindowedAppFilter.swift in Sources */,
 				B0000000000000000000003F /* WindowedAppLookup.swift in Sources */,
 				B00000000000000000000040 /* AppGroupProjection.swift in Sources */,
