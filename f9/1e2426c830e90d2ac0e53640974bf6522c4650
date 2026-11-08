@@ -1,0 +1,19 @@
+Tests/SamplingCoreTests/LoginItemWiringSourceTests.swift
+  s_51371e9dc0fcad::t_21fa848d4ed5e8 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "f91e2426c830e90d2ac0e53640974bf6522c4650",
+  "prompts": {},
+  "sessions": {
+    "s_51371e9dc0fcad": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1b9ba-c781-7de1-bab6-454fb7fd3146",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
