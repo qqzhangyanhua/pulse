@@ -118,9 +118,16 @@ struct CompositionCard: View {
     var body: some View {
         PulseCard {
             VStack(alignment: .leading, spacing: 10) {
-                Text("按类型")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Text("按类型")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
+                    Text("共 \(ByteFormat.gibWhole(totalBytes))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .monospacedDigit()
+                }
                 CategoryBar(breakdown: breakdown)
                     .frame(height: 8)
                 VStack(alignment: .leading, spacing: 6) {
@@ -324,17 +331,50 @@ struct PressureLevelCard: View {
     }
 
     var body: some View {
-        MetricStatCard(
-            systemImage: "gauge.medium",
-            title: "压力",
-            value: snapshot.pressure.title,
-            valueColor: tone,
-            caption: snapshot.pressure == .normal
-                ? "\(Int((snapshot.pressureMetric * 100).rounded()))% · \(snapshot.pressure.caption)"
-                : snapshot.pressure.caption,
-            iconColor: tone,
-            border: tone.opacity(snapshot.pressure == .elevated ? 0.55 : 0.16)
-        )
+        PulseCard(padding: 12, border: tone.opacity(snapshot.pressure == .elevated ? 0.55 : 0.16)) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: "gauge.medium")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(tone)
+                    Text("压力")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    if let avg = snapshot.pressureSeries.seriesAverage {
+                        Text("均 \(ByteFormat.wholePercent(value: avg))")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
+                }
+                HStack(alignment: .bottom, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(snapshot.pressure.title)
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(tone)
+                            .lineLimit(1)
+                        Text(snapshot.pressure == .normal
+                            ? "\(Int((snapshot.pressureMetric * 100).rounded()))% · \(snapshot.pressure.caption)"
+                            : snapshot.pressure.caption)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    if snapshot.pressureSeries.count >= 2 {
+                        SparklineChart(
+                            samples: snapshot.pressureSeries,
+                            tint: tone,
+                            domain: 0...1,
+                            formatY: { ByteFormat.wholePercent(value: $0) }
+                        )
+                        .frame(maxHeight: 46)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+        }
     }
 }
 

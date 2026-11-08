@@ -25,15 +25,9 @@ struct OverviewSection: View {
             HStack(spacing: 12) {
                 samplingHero
                 samplingComposition
-                    .frame(width: 300)
+                    .frame(width: 310)
             }
-            .frame(height: 150)
-
-            HStack(spacing: 12) {
-                samplingPanel(title: "按类型")
-                samplingPanel(title: "内存压力")
-            }
-            .frame(height: 132)
+            .frame(height: 148)
 
             HStack(spacing: 12) {
                 ForEach(SamplingStat.allCases) { stat in
@@ -76,17 +70,6 @@ struct OverviewSection: View {
                 SkeletonBlock(width: 140, height: 8)
                 SkeletonBlock(width: 110, height: 8)
                 Spacer(minLength: 0)
-            }
-        }
-    }
-
-    private func samplingPanel(title: String) -> some View {
-        PulseCard {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                SkeletonChart()
             }
         }
     }
@@ -136,15 +119,9 @@ struct OverviewSection: View {
                     thermalNotice: vm.thermalNotice
                 )
                 CompositionCard(breakdown: snapshot.breakdown, totalBytes: snapshot.totalBytes)
-                    .frame(width: 300)
+                    .frame(width: 310)
             }
-            .frame(height: 150)
-
-            HStack(spacing: 12) {
-                CategoryBarsCard(breakdown: snapshot.breakdown, totalBytes: snapshot.totalBytes)
-                PressureCurveCard(snapshot: snapshot)
-            }
-            .frame(height: 132)
+            .frame(height: 148)
 
             HStack(spacing: 12) {
                 PressureLevelCard(snapshot: snapshot)

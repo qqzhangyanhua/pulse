@@ -22,6 +22,13 @@ enum PulsePalette {
     static let hairline = Color.white.opacity(0.08)
 }
 
+enum PulseRadius {
+    static let sm: CGFloat = 6
+    static let md: CGFloat = 8
+    static let lg: CGFloat = 12
+    static let xl: CGFloat = 16
+}
+
 extension Array where Element == ChartSample {
     var seriesAverage: Double? {
         guard !isEmpty else { return nil }
@@ -448,7 +455,7 @@ struct SparklineChart: View {
                 AxisValueLabel {
                     if let date = value.as(Date.self) {
                         Text(ByteFormat.clock(date))
-                            .font(.system(size: 9))
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundStyle(Color.white.opacity(0.42))
                     }
                 }
@@ -456,12 +463,12 @@ struct SparklineChart: View {
         }
         .chartYAxis {
             AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.4))
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
                     .foregroundStyle(Color.white.opacity(0.06))
                 AxisValueLabel {
                     if let number = value.as(Double.self) {
                         Text(formatY(number))
-                            .font(.system(size: 9))
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundStyle(Color.white.opacity(0.42))
                     }
                 }

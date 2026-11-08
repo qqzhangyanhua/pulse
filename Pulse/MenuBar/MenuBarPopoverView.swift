@@ -27,7 +27,8 @@ struct MenuBarPopoverView: View {
         .padding(12)
         .frame(width: 248, alignment: .topLeading)
         .fixedSize(horizontal: false, vertical: true)
-        .background(PulsePalette.windowBackground)
+        .background(.ultraThinMaterial)
+        .background(PulsePalette.windowBackground.opacity(0.85))
     }
 
     @ViewBuilder

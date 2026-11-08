@@ -95,38 +95,43 @@ struct ProcessDetailSidebar: View {
     }
 
     private var emptyBody: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(PulsePalette.accent.opacity(0.20))
-                    .frame(width: 120, height: 120)
-                    .blur(radius: 28)
-                Image(systemName: "brain")
-                    .font(.system(size: 68, weight: .ultraLight))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.74, green: 0.64, blue: 1),
-                                Color(red: 0.45, green: 0.34, blue: 0.94)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 26, weight: .medium))
-                    .foregroundStyle(Color(red: 0.58, green: 0.48, blue: 0.96))
-                    .offset(x: 30, y: 22)
+                    .fill(PulsePalette.accent.opacity(0.12))
+                    .frame(width: 88, height: 88)
+                    .blur(radius: 18)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(PulsePalette.card.opacity(0.8))
+                    .frame(width: 58, height: 58)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(PulsePalette.accent.opacity(0.24), lineWidth: 1)
+                    }
+                    .overlay {
+                        Image(systemName: "waveform.path.ecg")
+                            .font(.system(size: 26, weight: .regular))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [
+                                        PulsePalette.accent,
+                                        PulsePalette.chartCPU
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    }
             }
-            .frame(height: 120)
+            .frame(height: 88)
             .accessibilityHidden(true)
 
             Text(emptyPrompt)
-                .font(.body)
+                .font(.callout)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(24)
+        .padding(24)
     }
 
     private var absentRecordBody: some View {
