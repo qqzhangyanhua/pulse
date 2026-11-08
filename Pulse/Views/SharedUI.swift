@@ -22,13 +22,6 @@ enum PulsePalette {
     static let hairline = Color.white.opacity(0.08)
 }
 
-enum PulseRadius {
-    static let sm: CGFloat = 6
-    static let md: CGFloat = 8
-    static let lg: CGFloat = 12
-    static let xl: CGFloat = 16
-}
-
 extension Array where Element == ChartSample {
     var seriesAverage: Double? {
         guard !isEmpty else { return nil }
