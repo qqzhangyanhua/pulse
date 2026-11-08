@@ -1,0 +1,27 @@
+Pulse.xcodeproj/project.pbxproj
+  s_df1ce72869689e::t_d7d3fc275293c5 623,657
+scripts/make-dmg.sh
+  s_df1ce72869689e::t_0eb12d35365937 82
+docs/RELEASE.md
+  s_df1ce72869689e::t_be860a682180ac 3,7-8,120
+Pulse/Info.plist
+  s_df1ce72869689e::t_bf97ae320c3a30 20
+README.md
+  s_df1ce72869689e::t_14a9713172eb39 52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "ede0cf9f6a0555b7fb8a02b432c6ad30e1770373",
+  "prompts": {},
+  "sessions": {
+    "s_df1ce72869689e": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1bb38-9653-7311-9f19-f53ce57350d7",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
