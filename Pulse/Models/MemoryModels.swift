@@ -123,6 +123,8 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     let energyReadingIsPartial: Bool
     /// App-group row whose idle-wake sum skipped a nil member. An ungrouped row stays false.
     let idleWakeupReadingIsPartial: Bool
+    /// Nil on an ungrouped row. A grouped row stores `members.count`, including 1.
+    let groupedMemberCount: Int?
 
     init(
         pid: Int32,
@@ -139,7 +141,8 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         energyWatts: Double? = nil,
         idleWakeupsPerSecond: Double? = nil,
         energyReadingIsPartial: Bool = false,
-        idleWakeupReadingIsPartial: Bool = false
+        idleWakeupReadingIsPartial: Bool = false,
+        groupedMemberCount: Int? = nil
     ) {
         self.pid = pid
         self.name = name
@@ -156,6 +159,7 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         self.idleWakeupsPerSecond = idleWakeupsPerSecond
         self.energyReadingIsPartial = energyReadingIsPartial
         self.idleWakeupReadingIsPartial = idleWakeupReadingIsPartial
+        self.groupedMemberCount = groupedMemberCount
     }
 
     /// Missing first-sample CPU sorts below real values without pretending it is 0%.

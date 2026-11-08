@@ -144,7 +144,7 @@ final class MemoryDashboardVM: ObservableObject {
 
     var selectedRow: ProcessRow? {
         guard let selectedPid else { return nil }
-        return rows.first { $0.pid == selectedPid }
+        return sortedRows.first { $0.pid == selectedPid } ?? rows.first { $0.pid == selectedPid }
     }
 
     var hasActiveFilter: Bool {

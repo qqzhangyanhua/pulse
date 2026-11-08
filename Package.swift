@@ -35,6 +35,7 @@ let package = Package(
             ],
             sources: [
                 "Models/MemoryModels.swift",
+                "Models/ProcessRowCopy.swift",
                 "Models/ProcessMemoryChoice.swift",
                 "Models/ByteFormat.swift",
                 "Models/MemoryGrowthSignal.swift",

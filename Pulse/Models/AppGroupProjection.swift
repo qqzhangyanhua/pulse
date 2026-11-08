@@ -61,7 +61,8 @@ enum AppGroupProjection {
             energyWatts: energy.value,
             idleWakeupsPerSecond: wakeups.value,
             energyReadingIsPartial: energy.isPartial,
-            idleWakeupReadingIsPartial: wakeups.isPartial
+            idleWakeupReadingIsPartial: wakeups.isPartial,
+            groupedMemberCount: members.count
         )
     }
 
