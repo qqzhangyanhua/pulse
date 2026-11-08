@@ -6,7 +6,19 @@ struct CPUTick: Sendable, Equatable {
     let date: Date
 }
 
-/// Two-frame wall-clock CPU for one process. The first frame is `nil`.
+/// Mach absolute ticks to nanoseconds: `(tick * numer) / denom`.
+/// A non-positive factor, or a product that does not fit in `UInt64`, is missing.
+enum MachTimebase {
+    static func nanoseconds(tick: UInt64, numer: Int64, denom: Int64) -> UInt64? {
+        guard numer > 0, denom > 0 else { return nil }
+        let (product, overflow) = tick.multipliedReportingOverflow(by: UInt64(numer))
+        guard !overflow else { return nil }
+        return product / UInt64(denom)
+    }
+}
+
+/// Two-frame wall-clock CPU for one process. Inputs are nanoseconds, not Mach ticks.
+/// The first frame, a decreased counter, and a non-positive wall interval are `nil`. No cap above 100%.
 enum ProcessCPUPercent {
     static func percent(previous: CPUTick?, current: CPUTick) -> Double? {
         guard let previous,

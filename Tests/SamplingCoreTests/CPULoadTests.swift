@@ -46,6 +46,52 @@ final class ProcessCPUPercentTests: XCTestCase {
     }
 }
 
+final class MachTimebaseTests: XCTestCase {
+    func testOneToOneTimebaseReturnsTheTickAsNanoseconds() {
+        XCTAssertEqual(MachTimebase.nanoseconds(tick: 0, numer: 1, denom: 1), 0)
+        XCTAssertEqual(MachTimebase.nanoseconds(tick: 42, numer: 1, denom: 1), 42)
+        XCTAssertEqual(MachTimebase.nanoseconds(tick: UInt64.max, numer: 1, denom: 1), UInt64.max)
+    }
+
+    func testMultiplyThenDivideKeepsTheRemainder() {
+        // 4 * 125 / 3 = 166. Dividing the tick first yields 125.
+        XCTAssertEqual(MachTimebase.nanoseconds(tick: 4, numer: 125, denom: 3), 166)
+        XCTAssertEqual(MachTimebase.nanoseconds(tick: 2, numer: 125, denom: 3), 83)
+        // Not only 125/3: 5 * 10 / 4 = 12. Dividing the tick first yields 10.
+        XCTAssertEqual(MachTimebase.nanoseconds(tick: 5, numer: 10, denom: 4), 12)
+    }
+
+    func testSaturatedCoreTicksBecomeOneHundredPercentAndTwoCoresStayUncapped() throws {
+        let oneCore = try XCTUnwrap(MachTimebase.nanoseconds(tick: 36_000_000, numer: 125, denom: 3))
+        XCTAssertEqual(oneCore, 1_500_000_000)
+        let previous = CPUTick(userTimeNs: 0, systemTimeNs: 0, date: Date(timeIntervalSince1970: 0))
+        let one = CPUTick(userTimeNs: oneCore, systemTimeNs: 0, date: Date(timeIntervalSince1970: 1.5))
+        XCTAssertEqual(ProcessCPUPercent.percent(previous: previous, current: one) ?? -1, 100, accuracy: 0.000_001)
+
+        let twoCores = try XCTUnwrap(MachTimebase.nanoseconds(tick: 72_000_000, numer: 125, denom: 3))
+        XCTAssertEqual(twoCores, 3_000_000_000)
+        let two = CPUTick(userTimeNs: twoCores, systemTimeNs: 0, date: Date(timeIntervalSince1970: 1.5))
+        XCTAssertEqual(ProcessCPUPercent.percent(previous: previous, current: two) ?? -1, 200, accuracy: 0.000_001)
+    }
+
+    func testNonPositiveFactorsAreMissing() {
+        XCTAssertNil(MachTimebase.nanoseconds(tick: 10, numer: 0, denom: 1))
+        XCTAssertNil(MachTimebase.nanoseconds(tick: 10, numer: 1, denom: 0))
+        XCTAssertNil(MachTimebase.nanoseconds(tick: 10, numer: 0, denom: 0))
+        XCTAssertNil(MachTimebase.nanoseconds(tick: 10, numer: -1, denom: 3))
+        XCTAssertNil(MachTimebase.nanoseconds(tick: 10, numer: 125, denom: -3))
+    }
+
+    func testOverflowingProductIsMissingNotWrapped() {
+        XCTAssertEqual(
+            MachTimebase.nanoseconds(tick: UInt64.max / 2, numer: 2, denom: 1),
+            UInt64.max - 1
+        )
+        XCTAssertNil(MachTimebase.nanoseconds(tick: UInt64.max / 2 + 1, numer: 2, denom: 1))
+        XCTAssertNil(MachTimebase.nanoseconds(tick: UInt64.max, numer: 2, denom: 1))
+    }
+}
+
 final class SystemCPULoadTests: XCTestCase {
     func testFirstFrameIsNil() {
         let reading = HostCPUTicks(user: 10, system: 5, idle: 80, nice: 5)
@@ -264,5 +310,123 @@ final class BusiestCoreLoadTests: XCTestCase {
             return ""
         }
         return String(source[startRange.lowerBound..<endRange.lowerBound])
+    }
+}
+
+/// Darwin files stay out of the package. This locks the timebase call site as text.
+final class ProcessCPUTimebaseWiringTests: XCTestCase {
+    func testListConvertsTicksOncePerFrameAndDoesNotStoreZero() throws {
+        let reader = try repoText("Pulse/Sampling/ProcessEnumerator.swift")
+        XCTAssertEqual(occurrenceCount(of: "mach_timebase_info(", in: reader), 1)
+        XCTAssertEqual(occurrenceCount(of: "MachTimebase.nanoseconds(", in: reader), 2)
+        XCTAssertTrue(reader.contains("let userTimeNs: UInt64?"))
+        XCTAssertTrue(reader.contains("let systemTimeNs: UInt64?"))
+        XCTAssertFalse(reader.contains("userTimeNs: 0"))
+        XCTAssertFalse(reader.contains("systemTimeNs: 0"))
+        XCTAssertFalse(reader.contains("userTimeNs: info.pti_total_user"))
+        XCTAssertFalse(reader.contains("systemTimeNs: info.pti_total_system"))
+
+        let list = try functionBody(named: "list", in: reader)
+        XCTAssertEqual(occurrenceCount(of: "readMachTimebase()", in: list), 1)
+        let timebaseCall = try XCTUnwrap(list.range(of: "readMachTimebase()"))
+        let loop = try XCTUnwrap(list.range(of: "for index in"))
+        XCTAssertLessThan(timebaseCall.lowerBound, loop.lowerBound)
+        XCTAssertFalse(list.contains("mach_timebase_info("))
+
+        let inspect = try functionBody(named: "inspect", in: reader)
+        XCTAssertFalse(inspect.contains("mach_timebase_info("))
+        XCTAssertFalse(inspect.contains("readMachTimebase("))
+        XCTAssertTrue(inspect.contains("userTimeNs: cpu?.user"))
+        XCTAssertTrue(inspect.contains("systemTimeNs: cpu?.system"))
+
+        let convert = try functionBody(named: "convertedCPU", in: reader)
+        XCTAssertTrue(convert.contains("MachTimebase.nanoseconds(tick: userTick"))
+        XCTAssertTrue(convert.contains("MachTimebase.nanoseconds(tick: systemTick"))
+    }
+
+    func testSamplerFeedsConvertedNanosecondsAndLeavesHostCPUAlone() throws {
+        let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
+        XCTAssertFalse(sampler.contains("mach_timebase_info"))
+        XCTAssertFalse(sampler.contains("MachTimebase"))
+        XCTAssertFalse(sampler.contains("pti_total_user"))
+        XCTAssertFalse(sampler.contains("pti_total_system"))
+        XCTAssertFalse(sampler.contains("userTimeNs: 0"))
+        XCTAssertFalse(sampler.contains("systemTimeNs: 0"))
+        XCTAssertTrue(sampler.contains(
+            "if let userTimeNs = raw.userTimeNs, let systemTimeNs = raw.systemTimeNs"
+        ))
+        XCTAssertTrue(sampler.contains(
+            "ProcessCPUPercent.percent(previous: cpuTicks[raw.pid], current: tick)"
+        ))
+        XCTAssertTrue(sampler.contains("if let cpuTick"))
+        XCTAssertTrue(sampler.contains("nextTicks[raw.pid] = cpuTick"))
+        XCTAssertTrue(sampler.contains("cpuPercent: cpu"))
+        XCTAssertTrue(sampler.contains("SystemCPULoad.advance"))
+        XCTAssertTrue(sampler.contains("BusiestCoreLoad.advance"))
+        XCTAssertTrue(sampler.contains("HostCPUReader.read()"))
+        XCTAssertTrue(sampler.contains("HostCPUReader.readCores()"))
+
+        let page = try repoText("Pulse/Models/CPUPage.swift")
+        XCTAssertTrue(page.contains("compareDoubles(lhs.cpuSortKey, rhs.cpuSortKey)"))
+        let row = try repoText("Pulse/Models/MemoryModels.swift")
+        XCTAssertTrue(row.contains("var cpuSortKey: Double { cpuPercent ?? -1 }"))
+
+        let load = try repoText("Pulse/Sampling/CPULoad.swift")
+        let hostStart = try XCTUnwrap(load.range(of: "enum SystemCPULoad"))
+        XCTAssertFalse(String(load[hostStart.lowerBound...]).contains("MachTimebase"))
+        let host = try repoText("Pulse/Sampling/HostCPUReader.swift")
+        XCTAssertFalse(host.contains("MachTimebase"))
+        XCTAssertFalse(host.contains("mach_timebase_info"))
+    }
+
+    private func repoText(_ relative: String) throws -> String {
+        try String(contentsOf: repoRoot().appendingPathComponent(relative), encoding: .utf8)
+    }
+
+    private func repoRoot() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
+    private func functionBody(named name: String, in source: String) throws -> String {
+        let patterns = ["func \(name)(", "private func \(name)("]
+        for pattern in patterns {
+            guard let range = source.range(of: pattern),
+                  let brace = source[range.lowerBound...].firstIndex(of: "{")
+            else { continue }
+            return try balancedSlice(from: brace, in: source, label: name)
+        }
+        throw TimebaseWiringReadError.missing(name)
+    }
+
+    private func balancedSlice(from start: String.Index, in source: String, label: String) throws -> String {
+        var depth = 0
+        var cursor = start
+        while cursor < source.endIndex {
+            let character = source[cursor]
+            if character == "{" { depth += 1 }
+            if character == "}" {
+                depth -= 1
+                if depth == 0 { return String(source[start...cursor]) }
+            }
+            cursor = source.index(after: cursor)
+        }
+        throw TimebaseWiringReadError.missing("balanced brace for \(label)")
+    }
+
+    private func occurrenceCount(of needle: String, in haystack: String) -> Int {
+        haystack.components(separatedBy: needle).count - 1
+    }
+}
+
+private enum TimebaseWiringReadError: Error, CustomStringConvertible {
+    case missing(String)
+
+    var description: String {
+        switch self {
+        case .missing(let detail): return "missing \(detail)"
+        }
     }
 }
