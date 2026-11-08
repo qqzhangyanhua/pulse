@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      # swift test only covers SamplingCore; the app build catches Darwin/AppKit files it skips.
+      - name: Test SamplingCore
+        run: swift test
+
+      - name: Build app
+        run: |
+          xcodebuild \
+            -project Pulse.xcodeproj \
+            -scheme Pulse \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            build

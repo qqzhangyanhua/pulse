@@ -1,5 +1,7 @@
 # Pulse 内存页高保真稿
 
+> 这些是一期内存页的高保真稿，之后的页面（CPU、磁盘、网络、本机、菜单栏）没有单独出稿。当前界面以 App 和 [TECH.md](../TECH.md) 为准。
+
 - `memory-selected.jpg` — 选中态
 - `memory-empty.jpg` — 空态
 - `memory-pressure-high.jpg` — 压力偏高
