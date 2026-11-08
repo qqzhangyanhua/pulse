@@ -171,7 +171,7 @@ final class CPUPageTests: XCTestCase {
     }
 
     func testCPUPageKeepsNameCPUAndMemoryColumns() {
-        XCTAssertEqual(ProcessColumnTitle.cpuPage, ["名称", "CPU", "内存", "线程"])
+        XCTAssertEqual(ProcessColumnTitle.cpuPage, ["名称", "CPU", "内存", "能耗影响", "空闲唤醒", "线程"])
         XCTAssertTrue(ProcessColumnTitle.cpuPage.contains(ProcessColumnTitle.memory))
     }
 

@@ -64,6 +64,7 @@ let package = Package(
                 "Sampling/CPULoad.swift",
                 "Sampling/HostNetwork.swift",
                 "Sampling/HostDisk.swift",
+                "Sampling/ProcessEnergy.swift",
                 "Sampling/SamplingPace.swift",
                 "Sampling/SamplingRequestGate.swift",
                 "Sampling/SamplingRetryChrome.swift",

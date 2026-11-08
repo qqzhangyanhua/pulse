@@ -44,6 +44,8 @@ enum AppGroupProjection {
             return lhs.pid > rhs.pid
         } ?? members[0]
         let anyResident = members.contains { $0.memorySource == .resident }
+        let energy = ProcessEnergyGroup.sum(members.map(\.energyWatts))
+        let wakeups = ProcessEnergyGroup.sum(members.map(\.idleWakeupsPerSecond))
         return ProcessRow(
             pid: lead.pid,
             name: lead.name,
@@ -55,7 +57,11 @@ enum AppGroupProjection {
             residentMemoryIsPartial: anyResident,
             threadCount: members.reduce(0) { $0 + $1.threadCount },
             diskReadBytesPerSecond: sum(members.map(\.diskReadBytesPerSecond)),
-            diskWriteBytesPerSecond: sum(members.map(\.diskWriteBytesPerSecond))
+            diskWriteBytesPerSecond: sum(members.map(\.diskWriteBytesPerSecond)),
+            energyWatts: energy.value,
+            idleWakeupsPerSecond: wakeups.value,
+            energyReadingIsPartial: energy.isPartial,
+            idleWakeupReadingIsPartial: wakeups.isPartial
         )
     }
 

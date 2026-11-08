@@ -211,6 +211,22 @@ struct ProcessDetailSidebar: View {
     @ViewBuilder
     private func cpuResourceDetail(_ detail: ProcessDetail, cpu: CPUDetailProjection) -> some View {
         cpuMetric(cpuPercent: cpu.cpuPercent)
+        HStack(alignment: .top, spacing: 10) {
+            SidebarMetric(
+                systemImage: "bolt",
+                title: ProcessEnergyText.impactTitle,
+                tint: PulsePalette.chartCPU,
+                value: ProcessEnergyText.watts(cpu.energyWatts),
+                caption: ProcessEnergyText.caption(isPartial: cpu.energyReadingIsPartial)
+            )
+            SidebarMetric(
+                systemImage: "moon.zzz",
+                title: ProcessEnergyText.idleWakeTitle,
+                tint: PulsePalette.chartCPU,
+                value: ProcessEnergyText.wakeups(cpu.idleWakeupsPerSecond),
+                caption: ProcessEnergyText.caption(isPartial: cpu.idleWakeupReadingIsPartial)
+            )
+        }
         cpuChart(detail)
             .frame(height: 124)
         memoryMetric(cpu.memory, bytes: cpu.memoryBytes)

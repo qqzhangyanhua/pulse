@@ -5,6 +5,8 @@ private enum ProcessColumn {
     static let memory: CGFloat = 124
     static let network: CGFloat = 80
     static let disk: CGFloat = 108
+    static let energy: CGFloat = 88
+    static let wakeups: CGFloat = 96
     static let threads: CGFloat = 64
 }
 
@@ -44,6 +46,10 @@ struct ProcessTablePane: View {
         vm.selectedPage == .disk
     }
 
+    private var showsEnergyColumns: Bool {
+        vm.selectedPage == .cpu
+    }
+
     private var columnHeader: some View {
         HStack(spacing: 0) {
             sortHeader(ProcessColumnTitle.name, column: .name, trailing: false)
@@ -52,6 +58,12 @@ struct ProcessTablePane: View {
                 .frame(width: ProcessColumn.cpu, alignment: .trailing)
             sortHeader(ProcessColumnTitle.memory, column: .memory, trailing: true)
                 .frame(width: ProcessColumn.memory, alignment: .trailing)
+            if showsEnergyColumns {
+                sortHeader(ProcessColumnTitle.energy, column: .energy, trailing: true)
+                    .frame(width: ProcessColumn.energy, alignment: .trailing)
+                sortHeader(ProcessColumnTitle.idleWakeups, column: .idleWakeups, trailing: true)
+                    .frame(width: ProcessColumn.wakeups, alignment: .trailing)
+            }
             if showsNetworkColumn {
                 staticHeader(ProcessColumnTitle.network)
                     .frame(width: ProcessColumn.network, alignment: .trailing)
@@ -254,6 +266,7 @@ struct ProcessTablePane: View {
                     selected: vm.selectedPid == row.pid,
                     showsNetwork: showsNetworkColumn,
                     showsDisk: showsDiskColumns,
+                    showsEnergy: showsEnergyColumns,
                     growthBadge: vm.memoryGrowthListBadge(for: row.pid)
                 )
                     .id(row.pid)
@@ -352,6 +365,7 @@ private struct ProcessLine: View {
     var selected: Bool
     var showsNetwork: Bool
     var showsDisk: Bool
+    var showsEnergy: Bool
     /// Phase-6 chip. Per-row Top5 ∩ `.rising`; selection is not a gate. Nil paints nothing.
     var growthBadge: MemoryGrowthListBadge?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -385,6 +399,12 @@ private struct ProcessLine: View {
                 diskCell(DiskRateText.string(row.diskWriteBytesPerSecond))
                     .frame(width: ProcessColumn.disk, alignment: .trailing)
             }
+            if showsEnergy {
+                diskCell(ProcessEnergyText.watts(row.energyWatts))
+                    .frame(width: ProcessColumn.energy, alignment: .trailing)
+                diskCell(ProcessEnergyText.wakeups(row.idleWakeupsPerSecond))
+                    .frame(width: ProcessColumn.wakeups, alignment: .trailing)
+            }
             Text("\(row.threadCount)")
                 .monospacedDigit()
                 .frame(width: ProcessColumn.threads, alignment: .trailing)
@@ -408,6 +428,10 @@ private struct ProcessLine: View {
         if showsDisk {
             parts.append("\(DiskPageCopy.readTitle) \(DiskRateText.string(row.diskReadBytesPerSecond))")
             parts.append("\(DiskPageCopy.writeTitle) \(DiskRateText.string(row.diskWriteBytesPerSecond))")
+        }
+        if showsEnergy {
+            parts.append("\(ProcessEnergyText.impactTitle) \(ProcessEnergyText.watts(row.energyWatts))")
+            parts.append("\(ProcessEnergyText.idleWakeTitle) \(ProcessEnergyText.wakeups(row.idleWakeupsPerSecond))")
         }
         if let growthBadge {
             parts.append(growthBadge.help)
