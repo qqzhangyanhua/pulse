@@ -324,6 +324,12 @@ final class MachinePageTests: XCTestCase {
         XCTAssertEqual(occurrenceCount(of: "internalBatteryDetails()", in: reader), 2)
         XCTAssertTrue(reader.contains("AppleSmartBattery"))
         XCTAssertTrue(reader.contains("signedMilliamps"))
+        XCTAssertEqual(occurrenceCount(of: "signedMilliamps", in: reader), 1)
+        XCTAssertTrue(reader.contains("return BatteryMath.plainInteger(uint64: number.uint64Value)"))
+        XCTAssertTrue(reader.contains("milliamps: milliamps(properties[\"InstantAmperage\"]) ?? milliamps(properties[\"Amperage\"])"))
+        XCTAssertTrue(reader.contains("cycleCount: integer(properties[\"CycleCount\"])"))
+        XCTAssertTrue(reader.contains("millivolts: integer(properties[\"Voltage\"])"))
+        XCTAssertFalse(reader.contains("milliamps: integer("))
         XCTAssertFalse(reader.contains("电池损坏"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")

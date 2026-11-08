@@ -84,7 +84,7 @@ enum HostMachineReader {
             fullChargeCapacity: fullChargeCapacity(properties, data),
             designCapacity: integer(properties["DesignCapacity"]) ?? integer(data?["DesignCapacity"]),
             millivolts: integer(properties["Voltage"]),
-            milliamps: integer(properties["InstantAmperage"]) ?? integer(properties["Amperage"])
+            milliamps: milliamps(properties["InstantAmperage"]) ?? milliamps(properties["Amperage"])
         )
     }
 
@@ -102,8 +102,14 @@ enum HostMachineReader {
         return raw
     }
 
-    /// Current may be a 64-bit two's-complement bit pattern. A real 0 stays 0.
+    /// Positive keys. A current that may be a two's-complement bit pattern uses `milliamps`.
     private static func integer(_ value: Any?) -> Int? {
+        guard let number = value as? NSNumber else { return nil }
+        return BatteryMath.plainInteger(uint64: number.uint64Value)
+    }
+
+    /// `InstantAmperage` may be a 64-bit two's-complement bit pattern. A real 0 stays 0.
+    private static func milliamps(_ value: Any?) -> Int? {
         guard let number = value as? NSNumber else { return nil }
         return BatteryMath.signedMilliamps(number.uint64Value)
     }

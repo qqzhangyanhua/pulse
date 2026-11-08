@@ -5,9 +5,23 @@ final class AppGroupProjectionTests: XCTestCase {
     func testOffReturnsTheSameRows() {
         let rows = [row(1, "Chrome", memory: 10), row(2, "Chrome", memory: 30)]
         XCTAssertEqual(AppGroupProjection.apply(rows: rows, grouped: false), rows)
-        XCTAssertFalse(AppGroupChrome.showsToggle(page: .cpu))
-        XCTAssertTrue(AppGroupChrome.showsToggle(page: .memory))
         XCTAssertEqual(AppGroupChrome.toggleTitle, "按 App")
+        XCTAssertTrue(AppGroupChrome.applies(on: .memory))
+        XCTAssertTrue(AppGroupChrome.applies(on: .cpu))
+        XCTAssertFalse(AppGroupChrome.applies(on: .disk))
+        XCTAssertFalse(AppGroupChrome.applies(on: .network))
+        XCTAssertFalse(AppGroupChrome.applies(on: .gpu))
+        XCTAssertFalse(AppGroupChrome.applies(on: .machine))
+        for page in DashboardPage.allCases {
+            XCTAssertEqual(
+                AppGroupChrome.showsToggle(page: page),
+                AppGroupChrome.applies(on: page),
+                "\(page)"
+            )
+        }
+        XCTAssertFalse(AppGroupChrome.help.contains("磁盘"))
+        XCTAssertFalse(AppGroupChrome.help.contains("网络"))
+        XCTAssertTrue(AppGroupChrome.help.contains("能耗"))
     }
 
     func testGroupSumsMemoryAndThreadsAndKeepsTheHeaviestPid() {
@@ -126,8 +140,14 @@ final class AppGroupProjectionTests: XCTestCase {
 
         let vm = try source("Pulse/ViewModels/MemoryDashboardVM.swift")
         let sorted = try functionBody(named: "sortedRows", in: vm)
+        let groupedCall = "grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage)"
         XCTAssertTrue(sorted.contains("AppGroupProjection.apply(rows: visibleRows"))
-        XCTAssertTrue(sorted.contains("grouped: groupedByApp && selectedPage == .memory"))
+        XCTAssertTrue(sorted.contains(groupedCall))
+        XCTAssertFalse(sorted.contains("selectedPage == .memory"))
+        let quit = try source("Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift")
+        let selection = try functionBody(named: "applyGroupedByAppSelection", in: quit)
+        XCTAssertTrue(selection.contains(groupedCall))
+        XCTAssertFalse(selection.contains("selectedPage == .memory"))
         let menu = try functionBody(named: "menuBarPopover", in: vm)
         XCTAssertFalse(menu.contains("groupedByApp"))
         XCTAssertFalse(menu.contains("AppGroupProjection"))
@@ -177,23 +197,24 @@ final class AppGroupProjectionTests: XCTestCase {
     }
 
     private func functionBody(named name: String, in source: String) throws -> String {
-        guard let range = source.range(of: "var \(name):"),
-              let brace = source[range.lowerBound...].firstIndex(of: "{")
-        else {
-            XCTFail("missing \(name)")
-            return ""
-        }
-        var depth = 0
-        var index = brace
-        while index < source.endIndex {
-            let character = source[index]
-            if character == "{" { depth += 1 }
-            if character == "}" {
-                depth -= 1
-                if depth == 0 { return String(source[brace...index]) }
+        let patterns = ["var \(name):", "func \(name)("]
+        for pattern in patterns {
+            guard let range = source.range(of: pattern),
+                  let brace = source[range.lowerBound...].firstIndex(of: "{")
+            else { continue }
+            var depth = 0
+            var index = brace
+            while index < source.endIndex {
+                let character = source[index]
+                if character == "{" { depth += 1 }
+                if character == "}" {
+                    depth -= 1
+                    if depth == 0 { return String(source[brace...index]) }
+                }
+                index = source.index(after: index)
             }
-            index = source.index(after: index)
         }
+        XCTFail("missing \(name)")
         return ""
     }
 }

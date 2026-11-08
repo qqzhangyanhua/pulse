@@ -47,6 +47,16 @@ final class ProcessEnergyWiringSourceTests: XCTestCase {
         XCTAssertTrue(cpu.contains("ProcessEnergyText.wakeups(cpu.idleWakeupsPerSecond)"))
         XCTAssertTrue(cpu.contains("ProcessEnergyText.caption(isPartial: cpu.energyReadingIsPartial)"))
         XCTAssertTrue(cpu.contains("ProcessEnergyText.caption(isPartial: cpu.idleWakeupReadingIsPartial)"))
+
+        let projection = try functionBody(named: "displayedProjection", in: sidebar)
+        XCTAssertTrue(projection.contains("displayedMemoryRow(detail.row)"))
+        XCTAssertTrue(projection.contains("memorySeries: detail.memorySeries"))
+        XCTAssertTrue(projection.contains("cpuSeries: detail.cpuSeries"))
+        let groupedRow = try functionBody(named: "displayedMemoryRow", in: sidebar)
+        XCTAssertTrue(groupedRow.contains("AppGroupChrome.applies(on: vm.selectedPage)"))
+        XCTAssertTrue(groupedRow.contains("vm.sortedRows.first { $0.pid == row.pid }"))
+        let chart = try functionBody(named: "memoryChart", in: sidebar)
+        XCTAssertTrue(chart.contains("samples: detail.memorySeries"))
     }
 
     private func repoText(_ relative: String) throws -> String {

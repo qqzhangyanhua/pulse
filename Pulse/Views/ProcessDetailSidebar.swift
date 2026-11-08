@@ -195,15 +195,20 @@ struct ProcessDetailSidebar: View {
     }
 
     private func displayedProjection(_ detail: ProcessDetail) -> ResourceDetailProjection {
-        ResourceDetailPageProjection.project(
+        let shown = ProcessDetail(
+            row: displayedMemoryRow(detail.row),
+            memorySeries: detail.memorySeries,
+            cpuSeries: detail.cpuSeries
+        )
+        return ResourceDetailPageProjection.project(
             page: vm.selectedPage,
-            detail: detail,
+            detail: shown,
             physicalTotalBytes: vm.snapshot?.totalBytes,
             frozen: LastLiveTotalReducer.frozenSemanticsForProjection(
                 showsAbsentRecord: vm.sidebar.showsAbsentRecord,
                 state: lastLiveTotal,
-                detailPid: detail.row.pid,
-                detailMemoryBytes: detail.row.memoryBytes
+                detailPid: shown.row.pid,
+                detailMemoryBytes: shown.row.memoryBytes
             )
         )
     }
@@ -390,9 +395,9 @@ struct ProcessDetailSidebar: View {
         }
     }
 
-    /// Grouped memory page shows the merged row. The curve stays on the selected pid.
+    /// Grouped memory and CPU pages show the merged row. The curve stays on the selected pid.
     private func displayedMemoryRow(_ row: ProcessRow) -> ProcessRow {
-        guard vm.groupedByApp, vm.selectedPage == .memory else { return row }
+        guard vm.groupedByApp, AppGroupChrome.applies(on: vm.selectedPage) else { return row }
         return vm.sortedRows.first { $0.pid == row.pid } ?? row
     }
 

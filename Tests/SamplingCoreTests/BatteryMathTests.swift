@@ -34,4 +34,14 @@ final class BatteryMathTests: XCTestCase {
         XCTAssertEqual(BatteryMath.signedMilliamps(1_500), 1_500)
         XCTAssertEqual(BatteryMath.signedMilliamps(0), 0)
     }
+
+    func testPlainIntegerKeepsAPositiveCountAndDropsACurrentBitPattern() {
+        XCTAssertEqual(BatteryMath.plainInteger(uint64: 312), 312)
+        XCTAssertEqual(BatteryMath.plainInteger(uint64: 0), 0)
+        XCTAssertEqual(BatteryMath.plainInteger(uint64: UInt64(Int.max)), Int.max)
+        XCTAssertNil(BatteryMath.plainInteger(uint64: UInt64(Int.max) + 1))
+        let discharge = UInt64(18_446_744_073_709_550_201)
+        XCTAssertNil(BatteryMath.plainInteger(uint64: discharge))
+        XCTAssertEqual(BatteryMath.signedMilliamps(discharge), -1_415)
+    }
 }

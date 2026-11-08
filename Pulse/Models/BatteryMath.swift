@@ -19,4 +19,10 @@ enum BatteryMath {
     static func signedMilliamps(_ raw: UInt64) -> Int {
         Int(Int64(bitPattern: raw))
     }
+
+    /// Positive registry keys. A high bit is missing, not a negative current.
+    static func plainInteger(uint64 raw: UInt64) -> Int? {
+        guard raw <= UInt64(Int.max) else { return nil }
+        return Int(raw)
+    }
 }

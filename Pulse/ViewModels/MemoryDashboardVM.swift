@@ -47,7 +47,7 @@ final class MemoryDashboardVM: ObservableObject {
             applyWindowedOnlySelection()
         }
     }
-    /// Memory-tab display. Default OFF. Groups the current visible rows by name.
+    /// Memory and CPU display. Default OFF. Groups the current visible rows by name.
     @Published var groupedByApp = false {
         didSet {
             guard oldValue != groupedByApp else { return }
@@ -123,7 +123,7 @@ final class MemoryDashboardVM: ObservableObject {
     /// Visible rows in the current table sort. Not stored and not published.
     var sortedRows: [ProcessRow] {
         tableSort.ordered(
-            AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && selectedPage == .memory)
+            AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
         )
     }
 
