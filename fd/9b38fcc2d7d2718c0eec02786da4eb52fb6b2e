@@ -1,0 +1,28 @@
+Pulse/Views/ProcessTablePane.swift
+  s_d7875508a6af86::t_a52834554ffb54 90-123,129-130,133
+  s_d7875508a6af86::t_d5840bf6a5eb76 131-132
+  s_d7875508a6af86::t_00919c4beca437 134-135
+Pulse/Views/MemoryDashboardView.swift
+  s_d7875508a6af86::t_7eacdf17e089b5 89
+  s_d7875508a6af86::t_1a97d231961c8c 9,15,25-50,52,84-85,87-88,100-103,106-111
+docs/TECH.md
+  s_d7875508a6af86::t_dce97e7cb14857 140
+Pulse/Views/SharedUI.swift
+  s_d7875508a6af86::t_d7beab98eb895b 82-86,151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "fd9b38fcc2d7d2718c0eec02786da4eb52fb6b2e",
+  "prompts": {},
+  "sessions": {
+    "s_d7875508a6af86": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1ba25-dcd5-7ce2-9935-ff417985e81b",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
