@@ -135,10 +135,10 @@ actor MemorySampler {
             }
 
             let energyReading: EnergyTick?
-            if let billedNanojoules = raw.billedEnergyNanojoules, let idleWakeups = raw.idleWakeups {
+            if let energyNanojoules = raw.energyNanojoules, let interruptWakeups = raw.interruptWakeups {
                 energyReading = EnergyTick(
-                    billedNanojoules: billedNanojoules,
-                    idleWakeups: idleWakeups,
+                    energyNanojoules: energyNanojoules,
+                    interruptWakeups: interruptWakeups,
                     date: capturedAt
                 )
             } else {
@@ -166,7 +166,7 @@ actor MemorySampler {
                     diskReadBytesPerSecond: disk.rates.readBytesPerSecond,
                     diskWriteBytesPerSecond: disk.rates.writeBytesPerSecond,
                     energyWatts: energy.rates.watts,
-                    idleWakeupsPerSecond: energy.rates.idleWakeupsPerSecond
+                    wakeupsPerSecond: energy.rates.wakeupsPerSecond
                 )
             )
         }

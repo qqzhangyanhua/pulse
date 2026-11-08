@@ -6,11 +6,9 @@ import Foundation
 enum ProcessActions {
     @MainActor
     static func terminate(pid: pid_t) async -> ProcessActionResult {
-        if let app = NSRunningApplication(processIdentifier: pid) {
-            guard app.terminate() else { return .requestFailed }
-            return await waitForExit(pid: pid, timeoutNanoseconds: 2_500_000_000)
+        await quitApplicationOrSignal(pid: pid, timeoutNanoseconds: 2_500_000_000, force: false) { app in
+            app.terminate()
         }
-        return await signalOrRefuse(pid: pid, force: false, timeoutNanoseconds: 2_500_000_000)
     }
 
     @MainActor
@@ -26,11 +24,23 @@ enum ProcessActions {
 
     @MainActor
     static func forceTerminate(pid: pid_t) async -> ProcessActionResult {
-        if let app = NSRunningApplication(processIdentifier: pid) {
-            guard app.forceTerminate() else { return .requestFailed }
-            return await waitForExit(pid: pid, timeoutNanoseconds: 2_000_000_000)
+        await quitApplicationOrSignal(pid: pid, timeoutNanoseconds: 2_000_000_000, force: true) { app in
+            app.forceTerminate()
         }
-        return await signalOrRefuse(pid: pid, force: true, timeoutNanoseconds: 2_000_000_000)
+    }
+
+    @MainActor
+    private static func quitApplicationOrSignal(
+        pid: pid_t,
+        timeoutNanoseconds: UInt64,
+        force: Bool,
+        application: (NSRunningApplication) -> Bool
+    ) async -> ProcessActionResult {
+        if let app = NSRunningApplication(processIdentifier: pid) {
+            guard application(app) else { return .requestFailed }
+            return await waitForExit(pid: pid, timeoutNanoseconds: timeoutNanoseconds)
+        }
+        return await signalOrRefuse(pid: pid, force: force, timeoutNanoseconds: timeoutNanoseconds)
     }
 
     @MainActor

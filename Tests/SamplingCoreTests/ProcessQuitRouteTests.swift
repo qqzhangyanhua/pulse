@@ -53,13 +53,29 @@ final class ProcessQuitRouteTests: XCTestCase {
         )
     }
 
-    func testDirectoryPrefixDoesNotRefuseALongerFirstSegment() {
+    func testStringPrefixRefusesALongerFirstSegment() {
         let paths = [
             "/Systematic/helper",
             "/usr/libexecfoo",
             "/usr/sbinfoo",
             "/sbinfoo",
+        ]
+        for path in paths {
+            for force in [false, true] {
+                XCTAssertEqual(
+                    ProcessQuitRoute.decide(hasApplication: false, executablePath: path, force: force),
+                    .refused,
+                    "\(path) force=\(force)"
+                )
+            }
+        }
+    }
+
+    func testPathsOutsideTheRefusedPrefixesStillSignal() {
+        let paths = [
             "/usr/lib/dyld",
+            "/usr/bin/ssh",
+            "/bin/zsh",
         ]
         for path in paths {
             XCTAssertEqual(
@@ -79,10 +95,12 @@ final class ProcessQuitRouteTests: XCTestCase {
         let paths = [
             "/System",
             "/System/Library/Frameworks/AppKit.framework/AppKit",
+            "/System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow",
             "/usr/libexec",
             "/usr/libexec/trustd",
             "/usr/sbin",
             "/usr/sbin/syslogd",
+            "/usr/sbin/cfprefsd",
             "/sbin",
             "/sbin/launchd",
         ]

@@ -118,11 +118,11 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     /// Watts from `ri_energy_nj`. Nil on first frame, a decreased counter, or a failed read.
     let energyWatts: Double?
     /// `ri_interrupt_wkups` per second. Nil on the same frames as `energyWatts`.
-    let idleWakeupsPerSecond: Double?
+    let wakeupsPerSecond: Double?
     /// App-group row whose energy sum skipped a nil member. An ungrouped row stays false.
     let energyReadingIsPartial: Bool
-    /// App-group row whose idle-wake sum skipped a nil member. An ungrouped row stays false.
-    let idleWakeupReadingIsPartial: Bool
+    /// App-group row whose wakeup sum skipped a nil member. An ungrouped row stays false.
+    let wakeupReadingIsPartial: Bool
     /// Nil on an ungrouped row. A grouped row stores `members.count`, including 1.
     let groupedMemberCount: Int?
 
@@ -139,9 +139,9 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         diskReadBytesPerSecond: Double? = nil,
         diskWriteBytesPerSecond: Double? = nil,
         energyWatts: Double? = nil,
-        idleWakeupsPerSecond: Double? = nil,
+        wakeupsPerSecond: Double? = nil,
         energyReadingIsPartial: Bool = false,
-        idleWakeupReadingIsPartial: Bool = false,
+        wakeupReadingIsPartial: Bool = false,
         groupedMemberCount: Int? = nil
     ) {
         self.pid = pid
@@ -156,9 +156,9 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         self.diskReadBytesPerSecond = diskReadBytesPerSecond
         self.diskWriteBytesPerSecond = diskWriteBytesPerSecond
         self.energyWatts = energyWatts
-        self.idleWakeupsPerSecond = idleWakeupsPerSecond
+        self.wakeupsPerSecond = wakeupsPerSecond
         self.energyReadingIsPartial = energyReadingIsPartial
-        self.idleWakeupReadingIsPartial = idleWakeupReadingIsPartial
+        self.wakeupReadingIsPartial = wakeupReadingIsPartial
         self.groupedMemberCount = groupedMemberCount
     }
 

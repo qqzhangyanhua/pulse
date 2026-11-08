@@ -79,10 +79,10 @@ enum ProcessColumnTitle {
     static let diskRead = DiskPageCopy.readTitle
     static let diskWrite = DiskPageCopy.writeTitle
     static let energy = ProcessEnergyText.impactTitle
-    static let idleWakeups = ProcessEnergyText.idleWakeTitle
+    static let wakeups = ProcessEnergyText.wakeTitle
 
     /// CPU page keeps the memory column. Energy is watts, not an Activity Monitor score.
-    static let cpuPage = [name, cpu, memory, energy, idleWakeups, threads]
+    static let cpuPage = [name, cpu, memory, energy, wakeups, threads]
 
     /// Network page adds an unavailable marker column. It is not a sortable byte count.
     static let networkPage = [name, cpu, memory, network, threads]
@@ -100,7 +100,7 @@ enum ProcessSortColumn: Equatable, Sendable {
     case diskRead
     case diskWrite
     case energy
-    case idleWakeups
+    case wakeups
 }
 
 struct ProcessTableSort: Equatable, Sendable {
@@ -159,8 +159,8 @@ struct ProcessTableSort: Equatable, Sendable {
             return compareDoubles(lhs.diskWriteBytesPerSecond ?? -1, rhs.diskWriteBytesPerSecond ?? -1)
         case .energy:
             return compareDoubles(lhs.energyWatts ?? -1, rhs.energyWatts ?? -1)
-        case .idleWakeups:
-            return compareDoubles(lhs.idleWakeupsPerSecond ?? -1, rhs.idleWakeupsPerSecond ?? -1)
+        case .wakeups:
+            return compareDoubles(lhs.wakeupsPerSecond ?? -1, rhs.wakeupsPerSecond ?? -1)
         }
     }
 

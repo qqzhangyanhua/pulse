@@ -52,7 +52,7 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
             labels(of: cpu),
             [
                 "pid", "cpuPercent", "cpuSeries", "memory", "memoryBytes", "memorySeries",
-                "energyWatts", "idleWakeupsPerSecond", "energyReadingIsPartial", "idleWakeupReadingIsPartial",
+                "energyWatts", "wakeupsPerSecond", "energyReadingIsPartial", "wakeupReadingIsPartial",
             ]
         )
         XCTAssertEqual(
@@ -251,13 +251,13 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
         )
         let cpu = try self.cpu(project(.cpu, measured, total: nil, frozen: nil))
         XCTAssertEqual(cpu.energyWatts ?? -1, 1.5, accuracy: 0.000_001)
-        XCTAssertNil(cpu.idleWakeupsPerSecond)
+        XCTAssertNil(cpu.wakeupsPerSecond)
         XCTAssertFalse(cpu.energyReadingIsPartial)
-        XCTAssertFalse(cpu.idleWakeupReadingIsPartial)
+        XCTAssertFalse(cpu.wakeupReadingIsPartial)
         XCTAssertEqual(ProcessEnergyText.watts(cpu.energyWatts), "1.5 W")
-        XCTAssertEqual(ProcessEnergyText.wakeups(cpu.idleWakeupsPerSecond), "—")
+        XCTAssertEqual(ProcessEnergyText.wakeups(cpu.wakeupsPerSecond), "—")
         XCTAssertEqual(ProcessEnergyText.caption(isPartial: cpu.energyReadingIsPartial), "")
-        XCTAssertNotEqual(ProcessEnergyText.wakeups(cpu.idleWakeupsPerSecond), "0.0 次/秒")
+        XCTAssertNotEqual(ProcessEnergyText.wakeups(cpu.wakeupsPerSecond), "0.0 次/秒")
 
         let partial = detail(
             pid: pidA,
@@ -270,9 +270,9 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
         )
         let projected = try self.cpu(project(.cpu, partial, total: nil, frozen: nil))
         XCTAssertEqual(ProcessEnergyText.watts(projected.energyWatts), "0.0 W")
-        XCTAssertEqual(ProcessEnergyText.wakeups(projected.idleWakeupsPerSecond), "—")
+        XCTAssertEqual(ProcessEnergyText.wakeups(projected.wakeupsPerSecond), "—")
         XCTAssertEqual(ProcessEnergyText.caption(isPartial: projected.energyReadingIsPartial), "部分读数")
-        XCTAssertEqual(ProcessEnergyText.caption(isPartial: projected.idleWakeupReadingIsPartial), "部分读数")
+        XCTAssertEqual(ProcessEnergyText.caption(isPartial: projected.wakeupReadingIsPartial), "部分读数")
         XCTAssertNotEqual(ProcessEnergyText.watts(projected.energyWatts), "—")
 
         let network = try self.network(project(.network, measured, total: nil, frozen: nil))
@@ -461,9 +461,9 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
                 diskReadBytesPerSecond: read,
                 diskWriteBytesPerSecond: write,
                 energyWatts: watts,
-                idleWakeupsPerSecond: wakeups,
+                wakeupsPerSecond: wakeups,
                 energyReadingIsPartial: energyPartial,
-                idleWakeupReadingIsPartial: wakePartial
+                wakeupReadingIsPartial: wakePartial
             ),
             memorySeries: memorySeries,
             cpuSeries: cpuSeries

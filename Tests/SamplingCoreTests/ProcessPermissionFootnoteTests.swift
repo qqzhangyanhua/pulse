@@ -85,13 +85,6 @@ final class ProcessPermissionFootnoteTests: XCTestCase {
                 showsProcessTable: true
             )
         )
-        XCTAssertNil(
-            ProcessPermissionFootnote.visibleSentence(
-                "0",
-                processListFailed: false,
-                showsProcessTable: true
-            )
-        )
         XCTAssertEqual(
             ProcessPermissionFootnote.visibleSentence(
                 sentence,

@@ -17,9 +17,9 @@ struct RawProcessSample: Sendable, Equatable {
     let diskBytesRead: UInt64?
     let diskBytesWritten: UInt64?
     /// `ri_energy_nj` nanojoules from the same rusage read. Nil when that call fails.
-    let billedEnergyNanojoules: UInt64?
+    let energyNanojoules: UInt64?
     /// `ri_interrupt_wkups` from the same rusage read. Nil when that call fails. No resident fallback.
-    let idleWakeups: UInt64?
+    let interruptWakeups: UInt64?
 }
 
 /// One `list()` walk. Denied pids are a count, not rows.
@@ -126,8 +126,8 @@ enum ProcessEnumerator {
                 systemTimeNs: cpu?.system,
                 diskBytesRead: rusage?.bytesRead,
                 diskBytesWritten: rusage?.bytesWritten,
-                billedEnergyNanojoules: rusage?.billedEnergyNanojoules,
-                idleWakeups: rusage?.idleWakeups
+                energyNanojoules: rusage?.energyNanojoules,
+                interruptWakeups: rusage?.interruptWakeups
             ),
             permissionDenied: false
         )
@@ -168,8 +168,8 @@ enum ProcessEnumerator {
             bytesRead: info.ri_diskio_bytesread,
             bytesWritten: info.ri_diskio_byteswritten,
             footprintBytes: info.ri_phys_footprint,
-            billedEnergyNanojoules: info.ri_energy_nj,
-            idleWakeups: info.ri_interrupt_wkups
+            energyNanojoules: info.ri_energy_nj,
+            interruptWakeups: info.ri_interrupt_wkups
         )
     }
 }
@@ -183,8 +183,8 @@ private struct ProcessRusageSample {
     let bytesRead: UInt64
     let bytesWritten: UInt64
     let footprintBytes: UInt64
-    let billedEnergyNanojoules: UInt64
-    let idleWakeups: UInt64
+    let energyNanojoules: UInt64
+    let interruptWakeups: UInt64
 }
 
 struct ProcessIdentity: Sendable, Equatable {
