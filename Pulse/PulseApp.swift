@@ -4,9 +4,14 @@ import SwiftUI
 @main
 struct PulseApp: App {
     @NSApplicationDelegateAdaptor(PulseAppDelegate.self) private var appDelegate
-    @StateObject private var dashboard = MemoryDashboardVM()
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
+        // Scene setup, not the window. Zero windows can still open the main window from the status item.
+        let openWindow = self.openWindow
+        let _ = appDelegate.bindOpenWindow {
+            openWindow(id: PulseWindowID.main)
+        }
         WindowGroup("Pulse", id: PulseWindowID.main) {
             ContentView()
                 .background {
@@ -17,13 +22,13 @@ struct PulseApp: App {
                     }
                     .allowsHitTesting(false)
                 }
-                .environmentObject(dashboard)
+                .environmentObject(appDelegate.dashboard)
         }
         .defaultSize(width: 1280, height: 820)
         .windowResizability(.contentMinSize)
         .windowToolbarStyle(.unifiedCompact)
         .commands {
-            PulseWindowCommands(dashboard: dashboard)
+            PulseWindowCommands(dashboard: appDelegate.dashboard)
         }
 
         Settings {

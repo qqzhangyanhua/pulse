@@ -39,7 +39,7 @@ scripts/notarize.sh      Developer ID archive → notarytool → staple
 scripts/make-dmg.sh      可选 DMG（可再公证）
 ```
 
-一个后台 `MemorySampler` actor 产出不可变快照，主窗和菜单栏读同一帧。前台每 1.5 秒采一次，主窗不在前台时降到 3 秒，不另开轮询。
+一个后台 `MemorySampler` actor 产出不可变快照，主窗和菜单栏读同一帧。前台每 1.5 秒采一次，主窗不在前台、或启动时就没有主窗时降到 3 秒，不另开轮询。
 
 ## 构建与测试
 

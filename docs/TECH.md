@@ -16,8 +16,8 @@
 
 ```
 PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
-          ├─ PulseAppDelegate ── MenuBarController（NSStatusItem + NSPopover）
-          └─ MemoryDashboardVM（@MainActor，唯一 VM）
+          └─ PulseAppDelegate ── MenuBarController（NSStatusItem + NSPopover）
+                 └─ MemoryDashboardVM（@MainActor，唯一 VM，活过窗口）
                  │ 采样循环：SamplingRequestGate + SamplingClock + SamplingSession
                  ▼
              MemorySampler（actor，唯一采样器）
@@ -29,12 +29,13 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 ```
 
 - `MemorySampler.sample()` 每次产出一帧不可变的 `SampledFrame`：主机内存快照、进程行、选中进程详情、整机 CPU、最忙一核、主机网络 / 磁盘速率、Top5 内存序列。主线程只读这帧。
-- 主窗、菜单栏、各资源页都读同一个 VM 的同一帧。没有第二个采样器，也没有第二条轮询。
+- 主窗、菜单栏、各资源页都读同一个 VM 的同一帧。没有第二个采样器，也没有第二条轮询。这个 VM 归 `PulseAppDelegate`，启动完成就 `start()`，关窗不释放。
 - `Models/` 里的类型是纯投影：输入现有字段，输出文案和状态，不采样、不存历史。
 
 ## 采样节奏与失败
 
 - 前台（主窗可见且 App 激活）每 1.5 秒采一帧；主窗在后台或已关、只剩菜单栏时每 3 秒一帧（`SamplingPace`）。循环每 400ms 醒一次，只为及时察觉前后台切换，到期才采。
+- 采样在 `applicationDidFinishLaunching` 开始，不等主窗出现。没有主窗时采样门保持窗口不可见，走后台 3 秒。带着主窗启动时，窗口锚点把采样门改回前台，第一段间隔仍是 1.5 秒。`start()` 幂等，窗口再次绑定不会开第二条循环。
 - 关掉主窗不退出 App（`terminateAfterLastWindowClosed = false`），菜单栏继续用同一个采样器。`⌘Q` 才真正退出。
 - 采样失败进入失败空态，保留上一帧的数据和曲线，不清零。七处失败空态共用 `SamplingRetryChrome`：按钮「重试」，等待中显示「正在重试…」。
 - 手动重试和定时到期共享同一个在途请求（`SamplingRequestGate`）。在途时再点重试会并入当前请求，不会再排一帧。重试期间不会把「失败」退回「采样中」。
@@ -128,7 +129,7 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 - 左键弹出轻量条，右键或 Control 点击弹出「退出 Pulse」。
 - 轻量条自上而下：压力一行、「已用 xx GB」一行、最忙一核达到 90% 时的「最忙的一核 · xx%」（可选），然后是 Top3 进程（名称 + 内存），最后是「打开 Pulse」和「设置」。
 - Top3 用最后一次内存页表头排序，取完整列表的前 3 个，不受过滤影响。少于 3 个时不补位。
-- 点 Top3 某行：关掉轻量条，进程还在才选中，打开主窗并切到内存页。切页时会按内存页当前的「仅上涨」「仅窗口 App」重算选中，被开关过滤掉的进程会被取消选中。「打开 Pulse」只切到内存页，不改选中。
+- 点 Top3 某行：关掉轻量条，进程还在才选中，打开主窗并切到内存页。切页时会按内存页当前的「仅上涨」「仅窗口 App」重算选中，被开关过滤掉的进程会被取消选中。「打开 Pulse」只切到内存页，不改选中。没有主窗时，「打开 Pulse」和通知点击仍走这条路径打开主窗。
 
 ## 设置
 
@@ -174,6 +175,7 @@ Tab 选中胶囊、总览高度和工具栏里的页专属开关用同一段动�
 - [ ] 色点随压力变色，失败时为灰并有提示；默认栏上没有文字。设置可改为已用内存或 CPU，缺失显示「—」，重启后仍保留
 - [ ] 压力升到偏高时系统通知只来一次，点击打开内存页；回到正常不满 5 分钟不再发，满 5 分钟后再次偏高会再发。设置可关闭。通知权限被拒时设置显示「系统通知未授权」，不弹错误
 - [ ] 轻量条四块内容正确，Top3 跟随内存页表头；点行能打开主窗并选中
+- [ ] 启动时没有主窗口，菜单栏色点在读数成功后离开「暂时读不到」，采样间隔约 3 秒；「打开 Pulse」能打开主窗。带着主窗启动时第一段间隔仍约 1.5 秒
 - [ ] 关掉主窗后菜单栏仍在更新，`⌘Q` 退出；重开主窗保持上次尺寸和位置
 - [ ] 设置里打开「登录时打开 Pulse」后，系统设置的登录项里出现 Pulse；关掉后该项消失。需要批准时能看到说明并打开系统设置登录项；注册失败时开关为关并显示原因
 - [ ] 在系统设置里移除 Pulse 的登录项后，回到 Pulse 设置，开关为关
