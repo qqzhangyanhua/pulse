@@ -277,9 +277,16 @@ struct ProcessTablePane: View {
     private var processList: some View {
         ScrollViewReader { proxy in
             List(vm.sortedRows, selection: $vm.selectedPid) { row in
+                let groupHighlighted = MemoryGroupRowHighlight.highlighted(
+                    page: vm.selectedPage,
+                    grouping: vm.groupedByApp && AppGroupChrome.applies(on: vm.selectedPage),
+                    selectedPid: vm.selectedPid,
+                    visibleUngrouped: vm.visibleRows,
+                    rowPid: row.pid
+                )
                 ProcessLine(
                     row: row,
-                    selected: vm.selectedPid == row.pid,
+                    selected: groupHighlighted,
                     showsNetwork: showsNetworkColumn,
                     showsDisk: showsDiskColumns,
                     showsEnergy: showsEnergyColumns,
@@ -296,7 +303,7 @@ struct ProcessTablePane: View {
                     .id(row.pid)
                     .listRowInsets(EdgeInsets(top: 3, leading: 10, bottom: 3, trailing: 10))
                     .listRowSeparator(.hidden)
-                    .listRowBackground(rowBackground(vm.selectedPid == row.pid))
+                    .listRowBackground(rowBackground(groupHighlighted))
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
