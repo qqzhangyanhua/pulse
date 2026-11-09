@@ -52,7 +52,9 @@ final class ProcessMemoryChoiceWiringSourceTests: XCTestCase {
         XCTAssertFalse(metrics.contains("ByteFormat.memory(detail.row.memoryBytes)"))
         let chart = try functionBody(named: "memoryChart", in: sidebar)
         XCTAssertTrue(chart.contains("detail.memorySeries"))
-        XCTAssertTrue(chart.contains("displayedMemoryRow(detail.row)"))
+        XCTAssertTrue(chart.contains("vm.selectedPage == .memory"))
+        XCTAssertTrue(chart.contains("curveRow: detail.row"))
+        XCTAssertTrue(chart.contains("memoryField(displayedMemoryRow(detail.row))"))
         XCTAssertTrue(chart.contains("memoryField("))
         XCTAssertFalse(chart.contains("memoryField(detail.row)"))
     }

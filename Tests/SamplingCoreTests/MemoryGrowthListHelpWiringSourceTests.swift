@@ -125,7 +125,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         XCTAssertFalse(package.contains("MemoryDashboardVM.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
-        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 81, "adds MenuBarReading.swift, PulseSettingsView.swift, BatteryMath.swift, ProcessEnergy.swift, ProcessRowCopy.swift, PressureNotice.swift, PressureNoticeCenter.swift, LoginItem.swift, ProcessQuitRoute.swift, ProcessPermissionFootnote.swift, ProcessPermissionFootnoteLabel.swift, and the four save-snapshot files")
+        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 83, "adds MenuBarReading.swift, PulseSettingsView.swift, BatteryMath.swift, ProcessEnergy.swift, ProcessRowCopy.swift, PressureNotice.swift, PressureNoticeCenter.swift, LoginItem.swift, ProcessQuitRoute.swift, ProcessPermissionFootnote.swift, ProcessPermissionFootnoteLabel.swift, the four save-snapshot files, MemoryDetailAttribution.swift, and ProcessDetailSidebar+MemoryAttribution.swift")
         let build = try markedSection("PBXBuildFile", in: project)
         let refs = try markedSection("PBXFileReference", in: project)
         let models = try modelsGroup(in: project)

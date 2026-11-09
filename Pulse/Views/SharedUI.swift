@@ -497,6 +497,8 @@ struct SidebarMetric: View {
     let value: String
     let caption: String
     var help: String? = nil
+    /// Visible sentence under the caption. Empty unless a caller passes one.
+    var attribution: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -514,6 +516,12 @@ struct SidebarMetric: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             captionText
+            if let attribution, !attribution.isEmpty {
+                Text(attribution)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Spacer(minLength: 0)
         }
         .padding(12)
