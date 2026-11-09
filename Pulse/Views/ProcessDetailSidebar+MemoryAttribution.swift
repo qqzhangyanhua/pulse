@@ -1,6 +1,20 @@
 import SwiftUI
 
 extension ProcessDetailSidebar {
+    /// Memory page uses the visible same-name group when that lookup hits.
+    /// A miss keeps the pid lookup used by the other pages.
+    func memoryMagnitudeRow(fallback: ProcessRow) -> ProcessRow {
+        if let grouped = MemoryMagnitudeVisibleGroup.row(
+            page: vm.selectedPage,
+            grouping: vm.groupedByApp && AppGroupChrome.applies(on: vm.selectedPage),
+            selectedPid: vm.selectedPid,
+            visibleUngrouped: vm.visibleRows
+        ) {
+            return grouped
+        }
+        return fallback
+    }
+
     /// Memory page only. Other pages pass nil, so the shared card stays unlabeled.
     func memoryMagnitudeAttribution(displayed: ProcessRow, curve: ProcessRow, points: Int) -> String? {
         guard vm.selectedPage == .memory else { return nil }

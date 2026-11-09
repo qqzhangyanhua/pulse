@@ -17,6 +17,7 @@
 		B0000000000000000000001D /* MemoryGrowthSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001D /* MemoryGrowthSignal.swift */; };
 		B00000000000000000000031 /* MemoryDetailPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000031 /* MemoryDetailPresentation.swift */; };
 		B00000000000000000000054 /* MemoryDetailAttribution.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000054 /* MemoryDetailAttribution.swift */; };
+		B00000000000000000000056 /* MemoryMagnitudeVisibleGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000056 /* MemoryMagnitudeVisibleGroup.swift */; };
 		B00000000000000000000032 /* ResourceDetailPageProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000032 /* ResourceDetailPageProjection.swift */; };
 		B00000000000000000000033 /* LastLiveTotalReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000033 /* LastLiveTotalReducer.swift */; };
 		B00000000000000000000027 /* MemoryGrowthTopSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000027 /* MemoryGrowthTopSeries.swift */; };
@@ -103,6 +104,7 @@
 		A0000000000000000000001D /* MemoryGrowthSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGrowthSignal.swift; sourceTree = "<group>"; };
 		A00000000000000000000031 /* MemoryDetailPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDetailPresentation.swift; sourceTree = "<group>"; };
 		A00000000000000000000054 /* MemoryDetailAttribution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDetailAttribution.swift; sourceTree = "<group>"; };
+		A00000000000000000000056 /* MemoryMagnitudeVisibleGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryMagnitudeVisibleGroup.swift; sourceTree = "<group>"; };
 		A00000000000000000000032 /* ResourceDetailPageProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResourceDetailPageProjection.swift; sourceTree = "<group>"; };
 		A00000000000000000000033 /* LastLiveTotalReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLiveTotalReducer.swift; sourceTree = "<group>"; };
 		A00000000000000000000027 /* MemoryGrowthTopSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGrowthTopSeries.swift; sourceTree = "<group>"; };
@@ -220,6 +222,7 @@
 				A0000000000000000000001D /* MemoryGrowthSignal.swift */,
 				A00000000000000000000031 /* MemoryDetailPresentation.swift */,
 				A00000000000000000000054 /* MemoryDetailAttribution.swift */,
+				A00000000000000000000056 /* MemoryMagnitudeVisibleGroup.swift */,
 				A00000000000000000000032 /* ResourceDetailPageProjection.swift */,
 				A00000000000000000000033 /* LastLiveTotalReducer.swift */,
 				A00000000000000000000027 /* MemoryGrowthTopSeries.swift */,
@@ -435,6 +438,7 @@
 				B0000000000000000000001D /* MemoryGrowthSignal.swift in Sources */,
 				B00000000000000000000031 /* MemoryDetailPresentation.swift in Sources */,
 				B00000000000000000000054 /* MemoryDetailAttribution.swift in Sources */,
+				B00000000000000000000056 /* MemoryMagnitudeVisibleGroup.swift in Sources */,
 				B00000000000000000000032 /* ResourceDetailPageProjection.swift in Sources */,
 				B00000000000000000000033 /* LastLiveTotalReducer.swift in Sources */,
 				B00000000000000000000027 /* MemoryGrowthTopSeries.swift in Sources */,
