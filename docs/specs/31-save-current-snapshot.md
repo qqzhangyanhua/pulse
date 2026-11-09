@@ -1,266 +1,202 @@
 # 保存当前快照：技术设计（未实现）
 
-> 评审中的技术设计。不是产品 PASS，不是实现授权，也不是 `main` 上的行为。
+> 首版行为已由产品、设计和主控锁定。本文件把该锁定收成工程决定。它仍不是实现授权，也不是 `main` 上的行为。
 >
-> 对照提交 `930bac1eeab468bc9de677581c233199b6f1f9c9`（`origin/main`）。开写前读过 PRD、TECH、ADR-0001、ADR-0002、当时的 open PR（没有），以及下面点名的源码。open PR 和现有规格里没有另一份「保存当前快照」设计。规格里已有的「快照」是采样帧 `MemorySnapshot` / `SampledFrame`，不是用户保存的现场。
+> 对照提交 `930bac1eeab468bc9de677581c233199b6f1f9c9`。开写前读过 PRD、TECH、ADR-0001、ADR-0002，以及 PR #111（仍开着，头是本文；评论里没有另一份同题收口）。规格里已有的「快照」是采样帧 `MemorySnapshot` / `SampledFrame`，不是用户保存的现场。
 >
 > 文件名的 `31` 只用来接在 `00`–`22` 之后，并避开已经落地、没有单独设计稿的二十三至三十期。这不是三十一期立项。
 >
-> 本文件不改采样、过滤、排序、退出或其它页的现有行为。预览、隐藏进程名只在讨论里出现过，不是已锁定的 Must，本文不把它们收进范围。
+> 早先稿里的 P/Q/R 候选、`SavedScene` JSON、未知版本拒绝和「应用内解码再回看」作废。应用不解码这份文件，也不做迁移框架。
 
-## 讨论已经限定
+## 锁定的首版
 
-这些来自方向讨论，技术设计照此收口。产品没有另发 PASS。
+手动点击「保存当前快照」。点击时在主线程同步冻结最近一帧已经发布的有效采样。不新采样，不扫描。
 
-- 做的是手动「保存当前快照」：把点击时已经发布的采样留在本机，并能重新打开这一份现场。用来看当时的资源读数和主要进程。
-- 不做能追溯卡顿之前的录制器。不新增事前历史缓存，不连续录制，不做自动归因或泄漏判断，不上传，不做跨快照比较，不做历史列表或历史库。
-- 不改采样节奏（前台约 1.5 秒、后台约 3 秒）、过滤、排序、退出，以及各页既有行为。
-- 只用点击时已经发布的数据。不为保存再跑 `MemorySampler.sample()`，也不另开 `proc_listpids`、IOKit、本机页那次读取。
-- 缺失保持缺失。不把缺失写成 0。真实 0 仍是 0。
-- 多个读取时刻不能写成「同一瞬间」。文件要带上真实的采样时间；没有采样时间的数据不要并进那个时间。
-- 进程名和可执行路径是隐私数据。字段从现有发布值里取最小集合。路径、包标识这类非必要敏感字段不进默认文件。尚未选定的身份字段交给产品，不在这里定死。
-- 不新建历史存储框架，也不做版本迁移框架。读不懂的版本直接拒绝。
+有效帧是 `MemoryDashboardVM.snapshot != nil` 的那一份已发布主机快照，以及同一次发布里的 `rows`、主机 CPU、网络和磁盘。`samplingFailed == true` 时仍然冻结这上一份，采样时间保持 `snapshot.capturedAt`，不用点击时间冒充新的采样。`snapshot == nil` 时没有有效帧。
 
-## 还要产品或设计锁定
+入口是主窗工具栏按钮，各页都在，包括本机页。它不放进过滤胶囊那一组，也不跟随「仅上涨」「仅窗口 App」「按 App」。
 
-下面几项会改变保存内容和界面。本文只列候选，不替产品选定，也不把建议写成范围。
+点击后先给只读预览，再由预览里的「保存到本机」打开系统保存对话框。预览不是回看窗口。回看是用户稍后用系统打开那个文件。
 
-| 编号 | 候选 | 说明 |
-| --- | --- | --- |
-| P1 | 未过滤的全部 `rows`，元素含显示名 | 集合是采样器发布的完整进程表 |
-| P2 | 与 P1 相同的行，但不写 `name` | 回看只能看见 pid。这是「隐藏进程名」的一种做法，讨论里提过，不是 Must |
-| P3 | 按已发布顺序取前 N 行，元素含显示名 | N 未定。菜单栏 Top3 的 `MenuBarPopoverShell.maxProcessRows`（3）只是现成常数，不是这个 N |
-| Q1 | 进程元素只有 pid、内存、内存来源、CPU%、线程，以及 P1/P3 的名称 | 建议中的最小列，仍等确认 |
-| Q2 | 在 Q1 上加上该行已有的磁盘读/写速率、能耗瓦特、唤醒 | 值已经在 `ProcessRow` 上，保存时不用再读。`nil` 继续是 `nil` |
-| R0 | schema 1 不写任何曲线 | 技术建议。避免把最多 90 点的窗口写成一份「当时」 |
-| R1 | 另立 schema 2，只整份拷贝屏幕上已经有的环 | 不补点、不新采样。选定 R1 之前不要实现；选定后本文的 schema 1 不能偷偷加可选大数组 |
-| I1 | 「文件」菜单打开系统保存面板 | 捕获发生在点菜单时，面板只负责路径 |
-| I2 | 工具栏按钮，面板相同 | 与 I1 二选一。不用同时做两个入口 |
-| V1 | 主窗上的只读 sheet | 不替换正在采样的页面 |
-| V2 | 单独的只读窗口 | 同样不写入唯一 VM |
-| E1 | 还没有 `snapshot` 时拒绝保存 | 技术建议。没有可标明的采样时间 |
-| E2 | 写成一份主机块为空的文件 | 只在产品明确要求「把这次没有采样也留下」时才做 |
+预览和文件展示同一份导出文档，内容是：
 
-不设「保存当前屏幕这张已过滤、已按 App 合并的表」这个候选。`sortedRows` 会把名称过滤、仅上涨、仅窗口 App 和 `AppGroupProjection` 烤进文件，合并行只留下内存最大的那个 pid。那不是一帧采样。
+- 采样时间 `capturedAt`，保存时间 `savedAt`（点击冻结的时刻）。二者分开写。
+- 一句「非实时」。
+- 主机内存（已用、总量、四段分类、交换）、压力两档、整机 CPU、最忙一核、网络下行/上行、磁盘读取/写入。这些都是这一帧已经发布的数。
+- 进程最多 5 行。来源是完整、未过滤的 `rows`，按内存占用降序。不是当前表头排序，不是过滤后的表，也不是按 App 合并后的行。
+- 不足 5 个时写明实际个数，不补假行。进程列表没读到时写明没读到，不把空表说成机器上只有 0 个进程。
+- 名次只表示内存占用顺序，不表示卡顿原因。
 
-权限脚注也不进 schema 1。VM 上只有已经拼好的 `processPermissionFootnote` 句子，没有单独的拒绝计数。要保留 N，得另做产品决定，不能从句子里反解。
+每一行只有：pid、显示名、内存字节、内存来源（`footprint` 为内存占用，`resident` 为驻留内存）、CPU%、线程数。不写进程磁盘、能耗、唤醒，不写曲线、可执行路径、包标识或命令行。
 
-按钮、面板默认文件名、回看标题、失败句和「这是较早一次采样」的说明都还没有文案锁定。实现时沿用现有冷静语气：缺失用「—」或「暂时读不到」，不写「危险 / 泄漏」。本文不提供可直接粘贴的终稿句子。
+「隐藏进程名」同时作用于预览和将要写入的文件。开关一变，预览立刻变成文件会保存的内容。打开时文件里不得留下原名。冻结下来的原始采样不因这个开关改写。
 
-## 今天数据在谁手里
+缺失在预览里写「不可用」，文件里用同一个词。真实 0 仍按现有格式化显示成 0，不用「不可用」顶替。主窗其它位置的缺数仍是「—」；不改 `CPUPercentText.missing`。
 
-`930bac1` 上只有一条采样通路。
+取消预览，或取消系统保存对话框，都不写文件。保存失败时留下同一份冻结和预览，可以再选位置；不重新取样。只有目标文件已经替换成功才显示「已保存」。覆盖只发生在系统保存面板已经让用户确认替换之后，应用不静默覆盖。
 
-```
-MemorySampler.sample()（actor）
-        │ 一次调用产出不可变 SampledFrame
-        ▼
-MemoryDashboardVM.applySample（@MainActor，唯一 VM）
-        │ 只有被 SamplingRequestGate.accept 的成功帧才改下面这些发布值
-        ├─ snapshot / systemCpuPercent / busiestCorePercent
-        ├─ hostNetworkRates / hostDiskRates / rows
-        ├─ processListFailed / processPermissionFootnote / topMemorySeries
-        └─ usageHistory、cpuHistory、networkHistory、diskHistory 各 append 一次
-失败的已接受帧只把 samplingFailed 设为 true，不改上面的数，也不清曲线。
-未接受的 flight 不写这些字段。
-```
+没有有效帧时，点击只提示「暂无可保存的采样，请稍后重试」。不打开空预览，不生成文件。
 
-保存要读的是这份已经发布的 VM 状态，不是 actor 里面的私有缓存。`MemorySampler` 的 `cpuTicks`、`diskTicks`、`energyTicks`、`previousHostCPU`、`previousHostNetwork`、`previousHostDisk`、`selectedMemorySeries`、`selectedCPUSeries` 都没有公开 getter。保存路径不 `await sampler`。
+预览里的 pid 不能退出、不能强制退出、不能定位、不能 `setSelectedPid`。保存之后 pid 可能被系统复用。
 
-`detail` 只在有选中 pid 且该 pid 仍在本帧 `rows` 里时出现，序列也只属于这个 pid。`topMemorySeries` 最多 5 个 pid 的内存点。二者都不是「全部进程的曲线」。
+## 明确不做
 
-另外两条时钟不在这一帧里：
+- 不新增采样，不为保存调用 `MemorySampler.sample()`、`HostMachineReader.read()`、`ProcessEnumerator` 或 `WindowedAppLookup`。
+- 不追溯点击之前的历史，不把已有曲线写进文件，不长期录制。
+- 不调用 `MemoryGrowthSignal.evaluate`，不做自动判因或泄漏结论。
+- 不上传、不分发、不分享。
+- 不做历史列表、快照库、对比、覆盖管理，也不做应用内导入、查看入口、只读回看窗口或内嵌浏览器。
+- 不改采样节奏、过滤、排序、退出和其它页的既有行为。
+- 不夹带空态文案、窗口 frame autosave，不处理 #74。
+- 不给 `MemorySnapshot`、`ProcessRow`、`SampledFrame` 加 `Codable`。
 
-- `thermalNotice`：`ProcessInfo.thermalStateDidChangeNotification` 到达时改写，没有 `capturedAt`。总览在读它，菜单栏不读。
-- `machineFacts`：只有本机页开着才由 `HostMachineReader.read()` 填写，之后每 30 秒一次。类型上没有采样时间。从未打开本机页时是 `nil`。本机页上的 CPU、内存、交换和曲线仍然来自采样器，不来自这次读取。
+## 冻结哪一份数据
 
-菜单栏轻量条是 `MenuBarPopoverSnapshot.project` 的只读投影。`samplingFailed == true` 时，它把压力和已用内存收成 `nil`，进程行却仍可能留着上一帧。保存不能走这个投影，否则会把「上一帧还在，本轮失败」写成「主机数缺失」。
+`930bac1` 上只有一条采样通路。`MemorySampler.sample()` 产出不可变 `SampledFrame`。`MemoryDashboardVM.applySample` 在 `@MainActor` 上发布。只有 `SamplingRequestGate.accept` 接受的成功帧才改 `snapshot`、`systemCpuPercent`、`busiestCorePercent`、`hostNetworkRates`、`hostDiskRates`、`rows`。失败的已接受帧只把 `samplingFailed` 设为 true，保留上一份数字。未接受的 flight 不写这些字段。
 
-## 为什么不是同一瞬间
+冻结函数是 `@MainActor` 同步函数。开头把要用的发布值抄进局部常量，函数体内没有 `await`。它不读 `MemorySampler` 的私有 tick、上一帧计数器或选中曲线。`SamplingRequestGate.currentFlight` 没有发布到 VM；在途采样不打断这次冻结，稍后 `accept` 也不改已经冻结的值。`isRetrying` 同样不把点击时间写成新的采样时间。
 
-`MemorySampler.sample()` 在主机内存读取成功之后才取 `capturedAt = Date()`（`MemorySampler.swift`）。随后仍在同一次调用里顺序发生：
+不要用 `MenuBarPopoverSnapshot.project`。`samplingFailed == true` 时该投影把压力和已用内存收成 `nil`，进程行却可能还在，会把「上一帧还在」写成「主机数缺失」。
 
-1. 把压力点追加进 `pressureSeries`，标签是这个 `capturedAt`。
-2. `SwapUsageReader.read()`。失败则 `swapUsedBytes == nil`，成功的 `0` 是空交换文件。
-3. 整机 CPU、最忙一核。两帧 tick 求差。第一帧、读失败、核数变化都是 `nil`。这次读取自己没有单独的 `Date`。
-4. 主机网络、主机磁盘。传进 reader 的时间是上面的 `capturedAt`，不是读到计数器时再取的钟。速率是相邻两帧计数差除以两个 `capturedAt` 的间隔。第一帧、失败、回绕是 `nil`。真实 0 速率可以出现。
-5. `proc_listpids`，再对每个 pid 做 `proc_pidinfo`、`proc_pidpath` 和一次 `proc_pid_rusage`（`rusage_info_v6`）。进程 CPU、磁盘、能耗、唤醒的速率分母用的也是这个 `capturedAt`，计数器是在这之后读的。
+不要用 `sortedRows`、`visibleRows`、`AppGroupProjection`、`TopConsumer.leading`、`MemoryGrowthTopSeries` 或菜单栏 Top3。`topMemorySeries` 跟着内存页表头排序，最多 5 条，还会丢掉掉出前 5 的 pid，和这次的「未过滤、按内存」不是同一套。
 
-因此一帧 `SampledFrame` 是一次已接受采样的发布单位，不是一个物理瞬间。速率是以 `capturedAt` 为末端标签的区间值。进程表比 `capturedAt` 更晚才读完。交换和内存共用这个标签，但交换是下一次 sysctl，可以单独缺失。
+`thermalNotice` 和 `machineFacts` 没有 `capturedAt`。前者随热状态通知变化，后者只在本机页打开后每 30 秒读一次。二者都不进入冻结值。
 
-失败时 VM 继续显示上一份成功帧，`snapshot.capturedAt` 不变，`samplingFailed == true`。点击时刻的 `Date()` 只表示用户何时要求保存，不能拿来替换 `capturedAt`。
+`rows` 只在成功帧里被赋值为 `frame.rows`。进程列表失败时这一帧仍成功：主机数是新的，`rows` 为空，`processListFailed == true`。冻结沿用这个空表，不把上一帧进程补回来。
 
-进程列表整帧失败时，这一帧仍是成功：主机块是新的，`rows` 被换成空数组，`processListFailed == true`。保存必须沿用这个空表，不能把上一帧的进程补回来。
+### 不是同一物理瞬间
 
-`rows` 只在 `applySample` 的成功分支被赋值为 `frame.rows`。采样器在返回前按内存占用降序、pid 升序排好。过滤和按 App 合并不改这份数组。
+`capturedAt` 取在主机内存读成功之后（`MemorySampler.swift`）。同一次 `sample()` 里，交换、整机 CPU、最忙一核、网络、磁盘和 `proc_listpids` 都发生在这个时间点之后。CPU、网络、磁盘速率是相邻已接受帧的差值，标签落在这次 `capturedAt` 上，不是瞬间值。进程计数器读得更晚。交换可以单独缺失。压力只保存已经判定的 `normal` / `elevated`，保存时不重读内核压力。
 
-## 已有的环不能当成现场
+`savedAt` 是点击冻结的时间，由调用方传入。它和 `capturedAt` 都不再在预览或写文件时另取时钟。
 
-| 环 | 所有者 | 今天怎么长 | 和单次现场的关系 |
-| --- | --- | --- | --- |
-| `snapshot.pressureSeries` | 采样器，随快照发布 | 每次主机内存成功追加 `pressureMetric`（已用比例），最多 90 点 | 多时刻。schema 1 不写 |
-| `usageHistory` | VM | 已接受成功帧用 `snapshot.capturedAt` 追加已用字节。`record(nil)` 会清空，但失败分支不调用它 | 同上 |
-| `cpuHistory` / `networkHistory` / `diskHistory` | VM | 同一 `capturedAt`。`nil` 跳过，不写成 0，也不删旧点 | 缺口是「没追加」，不是 0。末端时间可以早于当前 `capturedAt` |
-| 选中 pid 的 `memorySeries` / `cpuSeries` | 采样器，经 `detail` 发布 | 换 pid 时两条都清空。内存点每次都追加（字节总是有值）。CPU 只在 `cpuPercent != nil` 时追加 | 只有当前选中的一个 pid |
-| `topMemorySeries` | 采样器里的 `MemoryGrowthTopStore` | 内存页排序下最多 5 个 pid，掉出前 5 当轮丢弃。可以 `adopt` 选中 pid 的内存环 | 不是按 App，也没有 CPU 点 |
+已用字节沿用 `snapshot.usedBytes`（已对总量做过上限截断）。四段分类单独抄 `MemoryBreakdown`，不把它们重新加成已用。非有限浮点在做成文档之前视为缺失，不写成 0。
 
-`ChartSample.id` 是进程内递增号，换一次启动就无意义。就算将来做 R1，身份也只能是时间和值，不能是这个 id。
+## 导出文档
 
-`MemoryGrowthSignal` 是对选中进程内存环的软判断（不足 / 上涨 / 无）。保存不调用 `evaluate`，不把判断结果写进文件。上涨不是泄漏结论，文件也不新增这种结论。
+独立类型，建议名 `SnapshotExport`。原始冻结值只留这次要的字段，从拷贝时就没有 `executablePath`、`bundleIdentifier`、曲线和命令行。显示名留在冻结值里，供开关关闭时使用。
 
-## 最小模型（schema 1）
+`SnapshotDocument.make(frozen:hideNames:calendar:timeZone:)` 是纯函数，产出预览和文件共用的字符串。格式化只发生在这里。预览不再调用 `ByteFormat` 或 `CPUPercentText`。HTML 不再做第二次数字格式化。
 
-新类型单独定义，例如 `SavedScene`。不要给 `MemorySnapshot`、`ProcessRow`、`SampledFrame` 加 `Codable`。那些类型带着路径、包标识、压力曲线、图表 id 和按 App 合并的派生旗标，直接编码会把 UI 结构冻结成文件格式。
-
-编码结果是一份 JSON。`schemaVersion` 缺失或不等于 `1` 时，解码失败，不产生填 0 的对象，也不尝试迁移。
-
-```json
-{
-  "schemaVersion": 1,
-  "savedAt": "2026-11-09T04:40:00Z",
-  "capturedAt": "2026-11-09T04:39:58Z",
-  "samplingFailed": false,
-  "processListFailed": false,
-  "rateBasis": "intervalEndingAtCapturedAt",
-  "memory": {
-    "usedBytes": 0,
-    "totalBytes": 0,
-    "appBytes": 0,
-    "wiredBytes": 0,
-    "compressedBytes": 0,
-    "cachedBytes": 0,
-    "pressure": "normal",
-    "swapUsedBytes": null
-  },
-  "cpuPercent": null,
-  "busiestCorePercent": null,
-  "network": { "inboundBytesPerSecond": null, "outboundBytesPerSecond": null },
-  "disk": { "readBytesPerSecond": null, "writeBytesPerSecond": null },
-  "processes": []
-}
-```
-
-`rateBasis` 固定为这一个字符串，表示 CPU、最忙一核、网络、磁盘以及（若选了 Q2）进程速率都是结束于 `capturedAt` 的区间，不是瞬间值。它不是给用户看的句子。
-
-内存块抄 `MemorySnapshot` 的已用、总量、四段分类、两档压力和 `swapUsedBytes`。不抄 `pressureMetric`，也不重算已用字节。发布值里的 `usedBytes` 已经对总量做过上限截断，分类之和可能更大；文件保留这两个已发布的数。压力只存已经判定的 `normal` / `elevated`，不在保存时重读 `kern.memorystatus_vm_pressure_level`，因此看不出当时是内核档还是启发式。
-
-`processes` 的元素等 P/Q 选定后再定稿。在那之前，schema 1 只规定：数组来自同一次同步读取的 `rows`（P3 只取这个数组的前缀，不另排序）；每个对象只含选定的键；`executablePath` 和 `bundleIdentifier` 不出现；`cpuPercent` 用 `null` 表示缺失；`memoryBytes` 用整数，`0` 只有在来源行真是 0 时才出现；`memorySource` 只抄 `footprint` 或 `resident`，不把回退行改记成占用。
-
-非有限浮点在编码前变成 `null`。日期用 UTC 的 ISO-8601。不把 JSON 数字的默认 `Date` 策略留成未指定。
-
-schema 1 不包含：曲线、`machineFacts`、`thermalNotice`、过滤、排序、当前页、退出记录、上涨判断、菜单栏投影、权限脚注文案。本机页和降频若要进入文件，必须自带自己的读取时间；今天这两个类型都没有该字段，所以不能塞进 `capturedAt`。保存时禁止调用 `HostMachineReader.read()` 来补这个时间。
-
-## 缺失和陈旧
-
-| 情况 | 文件里 |
+| 文档字段 | 规则 |
 | --- | --- |
-| 可选读数是 `nil`（CPU 第一帧、交换失败、速率失败或回绕） | JSON `null`。不用 0，不用空字符串顶上 |
-| 交换、足迹、速率的真实 0 | 数字 0，并保留来源旗标 |
-| `samplingFailed == true` 且仍有上一份 `snapshot` | 保留那份 `capturedAt` 和数字，`samplingFailed` 为 true。`savedAt` 可以更晚 |
-| 进程列表失败 | 主机块仍在，`processes` 为 `[]`，`processListFailed` 为 true |
-| 从未成功采到主机内存（`snapshot == nil`） | 按 E1 不写文件。不发明 `capturedAt` |
-| 手动重试进行中（`isRetrying`） | 仍保存当前已发布值。不把「正在重试」写成新的采样时间 |
-| 周期采样还在 actor 里、尚未 `accept` | VM 没有「在途」发布位（`SamplingRequestGate.currentFlight` 是私有的）。保存不读它，也不等待它 |
+| 采样时间、保存时间 | 同一套日历和时区格式化。预览和文件用这两条已经格式化的字符串 |
+| 非实时 | 固定句「非实时。采样时间不是现在，也不是打开文件的时间。」 |
+| 速率 | 固定句「CPU、网络和磁盘速率是到采样时间为止的一段差值，不是同一瞬间的读数。」 |
+| `samplingFailed` | 固定句「更晚的采样没有回来。下面仍是上一次已发布的读数，采样时间没有改成保存时间。」不改 `capturedAt` |
+| 内存、压力、CPU、最忙一核、网络两侧、磁盘两侧、交换 | 缺失为「不可用」。真实 0 走现有格式：内存 `ByteFormat.memory` 的「0 字节」，CPU `CPUPercentText` 的「0.0%」，速率「0 字节/秒」 |
+| 压力 | `PressureLevel.title`：「正常」或「偏高」 |
+| 内存来源 | 内存占用，或驻留内存 |
+| 进程名 | `hideNames == false` 时用冻结的显示名；`true` 时用固定词「已隐藏」 |
+| 不足 5 且列表成功 | 「当前只有 N 个进程。」N 是这一帧 `rows.count`，可以是 0 |
+| 列表失败 | 「进程列表没有读到。」进程区为空，不写「当前只有 0 个进程。」 |
+| 名次 | 固定句「名次只按内存占用排列，不表示卡顿原因。」 |
 
-回看时，`null` 显示成缺失，`samplingFailed == true` 时必须能看出数字属于 `capturedAt` 而不是 `savedAt`。具体句子未锁定。
+前 5 的排序由导出函数自己做：`memoryBytes` 降序，相同则 `pid` 升序，再取前缀 5。不依赖 `rows` 今天碰巧已是这个顺序。同名进程保持多行，不按 App 相加。
 
-## 捕获、写入、失败和覆盖
+`hideNames` 只影响 `SnapshotDocument`。再次 `make` 时仍读同一份冻结值。开关的无障碍值用「开」「关」。默认关，预览先显示名称；这是「可隐藏」，不是默认抹掉名称。
 
-捕获是 `@MainActor` 上的同步函数：开头把要用的发布值抄进局部常量，函数里没有 `await`。然后纯函数把这些常量收成 `SavedScene`。这个函数不调用 `sample()`、`HostMachineReader.read()`、`ProcessEnumerator`、`WindowedAppLookup`，也不改 `filter`、排序、`selectedPid`、采样门或时钟。
+## 预览
 
-系统保存面板在捕获之后才出现。面板打开期间新的采样可以继续改 VM，但不再改已经冻结的这份值。用户取消面板：丢弃这份值，不写盘，不把它留成下一次的缓存。写入失败：不重新捕获。用户要再点一次保存，才会拿到下一次点击时的发布值。
+工具栏在 `MemoryDashboardView` 的 `.toolbar` 里单独加一个 `ToolbarItem`，标题「保存当前快照」。不要放进现有 `ToolbarItemGroup(placement: .primaryAction)` 的过滤 `HStack`：那个组在本机页整组消失，而且动画绑着 `selectedPage`。
 
-写入顺序：
+`snapshot == nil`：不创建冻结值，不 present 预览，不打开保存面板。提示全文就是「暂无可保存的采样，请稍后重试」。这不是采样失败空态，不复用 `SamplingRetryChrome`。
 
-1. 先在内存里得到完整 JSON `Data`。编码失败则不碰目标路径。
-2. 在目标的同一目录写临时文件，写完并关闭。
-3. 用替换把临时文件换成目标。替换失败时删掉还留着的临时文件，目标原字节保持不变。
-4. 不写 UserDefaults，不写一份应用自管的快照目录，不维护索引。
+有有效帧：冻结，然后在主窗上 present 只读 sheet。sheet 只读 `SnapshotDocument`。进程行不是按钮。sheet 上有「隐藏进程名」开关、「保存到本机」和取消。
 
-覆盖只发生在用户于保存面板里选定一个已存在的路径之后。没有面板确认就不得替换。文件由用户放在自己选的位置；应用不提供快照列表、重命名或批量删除。
+取消 sheet：丢掉冻结值，不写文件。
 
-不加密。非沙盒，不为这件事加 entitlement。文件可以含进程显示名（P1/P3），不能含可执行路径和包标识。
+「保存到本机」才创建 `NSSavePanel`。面板打开期间 VM 可以继续采样，冻结值不变。`savedAt` 也不改成确认面板的时间。
 
-## 保存和重新打开的边界
+取消面板：不写文件，sheet 和冻结值留着，可以再点「保存到本机」。
 
-重新打开只解码这一份文件，放进只读的展示值。展示值不是 `MemoryDashboardVM` 的 `snapshot`，也不调用 `setSelectedPid`。
+写入失败：不显示「已保存」。sheet 留着同一份文档，说明「没能写入所选位置。这一份采样还在，可以再试。」用户再点「保存到本机」仍用这份冻结值。
 
-回看里的 pid 不能送进 `quitSelected`、`NSRunningApplication.terminate`、`forceTerminate` 或 `ProcessActions` 的信号路径。保存之后 pid 可以被系统复用，拿旧 pid 去退会出现在场上的另一个进程。
+写入成功：在同一 sheet 显示「已保存」。在替换成功之前不得显示这四个字。应用不调用 `NSWorkspace.open`，避免把「已保存」说成「已经打开」。
 
-打开文件不启动采样，不改变前后台节奏，不改主窗的页、过滤、排序和选中。关掉回看不删除用户的文件。
+主窗在 sheet 打开时继续按原来的 1.5 秒 / 3 秒采样。sheet 不跟随新帧。
 
-主窗在回看打开时继续按原来的 1.5 秒 / 3 秒采样。回看不跟随这些新帧更新。
+## 文件格式
 
-## 现有 App 汇总和单 pid 曲线
+文件是一份自包含的 UTF-8 HTML，扩展名 `.html`。Finder 双击后由系统交给默认浏览器阅读。这是回看路径。
 
-「占用最多的 App」是 `TopConsumer.leading(in:)`（`Pulse/Views/OverviewCards.swift`）。它按显示名把未过滤 `rows` 的内存加总，再取合计最大的一组，没有自己的曲线。按 App 合并是 `AppGroupProjection.combine`：内存和线程相加；CPU 或磁盘任一成员缺失则合计缺失；能耗和唤醒可以是部分和，并带 `energyReadingIsPartial` / `wakeupReadingIsPartial`。这是展示投影，不写回采样器。
+选择 HTML，是因为要在不装额外应用的 Mac 上打开就能阅读。JSON 或 Markdown 在系统里通常只是源码。PDF 需要单独的生成器，纯文本没有标题和表。应用内的 `WKWebView` 不采用。
 
-单 pid 曲线只有两条发布通路：侧栏当前选中 pid 的内存主曲线和 CPU 辅曲线，以及前 5 个 pid 的内存环。没有「每个 App 一条曲线」，也没有全部进程的历史。
+约束：
 
-schema 1 不保存这两类派生结果。回看要显示主要进程，就显示选定候选下的进程数组，而不是重放 App 汇总或单 pid 曲线。回看也不为了画图标去保存 `bundleIdentifier`；进程退出后图标本来就可能不在。
+- 生成器只写固定标签：`html`、`head`、`body`、`meta`、`title`、`style`、`h1`、`p`、`h2`、`table`、`thead`、`tbody`、`tr`、`th`、`td`。
+- `<title>` 固定为「Pulse 采样」，不含进程名或路径。
+- CSS 是生成器里的常量，不插入采样文本。
+- 不写 `<script>`，不写事件处理属性，不写 `href`、`src`、`javascript:` 或 `data:`。进程名即使看起来像网址，也只是正文，不做成链接。
+- 不引用远程样式、字体、图片或脚本。
+- 采样文本只经转义函数进入正文。转义至少包括 `&`、`<`、`>`、`"`、`'`，以及 NUL、U+2028、U+2029。
+- 隐藏进程名时，原名不得出现在正文、注释、属性或文件名的任何位置。
+- 应用没有这份 HTML 的解码器，没有 schema 版本分支，没有未知版本迁移。
 
-## 隐私
+默认文件名用保存时间，形如 `Pulse-快照-yyyyMMdd-HHmmss.html`。文件名不含进程名。`NSSavePanel` 允许的类型是 HTML。不关闭系统自带的替换确认。
 
-`ProcessEnumerator` 用 `proc_pidpath` 得到可执行路径，`ProcessIdentityResolver` 再据此读 App 包的显示名和 `bundleIdentifier`。路径可以落在用户目录。显示名通常是 App 名，也可以是可执行文件的 `comm`。
+## 写入
 
-schema 1 允许的身份数据只有产品选定的显示名（P1/P3）或只有 pid（P2）。路径和包标识不编码、不出现在键里。不保存命令行参数；今天的进程行本来也没有参数数组，保存时不要为了补全而去读。
+字节先在内存里完成。生成失败则不碰目标路径。
 
-## 依赖、模块边界和风险
+然后在目标的同一目录写临时文件，关闭后再替换到目标。替换失败时删掉还留着的临时文件，目标原有字节保持不变。成功后目录里不留临时文件。
 
-不增加 Swift 包。JSON 用 Foundation。保存面板和打开面板用 AppKit，留在 App target。
+不写 UserDefaults，不写应用自管的快照目录，不维护索引。不加密。不为这件事加 entitlement。非沙盒保持现状。
 
-`Package.swift` 的 `SamplingCore` 用显式 `sources`，并整目录排除 `ViewModels/`、`Views/`。`Pulse.xcodeproj` 没有同步文件夹。将来的实现要同时登记：
+## 模块边界
+
+不增加 Swift 包。HTML 和转义只用 Foundation，放进 `SamplingCore`，方便 `swift test`。保存面板留在 App target。
+
+`Package.swift` 用显式 `sources`，并整目录排除 `ViewModels/`、`Views/`。`Pulse.xcodeproj` 没有同步文件夹。将来的实现要同时登记：
 
 | 将来的文件 | 包 | 工程 |
 | --- | --- | --- |
-| `Pulse/Models/SavedScene.swift`（模型、编码、解码） | 写入 `sources` | `PBXBuildFile`、`PBXFileReference`、Models group、Sources |
-| `Pulse/Models/SavedSceneFile.swift`（临时文件和替换；只用 Foundation） | 写入 `sources` | 同上 |
-| `Pulse/ViewModels/MemoryDashboardVM+SavedScene.swift`（同步捕获，不采样） | 不用写。`ViewModels` 已排除 | 同上，group 用 ViewModels |
-| 回看视图 | 不用写。`Views` 已排除 | 等 V1 或 V2 选定后再加。未选定前不加这个文件 |
+| `Pulse/Models/SnapshotExport.swift`（冻结投影、文档、转义、HTML） | 写入 `sources` | `PBXBuildFile`、`PBXFileReference`、Models group、Sources |
+| `Pulse/Models/SnapshotExportFile.swift`（临时文件和替换） | 写入 `sources` | 同上 |
+| `Pulse/ViewModels/MemoryDashboardVM+SnapshotExport.swift`（同步冻结） | 不用写。`ViewModels` 已排除 | ViewModels group 与 Sources |
+| `Pulse/Views/SnapshotExportPreview.swift`（保存前的只读 sheet） | 不用写。`Views` 已排除 | Views group 与 Sources |
 
-测试放在 `Tests/SamplingCoreTests/`，由 `swift test` 编译，不进 App target 的 `pbxproj`。
+工具栏按钮改在已有的 `MemoryDashboardView.swift`，该文件已经在工程里。不新增第二套 VM。
 
-风险：
+本设计不创建这些 Swift 文件。
 
-- 直接编码 `ProcessRow` 会把 `executablePath` 写进用户文件。
-- 点保存时 `await sample()` 会多做一次全表扫描，并把文件时间拖到面板期间的另一帧。
-- 用菜单栏投影当来源，失败帧的主机数会丢，进程行却还在。
-- 把 `machineFacts` 或 `thermalNotice` 和 `capturedAt` 写在一起，会合成一个不存在的时刻。
-- 回看 pid 接上现有退出命令，可能碰到 pid 复用。
-- 只改 `pbxproj` 不改 `sources`，或只改 `sources` 不改工程，会让 `swift test` 和 App 构建看到的类型不一致。
-- 在 schema 1 里用可选数组容纳 R1，等于不做版本边界。
+## 实现时的验收与红绿顺序
 
-本设计不实现上述文件。
+下面是以后那个实现 PR 的顺序，不是本 PR 的结果。本环境没有执行这些测试。文档 PR 的 CI 通过也不表示 Mac 上的预览、保存面板或 VoiceOver 已经通过。
 
-## 实现时的测试顺序
+先加会失败的 `SnapshotExportTests`，再写模型：
 
-下面是以后那一个实现 PR 的顺序，不是本 PR 的结果。本环境没有执行这些测试。
+- 预览字符串和 HTML 正文来自同一次 `SnapshotDocument`。同一缺失字段两边都是「不可用」；同一真实 0 两边都是格式化后的 0，不是「不可用」。
+- 交换、CPU、网络一侧、磁盘一侧可以单独缺失，另一侧的 0 不受影响。
+- 非有限浮点变成「不可用」，不是 0。
+- `samplingFailed == true` 时，文档里的采样时间仍是输入的 `capturedAt`，保存时间是输入的 `savedAt`。
+- `snapshot == nil` 的门闩不产生文档。调用方只得到「暂无可保存的采样，请稍后重试」。
+- 前 5 使用未过滤行，按内存降序、pid 升序。当前表头若是 CPU 排序、名称过滤开着、或「按 App」开着，结果仍是原来的 5 个 pid，同名进程不合并。
+- 列表成功且不足 5 时出现「当前只有 N 个进程。」列表失败时出现「进程列表没有读到。」且没有进程行。
+- 名次说明句在文档和 HTML 里都在。
+- `hideNames == true` 时，预览名称和 HTML 全文都不含原名，名称处是「已隐藏」。用带 `<script>`、引号和 `https://` 的哨兵名做这一条。
+- `hideNames == false` 时，哨兵名只以转义形式出现：`<` 变成 `&lt;`，HTML 里没有 `<script`、事件属性、`href` 或 `src`。
+- HTML 不含路径、包标识、曲线点、进程磁盘、能耗和唤醒字段名或哨兵值。
+- 纯函数不读时钟：两个时间都由调用方传入。
 
-先加会失败的 `SavedSceneTests`，再写模型：
+再为替换加会失败的测试：目标已有内容时，生成失败或替换前写入失败不改变目标字节；成功后目标是这份 HTML，目录里不留临时文件。
 
-- 速率和交换的 `nil` 编码后再解码仍是 `nil`，不是 0。
-- 交换和内存占用的真实 0 仍是 0；`memorySource == .resident` 不会变成 `.footprint`。
-- `samplingFailed == true` 时，`capturedAt` 保持输入值，不改成 `savedAt`。
-- `schemaVersion` 不是 1 时解码抛错，得到的不是全 0 对象。
-- 非有限浮点变成 `null`。
-- 编码结果的键集合不含 `executablePath`、`bundleIdentifier`、`pressureSeries`、`samples`。
-- 进程列表失败的输入得到空 `processes`，主机块仍在。
-- 纯函数不读取时钟：`savedAt` 和 `capturedAt` 都由调用方传入。
+接线测试沿用 `WiringSourceText`，只证明源码约束，不是 SwiftUI，也不是 VoiceOver：
 
-然后为文件替换加会失败的测试：目标已有内容时，编码失败或替换前的写入失败不改变目标字节；成功后目标是完整 JSON，目录里不留临时文件。
+- 冻结函数没有 `sample()`、`HostMachineReader.read()`、`ProcessEnumerator`。
+- 工具栏按钮不在过滤 `HStack` 内，本机页分支不会把它一起藏掉。
+- 预览和写文件都接收 `SnapshotDocument`，不存在「界面用占位、HTML 仍写 `row.name`」的第二条路径。
+- 预览类型里没有 `quitSelected`、`forceTerminate`、`selectPidIfPresent`、`NSWorkspace.open`。
+- 「已保存」只出现在写入成功的分支。
 
-P/Q 选定之后再补一条「进程元素只有约定的键」。未选定前不要用测试把某一候选写成既成事实。
+Mac 上要另做、且本设计未做的检查：工具栏在各页可点、预览与隐藏开关、系统保存面板的取消和替换确认、Finder 双击打开的页面没有脚本和远程请求、VoiceOver 能读到「非实时」、采样时间和「不可用」。实现 PR 再把真正跑过和没跑的步骤写进 `docs/TECH.md` 冒烟清单。本文不改那份清单。
 
-入口、面板和回看视图若要做源码接线测试，沿用 `WiringSourceText`：断言捕获函数没有 `sample()`、回看路径没有 `quitSelected`。这种测试不是 SwiftUI，也不是 VoiceOver。
+## 本设计不改的文档
 
-Mac 上的保存面板、回看布局和 VoiceOver 本设计未验。实现 PR 再把真正要跑的步骤写进 `docs/TECH.md` 的冒烟清单，并标明哪些没跑。本文不改那份清单。
+`docs/TECH.md` 仍只描述 `main` 上已有的实现。能力还没落地，所以不往 TECH 里追加一期。
 
-## 本设计故意不改的文档
+`docs/PRD.md` 和根 `README.md` 的当前范围也不改。等实现 PR 落地时再改。
 
-`docs/TECH.md` 只描述 `main` 上已有的实现。这条能力还没有，所以不往 TECH 里追加一期，也不改冒烟清单。
+不新增 ADR。内存占用仍是 ADR-0001，能耗和唤醒仍是 ADR-0002。这次保存不使用进程磁盘、能耗和唤醒，也不改变它们的口径。
 
-`docs/PRD.md` 和根 `README.md` 的当前范围也不改。范围要等产品把上面的候选锁定、并且行为真的落地，再在实现 PR 里改。
-
-不新增 ADR。内存占用仍是 ADR-0001，能耗和唤醒仍是 ADR-0002。保存不改变这两个口径。
-
-不改 `docs/specs/00`–`22` 的正文，不改空态文案，不改窗口 frame autosave，不处理仍 open 的 #74。
+不改 `docs/specs/00`–`22` 的正文。
