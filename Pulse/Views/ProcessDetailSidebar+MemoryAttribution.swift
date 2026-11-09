@@ -59,19 +59,15 @@ extension ProcessDetailSidebar {
             samples: detail.memorySeries,
             placeholder: "正在采集内存曲线",
             summary: MemoryDetailAttribution.curveSummary(
-                pidLine: vm.selectedPage == .memory ? attribution.curvePid : nil,
-                recentAndPeak: memorySummary(detail.memorySeries)
+                page: vm.selectedPage,
+                samples: detail.memorySeries,
+                curvePid: detail.row.pid
             ),
             tint: PulsePalette.accent,
             domain: byteDomain(detail.memorySeries),
             formatY: { ByteFormat.memory(UInt64(max(0, $0))) },
             summaryScale: 0.65
         )
-    }
-
-    private func memorySummary(_ samples: [ChartSample]) -> String {
-        guard let latest = samples.seriesLatest, let peak = samples.seriesPeak else { return "" }
-        return "最近 \(ByteFormat.memory(UInt64(max(0, latest)))) · 峰值 \(ByteFormat.memory(UInt64(max(0, peak))))"
     }
 
     private func byteDomain(_ samples: [ChartSample]) -> ClosedRange<Double> {

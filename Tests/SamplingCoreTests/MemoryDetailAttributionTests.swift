@@ -84,6 +84,65 @@ final class MemoryDetailAttributionTests: XCTestCase {
         }
     }
 
+    /// One real sample still has a latest value and a peak. The memory page must not show them.
+    func testOneRealSampleDoesNotKeepTheRecentPeakSummary() {
+        let samples = [
+            ChartSample(id: 1, date: Date(timeIntervalSince1970: 1_700_000_000), value: 2_097_152)
+        ]
+        let sentence = MemoryDetailAttribution.recentAndPeak(samples)
+        XCTAssertEqual(samples.count, 1)
+        XCTAssertEqual(sentence, "最近 2 MB · 峰值 2 MB")
+        XCTAssertFalse(sentence.isEmpty)
+
+        let summary = MemoryDetailAttribution.curveSummary(page: .memory, samples: samples, curvePid: 42)
+        XCTAssertEqual(summary, "")
+        XCTAssertFalse(summary.contains("最近"))
+        XCTAssertFalse(summary.contains("峰值"))
+        XCTAssertFalse(summary.contains("PID"))
+    }
+
+    func testMemorySummaryPointCountAndOtherPagesStayOnTheSampleSentence() {
+        let none: [ChartSample] = []
+        XCTAssertEqual(MemoryDetailAttribution.recentAndPeak(none), "")
+        XCTAssertEqual(MemoryDetailAttribution.curveSummary(page: .memory, samples: none, curvePid: 7), "")
+
+        let one = [ChartSample(id: 1, date: Date(timeIntervalSince1970: 1_700_000_000), value: 1_048_576)]
+        XCTAssertEqual(MemoryDetailAttribution.recentAndPeak(one), "最近 1 MB · 峰值 1 MB")
+        XCTAssertEqual(MemoryDetailAttribution.curveSummary(page: .memory, samples: one, curvePid: 7), "")
+
+        let two = [
+            ChartSample(id: 1, date: Date(timeIntervalSince1970: 1_700_000_000), value: 5_242_880),
+            ChartSample(id: 2, date: Date(timeIntervalSince1970: 1_700_000_003), value: 2_097_152)
+        ]
+        XCTAssertEqual(MemoryDetailAttribution.recentAndPeak(two), "最近 2 MB · 峰值 5 MB")
+        XCTAssertEqual(
+            MemoryDetailAttribution.curveSummary(page: .memory, samples: two, curvePid: 7),
+            "PID 7 · 最近 2 MB · 峰值 5 MB"
+        )
+
+        for page in [DashboardPage.cpu, .disk, .network, .machine, .gpu] {
+            XCTAssertEqual(
+                MemoryDetailAttribution.curveSummary(page: page, samples: none, curvePid: 7),
+                "",
+                "\(page) zero"
+            )
+            XCTAssertEqual(
+                MemoryDetailAttribution.curveSummary(page: page, samples: one, curvePid: 7),
+                "最近 1 MB · 峰值 1 MB",
+                "\(page) one"
+            )
+            XCTAssertEqual(
+                MemoryDetailAttribution.curveSummary(page: page, samples: two, curvePid: 7),
+                "最近 2 MB · 峰值 5 MB",
+                "\(page) two"
+            )
+            XCTAssertFalse(
+                MemoryDetailAttribution.curveSummary(page: page, samples: two, curvePid: 7).contains("PID"),
+                "\(page)"
+            )
+        }
+    }
+
     func testTwoOrMorePointsUseTheCurvePidNotTheMemberCount() {
         let attribution = copy(magnitude: row(pid: 42, members: 7), curve: row(pid: 42), points: 2, rising: false)
         XCTAssertEqual(attribution.curvePid, "PID 42")
@@ -123,10 +182,12 @@ final class MemoryDetailAttributionTests: XCTestCase {
             XCTAssertNil(other.curveTitle, "\(page)")
             XCTAssertNil(other.curvePid, "\(page)")
             XCTAssertNil(other.trend, "\(page)")
+            let sentence = recentAndPeak(recent: 1_048_576, peak: 1_048_576)
             let summary = MemoryDetailAttribution.curveSummary(
                 pidLine: other.curvePid,
-                recentAndPeak: recentAndPeak(recent: 1_048_576, peak: 1_048_576)
+                recentAndPeak: sentence
             )
+            XCTAssertEqual(summary, sentence, "\(page)")
             XCTAssertFalse(summary.contains("PID"), "\(page)")
             XCTAssertFalse(summary.contains("这条趋势属于"), "\(page)")
         }

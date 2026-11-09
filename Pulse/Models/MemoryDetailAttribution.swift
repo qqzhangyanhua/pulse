@@ -43,10 +43,26 @@ struct MemoryDetailAttribution: Equatable, Sendable {
         )
     }
 
-    /// Puts the pid in front of the existing recent/peak sentence.
-    /// No pid line, or an empty recent/peak sentence, leaves that sentence unchanged.
+    /// Puts the pid in front of an already formatted recent/peak sentence.
+    /// A missing pid line leaves that sentence unchanged. Memory-page blanking for
+    /// fewer than two points is `curveSummary(page:samples:curvePid:)`.
     static func curveSummary(pidLine: String?, recentAndPeak: String) -> String {
         guard let pidLine, !recentAndPeak.isEmpty else { return recentAndPeak }
         return "\(pidLine) · \(recentAndPeak)"
+    }
+
+    /// Latest sample and the max, same sentence the chart used before attribution.
+    /// One sample still has both, so this string is not itself the memory-page summary.
+    static func recentAndPeak(_ samples: [ChartSample]) -> String {
+        guard let latest = samples.last?.value, let peak = samples.map(\.value).max() else { return "" }
+        return "最近 \(ByteFormat.memory(UInt64(max(0, latest)))) · 峰值 \(ByteFormat.memory(UInt64(max(0, peak))))"
+    }
+
+    /// Memory page hides the summary until two points exist. Other pages keep it.
+    static func curveSummary(page: DashboardPage, samples: [ChartSample], curvePid: Int32) -> String {
+        let sentence = recentAndPeak(samples)
+        guard page == .memory else { return sentence }
+        guard samples.count >= 2 else { return "" }
+        return curveSummary(pidLine: "PID \(curvePid)", recentAndPeak: sentence)
     }
 }
