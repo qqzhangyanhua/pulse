@@ -36,11 +36,11 @@
 | [20-top-app-locate.md](20-top-app-locate.md) | 二十期：「占用最多的 App」定位 |
 | [21-history-curve-missing.md](21-history-curve-missing.md) | 二十一期：历史曲线当前值缺失说明 |
 | [22-growth-help-copy.md](22-growth-help-copy.md) | 二十二期：上涨帮助句（已被取代：措辞改为内存占用） |
-| [31-save-current-snapshot.md](31-save-current-snapshot.md) | 保存当前快照：首版已锁定的落地前技术设计。未实现。文件号不是期次立项 |
+| [31-save-current-snapshot.md](31-save-current-snapshot.md) | 保存当前快照：落地前技术设计。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 
 二十三期以后已经落地的工作没有单独的设计稿，需求和结论记录在对应的 issue 和 PR 里。下表收到二十八期；更后的期次以对应 PR 为准，不在这里补写。
 
-`31-save-current-snapshot.md` 登记在上表只为了能找到它。它还在评审，不是 `main` 上的行为，也不是实现授权。首版的预览、前 5 进程和本机 HTML 文件已在稿内写死，供以后的实现对照。落地之后，这份稿和其它归档一样不再改。
+`31-save-current-snapshot.md` 登记在上表只为了能找到它。首版的预览、前 5 进程和本机 HTML 文件已在稿内写死。实现落地后，当前行为以 TECH.md 为准；这份稿和其它归档一样不再改。
 
 | 期数 | 内容 | PR |
 | --- | --- | --- |
