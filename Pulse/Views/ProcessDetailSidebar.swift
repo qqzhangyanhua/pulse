@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct ProcessDetailSidebar: View {
-    @EnvironmentObject private var vm: MemoryDashboardVM
+    /// Internal so `ProcessDetailSidebar+MemoryAttribution` can read the same object.
+    @EnvironmentObject var vm: MemoryDashboardVM
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Sampling-window disclosure. View-local, collapsed. Not stored on the VM.
     @State private var samplingWindowExpanded = false
@@ -172,7 +173,7 @@ struct ProcessDetailSidebar: View {
                 case .memoryExisting:
                     metrics(detail)
                     if let slot = vm.memoryGrowthSlot {
-                        memoryTrend(slot)
+                        memoryTrend(slot, curveRow: detail.row)
                     }
                     if vm.sidebar.showsLiveTrend && vm.selectedPage == .memory {
                         samplingWindowDisclosure
@@ -358,7 +359,12 @@ struct ProcessDetailSidebar: View {
                 tint: PulsePalette.accent,
                 value: ByteFormat.memory(row.memoryBytes),
                 caption: memory.caption,
-                help: memory.help
+                help: memory.help,
+                attribution: memoryMagnitudeAttribution(
+                    displayed: row,
+                    curve: detail.row,
+                    points: detail.memorySeries.count
+                )
             )
             SidebarMetric(
                 systemImage: "cpu",
@@ -371,21 +377,6 @@ struct ProcessDetailSidebar: View {
                 )
             )
         }
-    }
-
-    private func memoryTrend(_ slot: MemoryGrowthSlot) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(slot.title)
-                .font(.caption.weight(.semibold))
-            Text(slot.caption)
-                .font(.caption)
-            if let basis = slot.basis {
-                Text(basis)
-                    .font(.caption)
-            }
-        }
-        .foregroundStyle(.secondary)
-        .accessibilityElement(children: .combine)
     }
 
     private var samplingWindowDisclosure: some View {
@@ -401,12 +392,12 @@ struct ProcessDetailSidebar: View {
     }
 
     /// Grouped memory and CPU pages show the merged row. The curve stays on the selected pid.
-    private func displayedMemoryRow(_ row: ProcessRow) -> ProcessRow {
+    func displayedMemoryRow(_ row: ProcessRow) -> ProcessRow {
         guard vm.groupedByApp, AppGroupChrome.applies(on: vm.selectedPage) else { return row }
         return vm.sortedRows.first { $0.pid == row.pid } ?? row
     }
 
-    private func memoryField(_ row: ProcessRow) -> MemoryDetailFieldCopy {
+    func memoryField(_ row: ProcessRow) -> MemoryDetailFieldCopy {
         let frozen = LastLiveTotalReducer.frozenSemanticsForProjection(
             showsAbsentRecord: vm.sidebar.showsAbsentRecord,
             state: lastLiveTotal,
@@ -426,18 +417,6 @@ struct ProcessDetailSidebar: View {
         )
     }
 
-    private func memoryChart(_ detail: ProcessDetail) -> some View {
-        seriesBlock(
-            title: memoryField(displayedMemoryRow(detail.row)).title,
-            samples: detail.memorySeries,
-            placeholder: "正在采集内存曲线",
-            summary: memorySummary(detail.memorySeries),
-            tint: PulsePalette.accent,
-            domain: byteDomain(detail.memorySeries),
-            formatY: { ByteFormat.memory(UInt64(max(0, $0))) }
-        )
-    }
-
     private func cpuChart(_ detail: ProcessDetail) -> some View {
         seriesBlock(
             title: "CPU",
@@ -450,19 +429,9 @@ struct ProcessDetailSidebar: View {
         )
     }
 
-    private func memorySummary(_ samples: [ChartSample]) -> String {
-        guard let latest = samples.seriesLatest, let peak = samples.seriesPeak else { return "" }
-        return "最近 \(ByteFormat.memory(UInt64(max(0, latest)))) · 峰值 \(ByteFormat.memory(UInt64(max(0, peak))))"
-    }
-
     private func cpuSummary(_ samples: [ChartSample]) -> String {
         guard let average = samples.seriesAverage, let peak = samples.seriesPeak else { return "" }
         return "平均 \(ByteFormat.cpu(average)) · 峰值 \(ByteFormat.cpu(peak))"
-    }
-
-    private func byteDomain(_ samples: [ChartSample]) -> ClosedRange<Double> {
-        let peak = samples.map(\.value).max() ?? 0
-        return 0...max(peak * 1.15, 1)
     }
 
     private func percentDomain(_ samples: [ChartSample]) -> ClosedRange<Double> {
@@ -470,14 +439,15 @@ struct ProcessDetailSidebar: View {
         return 0...max(peak * 1.2, 5)
     }
 
-    private func seriesBlock(
+    func seriesBlock(
         title: String,
         samples: [ChartSample],
         placeholder: String,
         summary: String,
         tint: Color,
         domain: ClosedRange<Double>,
-        formatY: @escaping (Double) -> String
+        formatY: @escaping (Double) -> String,
+        summaryScale: CGFloat = 1
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
@@ -488,6 +458,7 @@ struct ProcessDetailSidebar: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .minimumScaleFactor(summaryScale)
             }
             if samples.count < 2 {
                 ChartPlaceholder(text: placeholder)
