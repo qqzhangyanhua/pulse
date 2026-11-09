@@ -41,7 +41,7 @@
 | [33-memory-magnitude-visible-group.md](33-memory-magnitude-visible-group.md) | 内存详情大数在代表变化后仍匹配当前可见同名组：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 | [34-memory-group-row-highlight.md](34-memory-group-row-highlight.md) | 内存页当前选中进程所在可见同名组的行高亮：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 | [35-memory-group-row-copy.md](35-memory-group-row-copy.md) | 内存页按 App 复制当前可见组行：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
-| [36-memory-reveal-group-row.md](36-memory-reveal-group-row.md) | 普通揭示触发时映射到内存可见组行：落地前技术约定。尚未改界面。文件号不是期次立项 |
+| [36-memory-reveal-group-row.md](36-memory-reveal-group-row.md) | 普通揭示触发时映射到内存可见组行：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 
 二十三期以后已经落地的工作没有单独的设计稿，需求和结论记录在对应的 issue 和 PR 里。下表收到二十八期；更后的期次以对应 PR 为准，不在这里补写。
 
@@ -55,7 +55,7 @@
 
 `35-memory-group-row-copy.md` 登记在上表只为了能找到它。行为已落地，当前行为以 TECH.md 为准；稿本身不再改。本机冒烟清单的勾选不因这份稿改变。
 
-`36-memory-reveal-group-row.md` 登记在上表只为了能找到它。界面还没改；落地前实现以该稿为准，落地后改写 TECH.md 里对应的现状句，稿本身不再改。本机冒烟清单的勾选不因这份稿改变。
+`36-memory-reveal-group-row.md` 登记在上表只为了能找到它。行为已落地，当前行为以 TECH.md 为准；稿本身不再改。本机冒烟清单的勾选不因这份稿改变。
 
 | 期数 | 内容 | PR |
 | --- | --- | --- |

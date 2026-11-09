@@ -320,10 +320,17 @@ struct ProcessTablePane: View {
     }
 
     /// Step-1 `processListScrollTarget`: reveal the present selected pid, never a vanished one.
+    /// The group id is captured here, then the existing async closure scrolls to it.
     private func revealProcessListTarget(_ proxy: ScrollViewProxy) {
         guard let target = vm.processListScrollTarget else { return }
+        let revealed = MemoryRevealGroupRow.target(
+            scrollTarget: target,
+            page: vm.selectedPage,
+            grouping: vm.groupedByApp && AppGroupChrome.applies(on: vm.selectedPage),
+            visibleUngrouped: vm.visibleRows
+        ) ?? target
         DispatchQueue.main.async {
-            let move = { proxy.scrollTo(target, anchor: .center) }
+            let move = { proxy.scrollTo(revealed, anchor: .center) }
             if self.reduceMotion {
                 move()
             } else {
