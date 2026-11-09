@@ -38,12 +38,15 @@
 | [22-growth-help-copy.md](22-growth-help-copy.md) | 二十二期：上涨帮助句（已被取代：措辞改为内存占用） |
 | [31-save-current-snapshot.md](31-save-current-snapshot.md) | 保存当前快照：落地前技术设计。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 | [32-memory-detail-attribution.md](32-memory-detail-attribution.md) | 内存详情数值与曲线归属说明：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
+| [33-memory-magnitude-visible-group.md](33-memory-magnitude-visible-group.md) | 内存详情大数在代表变化后仍匹配当前可见同名组：落地前技术约定。尚未改界面。文件号不是期次立项 |
 
 二十三期以后已经落地的工作没有单独的设计稿，需求和结论记录在对应的 issue 和 PR 里。下表收到二十八期；更后的期次以对应 PR 为准，不在这里补写。
 
 `31-save-current-snapshot.md` 登记在上表只为了能找到它。首版的预览、前 5 进程和本机 HTML 文件已在稿内写死。实现落地后，当前行为以 TECH.md 为准；这份稿和其它归档一样不再改。
 
 `32-memory-detail-attribution.md` 同样只为了能找到落地前的约定。行为已落地，当前界面以 TECH.md 为准；稿本身不再改。
+
+`33-memory-magnitude-visible-group.md` 登记在上表只为了能找到它。界面还没改；落地前实现以该稿为准，落地后改写 TECH.md 里对应的现状句，稿本身不再改。
 
 | 期数 | 内容 | PR |
 | --- | --- | --- |
