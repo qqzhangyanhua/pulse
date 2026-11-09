@@ -81,7 +81,8 @@ CPU 页即使 `grouping` 为真，查找也返回空，所以仍是 pid 比较�
 
 - 两个同名进程，选中较轻的 pid，内存页且合并为真。`MemoryMagnitudeVisibleGroup.row` 的 pid 是较重的那个。`selectedPid == 该 pid` 为假。这就是今天底色和 `ProcessLine.selected` 的比较。
 - 同一次输入上，`ProcessSelection.scrollTarget` 仍是原 pid。`ProcessRowCopy.line` 用完整列表里的原进程时，第二列是这个 pid，不是成员数。
-- N 为 1、合并关闭、页面不是内存、选中为空、选中 pid 不在可见集合：现有查找为空。空查找时的比较仍是 `selectedPid == row.pid`。
+- N 为 1：内存页且合并为真，可见集合里只有选中 pid。`MemoryMagnitudeVisibleGroup.row` 有值，`groupedMemberCount` 为 1，返回的 pid 就是该 pid。`selectedPid == 该 pid` 为真，所以今天的底色比较已经涂中。这不是空查找。
+- 合并关闭、页面不是内存、选中为空、选中 pid 不在可见集合：现有查找为空。空查找时的比较仍是 `selectedPid == row.pid`。
 
 新行为测试调用上面的布尔函数。实现时先让函数体就是今天的 `selectedPid == row.pid`，让这条测试能编译，并用断言失败留下错误结果。然后再改成复用 `MemoryMagnitudeVisibleGroup`。不要把「函数还不存在」当作红灯的证据。
 
@@ -89,7 +90,7 @@ CPU 页即使 `grouping` 为真，查找也返回空，所以仍是 pid 比较�
 
 - 代表已变且原 pid 仍可见：只有合并行的 pid 为真，原 pid 那一列不再单独为真。调用不产生新的 `selectedPid`。
 - 本帧改名后，真值落在新名字的合并行。
-- N 为 1 为真。合并关闭、非内存页为 `selectedPid == row.pid`。
+- N 为 1：查找返回该 pid 自己的合并行，涂色为真。合并关闭、非内存页查找为空，比较仍是 `selectedPid == row.pid`。
 - 原 pid 不在可见集合，旁边另有同名行：不为真。没有选中：不为真。
 - 先命中再失配：第二次没有残留的真值。
 
