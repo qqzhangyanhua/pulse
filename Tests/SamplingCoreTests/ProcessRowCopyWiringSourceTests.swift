@@ -18,7 +18,8 @@ final class ProcessRowCopyWiringSourceTests: XCTestCase {
         XCTAssertTrue(disabled.contains("nameFilterFocused != true && dashboard.selectedRow == nil"))
 
         let copy = try functionBody(named: "copySelectedProcessRow", in: app)
-        let guardAt = try index(of: "guard let row = dashboard.selectedRow else { return }", in: copy)
+        XCTAssertEqual(occurrenceCount(of: "MemoryGroupRowCopy.row(", in: copy), 1)
+        let guardAt = try index(of: "else { return }", in: copy)
         let boardAt = try index(of: "NSPasteboard", in: copy)
         XCTAssertLessThan(guardAt, boardAt)
         XCTAssertTrue(copy.contains("ProcessRowCopy.line(page: dashboard.selectedPage, row: row)"))
@@ -45,6 +46,9 @@ final class ProcessRowCopyWiringSourceTests: XCTestCase {
         let shown = try index(of: "sortedRows.first", in: selected)
         let raw = try index(of: "rows.first", in: selected)
         XCTAssertLessThan(shown, raw)
+        let apply = try functionBody(named: "applySample", in: vm)
+        XCTAssertFalse(apply.contains("setSelectedPid"))
+        XCTAssertFalse(apply.contains("applyGroupedByAppSelection"))
     }
 
     private func repoText(_ relative: String) throws -> String {

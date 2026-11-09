@@ -19,7 +19,8 @@ final class MemoryGroupRowHighlightWiringSourceTests: XCTestCase {
 
         let app = try repoText("Pulse/PulseApp.swift")
         let copy = try functionBody(named: "copySelectedProcessRow", in: app)
-        XCTAssertTrue(copy.contains("dashboard.selectedRow"))
+        XCTAssertFalse(copy.contains("selectedPid ="))
+        XCTAssertTrue(copy.contains("MemoryGroupRowCopy.row("))
         XCTAssertTrue(pane.contains("ProcessRowCopy.line(page: vm.selectedPage, row: row)"))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
