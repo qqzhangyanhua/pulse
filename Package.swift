@@ -44,6 +44,7 @@ let package = Package(
                 "Models/MemoryGrowthSignal.swift",
                 "Models/MemoryDetailPresentation.swift",
                 "Models/MemoryDetailAttribution.swift",
+                "Models/MemoryMagnitudeVisibleGroup.swift",
                 "Models/ResourceDetailPageProjection.swift",
                 "Models/LastLiveTotalReducer.swift",
                 "Models/MemoryGrowthTopSeries.swift",

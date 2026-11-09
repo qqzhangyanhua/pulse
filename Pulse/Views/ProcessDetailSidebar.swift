@@ -350,7 +350,7 @@ struct ProcessDetailSidebar: View {
     }
 
     private func metrics(_ detail: ProcessDetail) -> some View {
-        let row = displayedMemoryRow(detail.row)
+        let row = memoryMagnitudeRow(fallback: displayedMemoryRow(detail.row))
         let memory = memoryField(row)
         return HStack(alignment: .top, spacing: 10) {
             SidebarMetric(
