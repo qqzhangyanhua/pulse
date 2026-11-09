@@ -131,7 +131,14 @@ private struct PulseWindowCommands: Commands {
             NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: nil)
             return
         }
-        guard let row = dashboard.selectedRow else { return }
+        guard let row = MemoryGroupRowCopy.row(
+            page: dashboard.selectedPage,
+            grouping: dashboard.groupedByApp && AppGroupChrome.applies(on: dashboard.selectedPage),
+            selectedPid: dashboard.selectedPid,
+            visibleUngrouped: dashboard.visibleRows,
+            sortedRows: dashboard.sortedRows,
+            rows: dashboard.rows
+        ) else { return }
         let line = ProcessRowCopy.line(page: dashboard.selectedPage, row: row)
         switch dashboard.selectedPage {
         case .memory, .cpu, .disk, .network:
