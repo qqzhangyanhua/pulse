@@ -195,7 +195,18 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
         let old = try functionBody(named: "revealProcessListTarget", in: pane)
         let oldCode = compact(old)
         XCTAssertTrue(oldCode.contains("guardlettarget=vm.processListScrollTargetelse{return}"))
-        XCTAssertLessThan(try index(of: "DispatchQueue.main.async{", in: oldCode), try index(of: "scrollTo(target,anchor:.center)", in: oldCode))
+        XCTAssertLessThan(
+            try index(of: "guardlettarget=vm.processListScrollTargetelse{return}", in: oldCode),
+            try index(of: "MemoryRevealGroupRow.target(", in: oldCode)
+        )
+        XCTAssertLessThan(
+            try index(of: "MemoryRevealGroupRow.target(", in: oldCode),
+            try index(of: "DispatchQueue.main.async{", in: oldCode)
+        )
+        XCTAssertLessThan(
+            try index(of: "DispatchQueue.main.async{", in: oldCode),
+            try index(of: "scrollTo(revealed,anchor:.center)", in: oldCode)
+        )
         XCTAssertFalse(old.contains("request.pid"))
         XCTAssertFalse(old.contains("sortedRows"))
         XCTAssertFalse(old.contains("revealTopApp"))

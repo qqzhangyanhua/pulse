@@ -77,7 +77,7 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 
 `DashboardPage`：内存、CPU、磁盘、网络、本机可选。GPU 留在枚举里但不可选，Tab 栏直接不显示它（`ResourceTabs` 只画可选的页）。冷启动在内存页。主窗用 frame autosave 记住尺寸和位置，不记页面、排序和过滤。
 
-快捷键（「视图」菜单）：`⌘1`–`⌘5` 切到内存 / CPU / 磁盘 / 网络 / 本机，`⌘F` 聚焦名称过滤，`⌘⌫` 对选中进程做普通退出（过滤框有焦点时不注册，本机页禁用）。`⌘C` 和「复制」是同一颗按钮，放在替换 `.pasteboard` 的命令组里，不在「视图」菜单里。名称过滤没有焦点时，这颗按钮带 `⌘C`，调用 `copySelectedProcessRow`：有 `selectedRow` 才写剪贴板，本机页和 GPU 在写入前返回。过滤框有焦点时，按钮不带快捷键，函数先把复制交给文字框，不写进程行。没有选中行，或当前是本机页，不改剪贴板。强制退出和 GPU 没有快捷键。过滤框没有焦点时，内存页且「按 App」生效、并且选中 pid 还在这一帧未合并的可见行里，`⌘C` 和这颗「复制」按钮写出该可见同名组的现有制表符整行，第二列是成员数，N 为 1 时是 `1`。查找为空仍用 `selectedRow`。右键仍复制所点的那一行。滚动和文字焦点时的复制不改。`selectedRow` 仍先按 pid 查合并后的表，再查完整列表。普通揭示滚动到可见组行已锁定，尚未改 `revealProcessListTarget`。今天列表出现，以及 `processListScrollTarget` 变化，仍把 `ProcessSelection.scrollTarget` 交给 `scrollTo`；这个值为空就不调用 `scrollTo`。约定见 [specs/36-memory-reveal-group-row.md](specs/36-memory-reveal-group-row.md)。「占用最多的 App」的揭示不在这项里。
+快捷键（「视图」菜单）：`⌘1`–`⌘5` 切到内存 / CPU / 磁盘 / 网络 / 本机，`⌘F` 聚焦名称过滤，`⌘⌫` 对选中进程做普通退出（过滤框有焦点时不注册，本机页禁用）。`⌘C` 和「复制」是同一颗按钮，放在替换 `.pasteboard` 的命令组里，不在「视图」菜单里。名称过滤没有焦点时，这颗按钮带 `⌘C`，调用 `copySelectedProcessRow`：有 `selectedRow` 才写剪贴板，本机页和 GPU 在写入前返回。过滤框有焦点时，按钮不带快捷键，函数先把复制交给文字框，不写进程行。没有选中行，或当前是本机页，不改剪贴板。强制退出和 GPU 没有快捷键。过滤框没有焦点时，内存页且「按 App」生效、并且选中 pid 还在这一帧未合并的可见行里，`⌘C` 和这颗「复制」按钮写出该可见同名组的现有制表符整行，第二列是成员数，N 为 1 时是 `1`。查找为空仍用 `selectedRow`。右键仍复制所点的那一行。滚动和文字焦点时的复制不改。`selectedRow` 仍先按 pid 查合并后的表，再查完整列表。列表出现以及 `processListScrollTarget` 变化时，这个值为空仍不调用 `scrollTo`。有值时，在同一次同步调用里把原 pid 映射到当前可见同名组的代表，再交给现有的那一次 `scrollTo`；N 为 1 时就是该 pid。查找为空仍用原来的目标。不新增触发。「占用最多的 App」的揭示不在这条路径里。
 
 ### 内存页
 

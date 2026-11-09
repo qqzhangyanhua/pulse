@@ -47,6 +47,7 @@ let package = Package(
                 "Models/MemoryMagnitudeVisibleGroup.swift",
                 "Models/MemoryGroupRowHighlight.swift",
                 "Models/MemoryGroupRowCopy.swift",
+                "Models/MemoryRevealGroupRow.swift",
                 "Models/ResourceDetailPageProjection.swift",
                 "Models/LastLiveTotalReducer.swift",
                 "Models/MemoryGrowthTopSeries.swift",
