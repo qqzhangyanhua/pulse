@@ -59,6 +59,7 @@ final class MemoryDashboardVM: ObservableObject {
     /// One-shot memory Top card reveal. The next locate replaces it.
     @Published var topAppLocateReveal: TopAppLocation.Reveal?
     @Published private(set) var navigation = DashboardNavigation()
+    let snapshotExportStore = SnapshotExportStore()
     /// Last memory-page sort, readable on the MainActor. Not a second published sort field.
     private var publication = MemoryPageSortPublication()
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct MemoryDashboardView: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var snapshotRefusal: String?
 
     var body: some View {
         Group {
@@ -19,6 +20,17 @@ struct MemoryDashboardView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 ResourceTabs()
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    let savedAt = Date()
+                    if let message = vm.requestSaveCurrentSnapshot(savedAt: savedAt, calendar: .current, timeZone: .current) {
+                        snapshotRefusal = message
+                    }
+                } label: {
+                    Text("保存当前快照")
+                }
+                .accessibilityLabel("保存当前快照")
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 if vm.selectedPage != .machine {
@@ -54,6 +66,18 @@ struct MemoryDashboardView: View {
             }
         }
         .toolbarBackground(PulsePalette.windowBackground, for: .windowToolbar)
+        .alert(
+            snapshotRefusal ?? "",
+            isPresented: Binding(
+                get: { snapshotRefusal != nil },
+                set: { if !$0 { snapshotRefusal = nil } }
+            )
+        ) {
+            Button("好", role: .cancel) {}
+        }
+        .background {
+            SnapshotExportSheetPresenter(store: vm.snapshotExportStore, vm: vm)
+        }
         .onAppear {
             vm.start()
         }
