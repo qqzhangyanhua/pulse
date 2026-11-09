@@ -12,6 +12,7 @@ enum SnapshotExportCopy {
     static let rankExplanation = "名次只按内存占用排列，不表示卡顿原因。"
     static let processListMissing = "进程列表没有读到。"
     static let writeFailure = "没能写入所选位置。这一份采样还在，可以再试。"
+    static let hideNamesChanged = "隐藏进程名已改变。当前预览还没写入文件，请重新保存。"
     static let htmlTitle = "Pulse 采样"
 
     static func onlyProcessCount(_ count: Int) -> String {
@@ -319,6 +320,7 @@ struct SnapshotExportSession {
     enum Phase: Equatable {
         case preview
         case writeFailed
+        case needsResave
         case saved
     }
 
@@ -345,13 +347,19 @@ struct SnapshotExportSession {
             return nil
         case .writeFailed:
             return SnapshotExportCopy.writeFailure
+        case .needsResave:
+            return SnapshotExportCopy.hideNamesChanged
         case .saved:
             return "已保存"
         }
     }
 
     mutating func setHideNames(_ hide: Bool) {
+        guard hide != hideNames else { return }
         hideNames = hide
+        if phase == .saved {
+            phase = .needsResave
+        }
     }
 
     /// The system save panel was dismissed. The sheet and the frozen frame stay.
