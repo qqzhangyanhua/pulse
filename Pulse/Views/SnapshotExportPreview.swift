@@ -5,38 +5,60 @@ import UniformTypeIdentifiers
 /// Observes the frozen preview without adding another published field on the dashboard VM.
 @MainActor
 final class SnapshotExportStore: ObservableObject {
+    private var gate = SnapshotExportSaveGate()
     @Published private(set) var session: SnapshotExportSession?
 
     func present(_ session: SnapshotExportSession) {
-        self.session = session
+        gate.present(session)
+        publish()
     }
 
     func dismiss() {
-        session = nil
+        gate.dismiss()
+        publish()
     }
 
     func setHideNames(_ hide: Bool) {
-        guard var current = session else { return }
-        current.setHideNames(hide)
-        session = current
+        gate.setHideNames(hide)
+        publish()
     }
 
     func cancelSavePanel() {
-        guard var current = session else { return }
-        current.cancelSavePanel()
-        session = current
+        publish()
     }
 
     func noteWriteFailed() {
-        guard var current = session else { return }
-        current.noteWriteFailed()
-        session = current
+        gate.noteWriteFailed()
+        publish()
     }
 
     func noteWriteSucceeded() {
-        guard var current = session else { return }
-        current.noteWriteSucceeded()
-        session = current
+        gate.noteWriteSucceeded()
+        publish()
+    }
+
+    func beginSavePanel() -> SnapshotExportSaveAttempt? {
+        let attempt = gate.beginSavePanel()
+        publish()
+        return attempt
+    }
+
+    func receiveSavePanel(
+        _ attempt: SnapshotExportSaveAttempt,
+        confirmed: Bool
+    ) -> SnapshotExportSavePanelDecision {
+        let decision = gate.receiveSavePanel(attempt, confirmed: confirmed)
+        publish()
+        return decision
+    }
+
+    func finishSavePanel(_ attempt: SnapshotExportSaveAttempt, succeeded: Bool) {
+        gate.finishSavePanel(attempt, succeeded: succeeded)
+        publish()
+    }
+
+    private func publish() {
+        session = gate.session
     }
 }
 
@@ -108,27 +130,29 @@ struct SnapshotExportPreview: View {
     }
 
     private func presentSavePanel() {
-        guard let document = store.session?.document else { return }
+        guard let attempt = store.beginSavePanel() else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.html]
-        panel.nameFieldStringValue = document.suggestedFilename
+        panel.nameFieldStringValue = store.session?.document.suggestedFilename ?? ""
         panel.canCreateDirectories = true
         panel.begin { response in
+            let url = panel.url
             Task { @MainActor in
-                guard let document = self.store.session?.document else { return }
-                if response != .OK {
-                    self.vm.noteSnapshotExportCancelledPanel()
+                let confirmed = response == .OK && url != nil
+                switch self.store.receiveSavePanel(attempt, confirmed: confirmed) {
+                case .ignore, .cancelled:
                     return
-                }
-                guard let url = panel.url else {
-                    self.vm.noteSnapshotExportCancelledPanel()
-                    return
-                }
-                do {
-                    try SnapshotExportFile.commit(html: document.html, to: url)
-                    self.vm.noteSnapshotExportWriteSucceeded()
-                } catch {
-                    self.vm.noteSnapshotExportWriteFailed()
+                case .write(let html):
+                    guard let url else {
+                        self.store.finishSavePanel(attempt, succeeded: false)
+                        return
+                    }
+                    do {
+                        try SnapshotExportFile.commit(html: html, to: url)
+                        self.store.finishSavePanel(attempt, succeeded: true)
+                    } catch {
+                        self.store.finishSavePanel(attempt, succeeded: false)
+                    }
                 }
             }
         }

@@ -310,10 +310,29 @@ enum SnapshotHTMLEscape {
 }
 
 /// Preview session for one freeze. Canceling the system panel does not drop it.
+struct SnapshotExportSaveAttempt: Equatable, Sendable {
+    let id: UUID
+    let sessionID: UUID
+}
+
+enum SnapshotExportSavePanelDecision: Equatable {
+    case ignore
+    case cancelled
+    case write(String)
+}
+
+enum SnapshotExportSavePanelState: Equatable {
+    case idle
+    case awaiting(UUID)
+    case writing(UUID)
+}
+
 struct SnapshotExportSession {
+    let id: UUID
     let frozen: SnapshotExport
     private(set) var hideNames: Bool
     private(set) var phase: Phase
+    private(set) var savePanel: SnapshotExportSavePanelState
     let calendar: Calendar
     let timeZone: TimeZone
 
@@ -324,10 +343,18 @@ struct SnapshotExportSession {
         case saved
     }
 
-    init(frozen: SnapshotExport, hideNames: Bool = false, calendar: Calendar, timeZone: TimeZone) {
+    init(
+        frozen: SnapshotExport,
+        hideNames: Bool = false,
+        calendar: Calendar,
+        timeZone: TimeZone,
+        id: UUID = UUID()
+    ) {
+        self.id = id
         self.frozen = frozen
         self.hideNames = hideNames
         self.phase = .preview
+        self.savePanel = .idle
         self.calendar = calendar
         self.timeZone = timeZone
     }
@@ -371,5 +398,83 @@ struct SnapshotExportSession {
 
     mutating func noteWriteSucceeded() {
         phase = .saved
+    }
+
+    mutating func beginSavePanel() -> SnapshotExportSaveAttempt? {
+        guard savePanel == .idle else { return nil }
+        let attemptID = UUID()
+        savePanel = .awaiting(attemptID)
+        return SnapshotExportSaveAttempt(id: attemptID, sessionID: id)
+    }
+
+    mutating func receiveSavePanel(
+        _ attempt: SnapshotExportSaveAttempt,
+        confirmed: Bool
+    ) -> SnapshotExportSavePanelDecision {
+        guard attempt.sessionID == id, case .awaiting(let openID) = savePanel, openID == attempt.id else {
+            return .ignore
+        }
+        if !confirmed {
+            savePanel = .idle
+            return .cancelled
+        }
+        savePanel = .writing(attempt.id)
+        return .write(document.html)
+    }
+
+    mutating func finishSavePanel(_ attempt: SnapshotExportSaveAttempt, succeeded: Bool) {
+        guard attempt.sessionID == id, case .writing(let openID) = savePanel, openID == attempt.id else {
+            return
+        }
+        savePanel = .idle
+        phase = succeeded ? .saved : .writeFailed
+    }
+}
+
+/// One preview at a time. Save-panel callbacks are accepted only for the attempt that opened them.
+struct SnapshotExportSaveGate {
+    private(set) var session: SnapshotExportSession?
+
+    mutating func present(_ session: SnapshotExportSession) {
+        self.session = session
+    }
+
+    mutating func dismiss() {
+        session = nil
+    }
+
+    mutating func setHideNames(_ hide: Bool) {
+        session?.setHideNames(hide)
+    }
+
+    mutating func noteWriteSucceeded() {
+        session?.noteWriteSucceeded()
+    }
+
+    mutating func noteWriteFailed() {
+        session?.noteWriteFailed()
+    }
+
+    mutating func beginSavePanel() -> SnapshotExportSaveAttempt? {
+        guard var current = session else { return nil }
+        guard let attempt = current.beginSavePanel() else { return nil }
+        session = current
+        return attempt
+    }
+
+    mutating func receiveSavePanel(
+        _ attempt: SnapshotExportSaveAttempt,
+        confirmed: Bool
+    ) -> SnapshotExportSavePanelDecision {
+        guard var current = session else { return .ignore }
+        let decision = current.receiveSavePanel(attempt, confirmed: confirmed)
+        session = current
+        return decision
+    }
+
+    mutating func finishSavePanel(_ attempt: SnapshotExportSaveAttempt, succeeded: Bool) {
+        guard var current = session else { return }
+        current.finishSavePanel(attempt, succeeded: succeeded)
+        session = current
     }
 }
