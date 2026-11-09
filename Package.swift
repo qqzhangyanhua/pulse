@@ -52,6 +52,8 @@ let package = Package(
                 "Models/ThermalNotice.swift",
                 "Models/ProcessQuitOutcome.swift",
                 "Models/ProcessQuitSession.swift",
+                "Models/ProcessQuitRoute.swift",
+                "Models/ProcessPermissionFootnote.swift",
                 "Models/CPUPage.swift",
                 "Models/MemoryPageSortPublication.swift",
                 "Models/NetworkPage.swift",

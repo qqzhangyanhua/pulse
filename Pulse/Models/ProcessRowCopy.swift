@@ -9,7 +9,7 @@ enum ProcessRowCopy {
         case .cpu:
             return joined(prefix(row) + [
                 ProcessEnergyText.watts(row.energyWatts),
-                ProcessEnergyText.wakeups(row.idleWakeupsPerSecond),
+                ProcessEnergyText.wakeups(row.wakeupsPerSecond),
                 threads(row),
             ])
         case .disk:

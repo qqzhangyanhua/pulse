@@ -12,6 +12,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var hostDiskRates = HostDiskRates.missing
     @Published private(set) var rows: [ProcessRow] = []
     @Published private(set) var processListFailed = false
+    /// This frame's permission footnote. Empty when the process list failed.
+    @Published private(set) var processPermissionFootnote: String?
     @Published private(set) var detail: ProcessDetail?
     /// Bounded Top N=5 memory series. List rows look up `memoryGrowthListBadge(for:)`.
     @Published private(set) var topMemorySeries: [Int32: [ChartSample]] = [:]
@@ -116,7 +118,7 @@ final class MemoryDashboardVM: ObservableObject {
             rows: named,
             page: selectedPage,
             windowedOnly: windowedOnlyFilter,
-            windowedPids: WindowedAppLookup.pids(in: rows)
+            windowedPids: { WindowedAppLookup.pids(in: rows) }
         )
     }
 
@@ -395,6 +397,7 @@ final class MemoryDashboardVM: ObservableObject {
                     diskHistory = nextDisk
                     rows = frame.rows
                     processListFailed = frame.processListFailed
+                    processPermissionFootnote = frame.permissionFootnote
                     topMemorySeries = frame.topMemorySeries
                     loadState = applied.loadState
                     observation = ProcessQuitSession.Observation(

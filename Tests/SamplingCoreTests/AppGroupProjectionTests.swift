@@ -19,9 +19,9 @@ final class AppGroupProjectionTests: XCTestCase {
                 "\(page)"
             )
         }
+        XCTAssertEqual(AppGroupChrome.help, "同名进程合为一行。内存、线程、CPU、能耗和唤醒相加。")
         XCTAssertFalse(AppGroupChrome.help.contains("磁盘"))
         XCTAssertFalse(AppGroupChrome.help.contains("网络"))
-        XCTAssertTrue(AppGroupChrome.help.contains("能耗"))
     }
 
     func testGroupSumsMemoryAndThreadsAndKeepsTheHeaviestPid() {

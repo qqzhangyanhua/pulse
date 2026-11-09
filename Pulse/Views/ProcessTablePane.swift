@@ -24,6 +24,7 @@ struct ProcessTablePane: View {
                     .padding(.horizontal, 4)
             }
             tableBody
+            ProcessPermissionFootnoteLabel(sentence: vm.processPermissionFootnote, processListFailed: vm.processListFailed, showsProcessTable: showsReadyProcessList)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
@@ -65,7 +66,7 @@ struct ProcessTablePane: View {
             if showsEnergyColumns {
                 sortHeader(ProcessColumnTitle.energy, column: .energy, trailing: true)
                     .frame(width: ProcessColumn.energy, alignment: .trailing)
-                sortHeader(ProcessColumnTitle.idleWakeups, column: .idleWakeups, trailing: true)
+                sortHeader(ProcessColumnTitle.wakeups, column: .wakeups, trailing: true)
                     .frame(width: ProcessColumn.wakeups, alignment: .trailing)
             }
             if showsNetworkColumn {
@@ -426,7 +427,7 @@ private struct ProcessLine: View {
             if showsEnergy {
                 diskCell(ProcessEnergyText.watts(row.energyWatts))
                     .frame(width: ProcessColumn.energy, alignment: .trailing)
-                diskCell(ProcessEnergyText.wakeups(row.idleWakeupsPerSecond))
+                diskCell(ProcessEnergyText.wakeups(row.wakeupsPerSecond))
                     .frame(width: ProcessColumn.wakeups, alignment: .trailing)
             }
             Text("\(row.threadCount)")
@@ -455,7 +456,7 @@ private struct ProcessLine: View {
         }
         if showsEnergy {
             parts.append("\(ProcessEnergyText.impactTitle) \(ProcessEnergyText.watts(row.energyWatts))")
-            parts.append("\(ProcessEnergyText.idleWakeTitle) \(ProcessEnergyText.wakeups(row.idleWakeupsPerSecond))")
+            parts.append("\(ProcessEnergyText.wakeTitle) \(ProcessEnergyText.wakeups(row.wakeupsPerSecond))")
         }
         if let growthBadge {
             parts.append(growthBadge.help)

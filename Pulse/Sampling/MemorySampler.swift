@@ -70,7 +70,7 @@ actor MemorySampler {
         let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
         let hostDiskRates = consumeSystemDisk(at: capturedAt)
 
-        guard let rawProcesses = ProcessEnumerator.list() else {
+        guard let listed = ProcessEnumerator.list() else {
             lastRows = []
             topMemoryStore.retain(only: [])
             return .success(
@@ -83,7 +83,11 @@ actor MemorySampler {
                     hostNetworkRates: hostNetworkRates,
                     hostDiskRates: hostDiskRates,
                     topMemorySeries: topMemoryStore.seriesByPid,
-                    busiestCorePercent: busiestCorePercent
+                    busiestCorePercent: busiestCorePercent,
+                    permissionFootnote: ProcessPermissionFootnote.published(
+                        deniedCount: 0,
+                        processListFailed: true
+                    )
                 )
             )
         }
@@ -93,22 +97,31 @@ actor MemorySampler {
         var nextEnergyTicks: [Int32: EnergyTick] = [:]
         var nextIdentities: [Int32: ProcessIdentity] = [:]
         var rows: [ProcessRow] = []
-        rows.reserveCapacity(rawProcesses.count)
+        rows.reserveCapacity(listed.samples.count)
 
-        for raw in rawProcesses {
+        for raw in listed.samples {
             let identity = ProcessIdentityResolver.resolve(
                 sample: raw,
                 cached: identityCache[raw.pid]
             )
             nextIdentities[raw.pid] = identity
 
-            let tick = CPUTick(
-                userTimeNs: raw.userTimeNs,
-                systemTimeNs: raw.systemTimeNs,
-                date: capturedAt
-            )
-            let cpu = ProcessCPUPercent.percent(previous: cpuTicks[raw.pid], current: tick)
-            nextTicks[raw.pid] = tick
+            let cpuTick: CPUTick?
+            if let userTimeNs = raw.userTimeNs, let systemTimeNs = raw.systemTimeNs {
+                cpuTick = CPUTick(
+                    userTimeNs: userTimeNs,
+                    systemTimeNs: systemTimeNs,
+                    date: capturedAt
+                )
+            } else {
+                cpuTick = nil
+            }
+            let cpu = cpuTick.flatMap { tick in
+                ProcessCPUPercent.percent(previous: cpuTicks[raw.pid], current: tick)
+            }
+            if let cpuTick {
+                nextTicks[raw.pid] = cpuTick
+            }
 
             let diskReading: DiskTick?
             if let bytesRead = raw.diskBytesRead, let bytesWritten = raw.diskBytesWritten {
@@ -122,10 +135,10 @@ actor MemorySampler {
             }
 
             let energyReading: EnergyTick?
-            if let billedNanojoules = raw.billedEnergyNanojoules, let idleWakeups = raw.idleWakeups {
+            if let energyNanojoules = raw.energyNanojoules, let interruptWakeups = raw.interruptWakeups {
                 energyReading = EnergyTick(
-                    billedNanojoules: billedNanojoules,
-                    idleWakeups: idleWakeups,
+                    energyNanojoules: energyNanojoules,
+                    interruptWakeups: interruptWakeups,
                     date: capturedAt
                 )
             } else {
@@ -153,7 +166,7 @@ actor MemorySampler {
                     diskReadBytesPerSecond: disk.rates.readBytesPerSecond,
                     diskWriteBytesPerSecond: disk.rates.writeBytesPerSecond,
                     energyWatts: energy.rates.watts,
-                    idleWakeupsPerSecond: energy.rates.idleWakeupsPerSecond
+                    wakeupsPerSecond: energy.rates.wakeupsPerSecond
                 )
             )
         }
@@ -198,7 +211,11 @@ actor MemorySampler {
                 hostNetworkRates: hostNetworkRates,
                 hostDiskRates: hostDiskRates,
                 topMemorySeries: topMemoryStore.seriesByPid,
-                busiestCorePercent: busiestCorePercent
+                busiestCorePercent: busiestCorePercent,
+                permissionFootnote: ProcessPermissionFootnote.published(
+                    deniedCount: listed.permissionDeniedCount,
+                    processListFailed: false
+                )
             )
         )
     }

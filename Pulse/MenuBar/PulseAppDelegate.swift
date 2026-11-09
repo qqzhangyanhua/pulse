@@ -1,19 +1,31 @@
 import AppKit
+import Combine
 
 enum PulseWindowID {
     static let main = "pulse-main"
 }
 
-/// Main-thread delegate. Closing the last window does not terminate; ⌘Q does, and removes the status item.
+/// Main-thread delegate. Owns the one dashboard for the process.
+/// Closing the last window does not terminate; ⌘Q does, and removes the status item.
 @MainActor
-final class PulseAppDelegate: NSObject, NSApplicationDelegate {
+final class PulseAppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
+    let dashboard = MemoryDashboardVM()
     private let menuBar = MenuBarController()
     private let pressureNotices = PressureNoticeCenter()
-    private var dashboard: MemoryDashboardVM?
     private var openMainWindow: (() -> Void)?
     private var gate = MenuBarSamplingGate(sceneActive: true, mainWindowVisible: false)
     /// Attachments still reporting a live main window. A closing window decrements once.
     private var visibleMainWindows: [ObjectIdentifier: Int] = [:]
+    private var dashboardChanges: AnyCancellable?
+
+    override init() {
+        super.init()
+        dashboardChanges = dashboard.objectWillChange.sink { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.objectWillChange.send()
+            }
+        }
+    }
 
     nonisolated func applicationDidFinishLaunching(_ notification: Notification) {
         MainActor.assumeIsolated {
@@ -52,6 +64,7 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate {
             }
         )
         installPressureNotices()
+        startSampling()
     }
 
     private func installPressureNotices() {
@@ -60,9 +73,19 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func bind(_ dashboard: MemoryDashboardVM, openWindow: @escaping () -> Void) {
-        self.dashboard = dashboard
+    /// Status item 「打开 Pulse」 with zero windows. The app scene installs this; a window is not required.
+    func bindOpenWindow(_ openWindow: @escaping () -> Void) {
         openMainWindow = openWindow
+    }
+
+    func bind(_ dashboard: MemoryDashboardVM, openWindow: @escaping () -> Void) {
+        precondition(dashboard === self.dashboard)
+        openMainWindow = openWindow
+        startSampling()
+    }
+
+    /// Idempotent. Pace follows the gate: a hidden window keeps the background interval.
+    private func startSampling() {
         dashboard.start()
         menuBar.observe(dashboard)
         pressureNotices.observe(dashboard)
@@ -88,7 +111,7 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate {
     /// Unique open / focus path for 「打开 Pulse」. Lands on the memory page.
     /// Does not write `selectedPid`. Select-if-present is `MemoryDashboardVM.selectPidIfPresent`.
     func focusMemoryPage() {
-        dashboard?.focusMemoryPage()
+        dashboard.focusMemoryPage()
         NSApp.activate()
         if let window = NSApp.windows.first(where: { candidate in
             candidate.identifier?.rawValue == PulseWindowID.main
@@ -109,12 +132,11 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate {
 
     private func applyPace() {
         // Same sampler as #10. Background (hidden or window closed) only lengthens the interval.
-        dashboard?.setForeground(gate.isForeground)
+        dashboard.setForeground(gate.isForeground)
     }
 
     private func currentDot() -> MenuBarDot {
-        guard let dashboard else { return .unavailable }
-        return MenuBarDot.resolve(
+        MenuBarDot.resolve(
             pressure: dashboard.snapshot?.pressure,
             samplingFailed: dashboard.samplingFailed
         )

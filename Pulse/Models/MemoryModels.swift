@@ -115,14 +115,14 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     /// `proc_pid_rusage` two-frame rates. Nil on first frame, EPERM, wrap, or a failed read.
     let diskReadBytesPerSecond: Double?
     let diskWriteBytesPerSecond: Double?
-    /// Watts from `ri_billed_energy`. Nil on first frame, a decreased counter, or a failed read.
+    /// Watts from `ri_energy_nj`. Nil on first frame, a decreased counter, or a failed read.
     let energyWatts: Double?
-    /// `ri_pkg_idle_wkups` per second. Nil on the same frames as `energyWatts`.
-    let idleWakeupsPerSecond: Double?
+    /// `ri_interrupt_wkups` per second. Nil on the same frames as `energyWatts`.
+    let wakeupsPerSecond: Double?
     /// App-group row whose energy sum skipped a nil member. An ungrouped row stays false.
     let energyReadingIsPartial: Bool
-    /// App-group row whose idle-wake sum skipped a nil member. An ungrouped row stays false.
-    let idleWakeupReadingIsPartial: Bool
+    /// App-group row whose wakeup sum skipped a nil member. An ungrouped row stays false.
+    let wakeupReadingIsPartial: Bool
     /// Nil on an ungrouped row. A grouped row stores `members.count`, including 1.
     let groupedMemberCount: Int?
 
@@ -139,9 +139,9 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         diskReadBytesPerSecond: Double? = nil,
         diskWriteBytesPerSecond: Double? = nil,
         energyWatts: Double? = nil,
-        idleWakeupsPerSecond: Double? = nil,
+        wakeupsPerSecond: Double? = nil,
         energyReadingIsPartial: Bool = false,
-        idleWakeupReadingIsPartial: Bool = false,
+        wakeupReadingIsPartial: Bool = false,
         groupedMemberCount: Int? = nil
     ) {
         self.pid = pid
@@ -156,9 +156,9 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         self.diskReadBytesPerSecond = diskReadBytesPerSecond
         self.diskWriteBytesPerSecond = diskWriteBytesPerSecond
         self.energyWatts = energyWatts
-        self.idleWakeupsPerSecond = idleWakeupsPerSecond
+        self.wakeupsPerSecond = wakeupsPerSecond
         self.energyReadingIsPartial = energyReadingIsPartial
-        self.idleWakeupReadingIsPartial = idleWakeupReadingIsPartial
+        self.wakeupReadingIsPartial = wakeupReadingIsPartial
         self.groupedMemberCount = groupedMemberCount
     }
 
@@ -228,6 +228,8 @@ struct SampledFrame: Sendable {
     let hostDiskRates: HostDiskRates
     /// Bounded Top N=5 memory series for this tick. Empty when the process list failed.
     let topMemorySeries: [Int32: [ChartSample]]
+    /// This frame only. Nil when the list failed or no task-info read was denied.
+    let permissionFootnote: String?
 
     init(
         snapshot: MemorySnapshot,
@@ -238,7 +240,8 @@ struct SampledFrame: Sendable {
         hostNetworkRates: HostNetworkRates,
         hostDiskRates: HostDiskRates,
         topMemorySeries: [Int32: [ChartSample]] = [:],
-        busiestCorePercent: Double? = nil
+        busiestCorePercent: Double? = nil,
+        permissionFootnote: String? = nil
     ) {
         self.snapshot = snapshot
         self.rows = rows
@@ -249,5 +252,6 @@ struct SampledFrame: Sendable {
         self.hostDiskRates = hostDiskRates
         self.topMemorySeries = topMemorySeries
         self.busiestCorePercent = busiestCorePercent
+        self.permissionFootnote = permissionFootnote
     }
 }

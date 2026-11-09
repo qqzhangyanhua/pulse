@@ -43,6 +43,9 @@
 		B00000000000000000000041 /* ProcessGlossary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000041 /* ProcessGlossary.swift */; };
 		B0000000000000000000002F /* ProcessQuitOutcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002F /* ProcessQuitOutcome.swift */; };
 		B00000000000000000000030 /* ProcessQuitSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000030 /* ProcessQuitSession.swift */; };
+		B0000000000000000000004D /* ProcessQuitRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004D /* ProcessQuitRoute.swift */; };
+		B0000000000000000000004E /* ProcessPermissionFootnote.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004E /* ProcessPermissionFootnote.swift */; };
+		B0000000000000000000004F /* ProcessPermissionFootnoteLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004F /* ProcessPermissionFootnoteLabel.swift */; };
 		B0000000000000000000001C /* CPUOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001C /* CPUOverviewSection.swift */; };
 		B00000000000000000000020 /* NetworkPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000020 /* NetworkPage.swift */; };
 		B00000000000000000000021 /* NetworkOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000021 /* NetworkOverviewSection.swift */; };
@@ -120,6 +123,9 @@
 		A00000000000000000000041 /* ProcessGlossary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessGlossary.swift; sourceTree = "<group>"; };
 		A0000000000000000000002F /* ProcessQuitOutcome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessQuitOutcome.swift; sourceTree = "<group>"; };
 		A00000000000000000000030 /* ProcessQuitSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessQuitSession.swift; sourceTree = "<group>"; };
+		A0000000000000000000004D /* ProcessQuitRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessQuitRoute.swift; sourceTree = "<group>"; };
+		A0000000000000000000004E /* ProcessPermissionFootnote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessPermissionFootnote.swift; sourceTree = "<group>"; };
+		A0000000000000000000004F /* ProcessPermissionFootnoteLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessPermissionFootnoteLabel.swift; sourceTree = "<group>"; };
 		A0000000000000000000001C /* CPUOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUOverviewSection.swift; sourceTree = "<group>"; };
 		A00000000000000000000020 /* NetworkPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkPage.swift; sourceTree = "<group>"; };
 		A00000000000000000000021 /* NetworkOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkOverviewSection.swift; sourceTree = "<group>"; };
@@ -212,6 +218,8 @@
 				A00000000000000000000039 /* ThermalNotice.swift */,
 				A0000000000000000000002F /* ProcessQuitOutcome.swift */,
 				A00000000000000000000030 /* ProcessQuitSession.swift */,
+				A0000000000000000000004D /* ProcessQuitRoute.swift */,
+				A0000000000000000000004E /* ProcessPermissionFootnote.swift */,
 				A0000000000000000000001B /* CPUPage.swift */,
 				A0000000000000000000002E /* MemoryPageSortPublication.swift */,
 				A00000000000000000000020 /* NetworkPage.swift */,
@@ -297,6 +305,7 @@
 				A0000000000000000000003C /* MachineOverviewSection.swift */,
 				A00000000000000000000013 /* OverviewCards.swift */,
 				A0000000000000000000000C /* ProcessTablePane.swift */,
+				A0000000000000000000004F /* ProcessPermissionFootnoteLabel.swift */,
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
 				A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */,
 				A0000000000000000000000E /* SharedUI.swift */,
@@ -433,6 +442,8 @@
 				B0000000000000000000003C /* MachineOverviewSection.swift in Sources */,
 				B0000000000000000000002F /* ProcessQuitOutcome.swift in Sources */,
 				B00000000000000000000030 /* ProcessQuitSession.swift in Sources */,
+				B0000000000000000000004D /* ProcessQuitRoute.swift in Sources */,
+				B0000000000000000000004E /* ProcessPermissionFootnote.swift in Sources */,
 				B0000000000000000000001B /* CPUPage.swift in Sources */,
 				B0000000000000000000002E /* MemoryPageSortPublication.swift in Sources */,
 				B00000000000000000000020 /* NetworkPage.swift in Sources */,
@@ -463,6 +474,7 @@
 				B0000000000000000000000B /* OverviewSection.swift in Sources */,
 				B00000000000000000000013 /* OverviewCards.swift in Sources */,
 				B0000000000000000000000C /* ProcessTablePane.swift in Sources */,
+				B0000000000000000000004F /* ProcessPermissionFootnoteLabel.swift in Sources */,
 				B0000000000000000000000D /* ProcessDetailSidebar.swift in Sources */,
 				B00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift in Sources */,
 				B0000000000000000000000E /* SharedUI.swift in Sources */,

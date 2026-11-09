@@ -3,7 +3,7 @@ import Foundation
 /// Memory and CPU toolbar chrome. Groups the rows already left by name, rising, and windowed filters.
 enum AppGroupChrome {
     static let toggleTitle = "按 App"
-    static let help = "同名进程合为一行。内存、线程、CPU、能耗和空闲唤醒相加。"
+    static let help = "同名进程合为一行。内存、线程、CPU、能耗和唤醒相加。"
 
     static func applies(on page: DashboardPage) -> Bool {
         page == .memory || page == .cpu
@@ -49,7 +49,7 @@ enum AppGroupProjection {
         } ?? members[0]
         let anyResident = members.contains { $0.memorySource == .resident }
         let energy = ProcessEnergyGroup.sum(members.map(\.energyWatts))
-        let wakeups = ProcessEnergyGroup.sum(members.map(\.idleWakeupsPerSecond))
+        let wakeups = ProcessEnergyGroup.sum(members.map(\.wakeupsPerSecond))
         return ProcessRow(
             pid: lead.pid,
             name: lead.name,
@@ -63,9 +63,9 @@ enum AppGroupProjection {
             diskReadBytesPerSecond: sum(members.map(\.diskReadBytesPerSecond)),
             diskWriteBytesPerSecond: sum(members.map(\.diskWriteBytesPerSecond)),
             energyWatts: energy.value,
-            idleWakeupsPerSecond: wakeups.value,
+            wakeupsPerSecond: wakeups.value,
             energyReadingIsPartial: energy.isPartial,
-            idleWakeupReadingIsPartial: wakeups.isPartial,
+            wakeupReadingIsPartial: wakeups.isPartial,
             groupedMemberCount: members.count
         )
     }
