@@ -89,7 +89,7 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
   - 「按 App」：内存页和 CPU 页都有。把当前可见行按名称合成一行，内存、线程、CPU、磁盘相加，任何成员缺数则合计缺数。能耗和唤醒按有读数的成员相加，有成员缺失则保留部分和并在详情注明「部分读数」，全部缺失仍是「—」。选中落到该组内存最多的 pid。磁盘页和网络页不合并。
 - 过滤顺序：名称过滤 → 仅上涨 → 仅窗口 App → 按 App 合并 → 表头排序。菜单栏 Top3、上涨 Top5 和「占用最多的 App」都读未过滤、未合并的完整列表。
 - 过滤后无结果：「清空过滤」一次清掉名称、仅上涨和仅窗口 App，「按 App」保持不变（`clearMemoryPageFilters`）。只开「仅窗口 App」导致的空态也走「没有匹配的 App」，副句仍是「清空名称和仅上涨过滤。」，没有提到仅窗口 App。采样中、列表失败、无进程这几种空态优先。
-- 「占用最多的 App」卡可点：确认 pid 还在列表且名称没变，必要时把名称过滤改成该名称，关掉「仅上涨」和「仅窗口 App」（「按 App」不变），然后用该卡片 pid 选中（`TopAppLocation`）。今天 `revealTopApp` 仍先看 `sortedRows` 有没有 `request.pid`：有才滚动这个 pid，没有就不滚。同名内存相等、行序先较小 pid 再较大 pid 时，卡片 pid 可以与 `combine` 代表不同，这道门会落空。把已经发出的这条命令映射到当前可见同名组已锁定，尚未改 `revealTopApp`。约定见 [specs/37-top-card-reveal-group.md](specs/37-top-card-reveal-group.md)。本机冒烟清单的勾选不因这句改变。
+- 「占用最多的 App」卡可点：确认 pid 还在列表且名称没变，必要时把名称过滤改成该名称，关掉「仅上涨」和「仅窗口 App」（「按 App」不变），然后用该卡片 pid 选中（`TopAppLocation`）。已经发出的这条命令，在内存页且「按 App」生效、并且卡片 pid 还在这一帧未合并可见行里时，滚动到当前可见同名组的代表；N 为 1 时就是该 pid。未命中才看 `sortedRows` 有没有原来的 pid：有就滚这个 pid，没有就不滚。卡片 pid、计划 pid 和选中 pid 仍是原来的数，不改成代表。本机冒烟清单的勾选不因这句改变。
 
 ### 上涨信号
 
