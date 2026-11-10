@@ -171,14 +171,21 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
 
         let body = try functionBody(named: "revealTopApp", in: pane)
         let code = compact(body)
-        let gate = "vm.sortedRows.contains(where:{$0.pid==request.pid})"
-        let scroll = "scrollTo(request.pid,anchor:.center)"
-        XCTAssertTrue(code.contains(gate), "request-pid sortedRows gate missing")
-        XCTAssertTrue(code.contains(scroll), "request.pid scroll identity missing")
-        let gateAt = try index(of: gate, in: code)
+        let mapped = "TopCardRevealTarget.scrollID("
+        let scroll = "scrollTo(scrollID,anchor:.center)"
+        XCTAssertTrue(code.contains(mapped), "visible-group scroll id missing")
+        XCTAssertTrue(code.contains("sortedRows:vm.sortedRows"))
+        XCTAssertTrue(code.contains("visibleUngrouped:vm.visibleRows"))
+        XCTAssertTrue(code.contains(scroll), "captured scroll identity missing")
+        XCTAssertTrue(code.contains("guardletscrollIDelse{return}"))
+        let mappedAt = try index(of: mapped, in: code)
+        let guardAt = try index(of: "guardletscrollIDelse{return}", in: code)
         let scrollAt = try index(of: scroll, in: code)
-        XCTAssertLessThan(gateAt, scrollAt, "missing pid returns before scrollTo")
+        XCTAssertLessThan(mappedAt, guardAt, "nil id returns before scrollTo")
+        XCTAssertLessThan(guardAt, scrollAt)
         XCTAssertLessThan(try index(of: "DispatchQueue.main.async{", in: code), scrollAt)
+        XCTAssertTrue(body.contains("if self.reduceMotion"))
+        XCTAssertTrue(body.contains("withAnimation(.easeInOut(duration: 0.28), move)"))
         XCTAssertFalse(body.contains("processListScrollTarget"))
         XCTAssertFalse(body.contains("selectedPid"))
         XCTAssertFalse(body.contains("revealProcessListTarget"))

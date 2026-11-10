@@ -24,9 +24,11 @@ final class MemoryRevealGroupRowWiringSourceTests: XCTestCase {
         XCTAssertFalse(reveal.contains("selectedPid ="))
 
         let top = try functionBody(named: "revealTopApp", in: pane)
-        XCTAssertTrue(top.contains("vm.sortedRows.contains(where: { $0.pid == request.pid })"))
-        XCTAssertTrue(top.contains("proxy.scrollTo(request.pid, anchor: .center)"))
+        XCTAssertTrue(top.contains("TopCardRevealTarget.scrollID("))
+        XCTAssertTrue(top.contains("sortedRows: vm.sortedRows"))
+        XCTAssertTrue(top.contains("proxy.scrollTo(scrollID, anchor: .center)"))
         XCTAssertFalse(top.contains("MemoryRevealGroupRow"))
+        XCTAssertFalse(top.contains("revealProcessListTarget"))
 
         let background = try functionBody(named: "rowBackground", in: pane)
         XCTAssertTrue(background.contains("duration: 0.16"))

@@ -340,9 +340,16 @@ struct ProcessTablePane: View {
     }
 
     private func revealTopApp(request: TopAppLocation.Reveal, proxy: ScrollViewProxy) {
-        guard vm.sortedRows.contains(where: { $0.pid == request.pid }) else { return }
+        let scrollID = TopCardRevealTarget.scrollID(
+            requestPid: request.pid,
+            page: vm.selectedPage,
+            grouping: vm.groupedByApp && AppGroupChrome.applies(on: vm.selectedPage),
+            visibleUngrouped: vm.visibleRows,
+            sortedRows: vm.sortedRows
+        )
+        guard let scrollID else { return }
         DispatchQueue.main.async {
-            let move = { proxy.scrollTo(request.pid, anchor: .center) }
+            let move = { proxy.scrollTo(scrollID, anchor: .center) }
             if self.reduceMotion {
                 move()
             } else {
