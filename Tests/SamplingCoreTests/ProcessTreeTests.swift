@@ -288,6 +288,100 @@ final class ProcessTreeTests: XCTestCase {
         XCTAssertEqual(ProcessTree.build(from: []).initiallyExpanded(centeredOn: 1), [])
     }
 
+    func testNodePidUsesTheRowOtherwiseThePlaceholder() {
+        let alone = row(pid: 42, name: "Safari", parentPid: nil)
+        let tree = ProcessTree.build(from: [alone])
+        XCTAssertEqual(tree.subtree(rootedAt: 42)?.pid, 42)
+
+        let worker = row(pid: 50, name: "worker", parentPid: 123)
+        let missing = ProcessTree.build(from: [worker])
+        XCTAssertEqual(missing.subtree(rootedAt: 123)?.pid, 123)
+        XCTAssertEqual(missing.subtree(rootedAt: 50)?.pid, 50)
+    }
+
+    func testMemoryPageTurnsRisingOnlyOffWhenThePidHasNoBadge() {
+        let next = ProcessTree.filtersAfterFocus(
+            pid: 7,
+            page: .memory,
+            risingOnly: true,
+            windowedOnly: true,
+            rows: [],
+            nameQuery: "",
+            seriesByPid: [:],
+            windowedPids: { [7] }
+        )
+
+        XCTAssertFalse(next.risingOnly)
+        XCTAssertTrue(next.windowedOnly)
+    }
+
+    func testMemoryPageKeepsWindowedOnlyWhenThePidCanOpenAWindow() {
+        let next = ProcessTree.filtersAfterFocus(
+            pid: 7,
+            page: .memory,
+            risingOnly: false,
+            windowedOnly: true,
+            rows: [],
+            nameQuery: "Safari",
+            seriesByPid: [:],
+            windowedPids: { [7, 8] }
+        )
+
+        XCTAssertFalse(next.risingOnly)
+        XCTAssertTrue(next.windowedOnly)
+    }
+
+    func testMemoryPageTurnsWindowedOnlyOffWhenThePidCannotOpenAWindow() {
+        let next = ProcessTree.filtersAfterFocus(
+            pid: 7,
+            page: .memory,
+            risingOnly: false,
+            windowedOnly: true,
+            rows: [],
+            nameQuery: "",
+            seriesByPid: [:],
+            windowedPids: { [8] }
+        )
+
+        XCTAssertFalse(next.risingOnly)
+        XCTAssertFalse(next.windowedOnly)
+    }
+
+    func testCPUPageKeepsRisingOnlyAndWindowedOnly() {
+        let next = ProcessTree.filtersAfterFocus(
+            pid: 7,
+            page: .cpu,
+            risingOnly: true,
+            windowedOnly: true,
+            rows: [],
+            nameQuery: "no-match",
+            seriesByPid: [:],
+            windowedPids: { [] }
+        )
+
+        XCTAssertTrue(next.risingOnly)
+        XCTAssertTrue(next.windowedOnly)
+    }
+
+    func testMemoryPageKeepsRisingOnlyWhenThePidHasABadge() {
+        let series = risingSeries()
+        XCTAssertNotNil(MemoryGrowthList.badge(page: .memory, rowPid: 7, seriesByPid: [7: series]))
+
+        let next = ProcessTree.filtersAfterFocus(
+            pid: 7,
+            page: .memory,
+            risingOnly: true,
+            windowedOnly: true,
+            rows: [],
+            nameQuery: "not-this-process",
+            seriesByPid: [7: series],
+            windowedPids: { [] }
+        )
+
+        XCTAssertTrue(next.risingOnly)
+        XCTAssertFalse(next.windowedOnly)
+    }
+
     func testParentZeroIsNotAPlaceholderBesideAMissingParent() {
         let launchd = row(pid: 1, name: "launchd", parentPid: 0)
         let worker = row(pid: 50, name: "worker", parentPid: 80)
@@ -300,6 +394,19 @@ final class ProcessTreeTests: XCTestCase {
         XCTAssertEqual(tree.subtree(rootedAt: 80)?.placeholderText(), "(PID 80 - 无权限)")
         XCTAssertEqual(tree.subtree(rootedAt: 80)?.children.map { $0.row?.pid }, [50])
         XCTAssertEqual(tree.ancestors(of: 80), [])
+    }
+
+    private func risingSeries() -> [ChartSample] {
+        let baseline = 200_000_000.0
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let step = 1_048_576.0
+        return (0..<MemoryGrowthSignal.minSamples).map { index in
+            ChartSample(
+                id: UInt64(index + 1),
+                date: start.addingTimeInterval(Double(index) * 1.5),
+                value: baseline + Double(index) * step
+            )
+        }
     }
 
     private func row(pid: Int32, name: String, parentPid: Int32?, memory: UInt64 = 4096) -> ProcessRow {

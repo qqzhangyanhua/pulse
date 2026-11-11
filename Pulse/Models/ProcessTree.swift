@@ -2,7 +2,10 @@ struct ProcessTreeNode: Equatable {
     let row: ProcessRow?
     let placeholderPid: Int32?
     let children: [ProcessTreeNode]
-    let isPlaceholder: Bool
+
+    var pid: Int32? { row?.pid ?? placeholderPid }
+
+    var isPlaceholder: Bool { row == nil }
 
     func placeholderText() -> String? {
         guard let placeholderPid else { return nil }
@@ -57,11 +60,11 @@ struct ProcessTree {
         guard nodes[pid] != nil else { return [] }
         var expanded: Set<Int32> = [pid]
         for ancestor in ancestors(of: pid) {
-            guard let ancestorPid = ancestor.row?.pid ?? ancestor.placeholderPid else { continue }
+            guard let ancestorPid = ancestor.pid else { continue }
             expanded.insert(ancestorPid)
         }
         for child in nodes[pid]?.children ?? [] {
-            guard let childPid = child.row?.pid ?? child.placeholderPid else { continue }
+            guard let childPid = child.pid else { continue }
             expanded.insert(childPid)
         }
         return expanded
@@ -95,9 +98,40 @@ struct ProcessTree {
         rowByPid: [Int32: ProcessRow]
     ) -> ProcessTreeNode {
         if let row = rowByPid[pid] {
-            return ProcessTreeNode(row: row, placeholderPid: nil, children: children, isPlaceholder: false)
+            return ProcessTreeNode(row: row, placeholderPid: nil, children: children)
         }
-        return ProcessTreeNode(row: nil, placeholderPid: pid, children: children, isPlaceholder: true)
+        return ProcessTreeNode(row: nil, placeholderPid: pid, children: children)
+    }
+
+    /// Memory-page keeps that would drop `pid` turn off. Other pages stay as passed.
+    static func filtersAfterFocus(
+        pid: Int32,
+        page: DashboardPage,
+        risingOnly: Bool,
+        windowedOnly: Bool,
+        rows: [ProcessRow],
+        nameQuery: String,
+        seriesByPid: [Int32: [ChartSample]],
+        windowedPids: () -> Set<Int32>
+    ) -> (risingOnly: Bool, windowedOnly: Bool) {
+        let keepsRising = MemoryGrowthRisingFilter.selectedPid(
+            current: pid,
+            rows: rows,
+            nameQuery: nameQuery,
+            page: page,
+            risingOnly: risingOnly,
+            seriesByPid: seriesByPid
+        ) == pid
+        let keepsWindowed = WindowedAppFilter.selectedPid(
+            current: pid,
+            page: page,
+            windowedOnly: windowedOnly,
+            windowedPids: windowedPids
+        ) == pid
+        return (
+            risingOnly: keepsRising ? risingOnly : false,
+            windowedOnly: keepsWindowed ? windowedOnly : false
+        )
     }
 
     func subtree(rootedAt pid: Int32) -> ProcessTreeNode? {

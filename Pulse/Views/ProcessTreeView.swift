@@ -43,12 +43,12 @@ struct ProcessTreeView: View {
         guard let ancestor = tree.ancestors(of: centerPid).last else {
             return tree.subtree(rootedAt: centerPid)
         }
-        guard let rootPid = ancestor.row?.pid ?? ancestor.placeholderPid else { return nil }
+        guard let rootPid = ancestor.pid else { return nil }
         return tree.subtree(rootedAt: rootPid)
     }
 
     private func flatten(_ node: ProcessTreeNode, depth: Int) -> [ProcessTreeVisibleNode] {
-        guard let pid = node.row?.pid ?? node.placeholderPid else { return [] }
+        guard let pid = node.pid else { return [] }
         let item = ProcessTreeVisibleNode(pid: pid, node: node, depth: depth)
         guard expandedPids.contains(pid) else { return [item] }
         let children = node.children.flatMap { flatten($0, depth: depth + 1) }

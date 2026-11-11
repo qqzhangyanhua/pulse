@@ -20,11 +20,8 @@ struct ProcessDetailSidebar: View {
                     rows: vm.rows,
                     centerPid: centerPid,
                     expandedPids: $expandedProcessTreePids,
-                    onBack: { showsProcessTree = false },
-                    onSelect: { pid in
-                        vm.selectPidIfPresent(pid)
-                        showsProcessTree = false
-                    }
+                    onBack: { vm.focusProcessFromTree(centerPid); showsProcessTree = false },
+                    onSelect: { pid in vm.focusProcessFromTree(pid); showsProcessTree = false }
                 )
                 .transition(.opacity)
             } else if let detail = sidebar.detail {
