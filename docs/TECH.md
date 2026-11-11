@@ -169,22 +169,21 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 
 后续采样仍可能改 `rows` 和上涨序列，终态可以和点击当时不同。这一节不把该竞态说成已解决。Mac 上的主窗激活、行是否真的滚进视口、焦点和 VoiceOver 都还没跑。纯模型和源码测试不能代替这四项。
 
-实现时的第一条行为红必须用现有符号编译通过，再在值上失败。不要先调用一个还不存在的类型。用 pid 4 仍在 `rows`、仅上涨为开、`seriesByPid` 里没有它的徽标：
+把 `ProcessSelection.applying` 和未改动的 `MemoryGrowthRisingFilter.selectedPid` 手工串起来，只能证明共享上涨门在「仅上涨」开着且没有徽标时，会把已经写下的 pid 4 清成 `nil`。这只是共享门的缺口证据，不是 Top3 验收。验收不能靠测试在调用前自己插入准备，也不能靠放宽 `focusMemoryPage` 或这两道 `selectedPid`。
 
-1. `MenuBarPopoverTap.steps(for: .process(4))` 仍是收起、`selectPidIfPresent(4)`、`focusMemoryPage`。
-2. `ProcessSelection.applying(pid: 4, to: nil, in: rows)` 得到 4。
-3. 再把这个 4 交给未改动的 `MemoryGrowthRisingFilter.selectedPid`（内存页、仅上涨开、无徽标）。
+Top3 验收只走同一个生产调度入口。`MenuBarController.handlePopoverTap` 用它修改选择、导航和过滤。收起轻量条，以及现成的 `onOpenPulse`（里面仍是未改动的 `focusMemoryPage`，负责主窗激活），留在控制器里。测试调用的就是这个入口，送进去的是真实状态：当前 `selectedPid`、`DashboardNavigation`、名称查询、「仅上涨」、「仅窗口 App」、「按 App」、`rows`、上涨序列和窗口集。红和绿是同一次用户动作（点进程 4）和同一句最终断言：清选中跑完之后的 `selectedPid` 等于 4。这个 4 不是 `selectPidIfPresent` 刚写上、还没经过共享门的那个值；按今天的语义，门会把它变成 `nil`。变绿只改入口内部。进程行且该 PID 仍在 `rows` 里时，入口先做上面已锁定的准备，再按现成的选中语义写入，再跑未改动的导航排序和两道清选中。测试代码不写准备。
 
-断言最终选择等于 4。今天第 3 步把它变成 `nil`，失败是 `nil` 和 4 不相等。只断言共享函数返回 `nil`，或只断言发出了滚动，都不是这道红。红记下之后，再让测试在第 3 步之前应用 Top3 准备把仅上涨关掉，共享函数本体仍要求「开着且无徽标则返回 `nil`」。生产代码只在进程行点击里调用这次准备，不放进 `focusMemoryPage`。
+新增这个入口时，函数体先保持今天的生产语义：进程行仍是「还在才选中」，然后是共享切页的状态部分（现有排序规则，加上两道清选中），不做准备。「打开 Pulse」仍只有切页状态，不选中、不准备。测试因此能编译。失败是最终选择为 `nil`，不是找不到符号。这道红记下之后，只把准备放进入口的进程行分支。同一句断言变成 4。源码接线读 `handlePopoverTap`，证明它调用该入口，并且名称清空和开关关闭不写在 `focusMemoryPage` 里，也不写在测试里。直接调用 `MemoryGrowthRisingFilter.selectedPid`，在仅上涨开着且无徽标时仍返回 `nil`。
 
-同一组合还要覆盖，并且都走准备、现成选中和未改动的清选中，而不是单看共享函数：
+下面这些都调用该入口。本段写下时都还没执行：
 
-- 仅上涨、仅窗口、名称查询各自挡住时只改那一项；两项或三项一起挡住时一起改；没挡住的保持，包括已有上涨徽标和已在窗口集。
-- 查询可匹配或空白时原文保持；不匹配时变成空字符串，不是全名。
-- 目标已不在 `rows`：过滤字节不变，不写入该 PID，不选同名替代。
-- 已在内存页时排序不变；从其它页进来时仍是现有内存默认排序。准备本身不写排序。
-- 「按 App」开着，且组代表和被点 PID 不同：选择和操作 PID 仍是被点的那个，揭示 id 才是 `MemoryRevealGroupRow` 的代表。
-- `.openPulse` 的步骤仍只有收起和切页。通知点击不走进程行准备。直接调用 `MemoryGrowthRisingFilter.selectedPid`，在仅上涨开着且无徽标时仍是 `nil`。
+- 名称、仅上涨、仅窗口各自只在挡住该 PID 时调整；一起挡住时一起调。查询可匹配或空白、已有上涨徽标、已在窗口集的保持。最终选择是被点 PID。
+- 目标已不在 `rows`：入口不准备，过滤保持原样，不写入该 PID，不选同名替代，然后仍是普通切页。
+- `.openPulse` 不准备。通知点击不走这个进程行入口，仍只调用共享 `focusMemoryPage`。
+- 「按 App」开着，且组代表和被点 PID 不同：入口留下的选择和操作 PID 是被点的那个。揭示 id 再用现成 `MemoryRevealGroupRow` 从这次结果计算，可以是代表。
+- 已在内存页时排序不变；从其它页进来时仍是现有内存默认排序。入口不另写一次排序。
+
+这些调用不是 Mac 主窗激活、行是否滚进视口、焦点或 VoiceOver，也不是下一次采样之后的终态。
 
 ## 设置
 
