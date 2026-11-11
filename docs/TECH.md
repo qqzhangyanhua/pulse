@@ -154,16 +154,28 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 
 当前生产顺序，对照 `2fe7bcd` 的源码，不是 Mac 上点出来的：`MenuBarController.handlePopoverTap` 按 `MenuBarPopoverTap.steps` 执行。进程行是 `dismissPopover`，然后 `selectPidIfPresent`（`ProcessSelection.acceptedPid` 对照完整 `rows`），然后 `onOpenPulse`，也就是 `PulseAppDelegate.focusMemoryPage` → `MemoryDashboardVM.focusMemoryPage`。共享的 `focusMemoryPage` 自己不写入被点 PID。它先走 `DashboardNavigation.focusMemoryPage`：从别的页进来时排序恢复内存页默认（内存降序）；已经在内存页则保持当前排序。接着 `applyRisingOnlySelection`，再 `applyWindowedOnlySelection`。`MemoryGrowthRisingFilter.selectedPid` 在内存页且「仅上涨」开着、该 PID 没有列表徽标时返回 `nil`，名称查询不参与这道清选中。`WindowedAppFilter.selectedPid` 在「仅窗口 App」开着且 PID 不在窗口集时返回 `nil`。所以 pid 4 还在 `rows` 里、仅上涨开着、又没有徽标时，选中会在切页后变成空。这不是把共享清选中函数放宽就能交差的缺口。
 
-已锁定的顺序仍是收起、选中、共享切页。只允许在进程行、且 PID 仍在 `rows` 里时，于选中和切页之前加一次 Top3 专属准备。准备只动挡住这个 PID 的过滤：
+已锁定的状态顺序是收起，然后在一次 `MemoryDashboardVM.focusMemoryPage` 之前做准备和选中。窗口激活跟在这一次切页后面，不再借 `onOpenPulse`。只允许在进程行、且 PID 仍在 `rows` 里时做这次准备。准备只动挡住这个 PID 的过滤：
 
 - 名称查询：去掉首尾空白后为空，或 `ProcessNameFilter.apply` 仍留下该 PID，查询原文保持。否则把查询设成空字符串。不改成该进程的全名。
 - 「仅上涨」：开关开着且 `MemoryGrowthList.badge` 对该 PID 为 `nil` 时才关掉。已有徽标则保持开。
 - 「仅窗口 App」：开关开着且该 PID 不在现有窗口集里时才关掉。窗口集仍是 `WindowedAppLookup` 交给 `WindowedAppFilter` 的那一次，不另定义哪些进程有窗口。已在集里则保持开。
 - 「按 App」不改。准备不写排序。
 
-准备之后仍调用现成的 `selectPidIfPresent` 和未改动的 `focusMemoryPage`。切页后的清选中看到的是调整后的开关，所以被点 PID 留下来。详情仍绑定这个 `selectedPid`。`groupedByApp` 保持时，现有 `processListScrollTarget` 再经 `MemoryRevealGroupRow` 滚到可见组代表；代表可以不是被点 PID。选中、侧栏和退出仍是被点 PID，不换成代表。
+准备之后仍是现成的 `selectPidIfPresent`，然后只调用一次未改动的 `MemoryDashboardVM.focusMemoryPage`。这一次就是全部状态切页：`DashboardNavigation.focusMemoryPage`、`publishMemoryPageSort`、两道清选中、`syncMachineWatch`。清选中看到的是调整后的开关，所以被点 PID 留下来。详情仍绑定这个 `selectedPid`。`groupedByApp` 保持时，现有 `processListScrollTarget` 再经 `MemoryRevealGroupRow` 滚到可见组代表；代表可以不是被点 PID。选中、侧栏和退出仍是被点 PID，不换成代表。这里的 `focusMemoryPage` 是 VM 上的那个，不是 `PulseAppDelegate.focusMemoryPage`。
 
-点击时 PID 已经不在 `rows`：不做这次准备，不写这个消失的 PID，也不选同名的另一行。然后仍走普通的打开内存页。不保证原来的选中还在，因为共享切页仍可能按现有开关清掉它。「打开 Pulse」、通知点击、重开主窗、共享 `focusMemoryPage`，以及 `MemoryGrowthRisingFilter.selectedPid` 和 `WindowedAppFilter.selectedPid` 的本体，都不改。
+点击时 PID 已经不在 `rows`：不做这次准备，不写这个消失的 PID，也不选同名的另一行。然后仍是一次 `MemoryDashboardVM.focusMemoryPage`。不保证原来的选中还在，因为这一次共享清选中仍可能按现有开关清掉它。控制器接着只做一次窗口激活，不再切页。
+
+现码没有「只激活、不切页」的函数。`MenuBarController.install` 收来的 `onOpenPulse`，在 `PulseAppDelegate.didLaunch` 里就是 `self.focusMemoryPage`。`PulseAppDelegate.focusMemoryPage` 先 `dashboard.focusMemoryPage()`，再 `NSApp.activate`，已有主窗则 `deminiaturize` / `makeKeyAndOrderFront`，否则 `openMainWindow`，然后改 `sceneActive` 并 `applyPace`。Top3 若在状态切页之后再调用 `onOpenPulse`，状态切页会跑第二次。所以 Top3 不调用 `onOpenPulse`，也不调用 `PulseAppDelegate.focusMemoryPage`。窗口激活用一条现在还不存在的 Top3 回调，只做上面这一段激活，不调用 `dashboard.focusMemoryPage()`。`PulseAppDelegate.focusMemoryPage` 的函数体不改，普通打开和通知仍只走它。
+
+| 职责 | Top3 进程行 | 「打开 Pulse」 | 通知点击、重开主窗 |
+| --- | --- | --- | --- |
+| 收起轻量条 | `handlePopoverTap` 一次，在状态之前 | 同左 | 不走这里 |
+| 过滤准备 | 仅 PID 仍在 `rows` 时，规则见上 | 不做 | 不做 |
+| 选中 | `selectPidIfPresent` 一次 | 不写 | 不写 |
+| 状态切页 | `MemoryDashboardVM.focusMemoryPage` 一次 | 含在下面这一次共享入口里 | 同左 |
+| 窗口激活 | 新的只激活回调一次 | `onOpenPulse` 一次，即未改动的 `PulseAppDelegate.focusMemoryPage` | 通知闭包和重开直接调用这个 `focusMemoryPage` |
+
+Top3 进程行只按这个顺序：`dismissPopover`，生产入口（需要时准备，然后选中，然后 `MemoryDashboardVM.focusMemoryPage` 一次），然后只激活回调一次。「打开 Pulse」仍是收起之后 `onOpenPulse` 一次，不进生产入口，也不再加只激活回调。两道 `selectedPid` 门的函数体不改。
 
 跨页进入内存页仍只由现有 `DashboardNavigation.focusMemoryPage` 恢复内存默认排序。已经在内存页则保持进入点击前的排序。本项不再写一次排序。
 
@@ -171,17 +183,17 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 
 把 `ProcessSelection.applying` 和未改动的 `MemoryGrowthRisingFilter.selectedPid` 手工串起来，只能证明共享上涨门在「仅上涨」开着且没有徽标时，会把已经写下的 pid 4 清成 `nil`。这只是共享门的缺口证据，不是 Top3 验收。验收不能靠测试在调用前自己插入准备，也不能靠放宽 `focusMemoryPage` 或这两道 `selectedPid`。
 
-Top3 验收只走同一个生产调度入口。`MenuBarController.handlePopoverTap` 用它修改选择、导航和过滤。收起轻量条，以及现成的 `onOpenPulse`（里面仍是未改动的 `focusMemoryPage`，负责主窗激活），留在控制器里。测试调用的就是这个入口，送进去的是真实状态：当前 `selectedPid`、`DashboardNavigation`、名称查询、「仅上涨」、「仅窗口 App」、「按 App」、`rows`、上涨序列和窗口集。红和绿是同一次用户动作（点进程 4）和同一句最终断言：清选中跑完之后的 `selectedPid` 等于 4。这个 4 不是 `selectPidIfPresent` 刚写上、还没经过共享门的那个值；按今天的语义，门会把它变成 `nil`。变绿只改入口内部。进程行且该 PID 仍在 `rows` 里时，入口先做上面已锁定的准备，再按现成的选中语义写入，再跑未改动的导航排序和两道清选中。测试代码不写准备。
+Top3 验收调用 `handlePopoverTap` 使用的那一个生产入口，断言的是控制器按上表调度完之后的状态，不是入口内部在 `MemoryDashboardVM.focusMemoryPage` 之前的中间选择。送进去的是真实状态：当前 `selectedPid`、`DashboardNavigation`、名称查询、「仅上涨」、「仅窗口 App」、「按 App」、`rows`、上涨序列和窗口集。同一次结果还带上这次调度：状态切页 1 次、窗口激活 1 次、`onOpenPulse` 0 次。红和绿是同一次用户动作（点进程 4）和同一句最终断言：这一次清选中跑完之后的 `selectedPid` 等于 4。按今天的语义，这一次门会把它变成 `nil`。变绿只在入口内部、于那一次 `MemoryDashboardVM.focusMemoryPage` 之前加上已锁定的准备。测试不写准备，也不再调用 `onOpenPulse`。
 
-新增这个入口时，函数体先保持今天的生产语义：进程行仍是「还在才选中」，然后是共享切页的状态部分（现有排序规则，加上两道清选中），不做准备。「打开 Pulse」仍只有切页状态，不选中、不准备。测试因此能编译。失败是最终选择为 `nil`，不是找不到符号。这道红记下之后，只把准备放进入口的进程行分支。同一句断言变成 4。源码接线读 `handlePopoverTap`，证明它调用该入口，并且名称清空和开关关闭不写在 `focusMemoryPage` 里，也不写在测试里。直接调用 `MemoryGrowthRisingFilter.selectedPid`，在仅上涨开着且无徽标时仍返回 `nil`。
+新增这个入口时，函数体先保持今天的进程行语义：还在才 `selectPidIfPresent`，然后 `MemoryDashboardVM.focusMemoryPage` 一次，不做准备。控制器随后只走新的激活回调一次。测试因此能编译。失败是最终选择为 `nil`，不是找不到符号。这道红记下之后，只把准备放进入口内部。同一句断言变成 4。源码接线读 `handlePopoverTap`：进程行是收起、该入口、只激活回调，这个顺序里 `onOpenPulse` 出现 0 次，`MemoryDashboardVM.focusMemoryPage` 只出现在入口里的那一次；「打开 Pulse」分支仍是收起后 `onOpenPulse` 1 次，且不调用该入口。`PulseAppDelegate.focusMemoryPage` 仍先 `dashboard.focusMemoryPage()` 再激活。通知闭包和重开仍只调用它。直接调用 `MemoryGrowthRisingFilter.selectedPid`，在仅上涨开着且无徽标时仍返回 `nil`。
 
-下面这些都调用该入口。本段写下时都还没执行：
+下面这些都走同一套控制器调度。本段写下时都还没执行：
 
-- 名称、仅上涨、仅窗口各自只在挡住该 PID 时调整；一起挡住时一起调。查询可匹配或空白、已有上涨徽标、已在窗口集的保持。最终选择是被点 PID。
-- 目标已不在 `rows`：入口不准备，过滤保持原样，不写入该 PID，不选同名替代，然后仍是普通切页。
-- `.openPulse` 不准备。通知点击不走这个进程行入口，仍只调用共享 `focusMemoryPage`。
-- 「按 App」开着，且组代表和被点 PID 不同：入口留下的选择和操作 PID 是被点的那个。揭示 id 再用现成 `MemoryRevealGroupRow` 从这次结果计算，可以是代表。
-- 已在内存页时排序不变；从其它页进来时仍是现有内存默认排序。入口不另写一次排序。
+- 名称、仅上涨、仅窗口各自只在挡住该 PID 时调整；一起挡住时一起调。查询可匹配或空白、已有上涨徽标、已在窗口集的保持。最终选择是被点 PID。状态切页 1 次，激活 1 次，`onOpenPulse` 0 次。
+- 目标已不在 `rows`：不准备，过滤保持原样，不写入该 PID，不选同名替代，然后仍是一次 `MemoryDashboardVM.focusMemoryPage`，再激活 1 次。`onOpenPulse` 0 次。
+- 「打开 Pulse」不准备，`onOpenPulse` 1 次。通知点击不进这个入口，仍只调用 `PulseAppDelegate.focusMemoryPage`。
+- 「按 App」开着，且组代表和被点 PID 不同：调度留下的选择和操作 PID 是被点的那个。揭示 id 再用现成 `MemoryRevealGroupRow` 从这次最终状态计算，可以是代表。
+- 已在内存页时排序不变；从其它页进来时仍是现有内存默认排序。不另写一次排序，也不把状态切页再跑一遍。
 
 这些调用不是 Mac 主窗激活、行是否滚进视口、焦点或 VoiceOver，也不是下一次采样之后的终态。
 
