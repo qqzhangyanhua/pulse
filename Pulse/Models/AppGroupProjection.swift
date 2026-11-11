@@ -12,6 +12,11 @@ enum AppGroupChrome {
     static func showsToggle(page: DashboardPage) -> Bool {
         applies(on: page)
     }
+
+    /// False only while grouping is on and this page merges rows.
+    static func showsProcessTreeButton(groupedByApp: Bool, page: DashboardPage) -> Bool {
+        !(groupedByApp && applies(on: page))
+    }
 }
 
 /// Display projection. Does not write the sampler rows or the growth series.

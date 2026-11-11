@@ -20,7 +20,11 @@ struct ProcessDetailSidebar: View {
                     rows: vm.rows,
                     centerPid: centerPid,
                     expandedPids: $expandedProcessTreePids,
-                    onBack: { showsProcessTree = false }
+                    onBack: { showsProcessTree = false },
+                    onSelect: { pid in
+                        vm.selectPidIfPresent(pid)
+                        showsProcessTree = false
+                    }
                 )
                 .transition(.opacity)
             } else if let detail = sidebar.detail {
@@ -41,6 +45,9 @@ struct ProcessDetailSidebar: View {
         }
         .onChange(of: sidebarSubjectBeat) { previous, current in
             acceptSidebarBeat(previous: previous, current: current)
+        }
+        .onChange(of: AppGroupChrome.showsProcessTreeButton(groupedByApp: vm.groupedByApp, page: vm.selectedPage)) { _, shows in
+            if !shows { showsProcessTree = false }
         }
     }
 
@@ -351,8 +358,10 @@ struct ProcessDetailSidebar: View {
                 }
             }
             Spacer(minLength: 8)
-            ProcessTreeOpenButton(systemName: "arrow.triangle.branch", help: "进程树") {
-                openProcessTree(centeredOn: detail.row.pid)
+            if AppGroupChrome.showsProcessTreeButton(groupedByApp: vm.groupedByApp, page: vm.selectedPage) {
+                ProcessTreeOpenButton(systemName: "arrow.triangle.branch", help: "进程树") {
+                    openProcessTree(centeredOn: detail.row.pid)
+                }
             }
             closeButton
         }

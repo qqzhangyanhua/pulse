@@ -24,6 +24,15 @@ final class AppGroupProjectionTests: XCTestCase {
         XCTAssertFalse(AppGroupChrome.help.contains("网络"))
     }
 
+    func testProcessTreeButtonHidesOnlyWhileAppGroupingApplies() {
+        XCTAssertTrue(AppGroupChrome.showsProcessTreeButton(groupedByApp: false, page: .memory))
+        XCTAssertTrue(AppGroupChrome.showsProcessTreeButton(groupedByApp: false, page: .cpu))
+        XCTAssertFalse(AppGroupChrome.showsProcessTreeButton(groupedByApp: true, page: .memory))
+        XCTAssertFalse(AppGroupChrome.showsProcessTreeButton(groupedByApp: true, page: .cpu))
+        XCTAssertTrue(AppGroupChrome.showsProcessTreeButton(groupedByApp: true, page: .disk))
+        XCTAssertTrue(AppGroupChrome.showsProcessTreeButton(groupedByApp: true, page: .network))
+    }
+
     func testGroupSumsMemoryAndThreadsAndKeepsTheHeaviestPid() {
         let rows = [
             row(2, "Chrome", memory: 10, threads: 2, cpu: 1),

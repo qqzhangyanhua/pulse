@@ -22,6 +22,26 @@ final class ProcessTreeWiringSourceTests: XCTestCase {
         XCTAssertFalse(package.contains("ProcessTreeView.swift"))
     }
 
+    func testNonPlaceholderTapSelectsAndGroupingHidesTheButton() throws {
+        let view = try repoText("Pulse/Views/ProcessTreeView.swift")
+        let placeholder = try XCTUnwrap(view.range(of: "placeholderText()")?.lowerBound)
+        XCTAssertTrue(
+            view[..<placeholder].contains("onSelect("),
+            "non-placeholder name tap calls onSelect"
+        )
+        XCTAssertFalse(
+            view[placeholder...].contains("onSelect"),
+            "placeholder does not call onSelect"
+        )
+        XCTAssertFalse(view.contains("memoryBytes: 0"))
+
+        let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
+        XCTAssertTrue(sidebar.contains("selectPidIfPresent"))
+        XCTAssertTrue(sidebar.contains("showsProcessTreeButton"))
+        XCTAssertTrue(sidebar.contains("onSelect:"))
+        XCTAssertFalse(sidebar.contains("selectedPid ="))
+    }
+
     private func repoText(_ relative: String) throws -> String {
         try String(contentsOf: repoRoot().appendingPathComponent(relative), encoding: .utf8)
     }

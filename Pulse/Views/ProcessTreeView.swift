@@ -5,6 +5,7 @@ struct ProcessTreeView: View {
     let centerPid: Int32
     @Binding var expandedPids: Set<Int32>
     let onBack: () -> Void
+    let onSelect: (Int32) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -19,7 +20,8 @@ struct ProcessTreeView: View {
                             item: item,
                             isCenter: item.pid == centerPid,
                             isExpanded: expandedPids.contains(item.pid),
-                            onToggle: { toggle(item.pid) }
+                            onToggle: { toggle(item.pid) },
+                            onSelect: onSelect
                         )
                     }
                 }
@@ -75,6 +77,7 @@ private struct ProcessTreeNodeRow: View {
     let isCenter: Bool
     let isExpanded: Bool
     let onToggle: () -> Void
+    let onSelect: (Int32) -> Void
 
     var body: some View {
         HStack(spacing: 4) {
@@ -105,22 +108,32 @@ private struct ProcessTreeNodeRow: View {
     }
 
     private var content: some View {
-        HStack(spacing: 8) {
+        Group {
             if let row = item.node.row {
-                Text(row.name)
-                    .lineLimit(1)
-                Text("PID \(row.pid)")
-                    .foregroundStyle(.secondary)
-                    .layoutPriority(1)
-                Spacer(minLength: 8)
-                Text(ByteFormat.memory(row.memoryBytes))
-                    .foregroundStyle(.secondary)
-                    .layoutPriority(1)
+                Button {
+                    onSelect(row.pid)
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(row.name)
+                            .lineLimit(1)
+                        Text("PID \(row.pid)")
+                            .foregroundStyle(.secondary)
+                            .layoutPriority(1)
+                        Spacer(minLength: 8)
+                        Text(ByteFormat.memory(row.memoryBytes))
+                            .foregroundStyle(.secondary)
+                            .layoutPriority(1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
             } else if let placeholder = item.node.placeholderText() {
-                Text(placeholder)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
+                HStack(spacing: 8) {
+                    Text(placeholder)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
             }
         }
         .font(.callout)
