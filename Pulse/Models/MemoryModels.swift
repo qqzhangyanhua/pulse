@@ -125,6 +125,8 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     let wakeupReadingIsPartial: Bool
     /// Nil on an ungrouped row. A grouped row stores `members.count`, including 1.
     let groupedMemberCount: Int?
+    /// `PROC_PIDTBSDINFO` parent. Nil when that read fails. Zero is a real ppid, not a failure.
+    let parentPid: Int32?
 
     init(
         pid: Int32,
@@ -142,7 +144,8 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         wakeupsPerSecond: Double? = nil,
         energyReadingIsPartial: Bool = false,
         wakeupReadingIsPartial: Bool = false,
-        groupedMemberCount: Int? = nil
+        groupedMemberCount: Int? = nil,
+        parentPid: Int32? = nil
     ) {
         self.pid = pid
         self.name = name
@@ -160,6 +163,7 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         self.energyReadingIsPartial = energyReadingIsPartial
         self.wakeupReadingIsPartial = wakeupReadingIsPartial
         self.groupedMemberCount = groupedMemberCount
+        self.parentPid = parentPid
     }
 
     /// Missing first-sample CPU sorts below real values without pretending it is 0%.

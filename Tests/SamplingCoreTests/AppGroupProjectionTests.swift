@@ -24,6 +24,15 @@ final class AppGroupProjectionTests: XCTestCase {
         XCTAssertFalse(AppGroupChrome.help.contains("网络"))
     }
 
+    func testProcessTreeButtonHidesOnlyWhileAppGroupingApplies() {
+        XCTAssertTrue(AppGroupChrome.showsProcessTreeButton(groupedByApp: false, page: .memory))
+        XCTAssertTrue(AppGroupChrome.showsProcessTreeButton(groupedByApp: false, page: .cpu))
+        XCTAssertFalse(AppGroupChrome.showsProcessTreeButton(groupedByApp: true, page: .memory))
+        XCTAssertFalse(AppGroupChrome.showsProcessTreeButton(groupedByApp: true, page: .cpu))
+        XCTAssertTrue(AppGroupChrome.showsProcessTreeButton(groupedByApp: true, page: .disk))
+        XCTAssertTrue(AppGroupChrome.showsProcessTreeButton(groupedByApp: true, page: .network))
+    }
+
     func testGroupSumsMemoryAndThreadsAndKeepsTheHeaviestPid() {
         let rows = [
             row(2, "Chrome", memory: 10, threads: 2, cpu: 1),
@@ -46,6 +55,29 @@ final class AppGroupProjectionTests: XCTestCase {
         ])
         XCTAssertEqual(grouped.pid, 3)
         XCTAssertEqual(grouped.memoryBytes, 20)
+    }
+
+    /// Grouped row stands for the lead pid, so it keeps that process's parent.
+    /// A kernel ppid of 0 stays 0. A missing read stays nil.
+    func testCombinedRowKeepsTheLeadParentPidIncludingZero() {
+        let grouped = AppGroupProjection.combine([
+            row(2, "Chrome", memory: 10, parentPid: 40),
+            row(9, "Chrome", memory: 30, parentPid: 1),
+        ])
+        XCTAssertEqual(grouped.pid, 9)
+        XCTAssertEqual(grouped.parentPid, 1)
+
+        let tied = AppGroupProjection.combine([
+            row(8, "Helper", memory: 10, parentPid: 77),
+            row(3, "Helper", memory: 10, parentPid: 0),
+        ])
+        XCTAssertEqual(tied.pid, 3)
+        XCTAssertEqual(tied.parentPid, 0)
+
+        let missing = AppGroupProjection.combine([
+            row(4, "kernel", memory: 8),
+        ])
+        XCTAssertNil(missing.parentPid)
     }
 
     func testAnyResidentMemberMarksTheCombinedRowResidentAndKeepsTheSum() {
@@ -172,7 +204,8 @@ final class AppGroupProjectionTests: XCTestCase {
         threads: Int = 1,
         cpu: Double? = nil,
         diskRead: Double? = nil,
-        source: ProcessMemorySource = .footprint
+        source: ProcessMemorySource = .footprint,
+        parentPid: Int32? = nil
     ) -> ProcessRow {
         ProcessRow(
             pid: pid,
@@ -184,7 +217,8 @@ final class AppGroupProjectionTests: XCTestCase {
             memorySource: source,
             threadCount: threads,
             diskReadBytesPerSecond: diskRead,
-            diskWriteBytesPerSecond: nil
+            diskWriteBytesPerSecond: nil,
+            parentPid: parentPid
         )
     }
 

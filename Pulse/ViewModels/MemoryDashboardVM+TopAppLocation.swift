@@ -18,4 +18,21 @@ extension MemoryDashboardVM {
         selectPidIfPresent(plan.acceptedPid)
         topAppLocateReveal = plan.reveal
     }
+
+    /// Tree jump or return. A memory keep that would drop `pid` turns off first.
+    func focusProcessFromTree(_ pid: Int32) {
+        let next = ProcessTree.filtersAfterFocus(
+            pid: pid,
+            page: selectedPage,
+            risingOnly: risingOnlyFilter,
+            windowedOnly: windowedOnlyFilter,
+            rows: rows,
+            nameQuery: filter,
+            seriesByPid: topMemorySeries,
+            windowedPids: { WindowedAppLookup.pids(in: rows) }
+        )
+        risingOnlyFilter = next.risingOnly
+        windowedOnlyFilter = next.windowedOnly
+        selectPidIfPresent(pid)
+    }
 }
