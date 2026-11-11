@@ -26,7 +26,6 @@ enum Top3ProcessTap {
         var openPulseCalls: Int
     }
 
-    /// Today's process-row semantics. Filter preparation is not in this body yet.
     static func perform(
         pid: Int32,
         host: Top3TapHost,
@@ -34,10 +33,37 @@ enum Top3ProcessTap {
         activate: () -> Void
     ) -> Schedule {
         dismiss()
+        if ProcessSelection.acceptedPid(pid, in: host.rows) != nil {
+            prepare(pid, on: host)
+        }
         host.selectPidIfPresent(pid)
         host.focusMemoryPage()
         activate()
         return Schedule(pageSwitches: 1, activations: 1, openPulseCalls: 0)
+    }
+
+    /// Only the filters that would hide this pid. Grouping and sort stay put.
+    private static func prepare(_ pid: Int32, on host: Top3TapHost) {
+        let trimmed = host.filter.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            let kept = ProcessNameFilter.apply(host.rows, query: host.filter)
+            if !kept.contains(where: { $0.pid == pid }) {
+                host.filter = ""
+            }
+        }
+        if host.risingOnlyFilter {
+            let badge = MemoryGrowthList.badge(
+                page: .memory,
+                rowPid: pid,
+                seriesByPid: host.topMemorySeries
+            )
+            if badge == nil {
+                host.risingOnlyFilter = false
+            }
+        }
+        if host.windowedOnlyFilter, !host.windowedPids.contains(pid) {
+            host.windowedOnlyFilter = false
+        }
     }
 }
 
