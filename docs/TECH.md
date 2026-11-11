@@ -146,7 +146,56 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 - 左键弹出轻量条，右键或 Control 点击弹出「退出 Pulse」。
 - 轻量条自上而下：压力一行、「已用 xx GB」一行、最忙一核达到 90% 时的「最忙的一核 · xx%」（可选），然后是 Top3 进程（名称 + 内存），最后是「打开 Pulse」和「设置」。
 - Top3 用最后一次内存页表头排序，取完整列表的前 3 个，不受过滤影响。少于 3 个时不补位。
-- 点 Top3 某行：关掉轻量条，进程还在才选中，打开主窗并切到内存页。切页时会按内存页当前的「仅上涨」「仅窗口 App」重算选中，被开关过滤掉的进程会被取消选中。「打开 Pulse」只切到内存页，不改选中。没有主窗时，「打开 Pulse」和通知点击仍走这条路径打开主窗。
+- 点 Top3 某行（当前界面）：关掉轻量条，进程还在完整 `rows` 里才选中，然后打开主窗并切到内存页。切页仍走共享的 `focusMemoryPage`，会按内存页当前的「仅上涨」「仅窗口 App」重算选中；没有上涨徽标，或不在窗口集里的进程，会被取消选中。名称查询只藏行，不清这次选择。「打开 Pulse」、通知点击和重开主窗只切到内存页，不改选中。没有主窗时，这几条仍走现成打开路径。下面一节是已锁定、尚未改界面的点击约定。
+
+### Top3 点击后继续诊断（已锁定，尚未改代码）
+
+只改菜单栏 Top3 进程行这一次点击。目标是：被点的 PID 还在完整 `rows` 里时，切到内存页后仍然选中它、看得到它，并进入现有详情和退出操作。不新开页面、弹窗或搜索框焦点，不自动把焦点放进退出按钮。鼠标和键盘都走轻量条里现成的 `Button`，再进 `MenuBarPopoverTap`。
+
+当前生产顺序，对照 `2fe7bcd` 的源码，不是 Mac 上点出来的：`MenuBarController.handlePopoverTap` 按 `MenuBarPopoverTap.steps` 执行。进程行是 `dismissPopover`，然后 `selectPidIfPresent`（`ProcessSelection.acceptedPid` 对照完整 `rows`），然后 `onOpenPulse`，也就是 `PulseAppDelegate.focusMemoryPage` → `MemoryDashboardVM.focusMemoryPage`。共享的 `focusMemoryPage` 自己不写入被点 PID。它先走 `DashboardNavigation.focusMemoryPage`：从别的页进来时排序恢复内存页默认（内存降序）；已经在内存页则保持当前排序。接着 `applyRisingOnlySelection`，再 `applyWindowedOnlySelection`。`MemoryGrowthRisingFilter.selectedPid` 在内存页且「仅上涨」开着、该 PID 没有列表徽标时返回 `nil`，名称查询不参与这道清选中。`WindowedAppFilter.selectedPid` 在「仅窗口 App」开着且 PID 不在窗口集时返回 `nil`。所以 pid 4 还在 `rows` 里、仅上涨开着、又没有徽标时，选中会在切页后变成空。这不是把共享清选中函数放宽就能交差的缺口。
+
+已锁定的状态顺序是收起，然后在一次 `MemoryDashboardVM.focusMemoryPage` 之前做准备和选中。窗口激活跟在这一次切页后面，不再借 `onOpenPulse`。只允许在进程行、且 PID 仍在 `rows` 里时做这次准备。准备只动挡住这个 PID 的过滤：
+
+- 名称查询：去掉首尾空白后为空，或 `ProcessNameFilter.apply` 仍留下该 PID，查询原文保持。否则把查询设成空字符串。不改成该进程的全名。
+- 「仅上涨」：开关开着且 `MemoryGrowthList.badge` 对该 PID 为 `nil` 时才关掉。已有徽标则保持开。
+- 「仅窗口 App」：开关开着且该 PID 不在现有窗口集里时才关掉。窗口集仍是 `WindowedAppLookup` 交给 `WindowedAppFilter` 的那一次，不另定义哪些进程有窗口。已在集里则保持开。
+- 「按 App」不改。准备不写排序。
+
+准备之后仍是现成的 `selectPidIfPresent`，然后只调用一次未改动的 `MemoryDashboardVM.focusMemoryPage`。这一次就是全部状态切页：`DashboardNavigation.focusMemoryPage`、`publishMemoryPageSort`、两道清选中、`syncMachineWatch`。清选中看到的是调整后的开关，所以被点 PID 留下来。详情仍绑定这个 `selectedPid`。`groupedByApp` 保持时，现有 `processListScrollTarget` 再经 `MemoryRevealGroupRow` 滚到可见组代表；代表可以不是被点 PID。选中、侧栏和退出仍是被点 PID，不换成代表。这里的 `focusMemoryPage` 是 VM 上的那个，不是 `PulseAppDelegate.focusMemoryPage`。
+
+点击时 PID 已经不在 `rows`：不做这次准备，不写这个消失的 PID，也不选同名的另一行。然后仍是一次 `MemoryDashboardVM.focusMemoryPage`。不保证原来的选中还在，因为这一次共享清选中仍可能按现有开关清掉它。控制器接着只做一次窗口激活，不再切页。
+
+现码没有「只激活、不切页」的函数。`MenuBarController.install` 收来的 `onOpenPulse`，在 `PulseAppDelegate.didLaunch` 里就是 `self.focusMemoryPage`。`PulseAppDelegate.focusMemoryPage` 先 `dashboard.focusMemoryPage()`，再 `NSApp.activate`，已有主窗则 `deminiaturize` / `makeKeyAndOrderFront`，否则 `openMainWindow`，然后改 `sceneActive` 并 `applyPace`。Top3 若在状态切页之后再调用 `onOpenPulse`，状态切页会跑第二次。所以 Top3 不调用 `onOpenPulse`，也不调用 `PulseAppDelegate.focusMemoryPage`。窗口激活用一条现在还不存在的 Top3 回调，只做上面这一段激活，不调用 `dashboard.focusMemoryPage()`。`PulseAppDelegate.focusMemoryPage` 的函数体不改，普通打开和通知仍只走它。
+
+| 职责 | Top3 进程行 | 「打开 Pulse」 | 通知点击、重开主窗 |
+| --- | --- | --- | --- |
+| 收起轻量条 | `handlePopoverTap` 一次，在状态之前 | 同左 | 不走这里 |
+| 过滤准备 | 仅 PID 仍在 `rows` 时，规则见上 | 不做 | 不做 |
+| 选中 | `selectPidIfPresent` 一次 | 不写 | 不写 |
+| 状态切页 | `MemoryDashboardVM.focusMemoryPage` 一次 | 含在下面这一次共享入口里 | 同左 |
+| 窗口激活 | 新的只激活回调一次 | `onOpenPulse` 一次，即未改动的 `PulseAppDelegate.focusMemoryPage` | 通知闭包和重开直接调用这个 `focusMemoryPage` |
+
+Top3 进程行只按这个顺序：`dismissPopover`，生产入口（需要时准备，然后选中，然后 `MemoryDashboardVM.focusMemoryPage` 一次），然后只激活回调一次。「打开 Pulse」仍是收起之后 `onOpenPulse` 一次，不进生产入口，也不再加只激活回调。两道 `selectedPid` 门的函数体不改。
+
+跨页进入内存页仍只由现有 `DashboardNavigation.focusMemoryPage` 恢复内存默认排序。已经在内存页则保持进入点击前的排序。本项不再写一次排序。
+
+后续采样仍可能改 `rows` 和上涨序列，终态可以和点击当时不同。这一节不把该竞态说成已解决。Mac 上的主窗激活、行是否真的滚进视口、焦点和 VoiceOver 都还没跑。纯模型和源码测试不能代替这四项。
+
+把 `ProcessSelection.applying` 和未改动的 `MemoryGrowthRisingFilter.selectedPid` 手工串起来，只能证明共享上涨门在「仅上涨」开着且没有徽标时，会把已经写下的 pid 4 清成 `nil`。这只是共享门的缺口证据，不是 Top3 验收。验收不能靠测试在调用前自己插入准备，也不能靠放宽 `focusMemoryPage` 或这两道 `selectedPid`。
+
+Top3 验收调用 `handlePopoverTap` 使用的那一个生产入口，断言的是控制器按上表调度完之后的状态，不是入口内部在 `MemoryDashboardVM.focusMemoryPage` 之前的中间选择。送进去的是真实状态：当前 `selectedPid`、`DashboardNavigation`、名称查询、「仅上涨」、「仅窗口 App」、「按 App」、`rows`、上涨序列和窗口集。同一次结果还带上这次调度：状态切页 1 次、窗口激活 1 次、`onOpenPulse` 0 次。红和绿是同一次用户动作（点进程 4）和同一句最终断言：这一次清选中跑完之后的 `selectedPid` 等于 4。按今天的语义，这一次门会把它变成 `nil`。变绿只在入口内部、于那一次 `MemoryDashboardVM.focusMemoryPage` 之前加上已锁定的准备。测试不写准备，也不再调用 `onOpenPulse`。
+
+新增这个入口时，函数体先保持今天的进程行语义：还在才 `selectPidIfPresent`，然后 `MemoryDashboardVM.focusMemoryPage` 一次，不做准备。控制器随后只走新的激活回调一次。测试因此能编译。失败是最终选择为 `nil`，不是找不到符号。这道红记下之后，只把准备放进入口内部。同一句断言变成 4。源码接线读 `handlePopoverTap`：进程行是收起、该入口、只激活回调，这个顺序里 `onOpenPulse` 出现 0 次，`MemoryDashboardVM.focusMemoryPage` 只出现在入口里的那一次；「打开 Pulse」分支仍是收起后 `onOpenPulse` 1 次，且不调用该入口。`PulseAppDelegate.focusMemoryPage` 仍先 `dashboard.focusMemoryPage()` 再激活。通知闭包和重开仍只调用它。直接调用 `MemoryGrowthRisingFilter.selectedPid`，在仅上涨开着且无徽标时仍返回 `nil`。
+
+下面这些都走同一套控制器调度。本段写下时都还没执行：
+
+- 名称、仅上涨、仅窗口各自只在挡住该 PID 时调整；一起挡住时一起调。查询可匹配或空白、已有上涨徽标、已在窗口集的保持。最终选择是被点 PID。状态切页 1 次，激活 1 次，`onOpenPulse` 0 次。
+- 目标已不在 `rows`：不准备，过滤保持原样，不写入该 PID，不选同名替代，然后仍是一次 `MemoryDashboardVM.focusMemoryPage`，再激活 1 次。`onOpenPulse` 0 次。
+- 「打开 Pulse」不准备，`onOpenPulse` 1 次。通知点击不进这个入口，仍只调用 `PulseAppDelegate.focusMemoryPage`。
+- 「按 App」开着，且组代表和被点 PID 不同：调度留下的选择和操作 PID 是被点的那个。揭示 id 再用现成 `MemoryRevealGroupRow` 从这次最终状态计算，可以是代表。
+- 已在内存页时排序不变；从其它页进来时仍是现有内存默认排序。不另写一次排序，也不把状态切页再跑一遍。
+
+这些调用不是 Mac 主窗激活、行是否滚进视口、焦点或 VoiceOver，也不是下一次采样之后的终态。
 
 ## 设置
 
@@ -195,7 +244,7 @@ Tab 选中胶囊、总览高度和工具栏里的页专属开关用同一段动�
 **菜单栏与窗口**
 - [ ] 色点随压力变色，失败时为灰并有提示；默认栏上没有文字。设置可改为已用内存或 CPU，缺失显示「—」，重启后仍保留
 - [ ] 压力升到偏高时系统通知只来一次，点击打开内存页；回到正常不满 5 分钟不再发，满 5 分钟后再次偏高会再发。设置可关闭。通知权限被拒时设置显示「系统通知未授权」，不弹错误
-- [ ] 轻量条四块内容正确，Top3 跟随内存页表头；点行能打开主窗并选中
+- [ ] 轻量条四块内容正确，Top3 跟随内存页表头。点仍在列表里的一行后，内存页仍选中该 PID，并且看得到它、进得了现有详情：挡住它的名称查询清空（空白或能匹配则保持原文，不改成全名），挡住它的「仅上涨」或「仅窗口 App」关掉，没挡住的开关和「按 App」保持；已在内存页不改当前排序，从别的页进来仍用内存默认排序；按 App 时滚到可见组行，选中和退出仍是被点 PID。目标已经不在列表时只打开内存页，不改这些过滤，也不选同名替代。这一条是锁定后的预期，还没在 Mac 上跑过，不能勾成通过
 - [ ] 启动时没有主窗口，菜单栏色点在读数成功后离开「暂时读不到」，采样间隔约 3 秒；「打开 Pulse」能打开主窗。带着主窗启动时第一段间隔仍约 1.5 秒
 - [ ] 关掉主窗后菜单栏仍在更新，`⌘Q` 退出；重开主窗保持上次尺寸和位置
 - [ ] 设置里打开「登录时打开 Pulse」后，系统设置的登录项里出现 Pulse；关掉后该项消失。需要批准时能看到说明并打开系统设置登录项；注册失败时开关为关并显示原因
