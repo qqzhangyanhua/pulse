@@ -11,7 +11,9 @@ struct MemoryDetailAttribution: Equatable, Sendable {
     /// "PID n" once the memory curve has at least two points.
     /// Nil for zero or one point, and off the memory page.
     let curvePid: String?
-    /// Rising slot only. Nil when that slot is absent or not rising.
+    /// Memory page only. Rising keeps 「这条趋势属于 PID …」.
+    /// Any other memory-page call uses 「当前采样对象：PID …」 from `curveRow`.
+    /// Nil off the memory page. A nil sidebar slot still does not call this.
     let trend: String?
 
     static let curvePlaceholder = "正在采集内存曲线"
@@ -34,7 +36,9 @@ struct MemoryDetailAttribution: Equatable, Sendable {
         }
         let curveTitle = curveRow.memorySource == .footprint ? "内存占用" : "驻留内存"
         let curvePid = memoryPointCount >= 2 ? "PID \(curveRow.pid)" : nil
-        let trend = trendIsRising ? "这条趋势属于 PID \(curveRow.pid)" : nil
+        let trend = trendIsRising
+            ? "这条趋势属于 PID \(curveRow.pid)"
+            : "当前采样对象：PID \(curveRow.pid)"
         return MemoryDetailAttribution(
             magnitude: magnitude,
             curveTitle: curveTitle,

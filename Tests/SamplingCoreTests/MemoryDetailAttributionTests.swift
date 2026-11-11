@@ -80,7 +80,7 @@ final class MemoryDetailAttributionTests: XCTestCase {
             let summary = MemoryDetailAttribution.curveSummary(pidLine: attribution.curvePid, recentAndPeak: "")
             XCTAssertEqual(summary, "")
             XCTAssertFalse(summary.contains("PID"))
-            XCTAssertNil(attribution.trend, "points \(points)")
+            XCTAssertEqual(attribution.trend, "当前采样对象：PID 3", "points \(points)")
         }
     }
 
@@ -164,11 +164,12 @@ final class MemoryDetailAttributionTests: XCTestCase {
         XCTAssertFalse(rising.trend?.contains("4") ?? true)
 
         let insufficient = copy(magnitude: row(pid: 21, members: 4), curve: row(pid: 21), points: 2, rising: false)
-        XCTAssertNil(insufficient.trend)
+        XCTAssertEqual(insufficient.trend, "当前采样对象：PID 21")
+        XCTAssertFalse(insufficient.trend?.contains("4") ?? true)
         XCTAssertEqual(insufficient.curvePid, "PID 21")
 
         let quiet = copy(magnitude: row(pid: 21), curve: row(pid: 21), points: 90, rising: false)
-        XCTAssertNil(quiet.trend)
+        XCTAssertEqual(quiet.trend, "当前采样对象：PID 21")
 
         for page in [DashboardPage.cpu, .disk, .network, .machine, .gpu] {
             let other = MemoryDetailAttribution.make(
@@ -219,6 +220,10 @@ final class MemoryDetailAttributionTests: XCTestCase {
         XCTAssertTrue(source.contains("当前可见的"))
         XCTAssertTrue(source.contains("当前进程（PID"))
         XCTAssertTrue(source.contains("这条趋势属于 PID"))
+        XCTAssertEqual(occurrenceCount(of: "当前采样对象：PID \\(curveRow.pid)", in: source), 1)
+        XCTAssertFalse(source.contains("selectedPid"))
+        XCTAssertFalse(source.contains("memoryMagnitudeRow"))
+        XCTAssertFalse(source.contains("MemoryMagnitudeVisibleGroup"))
         XCTAssertEqual(
             occurrenceCount(of: "static let curvePlaceholder = \"正在采集内存曲线\"", in: source),
             1
