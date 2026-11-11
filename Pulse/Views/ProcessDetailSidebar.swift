@@ -6,13 +6,24 @@ struct ProcessDetailSidebar: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Sampling-window disclosure. View-local, collapsed. Not stored on the VM.
     @State private var samplingWindowExpanded = false
+    @State private var showsProcessTree = false
+    @State private var processTreeCenterPid: Int32?
+    @State private var expandedProcessTreePids: Set<Int32> = []
     /// Last positive physical total for the sidebar subject, plus the locked freeze.
     @State private var lastLiveTotal = LastLiveTotalState.empty
 
     var body: some View {
         let sidebar = vm.sidebar
         Group {
-            if let detail = sidebar.detail {
+            if showsProcessTree, let centerPid = processTreeCenterPid {
+                ProcessTreeView(
+                    rows: vm.rows,
+                    centerPid: centerPid,
+                    expandedPids: $expandedProcessTreePids,
+                    onBack: { showsProcessTree = false }
+                )
+                .transition(.opacity)
+            } else if let detail = sidebar.detail {
                 detailBody(detail).transition(.opacity)
             } else if sidebar.showsAbsentRecord {
                 absentRecordBody.transition(.opacity)
@@ -340,8 +351,17 @@ struct ProcessDetailSidebar: View {
                 }
             }
             Spacer(minLength: 8)
+            ProcessTreeOpenButton(systemName: "arrow.triangle.branch", help: "进程树") {
+                openProcessTree(centeredOn: detail.row.pid)
+            }
             closeButton
         }
+    }
+
+    private func openProcessTree(centeredOn pid: Int32) {
+        processTreeCenterPid = pid
+        expandedProcessTreePids = ProcessTree.build(from: vm.rows).initiallyExpanded(centeredOn: pid)
+        showsProcessTree = true
     }
 
     private func kindLine(_ row: ProcessRow) -> String {

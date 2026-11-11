@@ -53,6 +53,20 @@ struct ProcessTree {
         return ProcessTree(nodes: nodes, parentOf: parentOf)
     }
 
+    func initiallyExpanded(centeredOn pid: Int32) -> Set<Int32> {
+        guard nodes[pid] != nil else { return [] }
+        var expanded: Set<Int32> = [pid]
+        for ancestor in ancestors(of: pid) {
+            guard let ancestorPid = ancestor.row?.pid ?? ancestor.placeholderPid else { continue }
+            expanded.insert(ancestorPid)
+        }
+        for child in nodes[pid]?.children ?? [] {
+            guard let childPid = child.row?.pid ?? child.placeholderPid else { continue }
+            expanded.insert(childPid)
+        }
+        return expanded
+    }
+
     func ancestors(of pid: Int32) -> [ProcessTreeNode] {
         guard nodes[pid] != nil else { return [] }
         var chain: [ProcessTreeNode] = []

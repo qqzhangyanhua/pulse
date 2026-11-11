@@ -231,6 +231,63 @@ final class ProcessTreeTests: XCTestCase {
         XCTAssertEqual(tree.ancestors(of: 2), [])
     }
 
+    func testInitiallyExpandedIncludesEveryAncestorAndTheCenter() {
+        let launchd = row(pid: 1, name: "launchd", parentPid: 0)
+        let mid = row(pid: 10, name: "WindowServer", parentPid: 1)
+        let center = row(pid: 30, name: "Safari", parentPid: 10)
+        let worker = row(pid: 50, name: "worker", parentPid: 80)
+        let tree = ProcessTree.build(from: [launchd, mid, center, worker])
+
+        XCTAssertEqual(tree.initiallyExpanded(centeredOn: 30), [1, 10, 30])
+        XCTAssertEqual(tree.initiallyExpanded(centeredOn: 50), [80, 50])
+    }
+
+    func testInitiallyExpandedIncludesDirectChildrenOfTheCenter() {
+        let launchd = row(pid: 1, name: "launchd", parentPid: 0)
+        let center = row(pid: 10, name: "Safari", parentPid: 1)
+        let childA = row(pid: 20, name: "GPU", parentPid: 10)
+        let childB = row(pid: 21, name: "Networking", parentPid: 10)
+        let tree = ProcessTree.build(from: [launchd, center, childA, childB])
+
+        XCTAssertEqual(tree.initiallyExpanded(centeredOn: 10), [1, 10, 20, 21])
+    }
+
+    func testInitiallyExpandedOmitsGrandchildren() {
+        let launchd = row(pid: 1, name: "launchd", parentPid: 0)
+        let center = row(pid: 10, name: "Safari", parentPid: 1)
+        let child = row(pid: 20, name: "GPU", parentPid: 10)
+        let grandchild = row(pid: 30, name: "helper", parentPid: 20)
+        let tree = ProcessTree.build(from: [launchd, center, child, grandchild])
+
+        let expanded = tree.initiallyExpanded(centeredOn: 10)
+        XCTAssertTrue(expanded.contains(20))
+        XCTAssertFalse(expanded.contains(30))
+    }
+
+    func testInitiallyExpandedOmitsAncestorSideBranches() {
+        let launchd = row(pid: 1, name: "launchd", parentPid: 0)
+        let mid = row(pid: 10, name: "WindowServer", parentPid: 1)
+        let side = row(pid: 11, name: "loginwindow", parentPid: 1)
+        let sideChild = row(pid: 12, name: "login-helper", parentPid: 11)
+        let center = row(pid: 30, name: "Safari", parentPid: 10)
+        let child = row(pid: 40, name: "GPU", parentPid: 30)
+        let tree = ProcessTree.build(from: [launchd, mid, side, sideChild, center, child])
+
+        let expanded = tree.initiallyExpanded(centeredOn: 30)
+        XCTAssertFalse(expanded.contains(11))
+        XCTAssertFalse(expanded.contains(12))
+        XCTAssertEqual(expanded, [1, 10, 30, 40])
+    }
+
+    func testInitiallyExpandedIsEmptyForAnUnknownPid() {
+        let launchd = row(pid: 1, name: "launchd", parentPid: 0)
+        let tree = ProcessTree.build(from: [launchd])
+
+        XCTAssertEqual(tree.initiallyExpanded(centeredOn: 99), [])
+        XCTAssertEqual(tree.initiallyExpanded(centeredOn: 0), [])
+        XCTAssertEqual(ProcessTree.build(from: []).initiallyExpanded(centeredOn: 1), [])
+    }
+
     func testParentZeroIsNotAPlaceholderBesideAMissingParent() {
         let launchd = row(pid: 1, name: "launchd", parentPid: 0)
         let worker = row(pid: 50, name: "worker", parentPid: 80)
