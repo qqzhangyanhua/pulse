@@ -57,6 +57,7 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate, ObservableObject 
         menuBar.install(
             currentDot: { [weak self] in self?.currentDot() ?? .unavailable },
             onOpenPulse: { [weak self] in self?.focusMemoryPage() },
+            onActivateMainWindow: { [weak self] in self?.activateMainWindow() },
             onQuit: {
                 DispatchQueue.main.async {
                     NSApp.terminate(nil)
@@ -112,6 +113,27 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate, ObservableObject 
     /// Does not write `selectedPid`. Select-if-present is `MemoryDashboardVM.selectPidIfPresent`.
     func focusMemoryPage() {
         dashboard.focusMemoryPage()
+        NSApp.activate()
+        if let window = NSApp.windows.first(where: { candidate in
+            candidate.identifier?.rawValue == PulseWindowID.main
+                && (candidate.isVisible || candidate.isMiniaturized)
+        }) {
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
+            window.makeKeyAndOrderFront(nil)
+            gate.sceneActive = true
+            applyPace()
+            return
+        }
+        openMainWindow?()
+        gate.sceneActive = true
+        applyPace()
+    }
+
+    /// Window activation only. Top3 calls this after one `dashboard.focusMemoryPage()`.
+    /// It does not exist as a separate function in the previous build; `focusMemoryPage` stays intact.
+    func activateMainWindow() {
         NSApp.activate()
         if let window = NSApp.windows.first(where: { candidate in
             candidate.identifier?.rawValue == PulseWindowID.main

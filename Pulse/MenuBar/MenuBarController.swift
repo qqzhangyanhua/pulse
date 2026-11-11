@@ -17,6 +17,7 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
     private var rendered: MenuBarDot?
     private var currentDot: @MainActor () -> MenuBarDot = { .unavailable }
     private var onOpenPulse: @MainActor () -> Void = {}
+    private var onActivateMainWindow: @MainActor () -> Void = {}
     private var onQuit: @MainActor () -> Void = {}
     private var popover: NSPopover?
     /// Transient popovers close on the mouse-down that also hits the status button.
@@ -27,10 +28,12 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
     func install(
         currentDot: @escaping @MainActor () -> MenuBarDot,
         onOpenPulse: @escaping @MainActor () -> Void,
+        onActivateMainWindow: @escaping @MainActor () -> Void,
         onQuit: @escaping @MainActor () -> Void
     ) {
         self.currentDot = currentDot
         self.onOpenPulse = onOpenPulse
+        self.onActivateMainWindow = onActivateMainWindow
         self.onQuit = onQuit
         if statusItem == nil {
             let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -173,15 +176,23 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
     }
 
     private func handlePopoverTap(_ target: MenuBarPopoverTapTarget) {
-        for step in MenuBarPopoverTap.steps(for: target) {
-            switch step {
-            case .dismissPopover:
+        switch target {
+        case .process(let pid):
+            guard let dashboard else {
                 dismissPopover()
-            case .selectPidIfPresent(let pid):
-                dashboard?.selectPidIfPresent(pid)
-            case .focusMemoryPage:
-                onOpenPulse()
+                return
             }
+            Top3ProcessTap.perform(
+                pid: pid,
+                host: dashboard,
+                dismiss: { [weak self] in self?.dismissPopover() },
+                activate: { [weak self] in self?.onActivateMainWindow() }
+            )
+        case .openPulse:
+            MenuBarOpenPulseTap.perform(
+                dismiss: { [weak self] in self?.dismissPopover() },
+                openPulse: { [weak self] in self?.onOpenPulse() }
+            )
         }
     }
 

@@ -85,6 +85,7 @@ let package = Package(
                 "Sampling/SamplingRequestGate.swift",
                 "Sampling/SamplingRetryChrome.swift",
                 "MenuBar/MenuBarStatus.swift",
+                "MenuBar/Top3ProcessTap.swift",
             ]
         ),
         .testTarget(
