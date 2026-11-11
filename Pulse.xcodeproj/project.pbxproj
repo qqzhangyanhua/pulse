@@ -169,7 +169,7 @@
 		A00000000000000000000023 /* HostDiskReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostDiskReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000017 /* MenuBarStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatus.swift; sourceTree = "<group>"; };
 		A00000000000000000000061 /* Top3ProcessTap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Top3ProcessTap.swift; sourceTree = "<group>"; };
-		A00000000000000000000062 /* MemoryDashboardVM+Top3Tap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDashboardVM+Top3Tap.swift; sourceTree = "<group>"; };
+		A00000000000000000000062 /* MemoryDashboardVM+Top3Tap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+Top3Tap.swift"; sourceTree = "<group>"; };
 		A00000000000000000000018 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
 		A00000000000000000000026 /* MenuBarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverView.swift; sourceTree = "<group>"; };
 		A00000000000000000000019 /* MainWindowAnchor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowAnchor.swift; sourceTree = "<group>"; };
