@@ -61,6 +61,8 @@ final class MemoryDetailAttributionWiringSourceTests: XCTestCase {
         XCTAssertFalse(cpuDetail.contains("当前可见的"))
         XCTAssertFalse(cpuDetail.contains("当前进程（PID"))
         XCTAssertFalse(cpuDetail.contains("这条趋势属于"))
+        XCTAssertFalse(cpuDetail.contains("memoryTrend"))
+        XCTAssertFalse(cpuDetail.contains("当前采样对象"))
 
         let cpuChart = try functionBody(named: "cpuChart", in: sidebar)
         XCTAssertFalse(cpuChart.contains("MemoryDetailAttribution"))
@@ -83,6 +85,46 @@ final class MemoryDetailAttributionWiringSourceTests: XCTestCase {
         XCTAssertTrue(magnitude.contains("curveRow: curve"))
         XCTAssertFalse(magnitude.contains("groupedByApp"))
         XCTAssertFalse(magnitude.contains(".evaluate"))
+    }
+
+    func testInsufficientSentenceReusesTheTrendTextAndTheCurveRow() throws {
+        let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
+        let detail = try functionBody(named: "detailBody", in: sidebar)
+        XCTAssertLessThan(
+            try index(of: "if let slot = vm.memoryGrowthSlot", in: detail),
+            try index(of: "memoryTrend(slot, curveRow: detail.row)", in: detail)
+        )
+
+        let trend = try functionBody(named: "memoryTrend", in: sidebar)
+        XCTAssertEqual(occurrenceCount(of: "Text(trend)", in: trend), 1)
+        XCTAssertLessThan(
+            try index(of: "Text(trend)", in: trend),
+            try index(of: "accessibilityElement(children: .combine)", in: trend)
+        )
+        XCTAssertEqual(occurrenceCount(of: "accessibilityElement(children: .combine)", in: trend), 1)
+        XCTAssertTrue(trend.contains("curveRow: curveRow"))
+        XCTAssertTrue(trend.contains("trendIsRising: slot.caption == MemoryGrowthCopy.rising"))
+        XCTAssertFalse(trend.contains("当前采样对象"))
+        XCTAssertFalse(trend.contains("memoryMagnitudeRow"))
+        XCTAssertFalse(trend.contains("MemoryMagnitudeVisibleGroup"))
+        XCTAssertFalse(trend.contains("selectedPid"))
+        XCTAssertFalse(trend.contains("accessibilityLabel"))
+        XCTAssertFalse(trend.contains("accessibilityAddTraits"))
+
+        let growth = try repoText("Pulse/Models/MemoryGrowthSignal.swift")
+        XCTAssertFalse(growth.contains("当前采样对象"))
+        XCTAssertTrue(growth.contains("static let insufficient = \"样本不足，暂不判断\""))
+        XCTAssertTrue(growth.contains("static let rising = \"近期内存占用上涨\""))
+
+        let pane = try repoText("Pulse/Views/ProcessTablePane.swift")
+        XCTAssertFalse(pane.contains("当前采样对象"))
+
+        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let slot = try functionBody(named: "memoryGrowthSlot", in: vm)
+        XCTAssertLessThan(
+            try index(of: "guard sidebar.showsLiveTrend else { return nil }", in: slot),
+            try index(of: "MemoryGrowthSidebar.slot", in: slot)
+        )
     }
 
     func testAttributionIsVisibleTextWithAnEmptyDefault() throws {
