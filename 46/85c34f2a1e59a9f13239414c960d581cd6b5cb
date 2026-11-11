@@ -1,0 +1,45 @@
+Pulse/MenuBar/Top3ProcessTap.swift
+  s_ec31d92bdfc930::t_ed44eb96ba8547 1-82
+docs/TECH.md
+  s_ec31d92bdfc930::t_ed44eb96ba8547 150-199,253
+Pulse.xcodeproj/project.pbxproj
+  s_ec31d92bdfc930::t_ed44eb96ba8547 76-77,175-176,319,328,536-537
+  s_ec31d92bdfc930::t_f27560d8d46996 470,533
+  s_ec31d92bdfc930::t_4c9b7902fdfa9c 25-26,120-121,246,354
+Pulse/MenuBar/PulseAppDelegate.swift
+  s_ec31d92bdfc930::t_ed44eb96ba8547 60,134-136
+  s_ec31d92bdfc930::t_dafccac391f0cb 137-154
+docs/specs/README.md
+  s_ec31d92bdfc930::t_ed44eb96ba8547 27,69
+  s_ec31d92bdfc930::t_151ae36c8d23cd 70
+Pulse/MenuBar/MenuBarController.swift
+  s_ec31d92bdfc930::t_ed44eb96ba8547 20,31,36,179-181,183,185-195
+Pulse/ViewModels/MemoryDashboardVM+Top3Tap.swift
+  s_ec31d92bdfc930::t_ed44eb96ba8547 1-7
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_ec31d92bdfc930::t_bf6989ff8efbcf 133
+Tests/SamplingCoreTests/Top3ProcessTapTests.swift
+  s_ec31d92bdfc930::t_ed44eb96ba8547 1-256
+docs/specs/11-menubar-top3-select.md
+  s_ec31d92bdfc930::t_ed44eb96ba8547 8-9
+Package.swift
+  s_ec31d92bdfc930::t_ed44eb96ba8547 89
+Tests/SamplingCoreTests/Top3ProcessTapWiringSourceTests.swift
+  s_ec31d92bdfc930::t_ed44eb96ba8547 1-169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "4685c34f2a1e59a9f13239414c960d581cd6b5cb",
+  "prompts": {},
+  "sessions": {
+    "s_ec31d92bdfc930": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1cacc-a4c8-74f1-abb3-2c0f0f4f5066",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
