@@ -78,7 +78,12 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
     func testBadgeRowReadsTheInstanceHelpOnlyWhenPresent() throws {
         let pane = try repoText("Pulse/Views/ProcessTablePane.swift")
         XCTAssertFalse(pane.contains(sentence))
+        XCTAssertFalse(pane.contains("此上涨判断针对 PID"))
         XCTAssertFalse(pane.contains("MemoryGrowthListCopy"))
+        XCTAssertTrue(pane.contains("vm.memoryGrowthListBadge(for: row.pid)"))
+        XCTAssertTrue(pane.contains("groupedMemberCount: row.groupedMemberCount"))
+        XCTAssertTrue(pane.contains("rowPid: row.pid"))
+        XCTAssertFalse(pane.contains("rowPid: vm.selectedPid"))
         XCTAssertEqual(occurrenceCount(of: ".help(badge.help)", in: pane), 1)
         XCTAssertEqual(occurrenceCount(of: ".accessibilityHidden(true)", in: pane), 1)
         XCTAssertEqual(occurrenceCount(of: "parts.append(growthBadge.help)", in: pane), 1)

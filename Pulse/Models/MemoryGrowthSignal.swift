@@ -136,4 +136,23 @@ enum MemoryGrowthList {
         guard MemoryGrowthSignal.evaluate(series) == .rising else { return nil }
         return MemoryGrowthListBadge(title: MemoryGrowthListCopy.title, help: MemoryGrowthListCopy.help)
     }
+
+    /// Group rows append the evaluated pid to an existing badge. A nil count
+    /// and a missing badge stay on today's help. Does not evaluate a series.
+    static func presented(
+        _ badge: MemoryGrowthListBadge?,
+        groupedMemberCount: Int?,
+        rowPid: Int32
+    ) -> MemoryGrowthListBadge? {
+        guard let badge else { return nil }
+        return MemoryGrowthListBadge(
+            title: badge.title,
+            help: help(base: badge.help, groupedMemberCount: groupedMemberCount, rowPid: rowPid)
+        )
+    }
+
+    static func help(base: String, groupedMemberCount: Int?, rowPid: Int32) -> String {
+        guard groupedMemberCount != nil else { return base }
+        return base + "此上涨判断针对 PID \(rowPid)，不代表同名组合计趋势。"
+    }
 }

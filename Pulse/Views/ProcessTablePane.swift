@@ -290,7 +290,11 @@ struct ProcessTablePane: View {
                     showsNetwork: showsNetworkColumn,
                     showsDisk: showsDiskColumns,
                     showsEnergy: showsEnergyColumns,
-                    growthBadge: vm.memoryGrowthListBadge(for: row.pid)
+                    growthBadge: MemoryGrowthList.presented(
+                        vm.memoryGrowthListBadge(for: row.pid),
+                        groupedMemberCount: row.groupedMemberCount,
+                        rowPid: row.pid
+                    )
                 )
                     .contextMenu {
                         Button("复制") {
