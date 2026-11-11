@@ -64,6 +64,50 @@ final class ProcessPermissionFootnoteWiringSourceTests: XCTestCase {
         XCTAssertTrue(reader.contains("ri_diskio_byteswritten"))
     }
 
+    /// BSD info is a second `proc_pidinfo`. A short read is nil, not ppid 0, and the row stays.
+    /// Size 136 and offset 16 are `sizeof` / `offsetof(pbi_ppid)` from the macOS SDK.
+    func testInspectKeepsARealParentPidAndLeavesAFailedReadMissing() throws {
+        let reader = try repoText("Pulse/Sampling/ProcessEnumerator.swift")
+        let raw = try structBody(named: "RawProcessSample", in: reader)
+        XCTAssertTrue(raw.contains("let parentPid: Int32?"))
+        XCTAssertFalse(raw.contains("= nil"))
+        XCTAssertFalse(raw.contains("?? 0"))
+
+        XCTAssertTrue(reader.contains("private static let procPidTbsdInfo: Int32 = 3"))
+        XCTAssertTrue(reader.contains("private static let procBsdInfoSize: Int32 = 136"))
+        XCTAssertTrue(reader.contains("private static let procBsdPpidOffset = 16"))
+        XCTAssertFalse(reader.contains("pbi_comm"))
+        XCTAssertFalse(reader.contains("pbi_name"))
+
+        let parent = try functionBody(named: "readParentPid", in: reader)
+        XCTAssertTrue(parent.contains("pulse_proc_pidinfo(pid, procPidTbsdInfo, 0,"))
+        XCTAssertTrue(parent.contains("guard written == procBsdInfoSize else { return nil }"))
+        XCTAssertTrue(parent.contains("fromByteOffset: procBsdPpidOffset, as: UInt32.self"))
+        XCTAssertTrue(parent.contains("Int32(bitPattern:"))
+        XCTAssertFalse(parent.contains("return 0"))
+        XCTAssertFalse(parent.contains("?? 0"))
+
+        let inspect = try functionBody(named: "inspect", in: reader)
+        XCTAssertEqual(occurrenceCount(of: "RawProcessSample(", in: inspect), 1)
+        XCTAssertEqual(occurrenceCount(of: "sample: nil", in: inspect), 1)
+        XCTAssertTrue(inspect.contains("readParentPid(pid: pid)"))
+        XCTAssertTrue(inspect.contains("parentPid: parentPid"))
+        XCTAssertFalse(inspect.contains("parentPid: 0"))
+        XCTAssertFalse(inspect.contains("?? 0"))
+
+        let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
+        XCTAssertTrue(sampler.contains("parentPid: raw.parentPid"))
+        XCTAssertFalse(sampler.contains("parentPid: 0"))
+        XCTAssertFalse(sampler.contains("parentPid ?? 0"))
+
+        let models = try repoText("Pulse/Models/MemoryModels.swift")
+        let row = try structBody(named: "ProcessRow", in: models)
+        XCTAssertTrue(row.contains("let parentPid: Int32?"))
+        XCTAssertFalse(row.contains("let parentPid: Int32? = nil"))
+        XCTAssertTrue(row.contains("groupedMemberCount: Int? = nil,\n        parentPid: Int32? = nil"))
+        XCTAssertTrue(row.contains("self.parentPid = parentPid"))
+    }
+
     func testFramePublishesTheSentenceAndLeavesProcessRowsAlone() throws {
         let models = try repoText("Pulse/Models/MemoryModels.swift")
         let row = try structBody(named: "ProcessRow", in: models)

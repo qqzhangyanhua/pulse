@@ -20,6 +20,8 @@ struct RawProcessSample: Sendable, Equatable {
     let energyNanojoules: UInt64?
     /// `ri_interrupt_wkups` from the same rusage read. Nil when that call fails. No resident fallback.
     let interruptWakeups: UInt64?
+    /// `pbi_ppid` from `PROC_PIDTBSDINFO`. Nil when the read byte count is not the struct size.
+    let parentPid: Int32?
 }
 
 /// One `list()` walk. Denied pids are a count, not rows.
@@ -31,7 +33,11 @@ struct ProcessListReading: Sendable {
 /// `proc_listpids` / `proc_pidinfo` walk. Display names are resolved later with a cache.
 enum ProcessEnumerator {
     private static let procAllPids: UInt32 = 1
+    private static let procPidTbsdInfo: Int32 = 3
     private static let procPidTaskInfo: Int32 = 4
+    /// `sizeof(struct proc_bsdinfo)`. `pbi_ppid` is the UInt32 at byte 16.
+    private static let procBsdInfoSize: Int32 = 136
+    private static let procBsdPpidOffset = 16
     private static let rusageInfoV6: Int32 = 6
     private static let pathBufferSize: Int32 = 4_096
 
@@ -108,6 +114,7 @@ enum ProcessEnumerator {
         }
         let path = pathLen > 0 ? String(cString: pathBuffer) : nil
         let rusage = readRusage(pid: pid)
+        let parentPid = readParentPid(pid: pid)
         let cpu = convertedCPU(
             user: info.pti_total_user,
             system: info.pti_total_system,
@@ -127,7 +134,8 @@ enum ProcessEnumerator {
                 diskBytesRead: rusage?.bytesRead,
                 diskBytesWritten: rusage?.bytesWritten,
                 energyNanojoules: rusage?.energyNanojoules,
-                interruptWakeups: rusage?.interruptWakeups
+                interruptWakeups: rusage?.interruptWakeups,
+                parentPid: parentPid
             ),
             permissionDenied: false
         )
@@ -153,6 +161,19 @@ enum ProcessEnumerator {
             return nil
         }
         return (user, system)
+    }
+
+    /// A short read is a missing parent, not ppid 0. Same rule as rusage: the row still returns.
+    private static func readParentPid(pid: pid_t) -> Int32? {
+        var buffer = [UInt8](repeating: 0, count: Int(procBsdInfoSize))
+        let written = buffer.withUnsafeMutableBytes { raw -> Int32 in
+            pulse_proc_pidinfo(pid, procPidTbsdInfo, 0, raw.baseAddress, procBsdInfoSize)
+        }
+        guard written == procBsdInfoSize else { return nil }
+        let ppid = buffer.withUnsafeBytes { raw in
+            raw.loadUnaligned(fromByteOffset: procBsdPpidOffset, as: UInt32.self)
+        }
+        return Int32(bitPattern: ppid)
     }
 
     /// rusage failure must not drop the row. SIP / kernel tasks often return EPERM.
