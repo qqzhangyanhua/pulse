@@ -24,7 +24,7 @@
 | [08-polish-smoke.md](08-polish-smoke.md) | 八期：polish 与本机冒烟 |
 | [09-growth-badge-top5.md](09-growth-badge-top5.md) | 九期：上涨徽标 Top N=5 |
 | [10-menubar-used-memory.md](10-menubar-used-memory.md) | 十期：菜单栏已用内存一行 |
-| [11-menubar-top3-select.md](11-menubar-top3-select.md) | 十一期：菜单栏 Top3 点选打开主窗 |
+| [11-menubar-top3-select.md](11-menubar-top3-select.md) | 十一期：菜单栏 Top3 点选打开主窗。点选后仍选中被点 PID 已落地，以 TECH.md 为准。冒烟未勾选 |
 | [12-rising-only-filter.md](12-rising-only-filter.md) | 十二期：「仅上涨」过滤 |
 | [13-sampling-retry.md](13-sampling-retry.md) | 十三期：采样失败手动重试合流 |
 | [14-menubar-top3-sort.md](14-menubar-top3-sort.md) | 十四期：菜单栏 Top3 跟随内存页排序 |
@@ -65,6 +65,8 @@
 `38-group-row-badge-help.md` 登记在上表只为了能找到它。行为已落地，当前文字以 TECH.md 为准；稿本身不再改。本机冒烟清单的勾选不因这份稿改变。
 
 `39-insufficient-slot-pid.md` 登记在上表只为了能找到它。行为已落地，当前界面以 TECH.md 为准；稿本身不再改。本机冒烟清单的勾选不因这份稿改变。
+
+`11-menubar-top3-select.md` 的正文不再改。Top3 点击后仍能诊断的行为以 TECH.md 为准。冒烟清单对应一条仍未勾选，不能写成已通过。
 
 | 期数 | 内容 | PR |
 | --- | --- | --- |

@@ -22,8 +22,8 @@
 		B00000000000000000000058 /* MemoryGroupRowCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000058 /* MemoryGroupRowCopy.swift */; };
 		B00000000000000000000059 /* MemoryRevealGroupRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000059 /* MemoryRevealGroupRow.swift */; };
 		B00000000000000000000060 /* TopCardRevealTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000060 /* TopCardRevealTarget.swift */; };
-		B00000000000000000000061 /* ProcessTree.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000061 /* ProcessTree.swift */; };
-		B00000000000000000000062 /* ProcessTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000062 /* ProcessTreeView.swift */; };
+		B00000000000000000000063 /* ProcessTree.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000063 /* ProcessTree.swift */; };
+		B00000000000000000000064 /* ProcessTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000064 /* ProcessTreeView.swift */; };
 		B00000000000000000000032 /* ResourceDetailPageProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000032 /* ResourceDetailPageProjection.swift */; };
 		B00000000000000000000033 /* LastLiveTotalReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000033 /* LastLiveTotalReducer.swift */; };
 		B00000000000000000000027 /* MemoryGrowthTopSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000027 /* MemoryGrowthTopSeries.swift */; };
@@ -73,6 +73,8 @@
 		B00000000000000000000048 /* ProcessEnergy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000048 /* ProcessEnergy.swift */; };
 		B00000000000000000000023 /* HostDiskReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000023 /* HostDiskReader.swift */; };
 		B00000000000000000000017 /* MenuBarStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000017 /* MenuBarStatus.swift */; };
+		B00000000000000000000061 /* Top3ProcessTap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000061 /* Top3ProcessTap.swift */; };
+		B00000000000000000000062 /* MemoryDashboardVM+Top3Tap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000062 /* MemoryDashboardVM+Top3Tap.swift */; };
 		B00000000000000000000018 /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000018 /* MenuBarController.swift */; };
 		B00000000000000000000026 /* MenuBarPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000026 /* MenuBarPopoverView.swift */; };
 		B00000000000000000000019 /* MainWindowAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000019 /* MainWindowAnchor.swift */; };
@@ -115,8 +117,8 @@
 		A00000000000000000000058 /* MemoryGroupRowCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGroupRowCopy.swift; sourceTree = "<group>"; };
 		A00000000000000000000059 /* MemoryRevealGroupRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryRevealGroupRow.swift; sourceTree = "<group>"; };
 		A00000000000000000000060 /* TopCardRevealTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopCardRevealTarget.swift; sourceTree = "<group>"; };
-		A00000000000000000000061 /* ProcessTree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessTree.swift; sourceTree = "<group>"; };
-		A00000000000000000000062 /* ProcessTreeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessTreeView.swift; sourceTree = "<group>"; };
+		A00000000000000000000063 /* ProcessTree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessTree.swift; sourceTree = "<group>"; };
+		A00000000000000000000064 /* ProcessTreeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessTreeView.swift; sourceTree = "<group>"; };
 		A00000000000000000000032 /* ResourceDetailPageProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResourceDetailPageProjection.swift; sourceTree = "<group>"; };
 		A00000000000000000000033 /* LastLiveTotalReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastLiveTotalReducer.swift; sourceTree = "<group>"; };
 		A00000000000000000000027 /* MemoryGrowthTopSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGrowthTopSeries.swift; sourceTree = "<group>"; };
@@ -170,6 +172,8 @@
 		A00000000000000000000048 /* ProcessEnergy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessEnergy.swift; sourceTree = "<group>"; };
 		A00000000000000000000023 /* HostDiskReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostDiskReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000017 /* MenuBarStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatus.swift; sourceTree = "<group>"; };
+		A00000000000000000000061 /* Top3ProcessTap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Top3ProcessTap.swift; sourceTree = "<group>"; };
+		A00000000000000000000062 /* MemoryDashboardVM+Top3Tap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+Top3Tap.swift"; sourceTree = "<group>"; };
 		A00000000000000000000018 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
 		A00000000000000000000026 /* MenuBarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverView.swift; sourceTree = "<group>"; };
 		A00000000000000000000019 /* MainWindowAnchor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowAnchor.swift; sourceTree = "<group>"; };
@@ -239,7 +243,7 @@
 				A00000000000000000000058 /* MemoryGroupRowCopy.swift */,
 				A00000000000000000000059 /* MemoryRevealGroupRow.swift */,
 				A00000000000000000000060 /* TopCardRevealTarget.swift */,
-				A00000000000000000000061 /* ProcessTree.swift */,
+				A00000000000000000000063 /* ProcessTree.swift */,
 				A00000000000000000000032 /* ResourceDetailPageProjection.swift */,
 				A00000000000000000000033 /* LastLiveTotalReducer.swift */,
 				A00000000000000000000027 /* MemoryGrowthTopSeries.swift */,
@@ -312,6 +316,7 @@
 				A00000000000000000000038 /* MemoryDashboardVM+TopAppLocation.swift */,
 				A00000000000000000000052 /* MemoryDashboardVM+SnapshotExport.swift */,
 				A0000000000000000000003F /* WindowedAppLookup.swift */,
+				A00000000000000000000062 /* MemoryDashboardVM+Top3Tap.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -320,6 +325,7 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000017 /* MenuBarStatus.swift */,
+				A00000000000000000000061 /* Top3ProcessTap.swift */,
 				A00000000000000000000018 /* MenuBarController.swift */,
 				A00000000000000000000026 /* MenuBarPopoverView.swift */,
 				A00000000000000000000019 /* MainWindowAnchor.swift */,
@@ -345,7 +351,7 @@
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
 				A00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift */,
 				A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */,
-				A00000000000000000000062 /* ProcessTreeView.swift */,
+				A00000000000000000000064 /* ProcessTreeView.swift */,
 				A0000000000000000000000E /* SharedUI.swift */,
 				A00000000000000000000046 /* PulseSettingsView.swift */,
 				A00000000000000000000053 /* SnapshotExportPreview.swift */,
@@ -461,7 +467,7 @@
 				B00000000000000000000058 /* MemoryGroupRowCopy.swift in Sources */,
 				B00000000000000000000059 /* MemoryRevealGroupRow.swift in Sources */,
 				B00000000000000000000060 /* TopCardRevealTarget.swift in Sources */,
-				B00000000000000000000061 /* ProcessTree.swift in Sources */,
+				B00000000000000000000063 /* ProcessTree.swift in Sources */,
 				B00000000000000000000032 /* ResourceDetailPageProjection.swift in Sources */,
 				B00000000000000000000033 /* LastLiveTotalReducer.swift in Sources */,
 				B00000000000000000000027 /* MemoryGrowthTopSeries.swift in Sources */,
@@ -524,9 +530,11 @@
 				B0000000000000000000000D /* ProcessDetailSidebar.swift in Sources */,
 				B00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift in Sources */,
 				B00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift in Sources */,
-				B00000000000000000000062 /* ProcessTreeView.swift in Sources */,
+				B00000000000000000000064 /* ProcessTreeView.swift in Sources */,
 				B0000000000000000000000E /* SharedUI.swift in Sources */,
 				B00000000000000000000017 /* MenuBarStatus.swift in Sources */,
+				B00000000000000000000061 /* Top3ProcessTap.swift in Sources */,
+				B00000000000000000000062 /* MemoryDashboardVM+Top3Tap.swift in Sources */,
 				B00000000000000000000018 /* MenuBarController.swift in Sources */,
 				B00000000000000000000026 /* MenuBarPopoverView.swift in Sources */,
 				B00000000000000000000019 /* MainWindowAnchor.swift in Sources */,
