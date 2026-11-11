@@ -6,7 +6,7 @@
 >
 > 已被取代：切到内存页时会按「仅上涨」「仅窗口 App」重算选中，点 Top3 选中的进程可能被当前开关取消选中。
 >
-> 已被取代：上文这个「可能被开关取消选中」，以及正文里「名称过滤不在范围内、不要为点选改过滤」「可以给 `focusMemoryPage()` 加可选 pid」，都不再作为下一步实现。已锁定只在 Top3 进程行、且 PID 仍在完整 `rows` 里时，于现成选中和共享切页之前调整挡住该 PID 的过滤。共享 `focusMemoryPage` 与 `MemoryGrowthRisingFilter.selectedPid` 本体不改。界面尚未改，当前行为以 [TECH.md](../TECH.md) 为准。下面的正文是当时的约定，不再改。
+> 已被取代：上文这个「可能被开关取消选中」，以及正文里「名称过滤不在范围内、不要为点选改过滤」「可以给 `focusMemoryPage()` 加可选 pid」，都不再作为下一步实现。已锁定只在 Top3 进程行、且 PID 仍在完整 `rows` 里时，于现成选中和共享切页之前调整挡住该 PID 的过滤。共享 `focusMemoryPage` 与 `MemoryGrowthRisingFilter.selectedPid` 本体不改。行为已按 [TECH.md](../TECH.md) 落地。冒烟清单仍未勾选。Mac 激活、滚动、焦点和 VoiceOver 未验。下面的正文是当时的约定，不再改。
 
 > 一期至十期正文不改写。七期锁了弹出条 B（压力一行 + Top3 +「打开 Pulse」），十期只在压力行下补了主机已用内存一行、并写死 Top3 **仍不可点**——**本文只覆盖那条交互延期**：把已有 Top3 行做成可点，一点开现有主窗并按 pid 选中该进程，侧栏现成「退出 / 强制退出」即可用。不新开采样器、不第二套 VM、不第二扇窗。GPU Tab、进程级 GPU、无界全表 ring、新 Sampler 周期、恐吓文案 / 「泄漏」、从弹出条 terminate / force-quit、改栏上 A 色点外观、新 Tab、Helper / XPC、新 entitlements、Electron、自动杀、恐吓红仍不做。
 

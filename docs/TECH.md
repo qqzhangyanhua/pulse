@@ -146,9 +146,9 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 - 左键弹出轻量条，右键或 Control 点击弹出「退出 Pulse」。
 - 轻量条自上而下：压力一行、「已用 xx GB」一行、最忙一核达到 90% 时的「最忙的一核 · xx%」（可选），然后是 Top3 进程（名称 + 内存），最后是「打开 Pulse」和「设置」。
 - Top3 用最后一次内存页表头排序，取完整列表的前 3 个，不受过滤影响。少于 3 个时不补位。
-- 点 Top3 某行（当前界面）：关掉轻量条，进程还在完整 `rows` 里才选中，然后打开主窗并切到内存页。切页仍走共享的 `focusMemoryPage`，会按内存页当前的「仅上涨」「仅窗口 App」重算选中；没有上涨徽标，或不在窗口集里的进程，会被取消选中。名称查询只藏行，不清这次选择。「打开 Pulse」、通知点击和重开主窗只切到内存页，不改选中。没有主窗时，这几条仍走现成打开路径。下面一节是已锁定、尚未改界面的点击约定。
+- 点 Top3 某行：关掉轻量条。PID 还在完整 `rows` 里时，先只调整挡住它的名称查询、「仅上涨」或「仅窗口 App」，再选中，然后只调用一次 `MemoryDashboardVM.focusMemoryPage`，最后只激活主窗。不调用 `onOpenPulse`，也不调用 `PulseAppDelegate.focusMemoryPage`。PID 已经不在列表里时不调整过滤、不写这个 PID、不选同名替代，仍是一次 VM 切页和一次激活。「打开 Pulse」、通知点击和重开主窗仍只走 `PulseAppDelegate.focusMemoryPage`。Mac 上的主窗激活、滚入视口、焦点、VoiceOver，以及下一次采样之后的终态，都还没验。
 
-### Top3 点击后继续诊断（已锁定，尚未改代码）
+### Top3 点击后继续诊断
 
 只改菜单栏 Top3 进程行这一次点击。目标是：被点的 PID 还在完整 `rows` 里时，切到内存页后仍然选中它、看得到它，并进入现有详情和退出操作。不新开页面、弹窗或搜索框焦点，不自动把焦点放进退出按钮。鼠标和键盘都走轻量条里现成的 `Button`，再进 `MenuBarPopoverTap`。
 
@@ -187,7 +187,7 @@ Top3 验收调用 `handlePopoverTap` 使用的那一个生产入口，断言的�
 
 新增这个入口时，函数体先保持今天的进程行语义：还在才 `selectPidIfPresent`，然后 `MemoryDashboardVM.focusMemoryPage` 一次，不做准备。控制器随后只走新的激活回调一次。测试因此能编译。失败是最终选择为 `nil`，不是找不到符号。这道红记下之后，只把准备放进入口内部。同一句断言变成 4。源码接线读 `handlePopoverTap`：进程行是收起、该入口、只激活回调，这个顺序里 `onOpenPulse` 出现 0 次，`MemoryDashboardVM.focusMemoryPage` 只出现在入口里的那一次；「打开 Pulse」分支仍是收起后 `onOpenPulse` 1 次，且不调用该入口。`PulseAppDelegate.focusMemoryPage` 仍先 `dashboard.focusMemoryPage()` 再激活。通知闭包和重开仍只调用它。直接调用 `MemoryGrowthRisingFilter.selectedPid`，在仅上涨开着且无徽标时仍返回 `nil`。
 
-下面这些都走同一套控制器调度。本段写下时都还没执行：
+下面这些都走同一套控制器调度。Linux 上的 `swift test` 会调用这个入口；那不是 Mac 主窗激活，也不是下一次采样之后的终态：
 
 - 名称、仅上涨、仅窗口各自只在挡住该 PID 时调整；一起挡住时一起调。查询可匹配或空白、已有上涨徽标、已在窗口集的保持。最终选择是被点 PID。状态切页 1 次，激活 1 次，`onOpenPulse` 0 次。
 - 目标已不在 `rows`：不准备，过滤保持原样，不写入该 PID，不选同名替代，然后仍是一次 `MemoryDashboardVM.focusMemoryPage`，再激活 1 次。`onOpenPulse` 0 次。
