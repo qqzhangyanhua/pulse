@@ -104,10 +104,16 @@ struct MemoryDashboardView: View {
     }
 
     private var energyResourceColumn: some View {
-        ProcessTablePane()
+        HSplitView {
+            VStack(spacing: 12) {
+                ProcessTablePane()
+            }
             .padding(12)
             .frame(minWidth: 680, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(PulsePalette.windowBackground)
+            ProcessDetailSidebar()
+                .frame(minWidth: 300, idealWidth: 332, maxWidth: 400)
+        }
     }
 
     private var resourceColumn: some View {

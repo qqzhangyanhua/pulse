@@ -74,6 +74,7 @@
 		B00000000000000000000065 /* ProcessEnergyWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000065 /* ProcessEnergyWindow.swift */; };
 		B00000000000000000000066 /* EnergyPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000066 /* EnergyPage.swift */; };
 		B00000000000000000000067 /* EnergyProcessTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000067 /* EnergyProcessTable.swift */; };
+		B00000000000000000000068 /* ProcessDetailSidebar+Energy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000068 /* ProcessDetailSidebar+Energy.swift */; };
 		B00000000000000000000023 /* HostDiskReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000023 /* HostDiskReader.swift */; };
 		B00000000000000000000017 /* MenuBarStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000017 /* MenuBarStatus.swift */; };
 		B00000000000000000000061 /* Top3ProcessTap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000061 /* Top3ProcessTap.swift */; };
@@ -176,6 +177,7 @@
 		A00000000000000000000065 /* ProcessEnergyWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessEnergyWindow.swift; sourceTree = "<group>"; };
 		A00000000000000000000066 /* EnergyPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyPage.swift; sourceTree = "<group>"; };
 		A00000000000000000000067 /* EnergyProcessTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyProcessTable.swift; sourceTree = "<group>"; };
+		A00000000000000000000068 /* ProcessDetailSidebar+Energy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessDetailSidebar+Energy.swift"; sourceTree = "<group>"; };
 		A00000000000000000000023 /* HostDiskReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostDiskReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000017 /* MenuBarStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatus.swift; sourceTree = "<group>"; };
 		A00000000000000000000061 /* Top3ProcessTap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Top3ProcessTap.swift; sourceTree = "<group>"; };
@@ -359,6 +361,7 @@
 				A0000000000000000000004F /* ProcessPermissionFootnoteLabel.swift */,
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
 				A00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift */,
+				A00000000000000000000068 /* ProcessDetailSidebar+Energy.swift */,
 				A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */,
 				A00000000000000000000064 /* ProcessTreeView.swift */,
 				A0000000000000000000000E /* SharedUI.swift */,
@@ -527,6 +530,7 @@
 				B00000000000000000000065 /* ProcessEnergyWindow.swift in Sources */,
 				B00000000000000000000066 /* EnergyPage.swift in Sources */,
 				B00000000000000000000067 /* EnergyProcessTable.swift in Sources */,
+				B00000000000000000000068 /* ProcessDetailSidebar+Energy.swift in Sources */,
 				B00000000000000000000023 /* HostDiskReader.swift in Sources */,
 				B00000000000000000000006 /* MachineInfo.swift in Sources */,
 				B00000000000000000000007 /* ProcessActions.swift in Sources */,

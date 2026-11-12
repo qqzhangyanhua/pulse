@@ -127,10 +127,10 @@ final class MemoryDashboardVM: ObservableObject {
 
     /// Visible rows in the current table sort. Not stored and not published.
     var sortedRows: [ProcessRow] {
-        let projected = AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
         if selectedPage == .energy {
-            return EnergyPage.ordered(projected, rates: energyWindowRates, sort: tableSort)
+            return EnergyPage.sorted(visibleRows, windowRates: energyWindowRates, grouped: groupedByApp, sort: tableSort)
         }
+        let projected = AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
         return tableSort.ordered(projected)
     }
 

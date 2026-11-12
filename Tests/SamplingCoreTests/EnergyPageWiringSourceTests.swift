@@ -34,8 +34,10 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("EnergyProcessTable.swift in Sources"))
         XCTAssertEqual(
             occurrenceCount(of: "isa = PBXBuildFile;", in: project),
-            95
+            96,
+            "energy sidebar adds ProcessDetailSidebar+Energy.swift"
         )
+        XCTAssertTrue(project.contains("ProcessDetailSidebar+Energy.swift in Sources"))
     }
 
     func testEnergyTableReadsWindowRatesAndTheCPUTableKeepsTwoFrameWatts() throws {
@@ -54,8 +56,8 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(table.contains("EnergyPageCopy.explanation"))
         XCTAssertTrue(table.contains("EnergyPageCopy.emptyTitle"))
         XCTAssertTrue(table.contains("EnergyPageCopy.filteredEmptyTitle"))
+        XCTAssertTrue(table.contains("EnergyPage.display("))
         XCTAssertFalse(table.contains("1 小时"))
-        XCTAssertFalse(table.contains("按 App"))
         XCTAssertFalse(table.contains("ProcessDetailSidebar"))
         XCTAssertFalse(table.contains("IOPSGetTimeRemainingEstimate"))
 
@@ -68,8 +70,11 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         let dashboard = try repoText("Pulse/Views/MemoryDashboardView.swift")
         let energyColumn = try braceBody(after: "var energyResourceColumn", in: dashboard)
         XCTAssertTrue(energyColumn.contains("ProcessTablePane()"))
-        XCTAssertFalse(energyColumn.contains("ProcessDetailSidebar"))
+        XCTAssertTrue(energyColumn.contains("ProcessDetailSidebar()"))
+        XCTAssertTrue(energyColumn.contains("HSplitView"))
         XCTAssertFalse(energyColumn.contains("OverviewSection"))
+        XCTAssertFalse(energyColumn.contains("IOPSGetTimeRemainingEstimate"))
+        XCTAssertTrue(dashboard.contains("AppGroupChrome.showsToggle(page: vm.selectedPage)"))
         XCTAssertTrue(dashboard.contains("ProcessDetailSidebar()"))
 
         let shared = try repoText("Pulse/Views/SharedUI.swift")
@@ -87,10 +92,14 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(app.contains("case .memory, .cpu, .disk, .network, .energy:"))
         XCTAssertTrue(app.contains("energyWindowRates"))
         let status = try repoText("Pulse/MenuBar/MenuBarStatus.swift")
-        XCTAssertTrue(status.contains("self != .machine && self != .energy"))
+        XCTAssertTrue(status.contains("self != .machine"))
+        XCTAssertFalse(status.contains("self != .energy"))
+        let popover = try repoText("Pulse/MenuBar/MenuBarPopoverView.swift")
+        XCTAssertFalse(popover.contains("能耗"))
+        XCTAssertFalse(popover.contains("energyWindow"))
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         let sorted = try functionBody(named: "sortedRows", in: vm)
-        XCTAssertTrue(sorted.contains("EnergyPage.ordered"))
+        XCTAssertTrue(sorted.contains("EnergyPage.sorted"))
         XCTAssertTrue(sorted.contains("energyWindowRates"))
         XCTAssertFalse(sorted.contains("?? -1"))
         XCTAssertFalse(sorted.contains("energyWatts"))
