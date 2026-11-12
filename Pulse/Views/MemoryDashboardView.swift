@@ -7,13 +7,16 @@ struct MemoryDashboardView: View {
 
     var body: some View {
         Group {
-            if vm.selectedPage == .machine {
+            switch vm.selectedPage {
+            case .machine:
                 machinePage.transition(.opacity)
-            } else {
+            case .gpu:
+                gpuPage.transition(.opacity)
+            default:
                 resourcePage.transition(.opacity)
             }
         }
-        .animation(reduceMotion ? nil : PulseMotion.page, value: vm.selectedPage == .machine)
+        .animation(reduceMotion ? nil : PulseMotion.page, value: fullPageIdentity)
         .background(PulsePalette.windowBackground)
         .navigationTitle("Pulse")
         .navigationSubtitle(vm.machineLabel ?? "机型读取中")
@@ -33,7 +36,7 @@ struct MemoryDashboardView: View {
                 .accessibilityLabel("保存当前快照")
             }
             ToolbarItemGroup(placement: .primaryAction) {
-                if vm.selectedPage != .machine {
+                if vm.selectedPage != .machine && vm.selectedPage != .gpu {
                     HStack(spacing: 8) {
                         if WindowedAppChrome.showsToggle(page: vm.selectedPage) {
                             MemoryToolbarSwitch(
@@ -83,8 +86,25 @@ struct MemoryDashboardView: View {
         }
     }
 
+    /// Machine and GPU are full pages. Other resource switches stay inside `resourcePage`.
+    private var fullPageIdentity: DashboardPage? {
+        switch vm.selectedPage {
+        case .machine, .gpu:
+            return vm.selectedPage
+        default:
+            return nil
+        }
+    }
+
     private var machinePage: some View {
         MachineOverviewSection()
+            .padding(12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(PulsePalette.windowBackground)
+    }
+
+    private var gpuPage: some View {
+        GPUOverviewSection()
             .padding(12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(PulsePalette.windowBackground)
@@ -139,6 +159,8 @@ struct MemoryDashboardView: View {
             switch page {
             case .energy:
                 Color.clear
+            case .gpu, .machine:
+                Color.clear
             case .cpu:
                 CPUOverviewSection().transition(.opacity)
             case .network:
@@ -161,7 +183,9 @@ struct MemoryDashboardView: View {
             150
         case .energy:
             0
-        case .memory, .machine, .gpu:
+        case .gpu:
+            0
+        case .memory, .machine:
             264
         }
     }

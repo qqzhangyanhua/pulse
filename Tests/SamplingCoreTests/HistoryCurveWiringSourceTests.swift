@@ -186,7 +186,7 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         XCTAssertFalse(cards.contains("annotation:"))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 36, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 37, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 4)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: vm), 1)
         let sortedLine = try lineContaining("var sortedRows", in: vm)
@@ -213,7 +213,7 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
             let text = try String(contentsOf: file, encoding: .utf8)
             let charts = occurrenceCount(of: "HistoryAnnotatedChart", in: text)
             switch file.lastPathComponent {
-            case "CPUOverviewSection.swift", "NetworkOverviewSection.swift", "DiskOverviewSection.swift":
+            case "CPUOverviewSection.swift", "NetworkOverviewSection.swift", "DiskOverviewSection.swift", "GPUOverviewSection.swift":
                 XCTAssertEqual(charts, 1, file.lastPathComponent)
             case "MachineOverviewSection.swift":
                 XCTAssertEqual(charts, 1, "CPU and memory share one annotated chart")

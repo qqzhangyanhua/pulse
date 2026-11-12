@@ -82,13 +82,13 @@ final class DiskPageTests: XCTestCase {
         XCTAssertEqual(row.networkAvailability.label, "暂不可用")
     }
 
-    func testDiskTabIsSelectableAndGPUStaysGray() {
+    func testDiskAndGPUTabsAreSelectable() {
         XCTAssertTrue(DashboardPage.memory.isSelectable)
         XCTAssertTrue(DashboardPage.cpu.isSelectable)
         XCTAssertTrue(DashboardPage.network.isSelectable)
         XCTAssertTrue(DashboardPage.disk.isSelectable)
         XCTAssertTrue(DashboardPage.machine.isSelectable)
-        XCTAssertFalse(DashboardPage.gpu.isSelectable)
+        XCTAssertTrue(DashboardPage.gpu.isSelectable)
     }
 
     func testColdStartStaysOnMemoryAndDiskDefaultsToCombinedRateSort() {
@@ -103,12 +103,12 @@ final class DiskPageTests: XCTestCase {
         XCTAssertNotEqual(navigation.sort, ProcessTableSort.defaultSort(for: .cpu))
 
         navigation.updateSort(ProcessTableSort(column: .name, descending: false))
-        navigation.select(.gpu)
-        XCTAssertEqual(navigation.selectedPage, .disk)
-        XCTAssertEqual(navigation.sort.column, .name)
-
         navigation.select(.disk)
         XCTAssertEqual(navigation.sort.column, .name, "Re-selecting the open page keeps the user's sort")
+
+        navigation.select(.gpu)
+        XCTAssertEqual(navigation.selectedPage, .gpu)
+        XCTAssertEqual(navigation.sort, ProcessTableSort(column: .memory, descending: true))
 
         navigation.select(.cpu)
         XCTAssertEqual(navigation.selectedPage, .cpu)
@@ -395,8 +395,8 @@ final class DiskPageTests: XCTestCase {
         XCTAssertEqual(navigation.sort, ProcessTableSort(column: .diskRead, descending: true))
 
         navigation.select(.gpu)
-        XCTAssertEqual(navigation.selectedPage, .disk)
-        XCTAssertEqual(navigation.sort.column, .diskRead)
+        XCTAssertEqual(navigation.selectedPage, .gpu)
+        XCTAssertEqual(navigation.sort, ProcessTableSort(column: .memory, descending: true))
 
         navigation.focusMemoryPage()
         XCTAssertEqual(navigation.selectedPage, .memory)

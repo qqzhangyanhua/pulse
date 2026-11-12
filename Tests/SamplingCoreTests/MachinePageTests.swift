@@ -238,7 +238,7 @@ final class MachinePageTests: XCTestCase {
         XCTAssertTrue(DashboardPage.machine.isSelectable)
         XCTAssertFalse(DashboardPage.machine.allowsProcessQuit)
         XCTAssertTrue(DashboardPage.memory.allowsProcessQuit)
-        XCTAssertFalse(DashboardPage.gpu.isSelectable)
+        XCTAssertTrue(DashboardPage.gpu.isSelectable)
         XCTAssertEqual(
             ProcessTableSort.defaultSort(for: .machine),
             ProcessTableSort.defaultSort(for: .memory)
