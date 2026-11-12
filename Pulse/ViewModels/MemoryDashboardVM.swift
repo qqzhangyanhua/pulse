@@ -13,6 +13,12 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var rows: [ProcessRow] = []
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
     @Published private(set) var energyWindowRates: [Int32: ProcessEnergyRates] = [:]
+    /// 1 分钟 or 1 小时. Views read `activeEnergyRates`, not either table directly.
+    @Published var energyRankingSpan = EnergyRankingSpan.oneMinute
+    /// Minute-ledger rates for the latest accepted process list. Empty when that list failed.
+    @Published private(set) var energyHourRates: [Int32: ProcessEnergyRates] = [:]
+    /// Sealed 1-hour generations. Empty when that list failed. Not part of `energyHourRates`.
+    @Published private(set) var exitedEnergyProcesses: [ExitedEnergyProcess] = []
     @Published private(set) var processListFailed = false
     /// This frame's permission footnote. Empty when the process list failed.
     @Published private(set) var processPermissionFootnote: String?
@@ -21,7 +27,11 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var topMemorySeries: [Int32: [ChartSample]] = [:]
     @Published private(set) var machineLabel: String?
     /// Host facts for the machine page. Nil until that page is opened. Not a sample frame.
-    @Published private(set) var machineFacts: MachineFacts?
+    @Published var machineFacts: MachineFacts?
+    /// Energy-page battery card. Nil hides it, including a Mac with no internal battery.
+    @Published var energyBatteryCard: EnergyBatteryCard?
+    /// Latest energy-page battery reading. Nil until that read; not a second poll.
+    var energyBatteryReading: EnergyBatteryReading?
     /// The only session quit store. Phase and message are projections of this.
     @Published var quitOutcome = ProcessQuitOutcome()
     @Published var sidebarSubjectPid: Int32?
@@ -34,8 +44,13 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var cpuHistory = SystemCPUHistory()
     @Published private(set) var networkHistory = SystemNetworkHistory()
     @Published private(set) var diskHistory = SystemDiskHistory()
+    @Published private(set) var energyMachineHistory = EnergyMachineHistory()
     /// Nil unless the system is serious or critical. Overviews read this; the menu bar does not.
-    @Published private(set) var thermalNotice: String?
+    @Published var thermalNotice: String?
+    /// Top CPU processes while `thermalNotice` is showing. Nil hides the card; the menu bar does not read this.
+    @Published var thermalAdvice: ThermalAdvice?
+    /// Seconds of the last published advice. Nil publishes on the next sample.
+    var thermalAdviceLastUpdate: Double?
     @Published var filter = ""
     /// Memory-tab only. Default OFF. Session-scoped; not a Sampler or preference write.
     @Published var risingOnlyFilter = false {
@@ -64,6 +79,8 @@ final class MemoryDashboardVM: ObservableObject {
     let snapshotExportStore = SnapshotExportStore()
     /// Last memory-page sort, readable on the MainActor. Not a second published sort field.
     private var publication = MemoryPageSortPublication()
+    private var selectedEnergyGeneration: Int?
+    private var energyLiveGenerations: [Int32: Int] = [:]
 
     @Published var selectedPid: Int32? {
         didSet {
@@ -80,6 +97,7 @@ final class MemoryDashboardVM: ObservableObject {
             if sidebarSubjectPid != effect.sidebarSubjectPid {
                 sidebarSubjectPid = effect.sidebarSubjectPid
             }
+            captureEnergySelectionGeneration()
             detail = nil
             let pid = selectedPid
             Task { await sampler.setSelectedPid(pid) }
@@ -93,8 +111,9 @@ final class MemoryDashboardVM: ObservableObject {
     private var samplingSession = SamplingSession()
     private var samplingClock = SamplingClock()
     private var samplingGate = SamplingRequestGate()
-    private var thermalObserver: NSObjectProtocol?
-    private var machineRefreshTask: Task<Void, Never>?
+    var thermalObserver: NSObjectProtocol?
+    var machineRefreshTask: Task<Void, Never>?
+    var energyBatteryRefreshTask: Task<Void, Never>?
 
     init() {
         beginThermalWatch()
@@ -105,6 +124,7 @@ final class MemoryDashboardVM: ObservableObject {
     deinit {
         MainActor.assumeIsolated {
             machineRefreshTask?.cancel()
+            energyBatteryRefreshTask?.cancel()
             endThermalWatch()
         }
     }
@@ -127,10 +147,10 @@ final class MemoryDashboardVM: ObservableObject {
 
     /// Visible rows in the current table sort. Not stored and not published.
     var sortedRows: [ProcessRow] {
-        let projected = AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
         if selectedPage == .energy {
-            return EnergyPage.ordered(projected, rates: energyWindowRates, sort: tableSort)
+            return EnergyPage.sorted(visibleRows, windowRates: activeEnergyRates, grouped: groupedByApp, sort: tableSort)
         }
+        let projected = AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
         return tableSort.ordered(projected)
     }
 
@@ -202,6 +222,7 @@ final class MemoryDashboardVM: ObservableObject {
         applyRisingOnlySelection()
         applyWindowedOnlySelection()
         syncMachineWatch()
+        syncEnergyBatteryWatch()
     }
 
     /// Select-if-present against the live `rows`. Missing / vanished pids are not written.
@@ -224,6 +245,7 @@ final class MemoryDashboardVM: ObservableObject {
         applyRisingOnlySelection()
         applyWindowedOnlySelection()
         syncMachineWatch()
+        syncEnergyBatteryWatch()
     }
 
     func setTableSort(_ sort: ProcessTableSort) {
@@ -336,19 +358,6 @@ final class MemoryDashboardVM: ObservableObject {
         }
     }
 
-    private func nanosecondsElapsed(
-        from start: ContinuousClock.Instant,
-        to end: ContinuousClock.Instant
-    ) -> UInt64 {
-        let duration = start.duration(to: end)
-        let seconds = duration.components.seconds
-        let attoseconds = duration.components.attoseconds
-        if seconds < 0 { return 0 }
-        let secNanos = UInt64(seconds) &* 1_000_000_000
-        let nanoPart = attoseconds <= 0 ? 0 : UInt64(attoseconds / 1_000_000_000)
-        return secNanos &+ nanoPart
-    }
-
     private func tick(_ flight: SamplingFlight) async {
         let result = await sampler.sample()
         if Task.isCancelled {
@@ -401,7 +410,12 @@ final class MemoryDashboardVM: ObservableObject {
                     nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
                     diskHistory = nextDisk
                     rows = frame.rows
+                    refreshThermalAdvice(now: frame.snapshot.capturedAt.timeIntervalSince1970)
                     energyWindowRates = frame.energyWindowRates
+                    energyHourRates = frame.energyHourRates
+                    exitedEnergyProcesses = frame.exitedEnergyProcesses
+                    energyLiveGenerations = frame.energyLiveGenerations
+                    energyMachineHistory = recordedEnergyHistory(rows: frame.rows, at: frame.snapshot.capturedAt)
                     processListFailed = frame.processListFailed
                     processPermissionFootnote = frame.permissionFootnote
                     topMemorySeries = frame.topMemorySeries
@@ -442,9 +456,10 @@ final class MemoryDashboardVM: ObservableObject {
             observation: observation
         )
         quitOutcome = store
-        if selectedPid != effect.listSelectedPid {
+        if selectedPid != effect.listSelectedPid, !keepsExitedEnergySelection(replacingWith: effect.listSelectedPid) {
             selectedPid = effect.listSelectedPid
         }
+        reconcileEnergySelectionGeneration()
         if sidebarSubjectPid != effect.sidebarSubjectPid {
             sidebarSubjectPid = effect.sidebarSubjectPid
         }
@@ -456,76 +471,21 @@ final class MemoryDashboardVM: ObservableObject {
             applyWindowedOnlySelection()
         }
     }
-}
-
-private extension MemoryDashboardVM {
-    func beginThermalWatch() {
-        applyThermalState(ProcessInfo.processInfo.thermalState)
-        thermalObserver = NotificationCenter.default.addObserver(
-            forName: ProcessInfo.thermalStateDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.applyThermalState(ProcessInfo.processInfo.thermalState)
-            }
-        }
+    var selectedEnergyExitedOnly: Bool {
+        EnergyPage.blocksQuit(selectedPid: selectedPid, rememberedGeneration: selectedEnergyGeneration, liveRows: rows, liveGenerations: energyLiveGenerations, exited: exitedEnergyProcesses)
     }
-
-    func endThermalWatch() {
-        if let thermalObserver {
-            NotificationCenter.default.removeObserver(thermalObserver)
-            self.thermalObserver = nil
-        }
+    private func captureEnergySelectionGeneration() {
+        selectedEnergyGeneration = selectedPage == .energy ? selectedPid.flatMap { energyLiveGenerations[$0] } : nil
     }
-
-    func applyThermalState(_ state: ProcessInfo.ThermalState) {
-        thermalNotice = ThermalNotice.message(for: ThermalCondition(state))
-    }
-
-    /// Read on entry, then every 30 seconds while the machine page stays selected.
-    func syncMachineWatch() {
-        guard selectedPage == .machine else {
-            machineRefreshTask?.cancel()
-            machineRefreshTask = nil
-            return
-        }
-        guard machineRefreshTask == nil else { return }
-        refreshMachineFacts()
-        machineRefreshTask = Task { [weak self] in
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(for: .seconds(30))
-                } catch {
-                    break
-                }
-                guard let self else { return }
-                self.refreshMachineFacts()
-            }
-        }
-    }
-
-    func refreshMachineFacts() {
-        let next = HostMachineReader.read()
-        if next != machineFacts {
-            machineFacts = next
-        }
-    }
-}
-
-private extension ThermalCondition {
-    init(_ state: ProcessInfo.ThermalState) {
-        switch state {
-        case .nominal:
-            self = .nominal
-        case .fair:
-            self = .fair
-        case .serious:
-            self = .serious
-        case .critical:
-            self = .critical
-        @unknown default:
-            self = .unknown
-        }
+    private func reconcileEnergySelectionGeneration() {
+        let decision = EnergyPage.resolvedSelection(
+            onEnergyPage: selectedPage == .energy,
+            selectedPid: selectedPid,
+            rememberedGeneration: selectedEnergyGeneration,
+            liveRows: rows,
+            liveGenerations: energyLiveGenerations
+        )
+        if selectedPid != decision.pid { selectedPid = decision.pid }
+        selectedEnergyGeneration = decision.generation
     }
 }

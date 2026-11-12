@@ -160,7 +160,7 @@ struct ProcessDetailSidebar: View {
             Spacer(minLength: 0)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            ProcessDetailSidebarQuitControls()
+            quitControls
         }
     }
 
@@ -203,6 +203,8 @@ struct ProcessDetailSidebar: View {
                     networkResourceDetail(detail, network: network)
                 case .disk(let disk):
                     diskResourceDetail(detail, disk: disk)
+                case .energy(let energy):
+                    energyResourceDetail(energy)
                 case .noResourceUpgrade:
                     noResourceUpgradeDetail(detail)
                 }
@@ -211,7 +213,7 @@ struct ProcessDetailSidebar: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            ProcessDetailSidebarQuitControls()
+            quitControls
         }
     }
 
@@ -230,7 +232,8 @@ struct ProcessDetailSidebar: View {
                 state: lastLiveTotal,
                 detailPid: shown.row.pid,
                 detailMemoryBytes: shown.row.memoryBytes
-            )
+            ),
+            energyDisplay: energyDisplayReading(for: shown.row.pid)
         )
     }
 

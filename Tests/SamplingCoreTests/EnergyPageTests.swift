@@ -186,8 +186,22 @@ final class EnergyPageCopyTests: XCTestCase {
         XCTAssertFalse(EnergyPageCopy.explanation.contains("分数相等"))
     }
 
-    func testEnergyLineUsesTheWindowRatesAndThePid() {
-        let row = ProcessRow(
+    func testHourCopySumsPresentMinutesAndLeavesTheMinuteCopyVerbatim() {
+        XCTAssertEqual(EnergyPageCopy.headline(for: .oneMinute), EnergyPageCopy.headline)
+        XCTAssertEqual(EnergyPageCopy.explanation(for: .oneMinute), EnergyPageCopy.explanation)
+        XCTAssertEqual(EnergyPageCopy.headline(for: .oneHour), "最近 1 小时平均功率")
+        XCTAssertEqual(
+            EnergyPageCopy.explanation(for: .oneHour),
+            "把这一小时里有读数的分钟耗电量相加，再除以这些分钟的实际时长。缺读数的分钟不补 0。这不是活动监视器的能耗影响分数。"
+        )
+        XCTAssertEqual(EnergyPageCopy.hourHeadline, EnergyPageCopy.headline(for: .oneHour))
+        XCTAssertFalse(EnergyPageCopy.hourHeadline.contains("Wh"))
+        XCTAssertFalse(EnergyPageCopy.hourExplanation.contains("Wh"))
+        XCTAssertFalse(EnergyPageCopy.hourExplanation.contains("部分读数"))
+    }
+
+    func testEnergyLineUsesTheWindowRatesAndTheVisibleSecondColumn() {
+        let grouped = ProcessRow(
             pid: 42,
             name: "Safari",
             bundleIdentifier: nil,
@@ -201,23 +215,55 @@ final class EnergyPageCopyTests: XCTestCase {
         )
         let line = ProcessRowCopy.line(
             page: .energy,
-            row: row,
+            row: grouped,
             energyWindow: ProcessEnergyRates(watts: 1.5, wakeupsPerSecond: 3)
         )
-        XCTAssertEqual(line, "Safari\t42\t1.5 W\t3.0 次/秒")
+        XCTAssertEqual(line, "Safari\t4\t1.5 W\t3.0 次/秒")
         XCTAssertFalse(line.contains("9.0"))
         XCTAssertFalse(line.contains("%"))
         XCTAssertFalse(line.contains("MB"))
-        XCTAssertFalse(line.contains("\t4\t"))
-        let missing = ProcessRowCopy.line(page: .energy, row: row, energyWindow: nil)
-        XCTAssertEqual(missing, "Safari\t42\t—\t—")
+        XCTAssertFalse(line.contains("\t42\t"))
+        let missing = ProcessRowCopy.line(page: .energy, row: grouped, energyWindow: nil)
+        XCTAssertEqual(missing, "Safari\t4\t—\t—")
         let zero = ProcessRowCopy.line(
             page: .energy,
-            row: row,
+            row: grouped,
             energyWindow: ProcessEnergyRates(watts: 0, wakeupsPerSecond: 0)
         )
-        XCTAssertEqual(zero, "Safari\t42\t0.0 W\t0.0 次/秒")
+        XCTAssertEqual(zero, "Safari\t4\t0.0 W\t0.0 次/秒")
         XCTAssertNotEqual(missing, zero)
+
+        let alone = ProcessRow(
+            pid: 42,
+            name: "Safari",
+            bundleIdentifier: nil,
+            executablePath: nil,
+            cpuPercent: 12.5,
+            memoryBytes: 1_048_576,
+            threadCount: 4,
+            energyWatts: 9,
+            wakeupsPerSecond: 9,
+            groupedMemberCount: 1
+        )
+        XCTAssertEqual(
+            ProcessRowCopy.line(page: .energy, row: alone, energyWindow: ProcessEnergyRates(watts: 1.5, wakeupsPerSecond: 3)),
+            "Safari\t1\t1.5 W\t3.0 次/秒"
+        )
+        let ungrouped = ProcessRow(
+            pid: 42,
+            name: "Safari",
+            bundleIdentifier: nil,
+            executablePath: nil,
+            cpuPercent: 12.5,
+            memoryBytes: 1_048_576,
+            threadCount: 4,
+            energyWatts: 9,
+            wakeupsPerSecond: 9
+        )
+        XCTAssertEqual(
+            ProcessRowCopy.line(page: .energy, row: ungrouped, energyWindow: ProcessEnergyRates(watts: 1.5, wakeupsPerSecond: 3)),
+            "Safari\t42\t1.5 W\t3.0 次/秒"
+        )
     }
 
     func testCPULineStillUsesTheTwoFrameFieldsWhenAWindowIsPassed() {
@@ -263,9 +309,9 @@ final class EnergyPageNavigationTests: XCTestCase {
         XCTAssertEqual(ProcessTableSort.defaultSort(for: .memory).column, .memory)
     }
 
-    func testEnergyIsSelectableAndDisablesQuitWithoutChangingTheOtherPages() {
+    func testEnergyIsSelectableAndQuitsLikeTheOtherProcessPages() {
         XCTAssertTrue(DashboardPage.energy.isSelectable)
-        XCTAssertFalse(DashboardPage.energy.allowsProcessQuit)
+        XCTAssertTrue(DashboardPage.energy.allowsProcessQuit)
         XCTAssertTrue(DashboardPage.memory.allowsProcessQuit)
         XCTAssertTrue(DashboardPage.cpu.allowsProcessQuit)
         XCTAssertTrue(DashboardPage.disk.allowsProcessQuit)
@@ -273,11 +319,170 @@ final class EnergyPageNavigationTests: XCTestCase {
         XCTAssertFalse(DashboardPage.machine.allowsProcessQuit)
         XCTAssertTrue(DashboardPage.gpu.allowsProcessQuit)
         XCTAssertFalse(DashboardPage.gpu.isSelectable)
-        XCTAssertFalse(AppGroupChrome.showsToggle(page: .energy))
-        XCTAssertFalse(AppGroupChrome.applies(on: .energy))
+        XCTAssertTrue(AppGroupChrome.showsToggle(page: .energy))
+        XCTAssertTrue(AppGroupChrome.applies(on: .energy))
+        XCTAssertFalse(AppGroupChrome.showsProcessTreeButton(groupedByApp: true, page: .energy))
+        XCTAssertTrue(AppGroupChrome.showsProcessTreeButton(groupedByApp: false, page: .energy))
         XCTAssertFalse(MemoryRisingOnlyChrome.showsToggle(page: .energy))
         XCTAssertFalse(WindowedAppChrome.showsToggle(page: .energy))
         XCTAssertTrue(AppGroupChrome.showsToggle(page: .cpu))
         XCTAssertTrue(MemoryRisingOnlyChrome.showsToggle(page: .memory))
+    }
+}
+
+/// Energy-page groups sum the 1-minute window, not the two-frame row fields.
+final class EnergyPageGroupTests: XCTestCase {
+    func testGroupedWindowSumsKeepARealZeroAndLeaveSampledWattsUntouched() throws {
+        let mailHeavy = row(30, "Mail", memory: 200, decoyWatts: 50, decoyWakeups: 9)
+        let mailLead = row(20, "Mail", memory: 200, decoyWatts: 7, decoyWakeups: 8)
+        let mailLight = row(10, "Mail", memory: 100, decoyWatts: 99, decoyWakeups: nil)
+        let idleLead = row(4, "Idle", memory: 10, decoyWatts: 40, decoyWakeups: 6)
+        let idleOther = row(6, "Idle", memory: 1, decoyWatts: 0, decoyWakeups: 1)
+        let goneLead = row(1, "Gone", memory: 9, decoyWatts: 3, decoyWakeups: 3)
+        let goneOther = row(8, "Gone", memory: 5, decoyWatts: nil, decoyWakeups: nil)
+        let solo = row(5, "Solo", memory: 2, decoyWatts: 0, decoyWakeups: 11)
+        let rows = [mailHeavy, mailLead, mailLight, idleLead, idleOther, goneLead, goneOther, solo]
+        let rates: [Int32: ProcessEnergyRates] = [
+            30: ProcessEnergyRates(watts: nil, wakeupsPerSecond: 4),
+            20: ProcessEnergyRates(watts: 0, wakeupsPerSecond: 0),
+            10: ProcessEnergyRates(watts: 1.5, wakeupsPerSecond: nil),
+            4: ProcessEnergyRates(watts: 0, wakeupsPerSecond: 0),
+            6: ProcessEnergyRates(watts: nil, wakeupsPerSecond: nil),
+            1: .missing,
+            5: ProcessEnergyRates(watts: 2, wakeupsPerSecond: 1),
+        ]
+
+        let display = EnergyPage.display(rows: rows, windowRates: rates, grouped: true)
+
+        let mail = try XCTUnwrap(display.rows.first { $0.name == "Mail" })
+        XCTAssertEqual(mail.pid, 20)
+        XCTAssertEqual(mail.groupedMemberCount, 3)
+        XCTAssertEqual(mail.energyWatts, 7)
+        XCTAssertEqual(mail.wakeupsPerSecond, 8)
+        let mailReading = try XCTUnwrap(display.readings[20])
+        XCTAssertEqual(mailReading.watts ?? -1, 1.5, accuracy: 0.000_001)
+        XCTAssertEqual(mailReading.wakeupsPerSecond ?? -1, 4, accuracy: 0.000_001)
+        XCTAssertTrue(mailReading.energyReadingIsPartial)
+        XCTAssertTrue(mailReading.wakeupReadingIsPartial)
+        XCTAssertEqual(ProcessEnergyText.watts(mailReading.watts), "1.5 W")
+        XCTAssertEqual(ProcessEnergyText.caption(isPartial: mailReading.energyReadingIsPartial), "部分读数")
+
+        let idle = try XCTUnwrap(display.rows.first { $0.name == "Idle" })
+        XCTAssertEqual(idle.pid, 4)
+        XCTAssertEqual(idle.groupedMemberCount, 2)
+        XCTAssertEqual(idle.energyWatts, 40)
+        let idleReading = try XCTUnwrap(display.readings[4])
+        XCTAssertEqual(idleReading.watts, 0)
+        XCTAssertEqual(idleReading.wakeupsPerSecond, 0)
+        XCTAssertTrue(idleReading.energyReadingIsPartial)
+        XCTAssertTrue(idleReading.wakeupReadingIsPartial)
+        XCTAssertEqual(ProcessEnergyText.watts(idleReading.watts), "0.0 W")
+        XCTAssertNotEqual(ProcessEnergyText.watts(idleReading.watts), "—")
+
+        let gone = try XCTUnwrap(display.rows.first { $0.name == "Gone" })
+        XCTAssertEqual(gone.pid, 1)
+        XCTAssertEqual(gone.groupedMemberCount, 2)
+        let goneReading = try XCTUnwrap(display.readings[1])
+        XCTAssertNil(goneReading.watts)
+        XCTAssertNil(goneReading.wakeupsPerSecond)
+        XCTAssertFalse(goneReading.energyReadingIsPartial)
+        XCTAssertFalse(goneReading.wakeupReadingIsPartial)
+        XCTAssertEqual(ProcessEnergyText.watts(goneReading.watts), "—")
+        XCTAssertNotEqual(ProcessEnergyText.watts(goneReading.watts), "0.0 W")
+
+        let alone = try XCTUnwrap(display.rows.first { $0.name == "Solo" })
+        XCTAssertEqual(alone.pid, 5)
+        XCTAssertEqual(alone.groupedMemberCount, 1)
+        XCTAssertEqual(alone.energyWatts, 0)
+        let soloReading = try XCTUnwrap(display.readings[5])
+        XCTAssertEqual(soloReading.watts, 2)
+        XCTAssertEqual(soloReading.wakeupsPerSecond, 1)
+        XCTAssertFalse(soloReading.energyReadingIsPartial)
+        XCTAssertFalse(soloReading.wakeupReadingIsPartial)
+
+        XCTAssertEqual(display.rows.map(\.pid), [20, 4, 1, 5])
+        XCTAssertNil(display.readings[30])
+        XCTAssertNil(display.readings[10])
+        XCTAssertEqual(rows.map(\.energyWatts), [50, 7, 99, 40, 0, 3, nil, 0])
+        XCTAssertEqual(rows.map(\.wakeupsPerSecond), [9, 8, nil, 6, 1, 3, nil, 11])
+        XCTAssertTrue(rows.allSatisfy { $0.groupedMemberCount == nil })
+    }
+
+    func testGroupedNilWindowRatesSortLastAndIgnoreDecoyWatts() {
+        let rows = [
+            row(30, "Mail", memory: 200, decoyWatts: 100, decoyWakeups: 100),
+            row(20, "Mail", memory: 200, decoyWatts: 7, decoyWakeups: 8),
+            row(4, "Idle", memory: 10, decoyWatts: 50, decoyWakeups: 50),
+            row(1, "Gone", memory: 9, decoyWatts: 9, decoyWakeups: 9),
+            row(5, "Solo", memory: 2, decoyWatts: 0, decoyWakeups: 0),
+        ]
+        let rates: [Int32: ProcessEnergyRates] = [
+            30: ProcessEnergyRates(watts: nil, wakeupsPerSecond: 4),
+            20: ProcessEnergyRates(watts: 1.5, wakeupsPerSecond: 0),
+            4: ProcessEnergyRates(watts: 0, wakeupsPerSecond: 0),
+            1: .missing,
+            5: ProcessEnergyRates(watts: 2, wakeupsPerSecond: 1),
+        ]
+        let descending = EnergyPage.sorted(
+            rows,
+            windowRates: rates,
+            grouped: true,
+            sort: ProcessTableSort(column: .energy, descending: true)
+        )
+        let ascending = EnergyPage.sorted(
+            rows,
+            windowRates: rates,
+            grouped: true,
+            sort: ProcessTableSort(column: .energy, descending: false)
+        )
+        XCTAssertEqual(descending.map(\.name), ["Solo", "Mail", "Idle", "Gone"])
+        XCTAssertEqual(ascending.map(\.name), ["Idle", "Mail", "Solo", "Gone"])
+        let wakeDescending = EnergyPage.sorted(
+            rows,
+            windowRates: rates,
+            grouped: true,
+            sort: ProcessTableSort(column: .wakeups, descending: true)
+        )
+        XCTAssertEqual(wakeDescending.map(\.name), ["Mail", "Solo", "Idle", "Gone"])
+    }
+
+    func testUngroupedDisplayKeepsEachPidWindowRate() throws {
+        let rows = [
+            row(2, "Mail", memory: 4, decoyWatts: 9, decoyWakeups: 9),
+            row(1, "Solo", memory: 1, decoyWatts: nil, decoyWakeups: nil),
+        ]
+        let rates: [Int32: ProcessEnergyRates] = [
+            2: ProcessEnergyRates(watts: 0, wakeupsPerSecond: 3),
+            1: .missing,
+        ]
+        let display = EnergyPage.display(rows: rows, windowRates: rates, grouped: false)
+        XCTAssertEqual(display.rows.map(\.pid), [2, 1])
+        XCTAssertTrue(display.rows.allSatisfy { $0.groupedMemberCount == nil })
+        XCTAssertEqual(display.rows.map(\.energyWatts), [9, nil])
+        XCTAssertEqual(display.rates, rates)
+        XCTAssertFalse(display.readings[2]?.energyReadingIsPartial ?? true)
+        XCTAssertFalse(display.readings[2]?.wakeupReadingIsPartial ?? true)
+        XCTAssertNil(display.readings[1]?.watts)
+        XCTAssertEqual(display.readings[1]?.wakeupsPerSecond, nil)
+    }
+
+    private func row(
+        _ pid: Int32,
+        _ name: String,
+        memory: UInt64,
+        decoyWatts: Double?,
+        decoyWakeups: Double?
+    ) -> ProcessRow {
+        ProcessRow(
+            pid: pid,
+            name: name,
+            bundleIdentifier: nil,
+            executablePath: nil,
+            cpuPercent: 1,
+            memoryBytes: memory,
+            threadCount: 1,
+            energyWatts: decoyWatts,
+            wakeupsPerSecond: decoyWakeups
+        )
     }
 }

@@ -21,8 +21,8 @@ enum DashboardPage: String, Equatable, Sendable, CaseIterable {
         }
     }
 
-    /// The machine page has no process list, and the energy page does not quit processes.
-    var allowsProcessQuit: Bool { self != .machine && self != .energy }
+    /// The machine page has no process list.
+    var allowsProcessQuit: Bool { self != .machine }
 }
 
 struct MenuBarNavigation: Equatable, Sendable {

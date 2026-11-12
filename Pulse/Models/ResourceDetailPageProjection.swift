@@ -52,11 +52,21 @@ struct NoResourceUpgradeProjection: Equatable, Sendable {
     let memorySeries: [ChartSample]
 }
 
+/// Energy-page sidebar. Watts are the window rate, not `ProcessRow.energyWatts`.
+struct EnergyDetailProjection: Equatable, Sendable {
+    let pid: Int32
+    let watts: Double?
+    let wakeupsPerSecond: Double?
+    let energyReadingIsPartial: Bool
+    let wakeupReadingIsPartial: Bool
+}
+
 enum ResourceDetailProjection: Equatable, Sendable {
     case memoryExisting(MemoryExistingProjection)
     case cpu(CPUDetailProjection)
     case network(NetworkDetailProjection)
     case disk(DiskDetailProjection)
+    case energy(EnergyDetailProjection)
     case noResourceUpgrade(NoResourceUpgradeProjection)
 }
 
@@ -85,7 +95,8 @@ enum ResourceDetailPageProjection {
         page: DashboardPage,
         detail: ProcessDetail,
         physicalTotalBytes: UInt64?,
-        frozen: FrozenMemoryFieldSemantics?
+        frozen: FrozenMemoryFieldSemantics?,
+        energyDisplay: EnergyDisplayReading? = nil
     ) -> ResourceDetailProjection {
         switch page {
         case .memory:
@@ -150,7 +161,17 @@ enum ResourceDetailPageProjection {
                     memorySeries: detail.memorySeries
                 )
             )
-        case .gpu, .machine, .energy:
+        case .energy:
+            return .energy(
+                EnergyDetailProjection(
+                    pid: detail.row.pid,
+                    watts: energyDisplay?.watts,
+                    wakeupsPerSecond: energyDisplay?.wakeupsPerSecond,
+                    energyReadingIsPartial: energyDisplay?.energyReadingIsPartial ?? false,
+                    wakeupReadingIsPartial: energyDisplay?.wakeupReadingIsPartial ?? false
+                )
+            )
+        case .gpu, .machine:
             return .noResourceUpgrade(
                 NoResourceUpgradeProjection(
                     pid: detail.row.pid,

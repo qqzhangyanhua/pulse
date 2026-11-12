@@ -49,7 +49,7 @@ struct MemoryDashboardView: View {
                                 systemImage: "square.stack.3d.up",
                                 isOn: $vm.groupedByApp
                             )
-                            .help(AppGroupChrome.help)
+                            .help(AppGroupChrome.help(on: vm.selectedPage))
                         }
                         if MemoryRisingOnlyChrome.showsToggle(page: vm.selectedPage) {
                             MemoryToolbarSwitch(
@@ -104,10 +104,21 @@ struct MemoryDashboardView: View {
     }
 
     private var energyResourceColumn: some View {
-        ProcessTablePane()
+        HSplitView {
+            VStack(spacing: 12) {
+                if vm.energyBatteryCard != nil {
+                    EnergyBatteryCardView()
+                }
+                EnergyHistoryChart()
+                    .frame(height: 150)
+                ProcessTablePane()
+            }
             .padding(12)
             .frame(minWidth: 680, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(PulsePalette.windowBackground)
+            ProcessDetailSidebar()
+                .frame(minWidth: 300, idealWidth: 332, maxWidth: 400)
+        }
     }
 
     private var resourceColumn: some View {
