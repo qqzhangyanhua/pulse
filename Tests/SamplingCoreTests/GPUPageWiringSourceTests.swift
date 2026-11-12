@@ -6,7 +6,9 @@ final class GPUPageWiringSourceTests: XCTestCase {
     func testGPUPageIsAFullPageWithoutProcessChrome() throws {
         let dashboard = try repoText("Pulse/Views/MemoryDashboardView.swift")
         XCTAssertTrue(dashboard.contains("case .gpu:"))
-        XCTAssertTrue(dashboard.contains("vm.selectedPage != .machine && vm.selectedPage != .gpu"))
+        XCTAssertTrue(dashboard.contains("!vm.selectedPage.isFullPage"))
+        let status = try repoText("Pulse/MenuBar/MenuBarStatus.swift")
+        XCTAssertTrue(status.contains("var isFullPage: Bool { self == .machine || self == .gpu }"))
         XCTAssertTrue(dashboard.contains("reduceMotion ? nil : PulseMotion.page, value: fullPageIdentity"))
         XCTAssertTrue(dashboard.contains("case .energy:"))
         XCTAssertTrue(dashboard.contains("case .gpu:"))
@@ -72,6 +74,31 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertFalse(reader.contains("Energy Model"))
         XCTAssertFalse(reader.contains("Renderer Utilization"))
         XCTAssertFalse(reader.contains("Tiler Utilization"))
+        XCTAssertFalse(reader.contains("missing.count == 1"))
+        XCTAssertFalse(reader.contains("copy[missing[0]]"))
+        XCTAssertTrue(reader.contains("for index in missing"))
+        XCTAssertTrue(reader.contains("nodes.isEmpty, sawAccelerator"))
+        XCTAssertTrue(reader.contains("GPUAcceleratorNode()"))
+        guard let skipChannel = reader.range(of: "guard !missing.isEmpty else { return nodes }")?.lowerBound,
+              let readChannel = reader.range(of: "IOReportDeviceChannel.percent()")?.lowerBound
+        else {
+            return XCTFail("device channel must be skipped when no node is missing the key")
+        }
+        XCTAssertLessThan(skipChannel, readChannel)
+    }
+
+    /// Enter applies this beat immediately. A failed main sample with no visit
+    /// success is the sampling-failure empty state, not a pending skeleton.
+    /// Leave still does not publish this beat's numbers.
+    func testJustEnteredFailedMainSamplePublishesTheFailureFrame() throws {
+        let gpuVM = try repoText("Pulse/ViewModels/MemoryDashboardVM+GPU.swift")
+        let parts = gpuVM.components(separatedBy: "func publishGPUTransition")
+        XCTAssertEqual(parts.count, 2)
+        let transition = parts[1].components(separatedBy: "func recordGPUSample")[0]
+        XCTAssertTrue(transition.contains("transition == .justEntered && samplingFailed ? .failed : .pending"))
+        XCTAssertTrue(transition.contains(".justLeft"))
+        XCTAssertFalse(transition.contains("nodes:"))
+        XCTAssertEqual(occurrenceCount(of: "GPUPageProjection.apply", in: transition), 1)
     }
 
     func testSamplingHangsOffTheMainTickAndStaysOffOtherSurfaces() throws {

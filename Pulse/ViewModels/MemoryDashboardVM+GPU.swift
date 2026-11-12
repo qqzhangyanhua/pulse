@@ -11,8 +11,10 @@ extension MemoryDashboardVM {
         } else {
             return
         }
+        // Just left ignores the frame and only clears the curve.
+        let frame: GPUFrameOutcome = transition == .justEntered && samplingFailed ? .failed : .pending
         gpuPage = GPUPageProjection.apply(
-            frame: .pending,
+            frame: frame,
             sampledAt: nil,
             current: gpuPage,
             transition: transition

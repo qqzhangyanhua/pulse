@@ -3,8 +3,8 @@ import Foundation
 import IOKit
 
 /// Registry properties for published accelerator performance statistics.
-/// A machine-scoped device percent is attached only when exactly one node is
-/// missing the device-utilization key. Only `MemorySampler.sample()` calls this.
+/// A machine-scoped device percent is copied onto every node missing the
+/// device-utilization key. Only `MemorySampler.sample()` calls this.
 /// No user client and no Metal counters.
 enum HostGPUReader {
     private static let acceleratorClass = "IOAccelerator"
@@ -15,16 +15,18 @@ enum HostGPUReader {
     }
 
     /// The device channel is not a property of each registry entry.
-    /// Several nodes missing the key do not share one reading.
+    /// A present key is left alone. A nil channel stays nil and is not called
+    /// when every node already has the key.
     private static func attachDevicePercent(to nodes: [GPUAcceleratorNode]) -> [GPUAcceleratorNode] {
         let missing = nodes.indices.filter {
             nodes[$0].statistics[GPUPageProjection.deviceUtilizationKey] == nil
         }
-        guard missing.count == 1, let percent = IOReportDeviceChannel.percent() else {
-            return nodes
-        }
+        guard !missing.isEmpty else { return nodes }
+        guard let percent = IOReportDeviceChannel.percent() else { return nodes }
         var copy = nodes
-        copy[missing[0]].ioReportDevicePercent = percent
+        for index in missing {
+            copy[index].ioReportDevicePercent = percent
+        }
         return copy
     }
 
@@ -36,13 +38,18 @@ enum HostGPUReader {
         defer { IOObjectRelease(iterator) }
 
         var nodes: [GPUAcceleratorNode] = []
+        var sawAccelerator = false
         while true {
             let service = IOIteratorNext(iterator)
             if service == 0 { break }
             defer { IOObjectRelease(service) }
+            sawAccelerator = true
             if let node = node(for: service) {
                 nodes.append(node)
             }
+        }
+        if nodes.isEmpty, sawAccelerator {
+            nodes.append(GPUAcceleratorNode())
         }
         return nodes
     }

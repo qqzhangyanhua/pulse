@@ -10,18 +10,14 @@ enum DashboardPage: String, Equatable, Sendable, CaseIterable {
     case machine
     case gpu
 
-    /// Every current page is tappable, including GPU after 本机.
-    var isSelectable: Bool {
-        switch self {
-        case .memory, .cpu, .energy, .network, .disk, .machine, .gpu:
-            return true
-        }
-    }
+    /// Machine and GPU fill the window and hide process chrome.
+    var isFullPage: Bool { self == .machine || self == .gpu }
 
-    /// Machine and GPU have no process list, so the view-menu quit stays disabled.
-    var allowsProcessQuit: Bool {
-        self != .machine && self != .gpu
-    }
+    /// Every current page is tappable, including GPU after 本机.
+    var isSelectable: Bool { true }
+
+    /// Opposite of `isFullPage`. Machine and GPU keep the view-menu quit disabled.
+    var allowsProcessQuit: Bool { !isFullPage }
 }
 
 struct MenuBarNavigation: Equatable, Sendable {
