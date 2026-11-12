@@ -33,6 +33,7 @@
 		B00000000000000000000034 /* TopAppLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000034 /* TopAppLocation.swift */; };
 		B00000000000000000000035 /* HistoryCurvePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000035 /* HistoryCurvePresentation.swift */; };
 		B00000000000000000000039 /* ThermalNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000039 /* ThermalNotice.swift */; };
+		B00000000000000000000075 /* ThermalAdvice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000075 /* ThermalAdvice.swift */; };
 		B0000000000000000000003A /* MachinePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003A /* MachinePage.swift */; };
 		B00000000000000000000045 /* BatteryMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000045 /* BatteryMath.swift */; };
 		B00000000000000000000042 /* MachineOverview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000042 /* MachineOverview.swift */; };
@@ -142,6 +143,7 @@
 		A00000000000000000000034 /* TopAppLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopAppLocation.swift; sourceTree = "<group>"; };
 		A00000000000000000000035 /* HistoryCurvePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCurvePresentation.swift; sourceTree = "<group>"; };
 		A00000000000000000000039 /* ThermalNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalNotice.swift; sourceTree = "<group>"; };
+		A00000000000000000000075 /* ThermalAdvice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalAdvice.swift; sourceTree = "<group>"; };
 		A0000000000000000000003A /* MachinePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinePage.swift; sourceTree = "<group>"; };
 		A00000000000000000000045 /* BatteryMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryMath.swift; sourceTree = "<group>"; };
 		A00000000000000000000042 /* MachineOverview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineOverview.swift; sourceTree = "<group>"; };
@@ -281,6 +283,7 @@
 				A00000000000000000000034 /* TopAppLocation.swift */,
 				A00000000000000000000035 /* HistoryCurvePresentation.swift */,
 				A00000000000000000000039 /* ThermalNotice.swift */,
+				A00000000000000000000075 /* ThermalAdvice.swift */,
 				A0000000000000000000002F /* ProcessQuitOutcome.swift */,
 				A00000000000000000000030 /* ProcessQuitSession.swift */,
 				A0000000000000000000004D /* ProcessQuitRoute.swift */,
@@ -519,6 +522,7 @@
 				B00000000000000000000034 /* TopAppLocation.swift in Sources */,
 				B00000000000000000000035 /* HistoryCurvePresentation.swift in Sources */,
 				B00000000000000000000039 /* ThermalNotice.swift in Sources */,
+				B00000000000000000000075 /* ThermalAdvice.swift in Sources */,
 				B0000000000000000000003A /* MachinePage.swift in Sources */,
 				B00000000000000000000045 /* BatteryMath.swift in Sources */,
 				B00000000000000000000042 /* MachineOverview.swift in Sources */,

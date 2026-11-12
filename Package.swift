@@ -60,6 +60,7 @@ let package = Package(
                 "Models/TopAppLocation.swift",
                 "Models/HistoryCurvePresentation.swift",
                 "Models/ThermalNotice.swift",
+                "Models/ThermalAdvice.swift",
                 "Models/ProcessQuitOutcome.swift",
                 "Models/ProcessQuitSession.swift",
                 "Models/ProcessQuitRoute.swift",
