@@ -3,7 +3,8 @@ import SwiftUI
 /// Host facts, the current load, and the CPU and memory series already on the dashboard.
 /// Disk, power, and uptime stay numbers. There is no process list.
 struct MachineOverviewSection: View {
-    @EnvironmentObject private var vm: MemoryDashboardVM
+    /// Internal so `MachineOverviewSection+Throughput` can read the same environment object.
+    @EnvironmentObject var vm: MemoryDashboardVM
 
     var body: some View {
         let model = MachineOverview.project(
