@@ -22,6 +22,23 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("path = ThermalNotice.swift;"))
     }
 
+    func testThermalAdviceStaysFreeOfPlatformImports() throws {
+        let source = try repoText("Pulse/Models/ThermalAdvice.swift")
+        XCTAssertTrue(source.contains("static func project(_ processes: [ThermalAdviceCandidate], excludingPid pulsePid: Int32) -> ThermalAdvice"))
+        for token in ["import Darwin", "import AppKit", "import SwiftUI", "import Foundation"] {
+            XCTAssertFalse(source.contains(token), token)
+        }
+    }
+
+    func testPackageAndProjectListThermalAdvice() throws {
+        let package = try repoText("Package.swift")
+        XCTAssertTrue(package.contains("\"Models/ThermalAdvice.swift\""))
+
+        let project = try repoText("Pulse.xcodeproj/project.pbxproj")
+        XCTAssertTrue(project.contains("ThermalAdvice.swift in Sources"))
+        XCTAssertTrue(project.contains("path = ThermalAdvice.swift;"))
+    }
+
     func testThermalWatchStaysOutOfTheSamplerAndUsesNoTimer() throws {
         let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
