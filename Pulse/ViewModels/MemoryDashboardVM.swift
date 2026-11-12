@@ -22,6 +22,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var machineLabel: String?
     /// Host facts for the machine page. Nil until that page is opened. Not a sample frame.
     @Published private(set) var machineFacts: MachineFacts?
+    /// Energy-page battery card. Nil hides it, including a Mac with no internal battery.
+    @Published var energyBatteryCard: EnergyBatteryCard?
     /// The only session quit store. Phase and message are projections of this.
     @Published var quitOutcome = ProcessQuitOutcome()
     @Published var sidebarSubjectPid: Int32?
@@ -95,6 +97,7 @@ final class MemoryDashboardVM: ObservableObject {
     private var samplingGate = SamplingRequestGate()
     private var thermalObserver: NSObjectProtocol?
     private var machineRefreshTask: Task<Void, Never>?
+    var energyBatteryRefreshTask: Task<Void, Never>?
 
     init() {
         beginThermalWatch()
@@ -105,6 +108,7 @@ final class MemoryDashboardVM: ObservableObject {
     deinit {
         MainActor.assumeIsolated {
             machineRefreshTask?.cancel()
+            energyBatteryRefreshTask?.cancel()
             endThermalWatch()
         }
     }
@@ -202,6 +206,7 @@ final class MemoryDashboardVM: ObservableObject {
         applyRisingOnlySelection()
         applyWindowedOnlySelection()
         syncMachineWatch()
+        syncEnergyBatteryWatch()
     }
 
     /// Select-if-present against the live `rows`. Missing / vanished pids are not written.
@@ -224,6 +229,7 @@ final class MemoryDashboardVM: ObservableObject {
         applyRisingOnlySelection()
         applyWindowedOnlySelection()
         syncMachineWatch()
+        syncEnergyBatteryWatch()
     }
 
     func setTableSort(_ sort: ProcessTableSort) {

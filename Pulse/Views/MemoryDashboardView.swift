@@ -104,10 +104,15 @@ struct MemoryDashboardView: View {
     }
 
     private var energyResourceColumn: some View {
-        ProcessTablePane()
-            .padding(12)
-            .frame(minWidth: 680, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(PulsePalette.windowBackground)
+        VStack(spacing: 12) {
+            if vm.energyBatteryCard != nil {
+                EnergyBatteryCardView()
+            }
+            ProcessTablePane()
+        }
+        .padding(12)
+        .frame(minWidth: 680, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(PulsePalette.windowBackground)
     }
 
     private var resourceColumn: some View {
