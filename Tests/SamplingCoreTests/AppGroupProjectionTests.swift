@@ -19,7 +19,13 @@ final class AppGroupProjectionTests: XCTestCase {
                 "\(page)"
             )
         }
-        XCTAssertEqual(AppGroupChrome.help, "同名进程合为一行。内存、线程、CPU、能耗和唤醒相加。")
+        let groupedHelp = "同名进程合为一行。内存、线程、CPU、能耗和唤醒相加。"
+        XCTAssertEqual(AppGroupChrome.help, groupedHelp)
+        XCTAssertEqual(AppGroupChrome.help(on: .memory), groupedHelp)
+        XCTAssertEqual(AppGroupChrome.help(on: .cpu), groupedHelp)
+        let energyHelp = AppGroupChrome.help(on: .energy)
+        XCTAssertFalse(energyHelp.contains("内存、线程、CPU"))
+        XCTAssertTrue(energyHelp.contains("部分读数"))
         XCTAssertFalse(AppGroupChrome.help.contains("磁盘"))
         XCTAssertFalse(AppGroupChrome.help.contains("网络"))
     }

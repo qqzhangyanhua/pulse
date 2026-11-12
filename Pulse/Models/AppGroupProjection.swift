@@ -5,6 +5,13 @@ enum AppGroupChrome {
     static let toggleTitle = "按 App"
     static let help = "同名进程合为一行。内存、线程、CPU、能耗和唤醒相加。"
 
+    static func help(on page: DashboardPage) -> String {
+        if page == .energy {
+            return "同名进程合为一行。能耗和唤醒按有读数的成员相加，有成员缺失则标「部分读数」。"
+        }
+        return help
+    }
+
     static func applies(on page: DashboardPage) -> Bool {
         page == .memory || page == .cpu || page == .energy
     }

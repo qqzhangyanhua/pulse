@@ -34,8 +34,8 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("EnergyProcessTable.swift in Sources"))
         XCTAssertEqual(
             occurrenceCount(of: "isa = PBXBuildFile;", in: project),
-            100,
-            "energy sidebar adds ProcessDetailSidebar+Energy.swift"
+            101,
+            "energy sidebar adds ProcessDetailSidebar+Energy.swift and host watch adds MemoryDashboardVM+HostWatch.swift"
         )
         XCTAssertTrue(project.contains("ProcessDetailSidebar+Energy.swift in Sources"))
     }

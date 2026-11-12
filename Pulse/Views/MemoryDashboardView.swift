@@ -49,7 +49,7 @@ struct MemoryDashboardView: View {
                                 systemImage: "square.stack.3d.up",
                                 isOn: $vm.groupedByApp
                             )
-                            .help(AppGroupChrome.help)
+                            .help(AppGroupChrome.help(on: vm.selectedPage))
                         }
                         if MemoryRisingOnlyChrome.showsToggle(page: vm.selectedPage) {
                             MemoryToolbarSwitch(
