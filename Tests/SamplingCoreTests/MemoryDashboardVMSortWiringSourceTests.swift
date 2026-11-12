@@ -120,7 +120,7 @@ final class MemoryDashboardVMSortWiringSourceTests: XCTestCase {
         XCTAssertFalse(sortHeader.contains("click"))
 
         let vm = try vmSource()
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 35, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; disk fields remain un-published")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 36, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; disk fields remain un-published")
         for line in vm.components(separatedBy: .newlines) where line.contains("@Published") {
             XCTAssertFalse(line.contains("diskRead"), line)
             XCTAssertFalse(line.contains("diskWrite"), line)
