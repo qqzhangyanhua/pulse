@@ -1,0 +1,65 @@
+Pulse/ViewModels/MemoryDashboardVM.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 135,137
+Tests/SamplingCoreTests/EnergyPageTests.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 189-190,204,207,211-213,216,219,221-252,298,300,308-311,318-473
+  s_6ee970092c491b::t_cd9c1fc99b1c25 474
+Tests/SamplingCoreTests/ProcessRowCopyWiringSourceTests.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 25-29
+Pulse/Models/AppGroupProjection.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 3,9
+Pulse/Views/ProcessDetailSidebar.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 206-207,235-236
+Tests/SamplingCoreTests/EnergyPageWiringSourceTests.swift
+  s_6ee970092c491b::t_689634803ff533 37
+  s_6ee970092c491b::t_b3692e1bfb0bbf 38,40,59,73-74,76-77,95-99,102
+docs/TECH.md
+  s_6ee970092c491b::t_ef9a3cdd8e2228 78,113,127-128,241,270
+  s_6ee970092c491b::t_b3692e1bfb0bbf 89,134,148,263
+Pulse/Models/ProcessRowCopy.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 23
+Tests/SamplingCoreTests/ResourceDetailPageProjectionTests.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 237-240,282-322,414-415,421-422,436-438,473-479
+  s_6ee970092c491b::t_689461b50477e4 480
+Tests/SamplingCoreTests/EnergyBatteryWiringSourceTests.swift
+  s_6ee970092c491b::t_ff3b8281144cff 68
+Pulse/Models/EnergyPage.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 31-52,59-114,167-197
+  s_6ee970092c491b::t_1a0b644cc0d4fe 198
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_6ee970092c491b::t_8e2e1165a1b544 133
+docs/PRD.md
+  s_6ee970092c491b::t_8737763b602728 35
+Pulse/Views/EnergyProcessTable.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 8-15,125,133
+Pulse/Views/ProcessDetailSidebar+Energy.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 1-31
+Pulse.xcodeproj/project.pbxproj
+  s_6ee970092c491b::t_b3692e1bfb0bbf 81,188,376,549
+Pulse/Models/ResourceDetailPageProjection.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 55-63,69,98-99,164-174
+Pulse/MenuBar/MenuBarStatus.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 24-25
+Pulse/PulseApp.swift
+  s_6ee970092c491b::t_b3692e1bfb0bbf 142-147
+Pulse/Views/MemoryDashboardView.swift
+  s_6ee970092c491b::t_41991fa0287f1f 109-111
+  s_6ee970092c491b::t_b3692e1bfb0bbf 107-108,112,114-118
+README.md
+  s_6ee970092c491b::t_f5c4e4bcd1be2a 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "312617ce84ac34b476b12aae8f74eff6d9963b79",
+  "prompts": {},
+  "sessions": {
+    "s_6ee970092c491b": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1cdb2-2dd9-7bb1-9596-6d64b9f51262",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
