@@ -1,0 +1,66 @@
+Tests/SamplingCoreTests/MemoryDashboardVMSortWiringSourceTests.swift
+  s_e29d6867798fe1::t_a3ec1218d07b99 123
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_e29d6867798fe1::t_a3ec1218d07b99 112,133
+Tests/SamplingCoreTests/ProcessQuitSessionWiringSourceTests.swift
+  s_e29d6867798fe1::t_a3ec1218d07b99 62,214
+Tests/SamplingCoreTests/EnergyHistoryTests.swift
+  s_e29d6867798fe1::t_c87580be9696e7 1-87
+Tests/SamplingCoreTests/MemoryDetailSidebarWiringSourceTests.swift
+  s_e29d6867798fe1::t_a3ec1218d07b99 106
+Pulse/ViewModels/MemoryDashboardVM.swift
+  s_e29d6867798fe1::t_c87580be9696e7 31-32,45,419
+Tests/SamplingCoreTests/SnapshotExportWiringSourceTests.swift
+  s_e29d6867798fe1::t_1c74e88e7adb97 44
+Tests/SamplingCoreTests/TopAppLocationWiringSourceTests.swift
+  s_e29d6867798fe1::t_a3ec1218d07b99 72
+Tests/SamplingCoreTests/HistoryCurveWiringSourceTests.swift
+  s_e29d6867798fe1::t_a3ec1218d07b99 189
+Pulse.xcodeproj/project.pbxproj
+  s_e29d6867798fe1::t_c87580be9696e7 84-86,197-199,291,355,390,570-572
+Pulse/Views/MemoryDashboardView.swift
+  s_e29d6867798fe1::t_c87580be9696e7 112-113
+Tests/SamplingCoreTests/ResourceDetailPageSourceTests.swift
+  s_e29d6867798fe1::t_a3ec1218d07b99 157
+docs/PRD.md
+  s_e29d6867798fe1::t_0b66fa0522b52f 3,35,61
+Tests/SamplingCoreTests/EnergyPageWiringSourceTests.swift
+  s_e29d6867798fe1::t_1c74e88e7adb97 44-45
+docs/TECH.md
+  s_e29d6867798fe1::t_84b19aefacd6e3 113,116-117,130,243,272,276
+Package.swift
+  s_e29d6867798fe1::t_c87580be9696e7 70
+Tests/SamplingCoreTests/MemoryPageFilterClearWiringSourceTests.swift
+  s_e29d6867798fe1::t_00e851498fd2b6 78-79
+Pulse/Views/EnergyHistoryChart.swift
+  s_e29d6867798fe1::t_c87580be9696e7 1-216
+README.md
+  s_e29d6867798fe1::t_3f72235eb987c2 15
+Pulse/ViewModels/MemoryDashboardVM+EnergyHistory.swift
+  s_e29d6867798fe1::t_c87580be9696e7 1-27
+Pulse/Models/EnergyMachineHistory.swift
+  s_e29d6867798fe1::t_c87580be9696e7 1-73
+Tests/SamplingCoreTests/EnergyHistoryWiringSourceTests.swift
+  s_e29d6867798fe1::t_c87580be9696e7 1-153
+docs/specs/35-energy-page.md
+  s_e29d6867798fe1::t_192ca456f7a9f7 208-209
+  s_e29d6867798fe1::t_c87580be9696e7 210-218
+Pulse/ViewModels/MemoryDashboardVM+EnergyBattery.swift
+  s_e29d6867798fe1::t_c87580be9696e7 27-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "30b7218ba1bca7a4857f724c7dcfc7ddd1039fd4",
+  "prompts": {},
+  "sessions": {
+    "s_e29d6867798fe1": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1cde1-6d02-7f42-abb0-7d7174998dc1",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
