@@ -2,11 +2,22 @@ import Foundation
 
 /// One tab-separated process-table line. The view writes the pasteboard.
 enum ProcessRowCopy {
-    static func line(page: DashboardPage, row: ProcessRow) -> String {
+    static func line(
+        page: DashboardPage,
+        row: ProcessRow,
+        energyWindow: ProcessEnergyRates? = nil
+    ) -> String {
         switch page {
         case .memory:
             return joined(prefix(row) + [threads(row)])
         case .cpu:
+            return joined(prefix(row) + [
+                ProcessEnergyText.watts(row.energyWatts),
+                ProcessEnergyText.wakeups(row.wakeupsPerSecond),
+                threads(row),
+            ])
+        case .energy:
+            _ = energyWindow
             return joined(prefix(row) + [
                 ProcessEnergyText.watts(row.energyWatts),
                 ProcessEnergyText.wakeups(row.wakeupsPerSecond),

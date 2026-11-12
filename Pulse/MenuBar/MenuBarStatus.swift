@@ -5,6 +5,7 @@ import Foundation
 enum DashboardPage: String, Equatable, Sendable, CaseIterable {
     case memory
     case cpu
+    case energy
     case disk
     case network
     case machine
@@ -15,7 +16,7 @@ enum DashboardPage: String, Equatable, Sendable, CaseIterable {
         switch self {
         case .memory, .cpu, .network, .disk, .machine:
             return true
-        case .gpu:
+        case .gpu, .energy:
             return false
         }
     }
