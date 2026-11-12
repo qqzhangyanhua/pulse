@@ -65,7 +65,7 @@ final class EnergyBatteryWiringSourceTests: XCTestCase {
         let table = try index(of: "ProcessTablePane()", in: column)
         XCTAssertLessThan(card, table)
         XCTAssertTrue(column.contains("vm.energyBatteryCard != nil"))
-        XCTAssertFalse(column.contains("ProcessDetailSidebar"))
+        XCTAssertTrue(column.contains("ProcessDetailSidebar()"))
         XCTAssertFalse(column.contains("OverviewSection"))
 
         let tableSource = try repoText("Pulse/Views/EnergyProcessTable.swift")

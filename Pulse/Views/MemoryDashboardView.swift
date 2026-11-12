@@ -104,15 +104,19 @@ struct MemoryDashboardView: View {
     }
 
     private var energyResourceColumn: some View {
-        VStack(spacing: 12) {
-            if vm.energyBatteryCard != nil {
-                EnergyBatteryCardView()
+        HSplitView {
+            VStack(spacing: 12) {
+                if vm.energyBatteryCard != nil {
+                    EnergyBatteryCardView()
+                }
+                ProcessTablePane()
             }
-            ProcessTablePane()
+            .padding(12)
+            .frame(minWidth: 680, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(PulsePalette.windowBackground)
+            ProcessDetailSidebar()
+                .frame(minWidth: 300, idealWidth: 332, maxWidth: 400)
         }
-        .padding(12)
-        .frame(minWidth: 680, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(PulsePalette.windowBackground)
     }
 
     private var resourceColumn: some View {

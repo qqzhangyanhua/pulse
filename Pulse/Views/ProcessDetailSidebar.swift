@@ -203,6 +203,8 @@ struct ProcessDetailSidebar: View {
                     networkResourceDetail(detail, network: network)
                 case .disk(let disk):
                     diskResourceDetail(detail, disk: disk)
+                case .energy(let energy):
+                    energyResourceDetail(energy)
                 case .noResourceUpgrade:
                     noResourceUpgradeDetail(detail)
                 }
@@ -230,7 +232,8 @@ struct ProcessDetailSidebar: View {
                 state: lastLiveTotal,
                 detailPid: shown.row.pid,
                 detailMemoryBytes: shown.row.memoryBytes
-            )
+            ),
+            energyDisplay: energyDisplayReading(for: shown.row.pid)
         )
     }
 

@@ -234,6 +234,10 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
             case .disk(let value):
                 XCTAssertEqual(value.memorySeries, one)
                 XCTAssertEqual(value.cpuPercent, 0)
+            case .energy(let value):
+                XCTAssertEqual(value.pid, pidA)
+                XCTAssertNil(value.watts)
+                XCTAssertNil(value.wakeupsPerSecond)
             case .noResourceUpgrade(let value):
                 XCTAssertEqual(value.memorySeries, one)
                 XCTAssertEqual(value.cpuPercent, 0)
@@ -274,6 +278,47 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
         XCTAssertEqual(ProcessEnergyText.caption(isPartial: projected.energyReadingIsPartial), "部分读数")
         XCTAssertEqual(ProcessEnergyText.caption(isPartial: projected.wakeupReadingIsPartial), "部分读数")
         XCTAssertNotEqual(ProcessEnergyText.watts(projected.energyWatts), "—")
+
+        let window = EnergyDisplayReading(
+            watts: 4,
+            wakeupsPerSecond: 2,
+            energyReadingIsPartial: true,
+            wakeupReadingIsPartial: false
+        )
+        let energy = try self.energy(project(.energy, measured, total: nil, frozen: nil, energyDisplay: window))
+        XCTAssertEqual(energy.watts ?? -1, 4, accuracy: 0.000_001)
+        XCTAssertEqual(energy.wakeupsPerSecond ?? -1, 2, accuracy: 0.000_001)
+        XCTAssertTrue(energy.energyReadingIsPartial)
+        XCTAssertFalse(energy.wakeupReadingIsPartial)
+        XCTAssertEqual(ProcessEnergyText.watts(energy.watts), "4.0 W")
+        XCTAssertEqual(ProcessEnergyText.wakeups(energy.wakeupsPerSecond), "2.0 次/秒")
+        XCTAssertEqual(ProcessEnergyText.caption(isPartial: energy.energyReadingIsPartial), "部分读数")
+        XCTAssertEqual(ProcessEnergyText.caption(isPartial: energy.wakeupReadingIsPartial), "")
+        XCTAssertNotEqual(ProcessEnergyText.watts(energy.watts), "1.5 W")
+
+        let omitted = try self.energy(project(.energy, measured, total: nil, frozen: nil))
+        XCTAssertNil(omitted.watts)
+        XCTAssertNil(omitted.wakeupsPerSecond)
+        XCTAssertFalse(omitted.energyReadingIsPartial)
+        XCTAssertEqual(ProcessEnergyText.watts(omitted.watts), "—")
+        XCTAssertNotEqual(ProcessEnergyText.watts(omitted.watts), "1.5 W")
+
+        let zero = EnergyDisplayReading(
+            watts: 0,
+            wakeupsPerSecond: 0,
+            energyReadingIsPartial: false,
+            wakeupReadingIsPartial: false
+        )
+        let idle = try self.energy(project(.energy, measured, total: nil, frozen: nil, energyDisplay: zero))
+        XCTAssertEqual(ProcessEnergyText.watts(idle.watts), "0.0 W")
+        XCTAssertEqual(ProcessEnergyText.wakeups(idle.wakeupsPerSecond), "0.0 次/秒")
+        XCTAssertNotEqual(ProcessEnergyText.watts(idle.watts), "—")
+
+        let cpuIgnored = try self.cpu(project(.cpu, measured, total: nil, frozen: nil, energyDisplay: window))
+        XCTAssertEqual(cpuIgnored.energyWatts ?? -1, 1.5, accuracy: 0.000_001)
+        XCTAssertNil(cpuIgnored.wakeupsPerSecond)
+        XCTAssertFalse(cpuIgnored.energyReadingIsPartial)
+        XCTAssertNotEqual(ProcessEnergyText.watts(cpuIgnored.energyWatts), "4.0 W")
 
         let network = try self.network(project(.network, measured, total: nil, frozen: nil))
         XCTAssertFalse(labels(of: network).contains("energyWatts"))
@@ -366,13 +411,15 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
         _ page: DashboardPage,
         _ detail: ProcessDetail,
         total: UInt64?,
-        frozen: FrozenMemoryFieldSemantics?
+        frozen: FrozenMemoryFieldSemantics?,
+        energyDisplay: EnergyDisplayReading? = nil
     ) -> ResourceDetailProjection {
         ResourceDetailPageProjection.project(
             page: page,
             detail: detail,
             physicalTotalBytes: total,
-            frozen: frozen
+            frozen: frozen,
+            energyDisplay: energyDisplay
         )
     }
 
@@ -386,6 +433,9 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
             return value.memory
         case .noResourceUpgrade(let value):
             return value.memory
+        case .energy:
+            XCTFail("energy page has no auxiliary memory field")
+            return MemoryDetailFieldCopy(title: "", caption: "", help: nil)
         case .memoryExisting:
             XCTFail("memory page has no auxiliary field payload")
             return MemoryDetailFieldCopy(title: "", caption: "", help: nil)
@@ -419,6 +469,14 @@ final class ResourceDetailPageProjectionTests: XCTestCase {
     private func memoryExisting(_ projection: ResourceDetailProjection, file: StaticString = #filePath, line: UInt = #line) throws -> MemoryExistingProjection {
         guard case .memoryExisting(let value) = projection else {
             XCTFail("expected .memoryExisting", file: file, line: line)
+            throw ProjectionTestError.wrongCase
+        }
+        return value
+    }
+
+    private func energy(_ projection: ResourceDetailProjection, file: StaticString = #filePath, line: UInt = #line) throws -> EnergyDetailProjection {
+        guard case .energy(let value) = projection else {
+            XCTFail("expected .energy", file: file, line: line)
             throw ProjectionTestError.wrongCase
         }
         return value
