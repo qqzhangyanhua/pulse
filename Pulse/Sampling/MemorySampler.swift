@@ -38,7 +38,7 @@ actor MemorySampler {
         topMemoryStore.retain(only: MemoryGrowthTopSeries.pids(from: lastRows, sort: sort))
     }
 
-    func sample() -> Result<SampledFrame, HostMemoryError> {
+    func sample(readGPU: Bool) -> Result<SampledFrame, HostMemoryError> {
         let host: RawHostMemory
         do {
             host = try HostMemoryReader.read()
@@ -71,6 +71,7 @@ actor MemorySampler {
         let busiestCorePercent = consumeBusiestCore()
         let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
         let hostDiskRates = consumeSystemDisk(at: capturedAt)
+        let gpuNodes = readGPU ? HostGPUReader.read() : nil
 
         guard let listed = ProcessEnumerator.list() else {
             lastRows = []
@@ -89,7 +90,8 @@ actor MemorySampler {
                     permissionFootnote: ProcessPermissionFootnote.published(
                         deniedCount: 0,
                         processListFailed: true
-                    )
+                    ),
+                    gpuNodes: gpuNodes
                 )
             )
         }
@@ -233,7 +235,8 @@ actor MemorySampler {
                 energyWindowRates: energyWindowRates,
                 energyHourRates: energyHourRates,
                 exitedEnergyProcesses: energyMinuteLedger.exitedProcesses,
-                energyLiveGenerations: energyMinuteLedger.liveGenerations
+                energyLiveGenerations: energyMinuteLedger.liveGenerations,
+                gpuNodes: gpuNodes
             )
         )
     }

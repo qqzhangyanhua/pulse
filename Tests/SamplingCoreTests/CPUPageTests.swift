@@ -181,7 +181,7 @@ final class CPUPageTests: XCTestCase {
         XCTAssertTrue(DashboardPage.network.isSelectable)
         XCTAssertTrue(DashboardPage.disk.isSelectable)
         XCTAssertTrue(DashboardPage.machine.isSelectable)
-        XCTAssertFalse(DashboardPage.gpu.isSelectable)
+        XCTAssertTrue(DashboardPage.gpu.isSelectable)
     }
 
     func testColdStartStaysOnMemoryAndCPUSelectionChangesTheDefaultSort() {
@@ -194,12 +194,12 @@ final class CPUPageTests: XCTestCase {
         XCTAssertEqual(navigation.sort, ProcessTableSort(column: .cpu, descending: true))
 
         navigation.updateSort(ProcessTableSort(column: .name, descending: false))
-        navigation.select(.gpu)
-        XCTAssertEqual(navigation.selectedPage, .cpu)
-        XCTAssertEqual(navigation.sort.column, .name)
-
         navigation.select(.cpu)
         XCTAssertEqual(navigation.sort.column, .name, "Re-selecting the open page keeps the user's sort")
+
+        navigation.select(.gpu)
+        XCTAssertEqual(navigation.selectedPage, .gpu)
+        XCTAssertEqual(navigation.sort, ProcessTableSort(column: .memory, descending: true))
 
         navigation.select(.memory)
         XCTAssertEqual(navigation.selectedPage, .memory)
