@@ -17,6 +17,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published var energyRankingSpan = EnergyRankingSpan.oneMinute
     /// Minute-ledger rates for the latest accepted process list. Empty when that list failed.
     @Published private(set) var energyHourRates: [Int32: ProcessEnergyRates] = [:]
+    /// Sealed 1-hour generations. Empty when that list failed. Not part of `energyHourRates`.
+    @Published private(set) var exitedEnergyProcesses: [ExitedEnergyProcess] = []
     @Published private(set) var processListFailed = false
     /// This frame's permission footnote. Empty when the process list failed.
     @Published private(set) var processPermissionFootnote: String?
@@ -416,6 +418,7 @@ final class MemoryDashboardVM: ObservableObject {
                     rows = frame.rows
                     energyWindowRates = frame.energyWindowRates
                     energyHourRates = frame.energyHourRates
+                    exitedEnergyProcesses = frame.exitedEnergyProcesses
                     energyMachineHistory = recordedEnergyHistory(rows: frame.rows, at: frame.snapshot.capturedAt)
                     processListFailed = frame.processListFailed
                     processPermissionFootnote = frame.permissionFootnote
@@ -457,7 +460,7 @@ final class MemoryDashboardVM: ObservableObject {
             observation: observation
         )
         quitOutcome = store
-        if selectedPid != effect.listSelectedPid {
+        if selectedPid != effect.listSelectedPid, !keepsExitedEnergySelection(replacingWith: effect.listSelectedPid) {
             selectedPid = effect.listSelectedPid
         }
         if sidebarSubjectPid != effect.sidebarSubjectPid {

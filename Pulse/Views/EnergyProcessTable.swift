@@ -5,21 +5,51 @@ struct EnergyProcessTable: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var energyDisplay: EnergyPageDisplay {
-        EnergyPage.display(
-            rows: vm.visibleRows,
-            windowRates: vm.activeEnergyRates,
-            grouped: vm.groupedByApp
+    private var rankRows: [EnergyRankRow] {
+        EnergyPage.ranked(
+            span: vm.energyRankingSpan,
+            rows: vm.rows,
+            rates: vm.activeEnergyRates,
+            exited: vm.exitedEnergyProcesses,
+            nameQuery: vm.filter,
+            grouped: vm.groupedByApp,
+            sort: vm.tableSort
         )
     }
 
     private var phase: EnergyPagePhase {
-        EnergyPage.phase(
+        let counts = EnergyPage.phaseCounts(
+            span: vm.energyRankingSpan,
+            liveRowCount: vm.rows.count,
+            exitedCount: vm.exitedEnergyProcesses.count,
+            rankedCount: rankRows.count
+        )
+        return EnergyPage.phase(
             loadState: vm.loadState,
-            processCount: vm.rows.count,
-            visibleCount: vm.visibleRows.count,
+            processCount: counts.processCount,
+            visibleCount: counts.visibleCount,
             hasActiveNameFilter: vm.hasActiveFilter,
             processListFailed: vm.processListFailed
+        )
+    }
+
+    /// Exited rows are not tagged with `selectedPid`. A click on one does not select a live reuse.
+    private var listSelection: Binding<String?> {
+        Binding(
+            get: {
+                guard let pid = vm.selectedPid else { return nil }
+                return rankRows.first { $0.isQuitTarget && $0.pid == pid }?.id
+            },
+            set: { newValue in
+                guard let newValue else {
+                    vm.selectedPid = nil
+                    return
+                }
+                guard let entry = rankRows.first(where: { $0.id == newValue }), entry.isQuitTarget else {
+                    return
+                }
+                vm.selectedPid = entry.pid
+            }
         )
     }
 
@@ -35,7 +65,7 @@ struct EnergyProcessTable: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             VStack(alignment: .leading, spacing: 4) {
-                if !vm.rows.isEmpty {
+                if showsColumnHeader {
                     columnHeader
                     Divider()
                         .overlay(PulsePalette.hairline)
@@ -130,19 +160,18 @@ struct EnergyProcessTable: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(24)
         case .ready:
-            List(vm.sortedRows, selection: $vm.selectedPid) { row in
+            List(rankRows, selection: listSelection) { entry in
                 EnergyProcessLine(
-                    row: row,
-                    rates: energyDisplay.readings[row.pid]?.rates,
-                    selected: vm.selectedPid == row.pid
+                    name: entry.name,
+                    pid: entry.pid,
+                    bundleIdentifier: entry.bundleIdentifier,
+                    exited: entry.exited,
+                    rates: entry.rates,
+                    selected: showsSelection(entry)
                 )
                 .contextMenu {
                     Button("复制") {
-                        let line = ProcessRowCopy.line(
-                            page: .energy,
-                            row: row,
-                            energyWindow: energyDisplay.readings[row.pid]?.rates
-                        )
+                        let line = copyLine(for: entry)
                         let board = NSPasteboard.general
                         board.clearContents()
                         board.setString(line, forType: .string)
@@ -150,12 +179,44 @@ struct EnergyProcessTable: View {
                 }
                 .listRowInsets(EdgeInsets(top: 3, leading: 10, bottom: 3, trailing: 10))
                 .listRowSeparator(.hidden)
-                .listRowBackground(rowBackground(vm.selectedPid == row.pid))
+                .listRowBackground(rowBackground(showsSelection(entry)))
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .tint(PulsePalette.selection)
         }
+    }
+
+    private var showsColumnHeader: Bool {
+        EnergyPage.phaseCounts(
+            span: vm.energyRankingSpan,
+            liveRowCount: vm.rows.count,
+            exitedCount: vm.exitedEnergyProcesses.count,
+            rankedCount: rankRows.count
+        ).processCount > 0
+    }
+
+    private func showsSelection(_ entry: EnergyRankRow) -> Bool {
+        guard vm.selectedPid == entry.pid else { return false }
+        if entry.isQuitTarget { return true }
+        return !rankRows.contains { $0.isQuitTarget && $0.pid == entry.pid }
+    }
+
+    private func copyLine(for entry: EnergyRankRow) -> String {
+        ProcessRowCopy.line(
+            page: .energy,
+            row: ProcessRow(
+                pid: entry.pid,
+                name: entry.name,
+                bundleIdentifier: entry.bundleIdentifier,
+                executablePath: nil,
+                cpuPercent: nil,
+                memoryBytes: 0,
+                threadCount: 0,
+                groupedMemberCount: entry.groupedMemberCount
+            ),
+            energyWindow: entry.rates
+        )
     }
 
     private func rowBackground(_ selected: Bool) -> some View {
@@ -191,16 +252,24 @@ struct EnergyProcessTable: View {
 }
 
 private struct EnergyProcessLine: View {
-    let row: ProcessRow
+    let name: String
+    let pid: Int32
+    let bundleIdentifier: String?
+    let exited: Bool
     let rates: ProcessEnergyRates?
     let selected: Bool
 
     var body: some View {
         HStack(spacing: 0) {
             HStack(spacing: 8) {
-                ProcessIconView(pid: row.pid, bundleIdentifier: row.bundleIdentifier, size: 16)
-                Text(row.name)
+                ProcessIconView(pid: pid, bundleIdentifier: bundleIdentifier, size: 16)
+                Text(name)
                     .lineLimit(1)
+                if exited {
+                    Text(EnergyPage.exitedStatus)
+                        .font(.caption)
+                        .foregroundStyle(selected ? Color.white.opacity(0.85) : Color.secondary)
+                }
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -218,10 +287,12 @@ private struct EnergyProcessLine: View {
     }
 
     private var accessibilityLabel: String {
-        [
-            row.name,
-            "\(ProcessEnergyText.impactTitle) \(ProcessEnergyText.watts(rates?.watts))",
-            "\(ProcessEnergyText.wakeTitle) \(ProcessEnergyText.wakeups(rates?.wakeupsPerSecond))",
-        ].joined(separator: "，")
+        var parts = [name]
+        if exited {
+            parts.append(EnergyPage.exitedStatus)
+        }
+        parts.append("\(ProcessEnergyText.impactTitle) \(ProcessEnergyText.watts(rates?.watts))")
+        parts.append("\(ProcessEnergyText.wakeTitle) \(ProcessEnergyText.wakeups(rates?.wakeupsPerSecond))")
+        return parts.joined(separator: "，")
     }
 }

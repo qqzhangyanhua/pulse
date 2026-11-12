@@ -41,7 +41,7 @@ final class SnapshotExportWiringSourceTests: XCTestCase {
 
     func testFreezeCopiesThePublishedFrameAndDoesNotSample() throws {
         let source = try WiringSourceText.text(for: "MemoryDashboardVM")
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 34, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; energy history adds energyMachineHistory")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 35, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 4)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: source), 1)
         let body = try functionBody(named: "requestSaveCurrentSnapshot", in: source)

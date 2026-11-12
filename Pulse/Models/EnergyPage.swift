@@ -67,6 +67,30 @@ struct EnergyDisplayReading: Equatable, Sendable {
     }
 }
 
+/// One energy-table row. An exited row's identity is pid plus generation, not pid alone.
+struct EnergyRankRow: Identifiable, Equatable, Sendable {
+    let pid: Int32
+    let name: String
+    /// Nil for a live row.
+    let generation: Int?
+    let exited: Bool
+    let rates: ProcessEnergyRates
+    let energyReadingIsPartial: Bool
+    let wakeupReadingIsPartial: Bool
+    let bundleIdentifier: String?
+    /// Set on a grouped live row. An exited row stays nil so it is not a group member.
+    let groupedMemberCount: Int?
+
+    var id: String {
+        if let generation, exited {
+            return "exited-\(pid)-\(generation)"
+        }
+        return "live-\(pid)"
+    }
+
+    var isQuitTarget: Bool { !exited }
+}
+
 /// Rows the energy table shows, plus window rates keyed by those rows' pids.
 struct EnergyPageDisplay: Equatable, Sendable {
     let rows: [ProcessRow]
@@ -79,6 +103,8 @@ struct EnergyPageDisplay: Equatable, Sendable {
 
 /// Energy-page filter, order, and empty state. Does not read `energyWatts`.
 enum EnergyPage {
+    static let exitedStatus = "已退出"
+
     static func filtered(_ rows: [ProcessRow], query: String) -> [ProcessRow] {
         ProcessNameFilter.apply(rows, query: query)
     }
@@ -137,6 +163,73 @@ enum EnergyPage {
     ) -> [ProcessRow] {
         let shown = display(rows: rows, windowRates: windowRates, grouped: grouped)
         return ordered(shown.rows, rates: shown.rates, sort: sort)
+    }
+
+    /// Live rows for 1 分钟. 1 小时 adds exited generations that still have a rate.
+    /// Exited rows are not members of a live app group.
+    static func ranked(
+        span: EnergyRankingSpan,
+        rows: [ProcessRow],
+        rates: [Int32: ProcessEnergyRates],
+        exited: [ExitedEnergyProcess],
+        nameQuery: String,
+        grouped: Bool,
+        sort: ProcessTableSort
+    ) -> [EnergyRankRow] {
+        let filtered = filtered(rows, query: nameQuery)
+        let shown = display(rows: filtered, windowRates: rates, grouped: grouped)
+        let liveRanked = ordered(shown.rows, rates: shown.rates, sort: sort).map { row in
+            let reading = shown.readings[row.pid]
+            return EnergyRankRow(
+                pid: row.pid,
+                name: row.name,
+                generation: nil,
+                exited: false,
+                rates: reading?.rates ?? .missing,
+                energyReadingIsPartial: reading?.energyReadingIsPartial ?? false,
+                wakeupReadingIsPartial: reading?.wakeupReadingIsPartial ?? false,
+                bundleIdentifier: row.bundleIdentifier,
+                groupedMemberCount: row.groupedMemberCount
+            )
+        }
+        guard span == .oneHour else { return liveRanked }
+        let exitedRanked = exited.compactMap { process -> EnergyRankRow? in
+            guard process.rates != .missing, nameMatches(process.name, query: nameQuery) else { return nil }
+            return EnergyRankRow(
+                pid: process.pid,
+                name: process.name,
+                generation: process.generation,
+                exited: true,
+                rates: process.rates,
+                energyReadingIsPartial: false,
+                wakeupReadingIsPartial: false,
+                bundleIdentifier: nil,
+                groupedMemberCount: nil
+            )
+        }
+        return orderedRank(liveRanked + exitedRanked, sort: sort)
+    }
+
+    /// True when the selection is absent from live rows and only an exited hour entry.
+    static func blocksQuit(
+        selectedPid: Int32?,
+        liveRows: [ProcessRow],
+        exited: [ExitedEnergyProcess]
+    ) -> Bool {
+        guard let selectedPid else { return false }
+        if liveRows.contains(where: { $0.pid == selectedPid }) { return false }
+        return exited.contains { $0.pid == selectedPid }
+    }
+
+    /// 1 小时 still has a table when every live process has exited. 1 分钟 does not.
+    static func phaseCounts(
+        span: EnergyRankingSpan,
+        liveRowCount: Int,
+        exitedCount: Int,
+        rankedCount: Int
+    ) -> (processCount: Int, visibleCount: Int) {
+        let retained = span == .oneHour ? exitedCount : 0
+        return (liveRowCount + retained, rankedCount)
     }
 
     static func ordered(
@@ -221,6 +314,62 @@ enum EnergyPage {
             groupedMemberCount: memberCount,
             parentPid: lead.parentPid
         )
+    }
+
+    private static func nameMatches(_ name: String, query: String) -> Bool {
+        let probe = ProcessRow(
+            pid: 0,
+            name: name,
+            bundleIdentifier: nil,
+            executablePath: nil,
+            cpuPercent: nil,
+            memoryBytes: 0,
+            threadCount: 0
+        )
+        return !filtered([probe], query: query).isEmpty
+    }
+
+    private static func orderedRank(_ rows: [EnergyRankRow], sort: ProcessTableSort) -> [EnergyRankRow] {
+        rows.sorted { lhs, rhs in
+            if sort.column == .name {
+                if lhs.name != rhs.name {
+                    let ascending = lhs.name < rhs.name
+                    return sort.descending ? !ascending : ascending
+                }
+                return identityBefore(lhs, rhs)
+            }
+            let left = rankMetric(lhs, column: sort.column)
+            let right = rankMetric(rhs, column: sort.column)
+            switch (left, right) {
+            case (nil, nil):
+                return identityBefore(lhs, rhs)
+            case (nil, .some):
+                return false
+            case (.some, nil):
+                return true
+            case let (lhsValue?, rhsValue?):
+                if lhsValue != rhsValue {
+                    return sort.descending ? lhsValue > rhsValue : lhsValue < rhsValue
+                }
+                return identityBefore(lhs, rhs)
+            }
+        }
+    }
+
+    private static func identityBefore(_ lhs: EnergyRankRow, _ rhs: EnergyRankRow) -> Bool {
+        if lhs.pid != rhs.pid { return lhs.pid < rhs.pid }
+        return (lhs.generation ?? -1) < (rhs.generation ?? -1)
+    }
+
+    private static func rankMetric(_ row: EnergyRankRow, column: ProcessSortColumn) -> Double? {
+        switch column {
+        case .energy:
+            return row.rates.watts
+        case .wakeups:
+            return row.rates.wakeupsPerSecond
+        case .name, .cpu, .memory, .threads, .disk, .diskRead, .diskWrite:
+            return nil
+        }
     }
 
     private static func metric(

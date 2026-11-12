@@ -160,7 +160,7 @@ struct ProcessDetailSidebar: View {
             Spacer(minLength: 0)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            ProcessDetailSidebarQuitControls()
+            quitControls
         }
     }
 
@@ -213,7 +213,7 @@ struct ProcessDetailSidebar: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            ProcessDetailSidebarQuitControls()
+            quitControls
         }
     }
 

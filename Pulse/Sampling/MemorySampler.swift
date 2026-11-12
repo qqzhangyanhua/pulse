@@ -98,6 +98,7 @@ actor MemorySampler {
         var nextDiskTicks: [Int32: DiskTick] = [:]
         var nextEnergyTicks: [Int32: EnergyTick] = [:]
         var listedEnergy: [Int32: EnergyTick?] = [:]
+        var listedNames: [Int32: String] = [:]
         var nextIdentities: [Int32: ProcessIdentity] = [:]
         var rows: [ProcessRow] = []
         rows.reserveCapacity(listed.samples.count)
@@ -152,6 +153,7 @@ actor MemorySampler {
                 nextEnergyTicks[raw.pid] = baseline
             }
             listedEnergy[raw.pid] = energyReading
+            listedNames[raw.pid] = identity.name
 
             let memory = ProcessMemoryChoice.project(
                 footprint: raw.footprintBytes,
@@ -183,6 +185,7 @@ actor MemorySampler {
         let energyWindowRates = energyWindow.advance(listed: listedEnergy, listSucceeded: true)
         let energyHourRates = energyMinuteLedger.advance(
             listed: listedEnergy,
+            names: listedNames,
             now: capturedAt,
             listSucceeded: true
         )
@@ -228,7 +231,8 @@ actor MemorySampler {
                     processListFailed: false
                 ),
                 energyWindowRates: energyWindowRates,
-                energyHourRates: energyHourRates
+                energyHourRates: energyHourRates,
+                exitedEnergyProcesses: energyMinuteLedger.exitedProcesses
             )
         )
     }

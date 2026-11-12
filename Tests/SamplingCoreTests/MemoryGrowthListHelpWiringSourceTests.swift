@@ -109,7 +109,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         XCTAssertFalse(vm.contains(sentence))
         XCTAssertFalse(vm.contains("MemoryGrowthListCopy"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 34, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 35, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 4)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: vm), 1)
         let badge = try functionBody(named: "memoryGrowthListBadge", in: vm)

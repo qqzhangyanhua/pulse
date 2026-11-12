@@ -28,4 +28,12 @@ extension ProcessDetailSidebar {
             )
         }
     }
+
+    /// Hidden when the only hour-ranking match for `selectedPid` has already exited.
+    @ViewBuilder
+    var quitControls: some View {
+        if !vm.selectedEnergyExitedOnly {
+            ProcessDetailSidebarQuitControls()
+        }
+    }
 }
