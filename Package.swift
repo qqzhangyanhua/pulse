@@ -83,6 +83,7 @@ let package = Package(
                 "Models/MenuBarReading.swift",
                 "Models/PressureNotice.swift",
                 "Models/LoginItem.swift",
+                "Models/ThermalAdviceThrottle.swift",
                 "Sampling/CPULoad.swift",
                 "Sampling/HostNetwork.swift",
                 "Sampling/HostDisk.swift",

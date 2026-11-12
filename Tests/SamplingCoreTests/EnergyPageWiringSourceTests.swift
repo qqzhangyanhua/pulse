@@ -44,8 +44,8 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("MemoryDashboardVM+EnergyRanking.swift in Sources"))
         XCTAssertEqual(
             occurrenceCount(of: "isa = PBXBuildFile;", in: project),
-            107,
-            "minute ledger adds ProcessEnergyMinuteLedger.swift and hour ranking adds MemoryDashboardVM+EnergyRanking.swift; energy history adds EnergyMachineHistory.swift, EnergyHistoryChart.swift, and MemoryDashboardVM+EnergyHistory.swift; thermal advice adds ThermalAdvice.swift"
+            108,
+            "minute ledger adds ProcessEnergyMinuteLedger.swift and hour ranking adds MemoryDashboardVM+EnergyRanking.swift; energy history adds EnergyMachineHistory.swift, EnergyHistoryChart.swift, and MemoryDashboardVM+EnergyHistory.swift; thermal advice adds ThermalAdvice.swift; thermal advice throttle adds ThermalAdviceThrottle.swift"
         )
         XCTAssertTrue(project.contains("ProcessDetailSidebar+Energy.swift in Sources"))
     }
