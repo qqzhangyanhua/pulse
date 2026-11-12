@@ -1,0 +1,22 @@
+GLOSSARY.md
+  s_dc981da6ba2b5e::t_69dd88562c9c49 1-13
+docs/adr/0004-gpu-accelerator-stats.md
+  s_dc981da6ba2b5e::t_0507de5ed258d2 3
+  s_dc981da6ba2b5e::t_0943e43ee4d381 1-2,4-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "3dd0d2c30cd07942b0e568cef9316a37230f8bcf",
+  "prompts": {},
+  "sessions": {
+    "s_dc981da6ba2b5e": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1cf19-c6ff-7ab2-94be-9633a6f01127",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
