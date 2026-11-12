@@ -109,6 +109,7 @@
 		B00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift */; };
 		B00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */; };
 		B0000000000000000000000E /* SharedUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000E /* SharedUI.swift */; };
+		B00000000000000000000078 /* ThermalAdviceCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000078 /* ThermalAdviceCard.swift */; };
 		B00000000000000000000013 /* OverviewCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* OverviewCards.swift */; };
 		B0000000000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000F /* Assets.xcassets */; };
 		B00000000000000000000012 /* Charts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000000012 /* Charts.framework */; };
@@ -225,6 +226,7 @@
 		A00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessDetailSidebar+MemoryAttribution.swift"; sourceTree = "<group>"; };
 		A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessDetailSidebarQuitControls.swift; sourceTree = "<group>"; };
 		A0000000000000000000000E /* SharedUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUI.swift; sourceTree = "<group>"; };
+		A00000000000000000000078 /* ThermalAdviceCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalAdviceCard.swift; sourceTree = "<group>"; };
 		A00000000000000000000013 /* OverviewCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewCards.swift; sourceTree = "<group>"; };
 		A0000000000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A00000000000000000000010 /* Pulse.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Pulse.entitlements; sourceTree = "<group>"; };
@@ -404,6 +406,7 @@
 				A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */,
 				A00000000000000000000064 /* ProcessTreeView.swift */,
 				A0000000000000000000000E /* SharedUI.swift */,
+				A00000000000000000000078 /* ThermalAdviceCard.swift */,
 				A00000000000000000000046 /* PulseSettingsView.swift */,
 				A00000000000000000000053 /* SnapshotExportPreview.swift */,
 			);
@@ -600,6 +603,7 @@
 				B00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift in Sources */,
 				B00000000000000000000064 /* ProcessTreeView.swift in Sources */,
 				B0000000000000000000000E /* SharedUI.swift in Sources */,
+				B00000000000000000000078 /* ThermalAdviceCard.swift in Sources */,
 				B00000000000000000000017 /* MenuBarStatus.swift in Sources */,
 				B00000000000000000000061 /* Top3ProcessTap.swift in Sources */,
 				B00000000000000000000062 /* MemoryDashboardVM+Top3Tap.swift in Sources */,
