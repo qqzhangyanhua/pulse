@@ -91,18 +91,32 @@ struct MemoryDashboardView: View {
     }
 
     private var resourcePage: some View {
-        HSplitView {
-            VStack(spacing: 12) {
-                resourceOverview
-                ProcessTablePane()
+        if vm.selectedPage == .energy {
+            energyResourceColumn
+        } else {
+            HSplitView {
+                resourceColumn
+                ProcessDetailSidebar()
+                    .frame(minWidth: 300, idealWidth: 332, maxWidth: 400)
             }
+        }
+    }
+
+    private var energyResourceColumn: some View {
+        ProcessTablePane()
             .padding(12)
             .frame(minWidth: 680, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(PulsePalette.windowBackground)
+    }
 
-            ProcessDetailSidebar()
-                .frame(minWidth: 300, idealWidth: 332, maxWidth: 400)
+    private var resourceColumn: some View {
+        VStack(spacing: 12) {
+            resourceOverview
+            ProcessTablePane()
         }
+        .padding(12)
+        .frame(minWidth: 680, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(PulsePalette.windowBackground)
     }
 
     /// Crossfade in a clipped slot. Memory is 148 + 12 + 104; other resource pages are 150.
@@ -111,6 +125,8 @@ struct MemoryDashboardView: View {
         let page = vm.selectedPage
         return ZStack(alignment: .topLeading) {
             switch page {
+            case .energy:
+                Color.clear
             case .cpu:
                 CPUOverviewSection().transition(.opacity)
             case .network:
@@ -131,6 +147,8 @@ struct MemoryDashboardView: View {
         switch page {
         case .cpu, .network, .disk:
             150
+        case .energy:
+            0
         case .memory, .machine, .gpu:
             264
         }

@@ -304,7 +304,7 @@ final class EnergyPageSortTests: XCTestCase {
         let wakeDescending = EnergyPage.ordered(rows, rates: rates, sort: ProcessTableSort(column: .wakeups, descending: true))
         XCTAssertEqual(wakeAscending.map(\.pid), [2, 3, 1])
         XCTAssertEqual(wakeDescending.map(\.pid), [3, 2, 1])
-        XCTAssertEqual(ProcessTableSort(column: .energy, descending: false).ordered(rows).map(\.pid), [1, 2, 3])
+        XCTAssertEqual(ProcessTableSort(column: .energy, descending: false).ordered(rows).map(\.pid), [3, 2, 1])
     }
 
     func testEqualWindowRatesAndSharedNilsBreakTiesByPidAscending() {

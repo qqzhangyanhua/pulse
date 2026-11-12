@@ -12,6 +12,7 @@ actor MemorySampler {
     private var cpuTicks: [Int32: CPUTick] = [:]
     private var diskTicks: [Int32: DiskTick] = [:]
     private var energyTicks: [Int32: EnergyTick] = [:]
+    private var energyWindow = ProcessEnergyWindow()
     private var previousHostCPU: HostCPUTicks?
     private var previousCoreCPU: [HostCPUTicks]?
     private var previousHostNetwork: HostNetworkSnapshot?
@@ -95,6 +96,7 @@ actor MemorySampler {
         var nextTicks: [Int32: CPUTick] = [:]
         var nextDiskTicks: [Int32: DiskTick] = [:]
         var nextEnergyTicks: [Int32: EnergyTick] = [:]
+        var listedEnergy: [Int32: EnergyTick?] = [:]
         var nextIdentities: [Int32: ProcessIdentity] = [:]
         var rows: [ProcessRow] = []
         rows.reserveCapacity(listed.samples.count)
@@ -148,6 +150,7 @@ actor MemorySampler {
             if let baseline = energy.baseline {
                 nextEnergyTicks[raw.pid] = baseline
             }
+            listedEnergy[raw.pid] = energyReading
 
             let memory = ProcessMemoryChoice.project(
                 footprint: raw.footprintBytes,
@@ -176,6 +179,7 @@ actor MemorySampler {
         diskTicks = nextDiskTicks
         energyTicks = nextEnergyTicks
         identityCache = nextIdentities
+        let energyWindowRates = energyWindow.advance(listed: listedEnergy, listSucceeded: true)
 
         rows.sort { lhs, rhs in
             if lhs.memoryBytes != rhs.memoryBytes {
@@ -216,7 +220,8 @@ actor MemorySampler {
                 permissionFootnote: ProcessPermissionFootnote.published(
                     deniedCount: listed.permissionDeniedCount,
                     processListFailed: false
-                )
+                ),
+                energyWindowRates: energyWindowRates
             )
         )
     }

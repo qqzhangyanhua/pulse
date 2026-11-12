@@ -120,7 +120,7 @@ final class MemoryDashboardVMSortWiringSourceTests: XCTestCase {
         XCTAssertFalse(sortHeader.contains("click"))
 
         let vm = try vmSource()
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 29, "app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; disk fields remain un-published")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 30, "energy page adds energyWindowRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; disk fields remain un-published")
         for line in vm.components(separatedBy: .newlines) where line.contains("@Published") {
             XCTAssertFalse(line.contains("diskRead"), line)
             XCTAssertFalse(line.contains("diskWrite"), line)

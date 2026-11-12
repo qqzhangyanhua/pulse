@@ -17,11 +17,12 @@ enum ProcessRowCopy {
                 threads(row),
             ])
         case .energy:
-            _ = energyWindow
-            return joined(prefix(row) + [
-                ProcessEnergyText.watts(row.energyWatts),
-                ProcessEnergyText.wakeups(row.wakeupsPerSecond),
-                threads(row),
+            let rates = energyWindow ?? .missing
+            return joined([
+                row.name,
+                String(row.pid),
+                ProcessEnergyText.watts(rates.watts),
+                ProcessEnergyText.wakeups(rates.wakeupsPerSecond),
             ])
         case .disk:
             return joined(prefix(row) + [

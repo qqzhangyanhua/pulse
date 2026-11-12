@@ -1,3 +1,5 @@
+> 已落地。当前行为以 [TECH.md](../TECH.md) 的「能耗页」为准。本稿停改。本机冒烟清单对应条目仍未勾选：实现时没有在 Mac 上打开过这个页面。
+
 # 能耗页骨架与 1 分钟排行（未实现）
 
 > 落地前的技术约定，对应用户 issue [#140](https://github.com/qqzhangyanhua/pulse/issues/140)（父 issue [#138](https://github.com/qqzhangyanhua/pulse/issues/138) 的第一刀）。它不是实现授权，也不是 `4e48c010b52fe2385aa58c5424ec0b98136bbe5c` 上已经存在的页面。
