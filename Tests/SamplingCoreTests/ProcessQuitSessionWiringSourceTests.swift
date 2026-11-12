@@ -59,7 +59,7 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         XCTAssertFalse(source.contains("Timer"))
         XCTAssertFalse(source.contains("NSAlert"))
         XCTAssertEqual(occurrenceCount(of: "ProcessQuitSession.applySample", in: source), 1)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 35, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 36, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 4)
     }
 
@@ -211,7 +211,7 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         let source = try vmSource()
         let apply = try functionBody(named: "applySample", in: source)
         XCTAssertEqual(occurrenceCount(of: "usedBytes: frame.snapshot.usedBytes", in: apply), 1)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 35, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 36, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice")
         XCTAssertTrue(source.contains("guard snapshot != nil, samplingFailed == false else { return nil }"))
         XCTAssertTrue(source.contains("return snapshot?.usedBytes"))
         let ordinary = try functionBody(named: "quitSelected", in: source)

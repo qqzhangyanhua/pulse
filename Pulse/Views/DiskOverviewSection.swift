@@ -21,17 +21,20 @@ struct DiskOverviewSection: View {
     }
 
     private var samplingBody: some View {
-        HStack(spacing: 12) {
-            samplingCard(
-                title: DiskPageCopy.readTitle,
-                symbol: "arrow.down",
-                thermalNotice: vm.thermalNotice
-            )
-            samplingCard(title: DiskPageCopy.writeTitle, symbol: "arrow.up")
+        VStack(spacing: 12) {
+            ThermalAdviceCard()
+            HStack(spacing: 12) {
+                samplingCard(
+                    title: DiskPageCopy.readTitle,
+                    symbol: "arrow.down",
+                    thermalNotice: vm.thermalAdvice == nil ? vm.thermalNotice : nil
+                )
+                samplingCard(title: DiskPageCopy.writeTitle, symbol: "arrow.up")
+            }
+            .frame(height: 150)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(overviewLine)，\(DiskPageCopy.sampling)")
         }
-        .frame(height: 150)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(overviewLine)，\(DiskPageCopy.sampling)")
     }
 
     private var failureBody: some View {
@@ -51,24 +54,27 @@ struct DiskOverviewSection: View {
     }
 
     private var readyBody: some View {
-        HStack(spacing: 12) {
-            DiskRateCard(
-                title: DiskPageCopy.readTitle,
-                symbol: "arrow.down",
-                rate: vm.hostDiskRates.readBytesPerSecond,
-                samples: vm.diskHistory.read.samples,
-                thermalNotice: vm.thermalNotice
-            )
-            DiskRateCard(
-                title: DiskPageCopy.writeTitle,
-                symbol: "arrow.up",
-                rate: vm.hostDiskRates.writeBytesPerSecond,
-                samples: vm.diskHistory.write.samples
-            )
+        VStack(spacing: 12) {
+            ThermalAdviceCard()
+            HStack(spacing: 12) {
+                DiskRateCard(
+                    title: DiskPageCopy.readTitle,
+                    symbol: "arrow.down",
+                    rate: vm.hostDiskRates.readBytesPerSecond,
+                    samples: vm.diskHistory.read.samples,
+                    thermalNotice: vm.thermalAdvice == nil ? vm.thermalNotice : nil
+                )
+                DiskRateCard(
+                    title: DiskPageCopy.writeTitle,
+                    symbol: "arrow.up",
+                    rate: vm.hostDiskRates.writeBytesPerSecond,
+                    samples: vm.diskHistory.write.samples
+                )
+            }
+            .frame(height: 150)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(readyAccessibilityLabel)
         }
-        .frame(height: 150)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(readyAccessibilityLabel)
     }
 
     private var readyAccessibilityLabel: String {

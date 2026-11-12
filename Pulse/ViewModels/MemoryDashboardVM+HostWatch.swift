@@ -23,6 +23,10 @@ extension MemoryDashboardVM {
 
     func applyThermalState(_ state: ProcessInfo.ThermalState) {
         thermalNotice = ThermalNotice.message(for: ThermalCondition(state))
+        if thermalNotice == nil {
+            thermalAdvice = nil
+            thermalAdviceLastUpdate = nil
+        }
     }
 
     /// Read on entry, then every 30 seconds while the machine page stays selected.
