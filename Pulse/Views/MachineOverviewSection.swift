@@ -12,6 +12,7 @@ struct MachineOverviewSection: View {
             memorySeries: vm.usageHistory.samples, thermalNotice: vm.thermalNotice
         )
         VStack(alignment: .leading, spacing: 12) {
+            thermalAdviceCard
             HStack(spacing: 12) {
                 identity(model).frame(minWidth: 310, idealWidth: 344, maxWidth: 376)
                 cpuMetricCard(model.cpu)
@@ -39,6 +40,15 @@ struct MachineOverviewSection: View {
             .frame(minHeight: 200, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    @ViewBuilder
+    private var thermalAdviceCard: some View {
+        if let advice = vm.thermalAdvice {
+            ThermalAdviceCard(advice: advice, onTerminate: { pid in
+                Task { await vm.terminateThermalAdvice(pid: pid) }
+            })
+        }
     }
 
     private func identity(_ model: MachineOverview.Model) -> some View {
@@ -390,7 +400,7 @@ struct MachineOverviewSection: View {
                 HStack(spacing: 8) {
                     iconLabel("状态概览", symbol: "waveform.path.ecg", tint: PulsePalette.accent)
                     Spacer(minLength: 4)
-                    if let notice = model.thermalNotice {
+                    if vm.thermalAdvice == nil, let notice = model.thermalNotice {
                         ThermalNoticeLine(text: notice).padding(.horizontal, 8).padding(.vertical, 3)
                             .background(PulsePalette.pressureElevated.opacity(0.14), in: Capsule())
                     }

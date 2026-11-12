@@ -20,18 +20,30 @@ struct NetworkOverviewSection: View {
         NetworkPageCopy.overviewLine(rates: vm.hostNetworkRates)
     }
 
-    private var samplingBody: some View {
-        HStack(spacing: 12) {
-            samplingCard(
-                title: NetworkPageCopy.inboundTitle,
-                symbol: "arrow.down",
-                thermalNotice: vm.thermalNotice
-            )
-            samplingCard(title: NetworkPageCopy.outboundTitle, symbol: "arrow.up")
+    @ViewBuilder
+    private var thermalAdviceCard: some View {
+        if let advice = vm.thermalAdvice {
+            ThermalAdviceCard(advice: advice, onTerminate: { pid in
+                Task { await vm.terminateThermalAdvice(pid: pid) }
+            })
         }
-        .frame(height: 150)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(overviewLine)，\(NetworkPageCopy.sampling)")
+    }
+
+    private var samplingBody: some View {
+        VStack(spacing: 12) {
+            thermalAdviceCard
+            HStack(spacing: 12) {
+                samplingCard(
+                    title: NetworkPageCopy.inboundTitle,
+                    symbol: "arrow.down",
+                    thermalNotice: vm.thermalAdvice == nil ? vm.thermalNotice : nil
+                )
+                samplingCard(title: NetworkPageCopy.outboundTitle, symbol: "arrow.up")
+            }
+            .frame(height: 150)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(overviewLine)，\(NetworkPageCopy.sampling)")
+        }
     }
 
     private var failureBody: some View {
@@ -51,24 +63,27 @@ struct NetworkOverviewSection: View {
     }
 
     private var readyBody: some View {
-        HStack(spacing: 12) {
-            NetworkRateCard(
-                title: NetworkPageCopy.inboundTitle,
-                symbol: "arrow.down",
-                rate: vm.hostNetworkRates.inboundBytesPerSecond,
-                samples: vm.networkHistory.inbound.samples,
-                thermalNotice: vm.thermalNotice
-            )
-            NetworkRateCard(
-                title: NetworkPageCopy.outboundTitle,
-                symbol: "arrow.up",
-                rate: vm.hostNetworkRates.outboundBytesPerSecond,
-                samples: vm.networkHistory.outbound.samples
-            )
+        VStack(spacing: 12) {
+            thermalAdviceCard
+            HStack(spacing: 12) {
+                NetworkRateCard(
+                    title: NetworkPageCopy.inboundTitle,
+                    symbol: "arrow.down",
+                    rate: vm.hostNetworkRates.inboundBytesPerSecond,
+                    samples: vm.networkHistory.inbound.samples,
+                    thermalNotice: vm.thermalAdvice == nil ? vm.thermalNotice : nil
+                )
+                NetworkRateCard(
+                    title: NetworkPageCopy.outboundTitle,
+                    symbol: "arrow.up",
+                    rate: vm.hostNetworkRates.outboundBytesPerSecond,
+                    samples: vm.networkHistory.outbound.samples
+                )
+            }
+            .frame(height: 150)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(readyAccessibilityLabel)
         }
-        .frame(height: 150)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(readyAccessibilityLabel)
     }
 
     private var readyAccessibilityLabel: String {

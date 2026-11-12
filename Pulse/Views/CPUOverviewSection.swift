@@ -20,27 +20,39 @@ struct CPUOverviewSection: View {
         CPUPageCopy.overviewLine(systemCpuPercent: vm.systemCpuPercent)
     }
 
-    private var samplingBody: some View {
-        PulseCard {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 10) {
-                    cpuLabel
-                    SkeletonBlock(width: 120, height: 28)
-                    Text(CPUPageCopy.sampling)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if let notice = vm.thermalNotice {
-                        ThermalNoticeLine(text: notice)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .frame(width: 200, alignment: .leading)
-                SkeletonChart()
-            }
+    @ViewBuilder
+    private var thermalAdviceCard: some View {
+        if let advice = vm.thermalAdvice {
+            ThermalAdviceCard(advice: advice, onTerminate: { pid in
+                Task { await vm.terminateThermalAdvice(pid: pid) }
+            })
         }
-        .frame(height: 150)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(overviewLine)，\(CPUPageCopy.sampling)")
+    }
+
+    private var samplingBody: some View {
+        VStack(spacing: 12) {
+            thermalAdviceCard
+            PulseCard {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        cpuLabel
+                        SkeletonBlock(width: 120, height: 28)
+                        Text(CPUPageCopy.sampling)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if vm.thermalAdvice == nil, let notice = vm.thermalNotice {
+                            ThermalNoticeLine(text: notice)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .frame(width: 200, alignment: .leading)
+                    SkeletonChart()
+                }
+            }
+            .frame(height: 150)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(overviewLine)，\(CPUPageCopy.sampling)")
+        }
     }
 
     private var failureBody: some View {
@@ -60,37 +72,40 @@ struct CPUOverviewSection: View {
     }
 
     private var readyBody: some View {
-        PulseCard {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    cpuLabel
-                    Text(CPUPercentText.string(vm.systemCpuPercent))
-                        .font(.system(size: 34, weight: .semibold))
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                    Text(overviewLine)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Text(CPUPageCopy.busiestCoreLine(percent: vm.busiestCorePercent))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    if let notice = vm.thermalNotice {
-                        ThermalNoticeLine(text: notice)
+        VStack(spacing: 12) {
+            thermalAdviceCard
+            PulseCard {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        cpuLabel
+                        Text(CPUPercentText.string(vm.systemCpuPercent))
+                            .font(.system(size: 34, weight: .semibold))
+                            .monospacedDigit()
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
+                        Text(overviewLine)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        Text(CPUPageCopy.busiestCoreLine(percent: vm.busiestCorePercent))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        if vm.thermalAdvice == nil, let notice = vm.thermalNotice {
+                            ThermalNoticeLine(text: notice)
+                        }
+                        Spacer(minLength: 0)
                     }
-                    Spacer(minLength: 0)
-                }
-                .frame(width: 200, alignment: .leading)
+                    .frame(width: 200, alignment: .leading)
 
-                chart
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    chart
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
+            .frame(height: 150)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(readyAccessibilityLabel)
         }
-        .frame(height: 150)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(readyAccessibilityLabel)
     }
 
     private var readyAccessibilityLabel: String {
