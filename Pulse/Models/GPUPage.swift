@@ -13,9 +13,15 @@ enum GPUStatistic: Equatable, Sendable {
 /// One accelerator node, in the order the adapter enumerated it.
 struct GPUAcceleratorNode: Equatable, Sendable {
     var statistics: [String: GPUStatistic]
+    /// Same-node device-channel percent. Nil when that channel was not read.
+    var ioReportDevicePercent: Double?
 
-    init(statistics: [String: GPUStatistic] = [:]) {
+    init(
+        statistics: [String: GPUStatistic] = [:],
+        ioReportDevicePercent: Double? = nil
+    ) {
         self.statistics = statistics
+        self.ioReportDevicePercent = ioReportDevicePercent
     }
 }
 
@@ -132,7 +138,9 @@ enum GPUPageProjection {
     }
 
     /// Nodes that have in-use memory win, even when the value is not a byte count.
-    /// Otherwise the first device percent in 0...100 wins. Nothing is summed.
+    /// Otherwise the first in-range device percent wins. A present device key
+    /// that is out of range is not eligible and does not use the device channel.
+    /// Nothing is summed.
     private static func reading(from nodes: [GPUAcceleratorNode]) -> (utilization: Double?, memory: UInt64?) {
         guard let node = chosenNode(in: nodes) else { return (nil, nil) }
         return (utilization(on: node), memoryBytes(on: node))
@@ -156,18 +164,27 @@ enum GPUPageProjection {
         return nodes.first { utilization(on: $0) != nil }
     }
 
+    /// A present device key blocks the device channel, even when it cannot be used.
     private static func utilization(on node: GPUAcceleratorNode) -> Double? {
-        guard let statistic = node.statistics[deviceUtilizationKey] else { return nil }
-        let value: Double
+        if let statistic = node.statistics[deviceUtilizationKey] {
+            return percent(statistic)
+        }
+        return percent(node.ioReportDevicePercent)
+    }
+
+    private static func percent(_ statistic: GPUStatistic) -> Double? {
         switch statistic {
         case .number(let number):
-            value = number
+            return percent(number)
         case .bytes(let bytes):
-            value = Double(bytes)
+            return percent(Double(bytes))
         case .unreadable:
             return nil
         }
-        guard value.isFinite, value >= 0, value <= 100 else { return nil }
+    }
+
+    private static func percent(_ value: Double?) -> Double? {
+        guard let value, value.isFinite, value >= 0, value <= 100 else { return nil }
         return value
     }
 

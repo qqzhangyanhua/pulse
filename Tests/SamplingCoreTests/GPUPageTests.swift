@@ -465,7 +465,7 @@ final class GPUPageTests: XCTestCase {
         XCTAssertFalse(ProcessColumnTitle.networkPage.contains("GPU"))
     }
 
-    private func succeed(
+    func succeed(
         _ nodes: [GPUAcceleratorNode],
         at time: TimeInterval,
         current: GPUPageState = .initial,
@@ -480,7 +480,13 @@ final class GPUPageTests: XCTestCase {
         )
     }
 
-    private func node(_ statistics: [String: GPUStatistic]) -> GPUAcceleratorNode {
-        GPUAcceleratorNode(statistics: statistics)
+    func node(
+        _ statistics: [String: GPUStatistic],
+        ioReportDevicePercent: Double? = nil
+    ) -> GPUAcceleratorNode {
+        GPUAcceleratorNode(
+            statistics: statistics,
+            ioReportDevicePercent: ioReportDevicePercent
+        )
     }
 }

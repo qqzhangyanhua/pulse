@@ -62,8 +62,16 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(reader.contains("\"IOAccelerator\""))
         XCTAssertTrue(reader.contains("\"PerformanceStatistics\""))
         XCTAssertFalse(reader.contains("IOServiceOpen"))
-        XCTAssertFalse(reader.contains("IOReport"))
         XCTAssertFalse(reader.contains("powermetrics"))
+        XCTAssertTrue(reader.contains("/System/Library/PrivateFrameworks/IOReport.framework/IOReport"))
+        XCTAssertTrue(reader.contains("\"GPU Stats\""))
+        XCTAssertTrue(reader.contains("\"GPU Performance States\""))
+        XCTAssertTrue(reader.contains("\"OFF\""))
+        XCTAssertTrue(reader.contains("IOReportCreateSamples"))
+        XCTAssertTrue(reader.contains("IOReportCreateSamplesDelta"))
+        XCTAssertFalse(reader.contains("Energy Model"))
+        XCTAssertFalse(reader.contains("Renderer Utilization"))
+        XCTAssertFalse(reader.contains("Tiler Utilization"))
     }
 
     func testSamplingHangsOffTheMainTickAndStaysOffOtherSurfaces() throws {
@@ -111,6 +119,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertFalse(parts[1].contains("HostGPUReader.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
+        XCTAssertFalse(project.contains("IOReport.framework"))
         for name in [
             "GPUPage.swift in Sources",
             "HostGPUReader.swift in Sources",
