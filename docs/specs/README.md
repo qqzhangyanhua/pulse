@@ -46,6 +46,7 @@
 | [37-top-card-reveal-group.md](37-top-card-reveal-group.md) | Top 卡片命令揭示映射可见组：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 | [38-group-row-badge-help.md](38-group-row-badge-help.md) | 内存页组行上涨徽标说明追加受评 PID：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 | [39-insufficient-slot-pid.md](39-insufficient-slot-pid.md) | 样本不足槽补当前采样对象 PID：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
+| [40-energy-app-group.md](40-energy-app-group.md) | 能耗页按 App、详情与单进程结束：落地前技术约定（#141）。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 
 二十三期以后已经落地的工作没有单独的设计稿，需求和结论记录在对应的 issue 和 PR 里。下表收到二十八期；更后的期次以对应 PR 为准，不在这里补写。
 
@@ -68,6 +69,8 @@
 `38-group-row-badge-help.md` 登记在上表只为了能找到它。行为已落地，当前文字以 TECH.md 为准；稿本身不再改。本机冒烟清单的勾选不因这份稿改变。
 
 `39-insufficient-slot-pid.md` 登记在上表只为了能找到它。行为已落地，当前界面以 TECH.md 为准；稿本身不再改。本机冒烟清单的勾选不因这份稿改变。
+
+`40-energy-app-group.md` 是 #141 的落地前约定。行为已落地，当前行为以 TECH.md「能耗页」为准；稿本身停改。冒烟清单里对应条目保持未勾选。
 
 `11-menubar-top3-select.md` 的正文不再改。Top3 点击后仍能诊断的行为以 TECH.md 为准。冒烟清单对应一条仍未勾选，不能写成已通过。
 
