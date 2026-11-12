@@ -90,6 +90,7 @@ struct MemoryDashboardView: View {
             .background(PulsePalette.windowBackground)
     }
 
+    @ViewBuilder
     private var resourcePage: some View {
         if vm.selectedPage == .energy {
             energyResourceColumn
