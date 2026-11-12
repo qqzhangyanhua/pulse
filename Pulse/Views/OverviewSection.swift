@@ -20,8 +20,18 @@ struct OverviewSection: View {
         }
     }
 
+    @ViewBuilder
+    private var thermalAdviceCard: some View {
+        if let advice = vm.thermalAdvice {
+            ThermalAdviceCard(advice: advice, onTerminate: { pid in
+                Task { await vm.terminateThermalAdvice(pid: pid) }
+            })
+        }
+    }
+
     private var samplingBody: some View {
         VStack(spacing: 12) {
+            thermalAdviceCard
             HStack(spacing: 12) {
                 samplingHero
                 samplingComposition
@@ -47,7 +57,7 @@ struct OverviewSection: View {
                         .foregroundStyle(.secondary)
                     SkeletonBlock(width: 120, height: 28)
                     SkeletonBlock(width: 96, height: 10)
-                    if let notice = vm.thermalNotice {
+                    if vm.thermalAdvice == nil, let notice = vm.thermalNotice {
                         ThermalNoticeLine(text: notice)
                     }
                     Spacer(minLength: 0)
@@ -112,11 +122,12 @@ struct OverviewSection: View {
         let consumer = TopConsumer.leading(in: vm.rows)
 
         return VStack(spacing: 12) {
+            thermalAdviceCard
             HStack(spacing: 12) {
                 MemoryHeroCard(
                     snapshot: snapshot,
                     usedSeries: vm.usageHistory.samples,
-                    thermalNotice: vm.thermalNotice
+                    thermalNotice: vm.thermalAdvice == nil ? vm.thermalNotice : nil
                 )
                 CompositionCard(breakdown: snapshot.breakdown, totalBytes: snapshot.totalBytes)
                     .frame(width: 310)

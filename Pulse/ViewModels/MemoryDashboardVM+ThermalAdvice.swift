@@ -26,4 +26,13 @@ extension MemoryDashboardVM {
         )
         thermalAdviceLastUpdate = now
     }
+
+    /// Process-page selection goes through `quitSelected` so the sidebar stays in step. Any other pid, including one listed on the machine page, is terminated directly and leaves the selection alone.
+    func terminateThermalAdvice(pid: Int32) async {
+        if pid == selectedPid, selectedPage.allowsProcessQuit {
+            await quitSelected()
+            return
+        }
+        _ = await ProcessActions.terminate(pid: pid)
+    }
 }
