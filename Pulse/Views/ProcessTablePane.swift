@@ -16,6 +16,14 @@ struct ProcessTablePane: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        if vm.selectedPage == .energy {
+            EnergyProcessTable()
+        } else {
+            standardTable
+        }
+    }
+
+    private var standardTable: some View {
         VStack(alignment: .leading, spacing: 4) {
             if showsColumnHeader {
                 columnHeader

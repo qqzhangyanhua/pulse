@@ -139,9 +139,9 @@ private struct PulseWindowCommands: Commands {
             sortedRows: dashboard.sortedRows,
             rows: dashboard.rows
         ) else { return }
-        let line = ProcessRowCopy.line(page: dashboard.selectedPage, row: row)
+        let line = ProcessRowCopy.line(page: dashboard.selectedPage, row: row, energyWindow: dashboard.energyWindowRates[row.pid])
         switch dashboard.selectedPage {
-        case .memory, .cpu, .disk, .network:
+        case .memory, .cpu, .disk, .network, .energy:
             break
         case .machine, .gpu:
             return

@@ -11,6 +11,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var hostNetworkRates = HostNetworkRates.missing
     @Published private(set) var hostDiskRates = HostDiskRates.missing
     @Published private(set) var rows: [ProcessRow] = []
+    /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
+    @Published private(set) var energyWindowRates: [Int32: ProcessEnergyRates] = [:]
     @Published private(set) var processListFailed = false
     /// This frame's permission footnote. Empty when the process list failed.
     @Published private(set) var processPermissionFootnote: String?
@@ -125,9 +127,11 @@ final class MemoryDashboardVM: ObservableObject {
 
     /// Visible rows in the current table sort. Not stored and not published.
     var sortedRows: [ProcessRow] {
-        tableSort.ordered(
-            AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
-        )
+        let projected = AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
+        if selectedPage == .energy {
+            return EnergyPage.ordered(projected, rates: energyWindowRates, sort: tableSort)
+        }
+        return tableSort.ordered(projected)
     }
 
     /// Strip B. Unfiltered `rows` ordered by the published memory-page sort.
@@ -397,6 +401,7 @@ final class MemoryDashboardVM: ObservableObject {
                     nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
                     diskHistory = nextDisk
                     rows = frame.rows
+                    energyWindowRates = frame.energyWindowRates
                     processListFailed = frame.processListFailed
                     processPermissionFootnote = frame.permissionFootnote
                     topMemorySeries = frame.topMemorySeries

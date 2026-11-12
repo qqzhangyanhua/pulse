@@ -22,7 +22,7 @@ final class ProcessRowCopyWiringSourceTests: XCTestCase {
         let guardAt = try index(of: "else { return }", in: copy)
         let boardAt = try index(of: "NSPasteboard", in: copy)
         XCTAssertLessThan(guardAt, boardAt)
-        XCTAssertTrue(copy.contains("ProcessRowCopy.line(page: dashboard.selectedPage, row: row)"))
+        XCTAssertTrue(copy.contains("ProcessRowCopy.line(page: dashboard.selectedPage, row: row, energyWindow: dashboard.energyWindowRates[row.pid])"))
         let skippedPage = try index(of: "case .machine, .gpu:", in: copy)
         XCTAssertLessThan(skippedPage, boardAt)
         let between = String(copy[skippedPage..<boardAt])

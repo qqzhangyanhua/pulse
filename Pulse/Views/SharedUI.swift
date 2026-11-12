@@ -40,6 +40,7 @@ extension Array where Element == ChartSample {
 enum ResourceTab: String, CaseIterable, Identifiable {
     case memory = "内存"
     case cpu = "CPU"
+    case energy = "能耗"
     case disk = "磁盘"
     case network = "网络"
     case machine = "本机"
@@ -51,6 +52,7 @@ enum ResourceTab: String, CaseIterable, Identifiable {
         switch self {
         case .memory: return .memory
         case .cpu: return .cpu
+        case .energy: return .energy
         case .disk: return .disk
         case .network: return .network
         case .machine: return .machine
@@ -64,6 +66,7 @@ enum ResourceTab: String, CaseIterable, Identifiable {
         switch self {
         case .memory: return "memorychip"
         case .cpu: return "cpu"
+        case .energy: return "bolt"
         case .disk: return "internaldrive"
         case .network: return "network"
         case .machine: return "desktopcomputer"

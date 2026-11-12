@@ -75,8 +75,8 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         XCTAssertFalse(source.contains("onChange"), "VM gains no onChange")
         XCTAssertEqual(
             occurrenceCount(of: "@Published", in: source),
-            29,
-            "app grouping adds groupedByApp; permission footnote adds processPermissionFootnote"
+            30,
+            "energy page adds energyWindowRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote"
         )
         XCTAssertEqual(
             try lineContaining("var topAppLocateReveal", in: source).trimmingCharacters(in: .whitespaces),

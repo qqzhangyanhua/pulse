@@ -234,6 +234,8 @@ struct SampledFrame: Sendable {
     let topMemorySeries: [Int32: [ChartSample]]
     /// This frame only. Nil when the list failed or no task-info read was denied.
     let permissionFootnote: String?
+    /// Energy-page window rates for this frame. Empty when the process list failed.
+    let energyWindowRates: [Int32: ProcessEnergyRates]
 
     init(
         snapshot: MemorySnapshot,
@@ -245,7 +247,8 @@ struct SampledFrame: Sendable {
         hostDiskRates: HostDiskRates,
         topMemorySeries: [Int32: [ChartSample]] = [:],
         busiestCorePercent: Double? = nil,
-        permissionFootnote: String? = nil
+        permissionFootnote: String? = nil,
+        energyWindowRates: [Int32: ProcessEnergyRates] = [:]
     ) {
         self.snapshot = snapshot
         self.rows = rows
@@ -257,5 +260,6 @@ struct SampledFrame: Sendable {
         self.topMemorySeries = topMemorySeries
         self.busiestCorePercent = busiestCorePercent
         self.permissionFootnote = permissionFootnote
+        self.energyWindowRates = energyWindowRates
     }
 }
