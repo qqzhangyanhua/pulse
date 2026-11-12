@@ -24,7 +24,9 @@ extension MemoryDashboardVM {
     }
 
     func refreshEnergyBattery() {
-        let next = EnergyBattery.card(EnergyBatteryReader.read())
+        let reading = EnergyBatteryReader.read()
+        energyBatteryReading = reading
+        let next = EnergyBattery.card(reading)
         if next != energyBatteryCard {
             energyBatteryCard = next
         }

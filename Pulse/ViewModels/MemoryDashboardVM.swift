@@ -28,6 +28,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published var machineFacts: MachineFacts?
     /// Energy-page battery card. Nil hides it, including a Mac with no internal battery.
     @Published var energyBatteryCard: EnergyBatteryCard?
+    /// Latest energy-page battery reading. Nil until that read; not a second poll.
+    var energyBatteryReading: EnergyBatteryReading?
     /// The only session quit store. Phase and message are projections of this.
     @Published var quitOutcome = ProcessQuitOutcome()
     @Published var sidebarSubjectPid: Int32?
@@ -40,6 +42,7 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var cpuHistory = SystemCPUHistory()
     @Published private(set) var networkHistory = SystemNetworkHistory()
     @Published private(set) var diskHistory = SystemDiskHistory()
+    @Published private(set) var energyMachineHistory = EnergyMachineHistory()
     /// Nil unless the system is serious or critical. Overviews read this; the menu bar does not.
     @Published var thermalNotice: String?
     @Published var filter = ""
@@ -413,6 +416,7 @@ final class MemoryDashboardVM: ObservableObject {
                     rows = frame.rows
                     energyWindowRates = frame.energyWindowRates
                     energyHourRates = frame.energyHourRates
+                    energyMachineHistory = recordedEnergyHistory(rows: frame.rows, at: frame.snapshot.capturedAt)
                     processListFailed = frame.processListFailed
                     processPermissionFootnote = frame.permissionFootnote
                     topMemorySeries = frame.topMemorySeries

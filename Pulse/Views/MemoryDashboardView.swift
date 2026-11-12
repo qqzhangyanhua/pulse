@@ -109,6 +109,8 @@ struct MemoryDashboardView: View {
                 if vm.energyBatteryCard != nil {
                     EnergyBatteryCardView()
                 }
+                EnergyHistoryChart()
+                    .frame(height: 150)
                 ProcessTablePane()
             }
             .padding(12)

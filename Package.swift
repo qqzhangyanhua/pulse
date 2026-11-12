@@ -67,6 +67,7 @@ let package = Package(
                 "Models/CPUPage.swift",
                 "Models/EnergyPage.swift",
                 "Models/EnergyBattery.swift",
+                "Models/EnergyMachineHistory.swift",
                 "Models/MemoryPageSortPublication.swift",
                 "Models/NetworkPage.swift",
                 "Models/DiskPage.swift",

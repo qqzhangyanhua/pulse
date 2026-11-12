@@ -69,7 +69,7 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
         let source = try vmSource()
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: source), 1)
         XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 4)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 33, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 34, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory")
         XCTAssertEqual(occurrenceCount(of: "func locateMemoryTopApp(", in: source), 1)
         XCTAssertEqual(occurrenceCount(of: "topAppLocateReveal =", in: source), 1)
 
