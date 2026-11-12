@@ -36,7 +36,7 @@ struct MemoryDashboardView: View {
                 .accessibilityLabel("保存当前快照")
             }
             ToolbarItemGroup(placement: .primaryAction) {
-                if vm.selectedPage != .machine && vm.selectedPage != .gpu {
+                if !vm.selectedPage.isFullPage {
                     HStack(spacing: 8) {
                         if WindowedAppChrome.showsToggle(page: vm.selectedPage) {
                             MemoryToolbarSwitch(
@@ -97,14 +97,15 @@ struct MemoryDashboardView: View {
     }
 
     private var machinePage: some View {
-        MachineOverviewSection()
-            .padding(12)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(PulsePalette.windowBackground)
+        fullPage(MachineOverviewSection())
     }
 
     private var gpuPage: some View {
-        GPUOverviewSection()
+        fullPage(GPUOverviewSection())
+    }
+
+    private func fullPage<Content: View>(_ content: Content) -> some View {
+        content
             .padding(12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(PulsePalette.windowBackground)

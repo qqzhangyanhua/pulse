@@ -287,7 +287,10 @@ final class MachinePageTests: XCTestCase {
         XCTAssertTrue(machineBody.contains("MachineOverviewSection()"))
         XCTAssertFalse(machineBody.contains("ProcessTablePane"))
         XCTAssertFalse(machineBody.contains("ProcessDetailSidebar"))
-        XCTAssertTrue(dashboard.contains("vm.selectedPage != .machine"))
+        XCTAssertTrue(dashboard.contains("if !vm.selectedPage.isFullPage"))
+        let status = try repoText("Pulse/MenuBar/MenuBarStatus.swift")
+        XCTAssertTrue(status.contains("var isFullPage: Bool { self == .machine || self == .gpu }"))
+        XCTAssertTrue(status.contains("var allowsProcessQuit: Bool { !isFullPage }"))
 
         let app = try repoText("Pulse/PulseApp.swift")
         XCTAssertTrue(app.contains("selectPage(.machine)"))
