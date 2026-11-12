@@ -23,6 +23,10 @@ extension MemoryDashboardVM {
 
     func applyThermalState(_ state: ProcessInfo.ThermalState) {
         thermalNotice = ThermalNotice.message(for: ThermalCondition(state))
+        if thermalNotice == nil {
+            thermalAdvice = nil
+            thermalAdviceLastUpdate = nil
+        }
     }
 
     /// Read on entry, then every 30 seconds while the machine page stays selected.
@@ -52,6 +56,19 @@ extension MemoryDashboardVM {
         if next != machineFacts {
             machineFacts = next
         }
+    }
+
+    func nanosecondsElapsed(
+        from start: ContinuousClock.Instant,
+        to end: ContinuousClock.Instant
+    ) -> UInt64 {
+        let duration = start.duration(to: end)
+        let seconds = duration.components.seconds
+        let attoseconds = duration.components.attoseconds
+        if seconds < 0 { return 0 }
+        let secNanos = UInt64(seconds) &* 1_000_000_000
+        let nanoPart = attoseconds <= 0 ? 0 : UInt64(attoseconds / 1_000_000_000)
+        return secNanos &+ nanoPart
     }
 }
 

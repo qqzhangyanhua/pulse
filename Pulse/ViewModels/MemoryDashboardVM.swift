@@ -47,6 +47,10 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var energyMachineHistory = EnergyMachineHistory()
     /// Nil unless the system is serious or critical. Overviews read this; the menu bar does not.
     @Published var thermalNotice: String?
+    /// Top CPU processes while `thermalNotice` is showing. Nil hides the card; the menu bar does not read this.
+    @Published var thermalAdvice: ThermalAdvice?
+    /// Seconds of the last published advice. Nil publishes on the next sample.
+    var thermalAdviceLastUpdate: Double?
     @Published var filter = ""
     /// Memory-tab only. Default OFF. Session-scoped; not a Sampler or preference write.
     @Published var risingOnlyFilter = false {
@@ -354,19 +358,6 @@ final class MemoryDashboardVM: ObservableObject {
         }
     }
 
-    private func nanosecondsElapsed(
-        from start: ContinuousClock.Instant,
-        to end: ContinuousClock.Instant
-    ) -> UInt64 {
-        let duration = start.duration(to: end)
-        let seconds = duration.components.seconds
-        let attoseconds = duration.components.attoseconds
-        if seconds < 0 { return 0 }
-        let secNanos = UInt64(seconds) &* 1_000_000_000
-        let nanoPart = attoseconds <= 0 ? 0 : UInt64(attoseconds / 1_000_000_000)
-        return secNanos &+ nanoPart
-    }
-
     private func tick(_ flight: SamplingFlight) async {
         let result = await sampler.sample()
         if Task.isCancelled {
@@ -419,6 +410,7 @@ final class MemoryDashboardVM: ObservableObject {
                     nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
                     diskHistory = nextDisk
                     rows = frame.rows
+                    refreshThermalAdvice(now: frame.snapshot.capturedAt.timeIntervalSince1970)
                     energyWindowRates = frame.energyWindowRates
                     energyHourRates = frame.energyHourRates
                     exitedEnergyProcesses = frame.exitedEnergyProcesses

@@ -75,8 +75,8 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         XCTAssertFalse(source.contains("onChange"), "VM gains no onChange")
         XCTAssertEqual(
             occurrenceCount(of: "@Published", in: source),
-            35,
-            "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses"
+            36,
+            "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice"
         )
         XCTAssertEqual(
             try lineContaining("var topAppLocateReveal", in: source).trimmingCharacters(in: .whitespaces),

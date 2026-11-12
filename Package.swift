@@ -19,6 +19,7 @@ let package = Package(
                 "Pulse.entitlements",
                 "PulseApp.swift",
                 "ViewModels",
+                "ViewModels/MemoryDashboardVM+ThermalAdvice.swift",
                 "Views",
                 "Sampling/HostCPUReader.swift",
                 "Sampling/HostMemoryReader.swift",
