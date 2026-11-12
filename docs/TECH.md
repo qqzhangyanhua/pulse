@@ -52,9 +52,9 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 | 最忙一核 | `host_processor_info`，两帧求差取最大 | 「—」 |
 | 网络上行 / 下行 | `sysctl` `NET_RT_IFLIST2` 的 64 位 `if_data64` 计数，两帧求差。`getifaddrs` 的 `ifi_ibytes` / `ifi_obytes` 是 32 位，每 4 GiB 回绕，不再使用 | 「—」 |
 | 磁盘读取 / 写入 | IOKit `IOBlockStorageDriver` Statistics，两帧求差 | 「—」 |
-| 降频 | `ProcessInfo.thermalState`，`serious` / `critical` 时显示「系统正在降频以控制温度」 | 不显示 |
+| 降频 | `ProcessInfo.thermalState` 的定性档位，只有 `serious` / `critical`。不读 SMC 温度，不读风扇转速。见 [ADR-0003](adr/0003-thermal-state-api.md) | 不显示 |
 
-降频句出现在内存、CPU、网络、磁盘、本机各页的总览里，菜单栏不读。
+`serious` / `critical` 时，内存、CPU、网络、磁盘、本机各页总览在顶排指标上方放一张整行的散热建议卡片，菜单栏不读。名单先丢掉 Pulse 自己的 pid，以及 CPU 为 nil 的进程（nil 不当成 0），再按 CPU 百分比降序取前 3；百分比相同则 pid 较小的在前。前 3 名里有一个达到 10% 就列出这几名，刚好 10% 也列出。没有剩下的进程，或这几名都严格低于 10% 时，不列行，只写「系统正在降频，但未检测到高负载进程」。卡片还在时，界面最多每 5 秒刷新一次，跟已有采样帧走，不另开 Timer。热状态一离开 `serious` / `critical`，卡片马上消失，不等这 5 秒。每行的「退出」调用 `ProcessActions.terminate`，没有额外确认。进程页上，这个 pid 若正是当前选中，仍走 `quitSelected`；其它 pid 直接结束，不改选中。降频提示还在、建议仍是 nil 时，原来的一行「系统正在降频以控制温度」留在原处。失败空态两者都不显示。
 
 ## 进程读数
 
@@ -281,6 +281,7 @@ Tab 选中胶囊、总览高度和工具栏里的页专属开关用同一段动�
 - [ ] 本机页：机型、芯片、系统、容量、开机时间、电源、磁盘、诊断三行；能点的项跳转正确
 - [ ] 有内置电池：本机页显示循环次数、健康度、功率；某一项读不到只该项为「—」
 - [ ] 没有内置电池：不显示循环次数、健康度、功率，电源卡仍在
+- [ ] 散热建议：`serious` 或 `critical` 时，内存、CPU、网络、磁盘、本机总览在顶排指标上方出现卡片，列出 CPU 最高的进程（不含 Pulse，缺 CPU 的不进名单），「退出」没有额外确认；这几名都低于 10% 时只显示「系统正在降频，但未检测到高负载进程」，没有行
 - [ ] Tab 栏没有 GPU；`⌘1`–`⌘5`、`⌘F`、`⌘⌫` 可用
 - [ ] 选中进程行后 ⌘C 和右键「复制」得到制表符分隔的一行；没有选中时剪贴板不变
 

@@ -65,3 +65,4 @@ macOS 自带的活动监视器信息密度高，很难一眼看出「谁在吃�
 - 快照历史、应用内导入或回看、前后对比、覆盖管理
 - Electron / 多平台、App Store 沙盒版、TCC 全盘访问、内核扩展、Helper / XPC
 - 进程依赖（XPC、Mach ports）和力导向图
+- 不读取 SMC 温度和风扇转速（禁止 IOServiceOpen，SMC 键不稳定，部分机型没有风扇）
