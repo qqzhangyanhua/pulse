@@ -86,6 +86,7 @@ let package = Package(
                 "Sampling/HostDisk.swift",
                 "Sampling/ProcessEnergy.swift",
                 "Sampling/ProcessEnergyWindow.swift",
+                "Sampling/ProcessEnergyMinuteLedger.swift",
                 "Sampling/SamplingPace.swift",
                 "Sampling/SamplingRequestGate.swift",
                 "Sampling/SamplingRetryChrome.swift",

@@ -9,9 +9,36 @@ enum EnergyPagePhase: Equatable, Sendable {
     case ready
 }
 
+/// Ranking span on the energy page. Not a third resource tab.
+enum EnergyRankingSpan: Equatable, Hashable, Sendable {
+    case oneMinute
+    case oneHour
+}
+
 enum EnergyPageCopy {
     static let headline = "最近 1 分钟平均功率"
     static let explanation = "用这段时间里累计的能耗除以实际时长。不足 1 分钟时用已经采到的时长。读不到显示「—」，不显示 0。这不是活动监视器的能耗影响分数。"
+    static let hourHeadline = "最近 1 小时平均功率"
+    static let hourExplanation = "把这一小时里有读数的分钟耗电量相加，再除以这些分钟的实际时长。缺读数的分钟不补 0。这不是活动监视器的能耗影响分数。"
+
+    static func headline(for span: EnergyRankingSpan) -> String {
+        switch span {
+        case .oneMinute:
+            return headline
+        case .oneHour:
+            return hourHeadline
+        }
+    }
+
+    static func explanation(for span: EnergyRankingSpan) -> String {
+        switch span {
+        case .oneMinute:
+            return explanation
+        case .oneHour:
+            return hourExplanation
+        }
+    }
+
     static let samplingTitle = "正在采样…"
     static let processListFailedTitle = "暂时无法列出进程"
     static let processListFailedMessage = SamplingRetryChrome.processListFailedMessage

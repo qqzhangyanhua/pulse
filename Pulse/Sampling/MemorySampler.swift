@@ -13,6 +13,7 @@ actor MemorySampler {
     private var diskTicks: [Int32: DiskTick] = [:]
     private var energyTicks: [Int32: EnergyTick] = [:]
     private var energyWindow = ProcessEnergyWindow()
+    private var energyMinuteLedger = ProcessEnergyMinuteLedger()
     private var previousHostCPU: HostCPUTicks?
     private var previousCoreCPU: [HostCPUTicks]?
     private var previousHostNetwork: HostNetworkSnapshot?
@@ -180,6 +181,11 @@ actor MemorySampler {
         energyTicks = nextEnergyTicks
         identityCache = nextIdentities
         let energyWindowRates = energyWindow.advance(listed: listedEnergy, listSucceeded: true)
+        let energyHourRates = energyMinuteLedger.advance(
+            listed: listedEnergy,
+            now: capturedAt,
+            listSucceeded: true
+        )
 
         rows.sort { lhs, rhs in
             if lhs.memoryBytes != rhs.memoryBytes {
@@ -221,7 +227,8 @@ actor MemorySampler {
                     deniedCount: listed.permissionDeniedCount,
                     processListFailed: false
                 ),
-                energyWindowRates: energyWindowRates
+                energyWindowRates: energyWindowRates,
+                energyHourRates: energyHourRates
             )
         )
     }
