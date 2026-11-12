@@ -75,6 +75,8 @@ final class MemoryDashboardVM: ObservableObject {
     let snapshotExportStore = SnapshotExportStore()
     /// Last memory-page sort, readable on the MainActor. Not a second published sort field.
     private var publication = MemoryPageSortPublication()
+    private var selectedEnergyGeneration: Int?
+    private var energyLiveGenerations: [Int32: Int] = [:]
 
     @Published var selectedPid: Int32? {
         didSet {
@@ -91,6 +93,7 @@ final class MemoryDashboardVM: ObservableObject {
             if sidebarSubjectPid != effect.sidebarSubjectPid {
                 sidebarSubjectPid = effect.sidebarSubjectPid
             }
+            captureEnergySelectionGeneration()
             detail = nil
             let pid = selectedPid
             Task { await sampler.setSelectedPid(pid) }
@@ -419,6 +422,7 @@ final class MemoryDashboardVM: ObservableObject {
                     energyWindowRates = frame.energyWindowRates
                     energyHourRates = frame.energyHourRates
                     exitedEnergyProcesses = frame.exitedEnergyProcesses
+                    energyLiveGenerations = frame.energyLiveGenerations
                     energyMachineHistory = recordedEnergyHistory(rows: frame.rows, at: frame.snapshot.capturedAt)
                     processListFailed = frame.processListFailed
                     processPermissionFootnote = frame.permissionFootnote
@@ -463,6 +467,7 @@ final class MemoryDashboardVM: ObservableObject {
         if selectedPid != effect.listSelectedPid, !keepsExitedEnergySelection(replacingWith: effect.listSelectedPid) {
             selectedPid = effect.listSelectedPid
         }
+        reconcileEnergySelectionGeneration()
         if sidebarSubjectPid != effect.sidebarSubjectPid {
             sidebarSubjectPid = effect.sidebarSubjectPid
         }
@@ -473,5 +478,22 @@ final class MemoryDashboardVM: ObservableObject {
             applyRisingOnlySelection()
             applyWindowedOnlySelection()
         }
+    }
+    var selectedEnergyExitedOnly: Bool {
+        EnergyPage.blocksQuit(selectedPid: selectedPid, rememberedGeneration: selectedEnergyGeneration, liveRows: rows, liveGenerations: energyLiveGenerations, exited: exitedEnergyProcesses)
+    }
+    private func captureEnergySelectionGeneration() {
+        selectedEnergyGeneration = selectedPage == .energy ? selectedPid.flatMap { energyLiveGenerations[$0] } : nil
+    }
+    private func reconcileEnergySelectionGeneration() {
+        let decision = EnergyPage.resolvedSelection(
+            onEnergyPage: selectedPage == .energy,
+            selectedPid: selectedPid,
+            rememberedGeneration: selectedEnergyGeneration,
+            liveRows: rows,
+            liveGenerations: energyLiveGenerations
+        )
+        if selectedPid != decision.pid { selectedPid = decision.pid }
+        selectedEnergyGeneration = decision.generation
     }
 }

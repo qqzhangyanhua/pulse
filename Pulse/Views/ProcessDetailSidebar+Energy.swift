@@ -29,11 +29,9 @@ extension ProcessDetailSidebar {
         }
     }
 
-    /// Hidden when the only hour-ranking match for `selectedPid` has already exited.
+    /// Exited or stale selections hide the quit buttons. The outcome copy stays.
     @ViewBuilder
     var quitControls: some View {
-        if !vm.selectedEnergyExitedOnly {
-            ProcessDetailSidebarQuitControls()
-        }
+        ProcessDetailSidebarQuitControls(showsQuitButtons: !vm.selectedEnergyExitedOnly)
     }
 }

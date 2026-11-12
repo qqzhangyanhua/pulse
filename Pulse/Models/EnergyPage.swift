@@ -55,6 +55,12 @@ enum EnergyPageCopy {
     static let columns = [ProcessColumnTitle.name, impactTitle, wakeTitle]
 }
 
+/// Pid kept or cleared after one sample, and the generation to remember.
+struct EnergySelectionResolution: Equatable, Sendable {
+    var pid: Int32?
+    var generation: Int?
+}
+
 /// One displayed energy-page rate. Partial means a grouped sum skipped a nil member.
 struct EnergyDisplayReading: Equatable, Sendable {
     let watts: Double?
@@ -210,15 +216,49 @@ enum EnergyPage {
         return orderedRank(liveRanked + exitedRanked, sort: sort)
     }
 
-    /// True when the selection is absent from live rows and only an exited hour entry.
+    /// True when quit would hit a different live generation, or only an exited hour entry.
     static func blocksQuit(
         selectedPid: Int32?,
+        rememberedGeneration: Int?,
         liveRows: [ProcessRow],
+        liveGenerations: [Int32: Int],
         exited: [ExitedEnergyProcess]
     ) -> Bool {
         guard let selectedPid else { return false }
-        if liveRows.contains(where: { $0.pid == selectedPid }) { return false }
+        if liveRows.contains(where: { $0.pid == selectedPid }) {
+            guard let rememberedGeneration, let current = liveGenerations[selectedPid] else {
+                return false
+            }
+            return current != rememberedGeneration
+        }
         return exited.contains { $0.pid == selectedPid }
+    }
+
+    /// On the energy page, a different live generation clears the pid.
+    /// Nil plus a live row binds to that generation. An unreused exit stays selected.
+    static func resolvedSelection(
+        onEnergyPage: Bool,
+        selectedPid: Int32?,
+        rememberedGeneration: Int?,
+        liveRows: [ProcessRow],
+        liveGenerations: [Int32: Int]
+    ) -> EnergySelectionResolution {
+        guard onEnergyPage else {
+            return EnergySelectionResolution(pid: selectedPid, generation: rememberedGeneration)
+        }
+        guard let selectedPid else {
+            return EnergySelectionResolution(pid: nil, generation: nil)
+        }
+        if liveRows.contains(where: { $0.pid == selectedPid }) {
+            guard let rememberedGeneration else {
+                return EnergySelectionResolution(pid: selectedPid, generation: liveGenerations[selectedPid])
+            }
+            if let current = liveGenerations[selectedPid], current != rememberedGeneration {
+                return EnergySelectionResolution(pid: nil, generation: nil)
+            }
+            return EnergySelectionResolution(pid: selectedPid, generation: rememberedGeneration)
+        }
+        return EnergySelectionResolution(pid: selectedPid, generation: rememberedGeneration)
     }
 
     /// 1 小时 still has a table when every live process has exited. 1 分钟 does not.
@@ -237,27 +277,13 @@ enum EnergyPage {
         rates: [Int32: ProcessEnergyRates],
         sort: ProcessTableSort
     ) -> [ProcessRow] {
-        rows.sorted { lhs, rhs in
-            if sort.column == .name {
-                if lhs.name != rhs.name {
-                    let ascending = lhs.name < rhs.name
-                    return sort.descending ? !ascending : ascending
-                }
-                return lhs.pid < rhs.pid
-            }
-            let left = metric(lhs.pid, column: sort.column, rates: rates)
-            let right = metric(rhs.pid, column: sort.column, rates: rates)
-            switch (left, right) {
-            case (nil, nil):
-                return lhs.pid < rhs.pid
-            case (nil, .some):
-                return false
-            case (.some, nil):
-                return true
-            case let (lhsValue?, rhsValue?):
-                if lhsValue == rhsValue { return lhs.pid < rhs.pid }
-                return sort.descending ? lhsValue > rhsValue : lhsValue < rhsValue
-            }
+        sortedByRank(rows, sort: sort) { row in
+            RankSortKey(
+                name: row.name,
+                pid: row.pid,
+                generation: nil,
+                metric: metric(row.pid, column: sort.column, rates: rates)
+            )
         }
     }
 
@@ -317,46 +343,61 @@ enum EnergyPage {
     }
 
     private static func nameMatches(_ name: String, query: String) -> Bool {
-        let probe = ProcessRow(
-            pid: 0,
-            name: name,
-            bundleIdentifier: nil,
-            executablePath: nil,
-            cpuPercent: nil,
-            memoryBytes: 0,
-            threadCount: 0
-        )
-        return !filtered([probe], query: query).isEmpty
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return true }
+        return name.localizedCaseInsensitiveContains(trimmed)
+    }
+
+    private struct RankSortKey {
+        var name: String
+        var pid: Int32
+        var generation: Int?
+        var metric: Double?
     }
 
     private static func orderedRank(_ rows: [EnergyRankRow], sort: ProcessTableSort) -> [EnergyRankRow] {
-        rows.sorted { lhs, rhs in
-            if sort.column == .name {
-                if lhs.name != rhs.name {
-                    let ascending = lhs.name < rhs.name
-                    return sort.descending ? !ascending : ascending
-                }
-                return identityBefore(lhs, rhs)
-            }
-            let left = rankMetric(lhs, column: sort.column)
-            let right = rankMetric(rhs, column: sort.column)
-            switch (left, right) {
-            case (nil, nil):
-                return identityBefore(lhs, rhs)
-            case (nil, .some):
-                return false
-            case (.some, nil):
-                return true
-            case let (lhsValue?, rhsValue?):
-                if lhsValue != rhsValue {
-                    return sort.descending ? lhsValue > rhsValue : lhsValue < rhsValue
-                }
-                return identityBefore(lhs, rhs)
-            }
+        sortedByRank(rows, sort: sort) { row in
+            RankSortKey(
+                name: row.name,
+                pid: row.pid,
+                generation: row.generation,
+                metric: rankMetric(row, column: sort.column)
+            )
         }
     }
 
-    private static func identityBefore(_ lhs: EnergyRankRow, _ rhs: EnergyRankRow) -> Bool {
+    private static func sortedByRank<Row>(
+        _ rows: [Row],
+        sort: ProcessTableSort,
+        key: (Row) -> RankSortKey
+    ) -> [Row] {
+        rows.sorted { rankBefore(key($0), key($1), sort: sort) }
+    }
+
+    private static func rankBefore(_ lhs: RankSortKey, _ rhs: RankSortKey, sort: ProcessTableSort) -> Bool {
+        if sort.column == .name {
+            if lhs.name != rhs.name {
+                let ascending = lhs.name < rhs.name
+                return sort.descending ? !ascending : ascending
+            }
+            return identityBefore(lhs, rhs)
+        }
+        switch (lhs.metric, rhs.metric) {
+        case (nil, nil):
+            return identityBefore(lhs, rhs)
+        case (nil, .some):
+            return false
+        case (.some, nil):
+            return true
+        case let (lhsValue?, rhsValue?):
+            if lhsValue != rhsValue {
+                return sort.descending ? lhsValue > rhsValue : lhsValue < rhsValue
+            }
+            return identityBefore(lhs, rhs)
+        }
+    }
+
+    private static func identityBefore(_ lhs: RankSortKey, _ rhs: RankSortKey) -> Bool {
         if lhs.pid != rhs.pid { return lhs.pid < rhs.pid }
         return (lhs.generation ?? -1) < (rhs.generation ?? -1)
     }

@@ -180,10 +180,58 @@ final class EnergyExitedRankingTests: XCTestCase {
         XCTAssertNotEqual(live.rates.watts ?? -1, 1.2)
         XCTAssertTrue(live.isQuitTarget)
         XCTAssertFalse(sealed.isQuitTarget)
-        XCTAssertFalse(EnergyPage.blocksQuit(selectedPid: 7, liveRows: [row(7, "Mail", memory: 50)], exited: [exited]))
-        XCTAssertTrue(EnergyPage.blocksQuit(selectedPid: 7, liveRows: [], exited: [exited]))
-        XCTAssertFalse(EnergyPage.blocksQuit(selectedPid: nil, liveRows: [], exited: [exited]))
-        XCTAssertFalse(EnergyPage.blocksQuit(selectedPid: 9, liveRows: [], exited: [exited]))
+    }
+
+    func testReusedPidDoesNotKeepTheSelectedGeneration() {
+        let exited = ExitedEnergyProcess(
+            pid: 7,
+            generation: 1,
+            name: "Mail",
+            rates: ProcessEnergyRates(watts: 1, wakeupsPerSecond: 1)
+        )
+        let liveRows = [row(7, "Mail", memory: 50)]
+        let reused: [Int32: Int] = [7: 2]
+        XCTAssertTrue(
+            blocksQuit(pid: 7, generation: 1, liveRows: liveRows, liveGenerations: reused, exited: [exited])
+        )
+        XCTAssertFalse(
+            blocksQuit(pid: 7, generation: nil, liveRows: liveRows, liveGenerations: reused, exited: [exited])
+        )
+        XCTAssertFalse(
+            blocksQuit(pid: 7, generation: 2, liveRows: liveRows, liveGenerations: reused, exited: [exited])
+        )
+        XCTAssertTrue(blocksQuit(pid: 7, generation: 1, liveRows: [], liveGenerations: [7: 1], exited: [exited]))
+        XCTAssertFalse(blocksQuit(pid: nil, generation: nil, liveRows: [], liveGenerations: [:], exited: [exited]))
+        XCTAssertFalse(blocksQuit(pid: 9, generation: nil, liveRows: [], liveGenerations: [:], exited: [exited]))
+
+        let cleared = resolve(onEnergyPage: true, pid: 7, generation: 1, liveRows: liveRows, liveGenerations: reused)
+        XCTAssertNil(cleared.pid)
+        XCTAssertNil(cleared.generation)
+        let bound = resolve(onEnergyPage: true, pid: 7, generation: nil, liveRows: liveRows, liveGenerations: reused)
+        XCTAssertEqual(bound.pid, 7)
+        XCTAssertEqual(bound.generation, 2)
+        let kept = resolve(onEnergyPage: true, pid: 7, generation: 1, liveRows: [], liveGenerations: [7: 1])
+        XCTAssertEqual(kept.pid, 7)
+        XCTAssertEqual(kept.generation, 1)
+        let same = resolve(onEnergyPage: true, pid: 7, generation: 2, liveRows: liveRows, liveGenerations: reused)
+        XCTAssertEqual(same.pid, 7)
+        XCTAssertEqual(same.generation, 2)
+        let away = resolve(onEnergyPage: false, pid: 7, generation: 1, liveRows: liveRows, liveGenerations: reused)
+        XCTAssertEqual(away.pid, 7)
+        XCTAssertEqual(away.generation, 1)
+    }
+
+    func testLiveGenerationStaysAfterExitAndIncreasesWhenThePidReturns() {
+        var ledger = ProcessEnergyMinuteLedger()
+        _ = push(&ledger, energy: 0, wakeups: 0, at: 0, name: "Mail")
+        XCTAssertEqual(ledger.liveGenerations[7], 1)
+        _ = push(&ledger, energy: 10_000_000_000, wakeups: 10, at: 10, name: "Mail")
+        _ = ledger.advance(listed: [:], now: origin.addingTimeInterval(15), listSucceeded: true)
+        XCTAssertEqual(ledger.exitedProcesses.map(\.generation), [1])
+        XCTAssertEqual(ledger.liveGenerations[7], 1)
+        _ = push(&ledger, energy: 50_000_000_000, wakeups: 50, at: 20, name: "Mail")
+        XCTAssertEqual(ledger.liveGenerations[7], 2)
+        XCTAssertEqual(ledger.exitedProcesses.map(\.generation), [1])
     }
 
     func testExitedRowsMatchTheNameFilterAndNilRatesSortLast() {
@@ -196,7 +244,7 @@ final class EnergyExitedRankingTests: XCTestCase {
             rows: [row(4, "Notes", memory: 1)],
             rates: [4: .missing],
             exited: exited,
-            nameQuery: "mai",
+            nameQuery: "  MAI ",
             grouped: false,
             sort: ProcessTableSort(column: .energy, descending: false)
         )
@@ -248,6 +296,38 @@ final class EnergyExitedRankingTests: XCTestCase {
                 processListFailed: false
             ),
             .empty
+        )
+    }
+
+    private func blocksQuit(
+        pid: Int32?,
+        generation: Int?,
+        liveRows: [ProcessRow],
+        liveGenerations: [Int32: Int],
+        exited: [ExitedEnergyProcess]
+    ) -> Bool {
+        EnergyPage.blocksQuit(
+            selectedPid: pid,
+            rememberedGeneration: generation,
+            liveRows: liveRows,
+            liveGenerations: liveGenerations,
+            exited: exited
+        )
+    }
+
+    private func resolve(
+        onEnergyPage: Bool,
+        pid: Int32?,
+        generation: Int?,
+        liveRows: [ProcessRow],
+        liveGenerations: [Int32: Int]
+    ) -> EnergySelectionResolution {
+        EnergyPage.resolvedSelection(
+            onEnergyPage: onEnergyPage,
+            selectedPid: pid,
+            rememberedGeneration: generation,
+            liveRows: liveRows,
+            liveGenerations: liveGenerations
         )
     }
 

@@ -240,6 +240,8 @@ struct SampledFrame: Sendable {
     let energyHourRates: [Int32: ProcessEnergyRates]
     /// Sealed hour generations. Empty when the process list failed. Not inside `energyHourRates`.
     let exitedEnergyProcesses: [ExitedEnergyProcess]
+    /// Live generation ids from the minute ledger. Empty when the process list failed.
+    let energyLiveGenerations: [Int32: Int]
 
     init(
         snapshot: MemorySnapshot,
@@ -254,7 +256,8 @@ struct SampledFrame: Sendable {
         permissionFootnote: String? = nil,
         energyWindowRates: [Int32: ProcessEnergyRates] = [:],
         energyHourRates: [Int32: ProcessEnergyRates] = [:],
-        exitedEnergyProcesses: [ExitedEnergyProcess] = []
+        exitedEnergyProcesses: [ExitedEnergyProcess] = [],
+        energyLiveGenerations: [Int32: Int] = [:]
     ) {
         self.snapshot = snapshot
         self.rows = rows
@@ -269,5 +272,6 @@ struct SampledFrame: Sendable {
         self.energyWindowRates = energyWindowRates
         self.energyHourRates = energyHourRates
         self.exitedEnergyProcesses = exitedEnergyProcesses
+        self.energyLiveGenerations = energyLiveGenerations
     }
 }

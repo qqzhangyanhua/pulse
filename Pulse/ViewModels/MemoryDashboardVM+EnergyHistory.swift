@@ -16,8 +16,9 @@ extension MemoryDashboardVM {
         return known.isEmpty ? nil : known.reduce(0, +)
     }
 
-    /// The 30-second energy-page read. No internal battery, or no percent, stays nil.
+    /// The 30-second energy-page read. Off this page, or with no percent, stays nil.
     private var historyBatteryPercent: Double? {
+        guard selectedPage == .energy else { return nil }
         guard let reading = energyBatteryReading,
               reading.hasInternalBattery,
               let percent = reading.percent

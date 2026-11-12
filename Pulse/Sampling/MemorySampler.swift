@@ -232,7 +232,8 @@ actor MemorySampler {
                 ),
                 energyWindowRates: energyWindowRates,
                 energyHourRates: energyHourRates,
-                exitedEnergyProcesses: energyMinuteLedger.exitedProcesses
+                exitedEnergyProcesses: energyMinuteLedger.exitedProcesses,
+                energyLiveGenerations: energyMinuteLedger.liveGenerations
             )
         )
     }

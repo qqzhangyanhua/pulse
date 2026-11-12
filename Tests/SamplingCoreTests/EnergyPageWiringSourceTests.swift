@@ -25,6 +25,7 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(sampler.contains("names: listedNames"))
         XCTAssertTrue(sampler.contains("now: capturedAt"))
         XCTAssertTrue(sampler.contains("exitedEnergyProcesses: energyMinuteLedger.exitedProcesses"))
+        XCTAssertTrue(sampler.contains("energyLiveGenerations: energyMinuteLedger.liveGenerations"))
         let failure = try braceBody(after: "ProcessEnumerator.list() else", in: sampler)
         XCTAssertFalse(failure.contains("energyWindow"))
         XCTAssertFalse(failure.contains("ProcessEnergyWindow"))
@@ -47,6 +48,28 @@ final class EnergyPageWiringSourceTests: XCTestCase {
             "minute ledger adds ProcessEnergyMinuteLedger.swift and hour ranking adds MemoryDashboardVM+EnergyRanking.swift; energy history adds EnergyMachineHistory.swift, EnergyHistoryChart.swift, and MemoryDashboardVM+EnergyHistory.swift"
         )
         XCTAssertTrue(project.contains("ProcessDetailSidebar+Energy.swift in Sources"))
+    }
+
+    func testExitedSelectionHidesOnlyTheQuitButtons() throws {
+        let energy = try repoText("Pulse/Views/ProcessDetailSidebar+Energy.swift")
+        let controls = try functionBody(named: "quitControls", in: energy)
+        XCTAssertFalse(controls.contains("if !vm.selectedEnergyExitedOnly"))
+        XCTAssertTrue(
+            controls.contains("ProcessDetailSidebarQuitControls(showsQuitButtons: !vm.selectedEnergyExitedOnly)")
+        )
+        let quit = try repoText("Pulse/Views/ProcessDetailSidebarQuitControls.swift")
+        let buttons = try braceBody(after: "if showsQuitButtons", in: quit)
+        XCTAssertTrue(buttons.contains("强制退出…"))
+        XCTAssertTrue(buttons.contains("Label(\"退出\""))
+        XCTAssertFalse(buttons.contains("正在退出…"))
+        XCTAssertFalse(buttons.contains("quitMessage"))
+        XCTAssertFalse(buttons.contains("releaseNote"))
+        let body = try functionBody(named: "body", in: quit)
+        XCTAssertTrue(body.contains("正在退出…"))
+        XCTAssertTrue(body.contains("sidebar.quitMessage"))
+        XCTAssertTrue(body.contains("sidebar.releaseNote"))
+        let session = try repoText("Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift")
+        XCTAssertEqual(occurrenceCount(of: "guard !selectedEnergyExitedOnly else { return }", in: session), 2)
     }
 
     func testEnergyTableReadsWindowRatesAndTheCPUTableKeepsTwoFrameWatts() throws {
@@ -125,6 +148,13 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertFalse(failure.contains("energyWindowRates"))
         XCTAssertFalse(failure.contains("energyHourRates"))
         XCTAssertFalse(failure.contains("exitedEnergyProcesses"))
+        let apply = try functionBody(named: "applySample", in: vm)
+        XCTAssertTrue(apply.contains("energyLiveGenerations = frame.energyLiveGenerations"))
+        XCTAssertTrue(apply.contains("reconcileEnergySelectionGeneration()"))
+        XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 4)
+        XCTAssertFalse(vm.contains("@Published private var selectedEnergyGeneration"))
+        XCTAssertTrue(vm.contains("private var selectedEnergyGeneration: Int?"))
+        XCTAssertFalse(vm.contains("selectedPid = nil"))
         let ranking = try repoText("Pulse/ViewModels/MemoryDashboardVM+EnergyRanking.swift")
         XCTAssertTrue(ranking.contains("case .oneHour:"))
         XCTAssertTrue(ranking.contains("return energyHourRates"))

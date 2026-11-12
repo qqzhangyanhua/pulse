@@ -55,6 +55,9 @@ struct ProcessEnergyMinuteLedger: Equatable, Sendable {
         }
     }
 
+    /// Generation last opened for each pid. A sealed pid keeps that id until the next open.
+    var liveGenerations: [Int32: Int] { liveGeneration }
+
     /// Live rates for pids in `listed` only. Each rate is that pid's live generation.
     mutating func advance(
         listed: [Int32: EnergyTick?],
