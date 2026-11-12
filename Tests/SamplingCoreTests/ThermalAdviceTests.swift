@@ -74,6 +74,25 @@ final class ThermalAdviceTests: XCTestCase {
         ])
     }
 
+    func testAllNilCPUDoesNotClaimNoHighLoad() {
+        let advice = ThermalAdviceProjection.project([
+            candidate(pid: 4, name: "gap", cpu: nil, bundle: "b.gap", path: "/gap"),
+            candidate(pid: 2, name: "unread", cpu: nil),
+        ], excludingPid: 1)
+
+        XCTAssertFalse(advice.noHighLoad)
+        XCTAssertEqual(advice.processes, [])
+    }
+
+    func testOnlyThePulsePidDoesNotClaimNoHighLoad() {
+        let advice = ThermalAdviceProjection.project([
+            candidate(pid: 10, name: "Pulse", cpu: 99, bundle: "app.pulse", path: "/Apps/Pulse"),
+        ], excludingPid: 10)
+
+        XCTAssertFalse(advice.noHighLoad)
+        XCTAssertEqual(advice.processes, [])
+    }
+
     func testExactlyTenPercentIsKept() {
         let advice = ThermalAdviceProjection.project([
             candidate(pid: 5, name: "edge", cpu: 10, bundle: "app.edge", path: "/bin/edge"),

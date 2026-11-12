@@ -20,18 +20,9 @@ struct OverviewSection: View {
         }
     }
 
-    @ViewBuilder
-    private var thermalAdviceCard: some View {
-        if let advice = vm.thermalAdvice {
-            ThermalAdviceCard(advice: advice, onTerminate: { pid in
-                Task { await vm.terminateThermalAdvice(pid: pid) }
-            })
-        }
-    }
-
     private var samplingBody: some View {
         VStack(spacing: 12) {
-            thermalAdviceCard
+            ThermalAdviceCard()
             HStack(spacing: 12) {
                 samplingHero
                 samplingComposition
@@ -122,7 +113,7 @@ struct OverviewSection: View {
         let consumer = TopConsumer.leading(in: vm.rows)
 
         return VStack(spacing: 12) {
-            thermalAdviceCard
+            ThermalAdviceCard()
             HStack(spacing: 12) {
                 MemoryHeroCard(
                     snapshot: snapshot,

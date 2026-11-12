@@ -40,6 +40,9 @@ enum ThermalAdviceProjection {
             return lhs.cpuPercent > rhs.cpuPercent
         }
         let top = Array(ranked.prefix(3))
+        guard !top.isEmpty else {
+            return ThermalAdvice(processes: [], noHighLoad: false)
+        }
         if top.allSatisfy({ $0.cpuPercent < ThermalAdvice.highLoadFloorPercent }) {
             return ThermalAdvice(processes: [], noHighLoad: true)
         }

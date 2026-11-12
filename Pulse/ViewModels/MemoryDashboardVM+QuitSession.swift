@@ -1,6 +1,6 @@
 extension MemoryDashboardVM {
     /// Baseline for a quit estimate. A failed or missing frame never estimates.
-    private var quitReleaseBaseline: UInt64? {
+    var quitReleaseBaseline: UInt64? {
         guard snapshot != nil, samplingFailed == false else { return nil }
         return snapshot?.usedBytes
     }

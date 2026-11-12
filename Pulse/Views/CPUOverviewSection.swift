@@ -20,18 +20,9 @@ struct CPUOverviewSection: View {
         CPUPageCopy.overviewLine(systemCpuPercent: vm.systemCpuPercent)
     }
 
-    @ViewBuilder
-    private var thermalAdviceCard: some View {
-        if let advice = vm.thermalAdvice {
-            ThermalAdviceCard(advice: advice, onTerminate: { pid in
-                Task { await vm.terminateThermalAdvice(pid: pid) }
-            })
-        }
-    }
-
     private var samplingBody: some View {
         VStack(spacing: 12) {
-            thermalAdviceCard
+            ThermalAdviceCard()
             PulseCard {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 10) {
@@ -73,7 +64,7 @@ struct CPUOverviewSection: View {
 
     private var readyBody: some View {
         VStack(spacing: 12) {
-            thermalAdviceCard
+            ThermalAdviceCard()
             PulseCard {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
