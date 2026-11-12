@@ -24,23 +24,25 @@
 
 组汇总和实际操作进程必须能分开，结束只打一个明确的 pid：
 
-- 侧栏头今天的 `kindLine` 是「进程/App · PID …」，pid 来自采样器里的选中行（`ProcessDetailSidebar.swift` 336–347、373–375 行），不是成员列表。
+- 合并时，窗口能耗和窗口唤醒旁边写「当前可见的 N 个同名进程合计」。N 是 `groupedMemberCount`，含 1。这句只归属这两项窗口值。未合并不写这句。头部 PID 那一行不能拿来冒充这句。
+- 侧栏头的 `kindLine` 仍是「进程/App · PID …」，pid 来自采样器里的选中行（`ProcessDetailSidebar.swift` 336–347、373–375 行），不是成员列表。
 - 退出调用 `quitSelected` / `forceQuitSelected`。两者都要求 `allowsProcessQuit`，并把未合并的 `rows` 交给 `ProcessQuitSession`（`MemoryDashboardVM+QuitSession.swift` 19–31、43–54 行）。`ordinaryTerminate` 和 `requestForce` 只在 `actionPid == listSelectedPid` 时发出这一个 pid（`ProcessQuitSession.swift` 215–231、237–260 行）。
 - 强制退出的系统确认沿 `ProcessActions.confirmForceQuit`，名字取未合并行上的这一个 pid。普通退出不另加确认框。取消确认不发信号。不循环组成员，不新增整组结束。
 - 关闭侧栏沿 `dismissSidebar`。
 
+曲线保留头部 PID 已有的内存曲线和 CPU 曲线，序列是该 pid 的 `memorySeries` / `cpuSeries`。摘要里的 PID 是这一个，正文不写「合计」，不把其它成员的点加进去。不新增能耗曲线，也不新增能耗序列。`.noResourceUpgrade` 今天有一条内存曲线（296–300 行），`.cpu` 另有 CPU 曲线（256–260 行）；能耗页要留下这两条已有曲线，但不能借 `.cpu` 投影去读两帧能耗。
+
+复制：
+
+- 未合并：名称、PID、该 pid 的窗口能耗、该 pid 的窗口唤醒。不写「部分读数」，第二列不是成员数。
+- 合并：名称、成员数 N（含 1）、窗口能耗合计、窗口唤醒合计。某一项 `isPartial` 为真时，该字段是现有数值文本、一个空格、然后「部分读数」。全缺失仍是「—」，因为这时 `isPartial` 为假。第二列是 N，不是代表 pid。
+- 过滤框有焦点时，`⌘C` 仍交给文字框。
+
+进程树：未合并时显示现有按钮，树仍用未合并的 `vm.rows`，展开、占位、返回和 `selectPidIfPresent` 都不改。合并时隐藏按钮，并关掉已经打开的树。不增加组节点，不改树的数据。这就是 `showsProcessTreeButton` 在 `applies` 含 `.energy` 之后的结果（`AppGroupChrome.swift` 17–18 行）。
+
 `allowsProcessQuit` 今天排除 `.energy`（`MenuBarStatus.swift` 25 行）。落地时能耗页改为允许结束，CPU、内存、磁盘、网络、本机的允许关系不变。`⌘1`–`⌘5` 不插入能耗项。过滤框有焦点时，`⌘⌫` 仍不注册，和 CPU 一样。
 
 不增加 `proc_pid_rusage`。窗口仍在每次现有采样上更新。快照、菜单栏、本机电池不写能耗窗口。
-
-## 待确认
-
-下面这些源码事实还没有产品句子。本稿不补文案，也不把它们写成已经决定。
-
-- 现有 CPU 能耗详情没有内存页那种「当前可见的 N 个同名进程合计」。头只有一个 PID，数字来自合并行。已锁的是「组汇总和操作进程必须可区分」以及「结束只打这一个 PID」。是否再加一句归属，没有给定句子。
-- 「不加图表」排除的是新的能耗曲线。`.noResourceUpgrade` 和 `.cpu` 都会画已有的内存曲线或 CPU 曲线（296–300、256–260 行）。能耗详情要出现窗口能耗，但不能据此删掉或留下这两条已有曲线；两种做法都还没被单独锁。
-- 能耗页复制今天是名称、PID、窗口能耗、窗口唤醒，第二列是 pid（`ProcessRowCopy.swift` 的 `.energy`）。内存页按 App 的第二列是成员数。CPU 复制会把 `groupedMemberCount` 写进第二列，能耗数字仍是两帧。#141 没有锁分组后的复制。
-- `AppGroupChrome.showsProcessTreeButton` 在 `applies` 为真且未合并时显示进程树按钮，合并时关掉树（17–18 行）。能耗页要合并，就必须让 `applies` 包含 `.energy`，于是未合并时现有侧栏会带上这个按钮。#141 没有单独锁进程树。这是复用该函数的结果，不是新做一棵树。
 
 ## 文件长度
 
@@ -50,10 +52,14 @@
 
 先写能编译的可移植用例，让断言在值上失败，再改生产类型。缺类型或改 CPU 期望不算红。
 
-- 成员窗口里夹一个真实 0、一个正数、一个 nil：对应项的和等于有值成员之和，`isPartial` 为真；另一项可以独立。全部 nil 时和为 nil，且不是 0。行上的 `energyWatts` / `wakeupsPerSecond` 设成不同的诱饵，结果仍是窗口和。
+夹具：同名三行，窗口值与两帧诱饵分开。pid 4 内存 100、窗口能耗 1.5、窗口唤醒 nil，两帧能耗写成 9。pid 9 内存 50、窗口能耗 nil、窗口唤醒 4，两帧唤醒写成 9。pid 2 内存 100、窗口能耗 0、窗口唤醒 0，两帧都写成 9。代表是 pid 2。窗口能耗和是 1.5 且部分缺失，窗口唤醒和是 4 且部分缺失。
+
+- 这个和等于有值成员之和，`isPartial` 为真。全部 nil 时和为 nil，且不是 0。诱饵两帧值不进入和。一项为真实 0、其它成员都有值时，`isPartial` 为假。
 - 代表 pid 与 `combine` 的内存规则相同。组行排序键是窗口和。能耗页升序仍是 0、正数、nil。现有 CPU 升序测试仍是 nil、0、正数。
-- 能耗详情投影在诱饵两帧值不同时返回窗口值。`.cpu` 投影仍返回 `detail.row.energyWatts`。
-- 未合并 `rows` 里有三个同名 pid，`listSelectedPid` 是代表：`ordinaryTerminate` / `requestForce` 只给出这一个 pid。强制确认用的显示名是这一行的名字。
+- 合并详情的能耗/唤醒等于上面的窗口和，并带「当前可见的 3 个同名进程合计」。N 为 1 时句子里的数字是 1。未合并不带这句。头部文案仍含 `PID 2`。`.cpu` 投影仍返回 `detail.row.energyWatts`。
+- 曲线投影只含 pid 2 的 `memorySeries` 和 `cpuSeries`。摘要 PID 是 2。文本不含「合计」。没有能耗序列。
+- 未合并复制是 `名称\t2\t0.0 W\t0.0 次/秒`，不含「部分读数」。上面这组合并复制是 `名称\t3\t1.5 W 部分读数\t4.0 次/秒 部分读数`。全缺失的合并复制两项都是「—」，没有「部分读数」，第二列仍是 N。
+- 未合并 `rows` 里有这三个 pid，`listSelectedPid` 是 2：`ordinaryTerminate` / `requestForce` 只给出 2。强制确认用的显示名是 pid 2 的名字。合并时进程树按钮为隐藏；未合并时为显示。已打开的树在合并开关打开后关闭。
 
 源码阅读只锁接线，不代替 Mac：
 
@@ -61,5 +67,6 @@
 - 采样器仍把两帧速率写入 `energyWatts`，窗口仍来自一次 `energyWindow.advance`，没有第二次 `proc_pid_rusage`，也没有 `IOPSGetTimeRemainingEstimate`。
 - `quitSelected` 仍把未合并的 `rows` 交给 `ordinaryTerminate`。
 - CPU 详情单元格仍是 `ProcessEnergyText.watts(cpu.energyWatts)`。能耗详情的新增源码不读 `row.energyWatts`。
+- 能耗页合并文案含「当前可见的 N 个同名进程合计」。曲线标题或摘要不含「合计」。复制的合并分支写成员数和「部分读数」，未合并分支仍写 pid。进程树按钮仍走 `showsProcessTreeButton`，不出现新的树节点类型。
 
 本机冒烟另列，文档 PR 不能勾。实现 PR 写明跑了什么、跳过什么，并附真实截图。`swift test` 不能代替侧栏、确认框和 VoiceOver。
