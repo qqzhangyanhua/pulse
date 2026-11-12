@@ -41,6 +41,7 @@
 | [33-memory-magnitude-visible-group.md](33-memory-magnitude-visible-group.md) | 内存详情大数在代表变化后仍匹配当前可见同名组：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 | [34-memory-group-row-highlight.md](34-memory-group-row-highlight.md) | 内存页当前选中进程所在可见同名组的行高亮：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 | [35-memory-group-row-copy.md](35-memory-group-row-copy.md) | 内存页按 App 复制当前可见组行：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
+| [35-energy-page.md](35-energy-page.md) | 能耗页骨架与 1 分钟排行：落地前技术约定（#140）。页面尚未实现。与上一行撞了前缀 35，文件名不同，不是期次立项 |
 | [36-memory-reveal-group-row.md](36-memory-reveal-group-row.md) | 普通揭示触发时映射到内存可见组行：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 | [37-top-card-reveal-group.md](37-top-card-reveal-group.md) | Top 卡片命令揭示映射可见组：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
 | [38-group-row-badge-help.md](38-group-row-badge-help.md) | 内存页组行上涨徽标说明追加受评 PID：落地前技术约定。行为已落地，以 TECH.md 为准。文件号不是期次立项 |
@@ -57,6 +58,8 @@
 `34-memory-group-row-highlight.md` 登记在上表只为了能找到它。行为已落地，当前界面以 TECH.md 为准；稿本身不再改。本机冒烟清单的勾选不因这份稿改变。
 
 `35-memory-group-row-copy.md` 登记在上表只为了能找到它。行为已落地，当前行为以 TECH.md 为准；稿本身不再改。本机冒烟清单的勾选不因这份稿改变。
+
+`35-energy-page.md` 是 #140 点名的路径，和上面那份内存稿前缀相同、文件名不同，互不替换。它写的是尚未落地的能耗页。落地前，它和 TECH.md「能耗页」必须一致。落地后以 TECH.md 为准，这份稿停改。冒烟清单里对应条目保持未勾选。
 
 `36-memory-reveal-group-row.md` 登记在上表只为了能找到它。行为已落地，当前行为以 TECH.md 为准；稿本身不再改。本机冒烟清单的勾选不因这份稿改变。
 
