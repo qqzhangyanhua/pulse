@@ -13,6 +13,10 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var rows: [ProcessRow] = []
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
     @Published private(set) var energyWindowRates: [Int32: ProcessEnergyRates] = [:]
+    /// 1 分钟 or 1 小时. Views read `activeEnergyRates`, not either table directly.
+    @Published var energyRankingSpan = EnergyRankingSpan.oneMinute
+    /// Minute-ledger rates for the latest accepted process list. Empty when that list failed.
+    @Published private(set) var energyHourRates: [Int32: ProcessEnergyRates] = [:]
     @Published private(set) var processListFailed = false
     /// This frame's permission footnote. Empty when the process list failed.
     @Published private(set) var processPermissionFootnote: String?
@@ -132,7 +136,7 @@ final class MemoryDashboardVM: ObservableObject {
     /// Visible rows in the current table sort. Not stored and not published.
     var sortedRows: [ProcessRow] {
         if selectedPage == .energy {
-            return EnergyPage.sorted(visibleRows, windowRates: energyWindowRates, grouped: groupedByApp, sort: tableSort)
+            return EnergyPage.sorted(visibleRows, windowRates: activeEnergyRates, grouped: groupedByApp, sort: tableSort)
         }
         let projected = AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
         return tableSort.ordered(projected)
@@ -408,6 +412,7 @@ final class MemoryDashboardVM: ObservableObject {
                     diskHistory = nextDisk
                     rows = frame.rows
                     energyWindowRates = frame.energyWindowRates
+                    energyHourRates = frame.energyHourRates
                     processListFailed = frame.processListFailed
                     processPermissionFootnote = frame.permissionFootnote
                     topMemorySeries = frame.topMemorySeries

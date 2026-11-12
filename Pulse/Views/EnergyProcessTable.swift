@@ -8,7 +8,7 @@ struct EnergyProcessTable: View {
     private var energyDisplay: EnergyPageDisplay {
         EnergyPage.display(
             rows: vm.visibleRows,
-            windowRates: vm.energyWindowRates,
+            windowRates: vm.activeEnergyRates,
             grouped: vm.groupedByApp
         )
     }
@@ -25,10 +25,11 @@ struct EnergyProcessTable: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            rankingSpanControl
             VStack(alignment: .leading, spacing: 4) {
-                Text(EnergyPageCopy.headline)
+                Text(EnergyPageCopy.headline(for: vm.energyRankingSpan))
                     .font(.headline)
-                Text(EnergyPageCopy.explanation)
+                Text(EnergyPageCopy.explanation(for: vm.energyRankingSpan))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -49,6 +50,16 @@ struct EnergyProcessTable: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+    }
+
+    private var rankingSpanControl: some View {
+        Picker("排行", selection: $vm.energyRankingSpan) {
+            Text("1 分钟").tag(EnergyRankingSpan.oneMinute)
+            Text("1 小时").tag(EnergyRankingSpan.oneHour)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .fixedSize()
     }
 
     private var columnHeader: some View {

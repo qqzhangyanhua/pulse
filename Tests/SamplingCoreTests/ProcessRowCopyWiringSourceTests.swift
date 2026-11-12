@@ -23,7 +23,7 @@ final class ProcessRowCopyWiringSourceTests: XCTestCase {
         let boardAt = try index(of: "NSPasteboard", in: copy)
         XCTAssertLessThan(guardAt, boardAt)
         XCTAssertTrue(copy.contains("EnergyPage.display("))
-        XCTAssertTrue(copy.contains("windowRates: dashboard.energyWindowRates"))
+        XCTAssertTrue(copy.contains("windowRates: dashboard.activeEnergyRates"))
         XCTAssertTrue(copy.contains("dashboard.groupedByApp && AppGroupChrome.applies(on: dashboard.selectedPage)"))
         XCTAssertTrue(copy.contains("energyWindow: reading?.rates"))
         XCTAssertFalse(copy.contains("energyWindowRates[row.pid]"))

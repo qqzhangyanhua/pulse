@@ -186,6 +186,20 @@ final class EnergyPageCopyTests: XCTestCase {
         XCTAssertFalse(EnergyPageCopy.explanation.contains("分数相等"))
     }
 
+    func testHourCopySumsPresentMinutesAndLeavesTheMinuteCopyVerbatim() {
+        XCTAssertEqual(EnergyPageCopy.headline(for: .oneMinute), EnergyPageCopy.headline)
+        XCTAssertEqual(EnergyPageCopy.explanation(for: .oneMinute), EnergyPageCopy.explanation)
+        XCTAssertEqual(EnergyPageCopy.headline(for: .oneHour), "最近 1 小时平均功率")
+        XCTAssertEqual(
+            EnergyPageCopy.explanation(for: .oneHour),
+            "把这一小时里有读数的分钟耗电量相加，再除以这些分钟的实际时长。缺读数的分钟不补 0。这不是活动监视器的能耗影响分数。"
+        )
+        XCTAssertEqual(EnergyPageCopy.hourHeadline, EnergyPageCopy.headline(for: .oneHour))
+        XCTAssertFalse(EnergyPageCopy.hourHeadline.contains("Wh"))
+        XCTAssertFalse(EnergyPageCopy.hourExplanation.contains("Wh"))
+        XCTAssertFalse(EnergyPageCopy.hourExplanation.contains("部分读数"))
+    }
+
     func testEnergyLineUsesTheWindowRatesAndTheVisibleSecondColumn() {
         let grouped = ProcessRow(
             pid: 42,

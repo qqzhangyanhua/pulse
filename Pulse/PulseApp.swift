@@ -141,7 +141,7 @@ private struct PulseWindowCommands: Commands {
         ) else { return }
         let reading = EnergyPage.display(
             rows: dashboard.visibleRows,
-            windowRates: dashboard.energyWindowRates,
+            windowRates: dashboard.activeEnergyRates,
             grouped: dashboard.groupedByApp && AppGroupChrome.applies(on: dashboard.selectedPage)
         ).readings[row.pid]
         let line = ProcessRowCopy.line(page: dashboard.selectedPage, row: row, energyWindow: reading?.rates)

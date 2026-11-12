@@ -236,6 +236,8 @@ struct SampledFrame: Sendable {
     let permissionFootnote: String?
     /// Energy-page window rates for this frame. Empty when the process list failed.
     let energyWindowRates: [Int32: ProcessEnergyRates]
+    /// Energy-page hour rates from the minute ledger. Empty when the process list failed.
+    let energyHourRates: [Int32: ProcessEnergyRates]
 
     init(
         snapshot: MemorySnapshot,
@@ -248,7 +250,8 @@ struct SampledFrame: Sendable {
         topMemorySeries: [Int32: [ChartSample]] = [:],
         busiestCorePercent: Double? = nil,
         permissionFootnote: String? = nil,
-        energyWindowRates: [Int32: ProcessEnergyRates] = [:]
+        energyWindowRates: [Int32: ProcessEnergyRates] = [:],
+        energyHourRates: [Int32: ProcessEnergyRates] = [:]
     ) {
         self.snapshot = snapshot
         self.rows = rows
@@ -261,5 +264,6 @@ struct SampledFrame: Sendable {
         self.busiestCorePercent = busiestCorePercent
         self.permissionFootnote = permissionFootnote
         self.energyWindowRates = energyWindowRates
+        self.energyHourRates = energyHourRates
     }
 }
