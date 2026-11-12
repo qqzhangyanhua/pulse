@@ -250,6 +250,7 @@ struct AppFilterField: View {
 struct ProcessIconView: View {
     let pid: pid_t
     let bundleIdentifier: String?
+    var executablePath: String? = nil
     var size: CGFloat = 20
 
     var body: some View {
@@ -272,9 +273,13 @@ struct ProcessIconView: View {
             return icon
         }
         if let bundleIdentifier,
-           let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier).first
+           let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier).first,
+           let icon = app.icon
         {
-            return app.icon
+            return icon
+        }
+        if let executablePath, !executablePath.isEmpty {
+            return NSWorkspace.shared.icon(forFile: executablePath)
         }
         return nil
     }

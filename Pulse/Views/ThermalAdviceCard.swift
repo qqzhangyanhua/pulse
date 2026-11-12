@@ -1,12 +1,16 @@
 import SwiftUI
 
-/// Full-width advice card. Not an inline caption.
+/// Full-width advice card. Not an inline caption. Replaces the one-line notice while advice is showing.
 struct ThermalAdviceCard: View {
-    let advice: ThermalAdvice
-    /// #156 wires this to the VM method that calls `ProcessActions.terminate` with no confirmation.
-    let onTerminate: (Int32) -> Void
+    @EnvironmentObject private var vm: MemoryDashboardVM
 
     var body: some View {
+        if let advice = vm.thermalAdvice {
+            adviceCard(advice)
+        }
+    }
+
+    private func adviceCard(_ advice: ThermalAdvice) -> some View {
         PulseCard {
             if advice.noHighLoad {
                 Text(ThermalAdvice.noHighLoadMessage)
@@ -16,6 +20,11 @@ struct ThermalAdviceCard: View {
                     .minimumScaleFactor(0.7)
             } else {
                 VStack(alignment: .leading, spacing: 8) {
+                    Text(ThermalNotice.throttling)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                     ForEach(advice.processes, id: \.pid) { process in
                         processRow(process)
                     }
@@ -28,7 +37,12 @@ struct ThermalAdviceCard: View {
 
     private func processRow(_ process: ThermalAdviceProcess) -> some View {
         HStack(spacing: 8) {
-            ProcessIconView(pid: process.pid, bundleIdentifier: process.bundleIdentifier, size: 16)
+            ProcessIconView(
+                pid: process.pid,
+                bundleIdentifier: process.bundleIdentifier,
+                executablePath: process.executablePath,
+                size: 16
+            )
                 .accessibilityHidden(true)
             Text(process.name)
                 .font(.callout)
@@ -39,7 +53,8 @@ struct ThermalAdviceCard: View {
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
             Button("退出") {
-                onTerminate(process.pid)
+                let pid = process.pid
+                Task { await vm.terminateThermalAdvice(pid: pid) }
             }
             .buttonStyle(.bordered)
             .controlSize(.small)

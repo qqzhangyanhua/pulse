@@ -116,10 +116,14 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         let cleared = try range(of: "thermalAdvice = nil", in: advice)
         let throttle = try range(of: "ThermalAdviceThrottle.shouldUpdate(", in: advice)
         let projectCall = try range(of: "ThermalAdviceProjection.project(", in: advice)
+        let unmeasured = try range(of: "if projected.processes.isEmpty, projected.noHighLoad == false", in: advice)
         let stored = try range(of: "thermalAdviceLastUpdate = now", in: advice)
         XCTAssertLessThan(cleared.lowerBound, throttle.lowerBound)
         XCTAssertLessThan(throttle.lowerBound, projectCall.lowerBound)
-        XCTAssertLessThan(projectCall.lowerBound, stored.lowerBound)
+        XCTAssertLessThan(projectCall.lowerBound, unmeasured.lowerBound)
+        XCTAssertLessThan(unmeasured.lowerBound, stored.lowerBound)
+        let hold = try braceBody(after: "if projected.processes.isEmpty, projected.noHighLoad == false", in: advice)
+        XCTAssertEqual(compact(hold), "{return}")
         XCTAssertTrue(advice.contains("excludingPid: ProcessInfo.processInfo.processIdentifier"))
         XCTAssertEqual(occurrenceCount(of: "addObserver", in: try WiringSourceText.text(for: "MemoryDashboardVM")), 1)
     }
@@ -154,8 +158,10 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
             ("DiskOverviewSection.swift", disk),
             ("MachineOverviewSection.swift", machine),
         ] {
-            XCTAssertEqual(occurrenceCount(of: "ThermalAdviceCard(advice: advice, onTerminate:", in: source), 1, name)
-            XCTAssertEqual(occurrenceCount(of: "Task { await vm.terminateThermalAdvice(pid: pid) }", in: source), 1, name)
+            XCTAssertFalse(source.contains("ThermalAdviceCard(advice:"), name)
+            XCTAssertFalse(source.contains("onTerminate:"), name)
+            XCTAssertFalse(source.contains("terminateThermalAdvice"), name)
+            XCTAssertFalse(source.contains("private var thermalAdviceCard"), name)
             XCTAssertFalse(source.contains("ProcessActions"), name)
             XCTAssertFalse(source.contains("confirmForceQuit"), name)
             XCTAssertFalse(source.contains("quitSelected"), name)
@@ -175,8 +181,8 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         let memoryReady = try functionBody(named: "readyBody", in: overview)
         try assertAdviceCardIsFirstRow(of: "VStack(spacing: 12)", in: memorySampling, height: ".frame(height: 148)")
         try assertAdviceCardIsFirstRow(of: "VStack(spacing: 12)", in: memoryReady, height: ".frame(height: 148)")
-        XCTAssertEqual(occurrenceCount(of: "thermalAdviceCard", in: memorySampling), 1)
-        XCTAssertEqual(occurrenceCount(of: "thermalAdviceCard", in: memoryReady), 1)
+        XCTAssertEqual(occurrenceCount(of: "ThermalAdviceCard()", in: memorySampling), 1)
+        XCTAssertEqual(occurrenceCount(of: "ThermalAdviceCard()", in: memoryReady), 1)
         let hero = try functionBody(named: "samplingHero", in: overview)
         XCTAssertFalse(hero.contains("ThermalAdviceCard"))
         XCTAssertFalse(hero.contains("thermalAdviceCard"))
@@ -242,9 +248,36 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         let machineBody = try functionBody(named: "body", in: machine)
         try assertAdviceCardIsFirstRow(of: "VStack(alignment: .leading, spacing: 12)", in: machineBody, height: ".frame(height: 192)")
         XCTAssertLessThan(
-            try index(of: "thermalAdviceCard", in: machineBody),
+            try index(of: "ThermalAdviceCard()", in: machineBody),
             try index(of: "identity(model)", in: machineBody)
         )
+        let shared = try repoText("Pulse/Views/ThermalAdviceCard.swift")
+        XCTAssertEqual(occurrenceCount(of: "struct ThermalAdviceCard", in: shared), 1)
+        XCTAssertTrue(shared.contains("@EnvironmentObject private var vm: MemoryDashboardVM"))
+        XCTAssertTrue(shared.contains("if let advice = vm.thermalAdvice"))
+        XCTAssertEqual(occurrenceCount(of: "vm.terminateThermalAdvice(pid: pid)", in: shared), 1)
+        XCTAssertEqual(occurrenceCount(of: "ThermalNotice.throttling", in: shared), 1)
+        XCTAssertEqual(occurrenceCount(of: "ThermalAdvice.noHighLoadMessage", in: shared), 1)
+        XCTAssertTrue(shared.contains("executablePath: process.executablePath"))
+        XCTAssertFalse(shared.contains("ProcessActions"))
+        XCTAssertFalse(shared.contains("confirmForceQuit"))
+        let noLoad = try braceBody(after: "if advice.noHighLoad", in: shared)
+        XCTAssertTrue(noLoad.contains("ThermalAdvice.noHighLoadMessage"))
+        XCTAssertFalse(noLoad.contains("ThermalNotice"))
+        XCTAssertFalse(noLoad.contains("ForEach"))
+        XCTAssertLessThan(
+            try index(of: "ThermalNotice.throttling", in: shared),
+            try index(of: "ForEach(advice.processes", in: shared)
+        )
+        for (name, source) in [
+            ("OverviewSection.swift", overview),
+            ("CPUOverviewSection.swift", cpu),
+            ("NetworkOverviewSection.swift", network),
+            ("DiskOverviewSection.swift", disk),
+            ("MachineOverviewSection.swift", machine),
+        ] {
+            XCTAssertGreaterThan(occurrenceCount(of: "ThermalAdviceCard()", in: source), 0, name)
+        }
         let diagnostics = try functionBody(named: "diagnostics", in: machine)
         XCTAssertFalse(diagnostics.contains("ThermalAdviceCard"))
         XCTAssertFalse(diagnostics.contains("thermalAdviceCard"))
@@ -254,15 +287,15 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         XCTAssertTrue(machine.contains("vm.thermalNotice"))
     }
 
-    /// Selected pid on a process page uses `quitSelected`. Every other pid, including the machine page, calls terminate once.
-    func testTerminateThermalAdviceUsesQuitSelectedOnlyForTheCurrentSelection() throws {
+    /// Every card click terminates that pid. A selected process-page pid finishes the session only when `ordinaryTerminate` issues one.
+    func testTerminateThermalAdviceAlwaysTerminatesAndFinishesAnIssuedSelection() throws {
         let dashboard = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         XCTAssertFalse(dashboard.contains("terminateThermalAdvice"))
         XCTAssertFalse(dashboard.contains("func terminateThermalAdvice"))
 
         let advice = try repoText("Pulse/ViewModels/MemoryDashboardVM+ThermalAdvice.swift")
         XCTAssertFalse(advice.contains("confirmForceQuit"))
-        XCTAssertFalse(advice.contains("ordinaryTerminate"))
+        XCTAssertFalse(advice.contains("quitSelected"))
         XCTAssertFalse(advice.contains("selectedEnergyExitedOnly"))
         XCTAssertFalse(advice.contains("forceTerminate"))
         XCTAssertFalse(advice.contains("addObserver"))
@@ -271,16 +304,57 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         let method = try functionBody(named: "terminateThermalAdvice", in: advice)
         XCTAssertTrue(method.contains("pid == selectedPid"))
         XCTAssertTrue(method.contains("selectedPage.allowsProcessQuit"))
-        XCTAssertTrue(method.contains("await quitSelected()"))
+        XCTAssertTrue(method.contains("ProcessQuitSession.ordinaryTerminate("))
+        XCTAssertTrue(method.contains("usedBytes: quitReleaseBaseline"))
         XCTAssertTrue(method.contains("ProcessActions.terminate(pid: pid)"))
+        XCTAssertTrue(method.contains("ProcessQuitSession.finish("))
+        XCTAssertTrue(method.contains("pid: issued.pid"))
+        XCTAssertTrue(method.contains("token: issued.token"))
+        XCTAssertTrue(method.contains("result: result"))
+        XCTAssertTrue(method.contains("taskCancelled: Task.isCancelled"))
         XCTAssertFalse(method.contains("selectedPid ="))
         XCTAssertFalse(method.contains("confirmForceQuit"))
         XCTAssertFalse(method.contains("selectedEnergyExitedOnly"))
-        XCTAssertLessThan(try index(of: "selectedPage.allowsProcessQuit", in: method), try index(of: "await quitSelected()", in: method))
-        XCTAssertLessThan(try index(of: "await quitSelected()", in: method), try index(of: "return", in: method))
-        XCTAssertLessThan(try index(of: "return", in: method), try index(of: "ProcessActions.terminate(pid: pid)", in: method))
+        XCTAssertFalse(method.contains("quitSelected"))
         XCTAssertEqual(occurrenceCount(of: "ProcessActions.terminate(pid: pid)", in: method), 1)
+        XCTAssertLessThan(
+            try index(of: "selectedPage.allowsProcessQuit", in: method),
+            try index(of: "ProcessQuitSession.ordinaryTerminate(", in: method)
+        )
+        XCTAssertLessThan(
+            try index(of: "ProcessQuitSession.ordinaryTerminate(", in: method),
+            try index(of: "ProcessActions.terminate(pid: pid)", in: method)
+        )
+        XCTAssertLessThan(
+            try index(of: "ProcessActions.terminate(pid: pid)", in: method),
+            try index(of: "ProcessQuitSession.finish(", in: method)
+        )
+        let finishGate = try braceBody(after: "if let issued", in: method)
+        XCTAssertTrue(finishGate.contains("ProcessQuitSession.finish("))
+        XCTAssertFalse(finishGate.contains("ProcessActions.terminate"))
         XCTAssertEqual(occurrenceCount(of: "addObserver", in: try WiringSourceText.text(for: "MemoryDashboardVM")), 1)
+    }
+
+    func testAdviceRowUsesExecutablePathWhenTheRunningAppHasNoIcon() throws {
+        let shared = try repoText("Pulse/Views/SharedUI.swift")
+        XCTAssertTrue(shared.contains("var executablePath: String? = nil"))
+        let icon = try functionBody(named: "resolvedIcon", in: shared)
+        XCTAssertTrue(icon.contains("NSRunningApplication(processIdentifier: pid)"))
+        XCTAssertTrue(icon.contains("runningApplications(withBundleIdentifier: bundleIdentifier)"))
+        XCTAssertTrue(icon.contains("!executablePath.isEmpty"))
+        XCTAssertTrue(icon.contains("NSWorkspace.shared.icon(forFile: executablePath)"))
+        XCTAssertLessThan(
+            try index(of: "NSRunningApplication(processIdentifier: pid)", in: icon),
+            try index(of: "NSWorkspace.shared.icon(forFile: executablePath)", in: icon)
+        )
+        XCTAssertLessThan(
+            try index(of: "runningApplications(withBundleIdentifier: bundleIdentifier)", in: icon),
+            try index(of: "NSWorkspace.shared.icon(forFile: executablePath)", in: icon)
+        )
+        let card = try repoText("Pulse/Views/ThermalAdviceCard.swift")
+        XCTAssertTrue(card.contains("executablePath: process.executablePath"))
+        let preview = try repoText("Pulse/Views/SnapshotExportPreview.swift")
+        XCTAssertFalse(preview.contains("NSWorkspace"))
     }
 
     private func repoText(_ relative: String) throws -> String {
@@ -374,8 +448,8 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         line: UInt = #line
     ) throws {
         let column = try braceBody(after: vstack, in: source)
-        XCTAssertTrue(compact(column).hasPrefix("{thermalAdviceCard"), "advice card is the first row", file: file, line: line)
-        XCTAssertEqual(occurrenceCount(of: "thermalAdviceCard", in: column), 1, file: file, line: line)
+        XCTAssertTrue(compact(column).hasPrefix("{ThermalAdviceCard()"), "advice card is the first row", file: file, line: line)
+        XCTAssertEqual(occurrenceCount(of: "ThermalAdviceCard()", in: column), 1, file: file, line: line)
         XCTAssertTrue(column.contains(height), "fixed height stays on the metric row", file: file, line: line)
         guard let columnRange = source.range(of: column) else {
             throw ThermalNoticeSourceError.missing("placed column")

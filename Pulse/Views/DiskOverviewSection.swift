@@ -20,18 +20,9 @@ struct DiskOverviewSection: View {
         DiskPageCopy.overviewLine(rates: vm.hostDiskRates)
     }
 
-    @ViewBuilder
-    private var thermalAdviceCard: some View {
-        if let advice = vm.thermalAdvice {
-            ThermalAdviceCard(advice: advice, onTerminate: { pid in
-                Task { await vm.terminateThermalAdvice(pid: pid) }
-            })
-        }
-    }
-
     private var samplingBody: some View {
         VStack(spacing: 12) {
-            thermalAdviceCard
+            ThermalAdviceCard()
             HStack(spacing: 12) {
                 samplingCard(
                     title: DiskPageCopy.readTitle,
@@ -64,7 +55,7 @@ struct DiskOverviewSection: View {
 
     private var readyBody: some View {
         VStack(spacing: 12) {
-            thermalAdviceCard
+            ThermalAdviceCard()
             HStack(spacing: 12) {
                 DiskRateCard(
                     title: DiskPageCopy.readTitle,

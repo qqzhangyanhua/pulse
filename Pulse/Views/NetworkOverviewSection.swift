@@ -20,18 +20,9 @@ struct NetworkOverviewSection: View {
         NetworkPageCopy.overviewLine(rates: vm.hostNetworkRates)
     }
 
-    @ViewBuilder
-    private var thermalAdviceCard: some View {
-        if let advice = vm.thermalAdvice {
-            ThermalAdviceCard(advice: advice, onTerminate: { pid in
-                Task { await vm.terminateThermalAdvice(pid: pid) }
-            })
-        }
-    }
-
     private var samplingBody: some View {
         VStack(spacing: 12) {
-            thermalAdviceCard
+            ThermalAdviceCard()
             HStack(spacing: 12) {
                 samplingCard(
                     title: NetworkPageCopy.inboundTitle,
@@ -64,7 +55,7 @@ struct NetworkOverviewSection: View {
 
     private var readyBody: some View {
         VStack(spacing: 12) {
-            thermalAdviceCard
+            ThermalAdviceCard()
             HStack(spacing: 12) {
                 NetworkRateCard(
                     title: NetworkPageCopy.inboundTitle,

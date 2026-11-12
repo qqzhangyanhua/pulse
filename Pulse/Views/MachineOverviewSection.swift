@@ -3,7 +3,8 @@ import SwiftUI
 /// Host facts, the current load, and the CPU and memory series already on the dashboard.
 /// Disk, power, and uptime stay numbers. There is no process list.
 struct MachineOverviewSection: View {
-    @EnvironmentObject private var vm: MemoryDashboardVM
+    /// Internal so `MachineOverviewSection+Throughput` can read the same environment object.
+    @EnvironmentObject var vm: MemoryDashboardVM
 
     var body: some View {
         let model = MachineOverview.project(
@@ -12,7 +13,7 @@ struct MachineOverviewSection: View {
             memorySeries: vm.usageHistory.samples, thermalNotice: vm.thermalNotice
         )
         VStack(alignment: .leading, spacing: 12) {
-            thermalAdviceCard
+            ThermalAdviceCard()
             HStack(spacing: 12) {
                 identity(model).frame(minWidth: 310, idealWidth: 344, maxWidth: 376)
                 cpuMetricCard(model.cpu)
@@ -40,15 +41,6 @@ struct MachineOverviewSection: View {
             .frame(minHeight: 200, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    @ViewBuilder
-    private var thermalAdviceCard: some View {
-        if let advice = vm.thermalAdvice {
-            ThermalAdviceCard(advice: advice, onTerminate: { pid in
-                Task { await vm.terminateThermalAdvice(pid: pid) }
-            })
-        }
     }
 
     private func identity(_ model: MachineOverview.Model) -> some View {
@@ -244,46 +236,6 @@ struct MachineOverviewSection: View {
                 }
             }
         }
-    }
-
-    private var ioThroughputCard: some View {
-        PulseCard {
-            VStack(alignment: .leading, spacing: 10) {
-                iconLabel("实时吞吐", symbol: "arrow.up.arrow.down.circle", tint: PulsePalette.chartNetwork)
-                ioDirectionBlock("网络吞吐", down: ("下行", NetworkRateText.string(vm.hostNetworkRates.inboundBytesPerSecond)), up: ("上行", NetworkRateText.string(vm.hostNetworkRates.outboundBytesPerSecond)), samples: vm.networkHistory.inbound.samples, tint: PulsePalette.chartNetwork) { NetworkRateText.string($0) }
-                Divider().overlay(PulsePalette.hairline)
-                ioDirectionBlock("磁盘读写", down: ("读取", DiskRateText.string(vm.hostDiskRates.readBytesPerSecond)), up: ("写入", DiskRateText.string(vm.hostDiskRates.writeBytesPerSecond)), samples: vm.diskHistory.read.samples, tint: PulsePalette.chartDisk) { DiskRateText.string($0) }
-            }
-        }
-    }
-
-    private func ioDirectionBlock(
-        _ title: String, down: (String, String), up: (String, String),
-        samples: [ChartSample], tint: Color, formatY: @escaping (Double) -> String
-    ) -> some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary)
-                HStack(spacing: 6) {
-                    Text("↓ \(down.0)").font(.caption2).foregroundStyle(.secondary)
-                    Text(down.1).font(.callout.weight(.semibold)).monospacedDigit().lineLimit(1)
-                }
-                HStack(spacing: 6) {
-                    Text("↑ \(up.0)").font(.caption2).foregroundStyle(.secondary)
-                    Text(up.1).font(.caption.weight(.medium)).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
-                }
-            }
-            .frame(width: 132, alignment: .leading)
-            Group {
-                if samples.count >= 2 {
-                    SparklineChart(samples: samples, tint: tint, domain: byteDomain(samples), formatY: formatY)
-                } else {
-                    ChartPlaceholder(text: "曲线采集中")
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .frame(maxHeight: .infinity)
     }
 
     private var topWorkloadCard: some View {
@@ -530,7 +482,7 @@ struct MachineOverviewSection: View {
         }
     }
 
-    private func iconLabel(_ title: String, symbol: String, tint: Color) -> some View {
+    func iconLabel(_ title: String, symbol: String, tint: Color) -> some View {
         HStack(spacing: 8) {
             RoundedRectangle(cornerRadius: 7, style: .continuous).fill(tint.opacity(0.22)).frame(width: 22, height: 22)
                 .overlay(Image(systemName: symbol).font(.system(size: 11, weight: .semibold)).foregroundStyle(tint))
@@ -539,5 +491,5 @@ struct MachineOverviewSection: View {
     }
 
     private func percentDomain(_ series: [ChartSample]) -> ClosedRange<Double> { 0...max((series.map(\.value).max() ?? 0) * 1.2, 5) }
-    private func byteDomain(_ series: [ChartSample]) -> ClosedRange<Double> { 0...max((series.map(\.value).max() ?? 0) * 1.2, 1) }
+    func byteDomain(_ series: [ChartSample]) -> ClosedRange<Double> { 0...max((series.map(\.value).max() ?? 0) * 1.2, 1) }
 }
