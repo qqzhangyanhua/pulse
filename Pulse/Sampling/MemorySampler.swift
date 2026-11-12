@@ -13,6 +13,7 @@ actor MemorySampler {
     private var diskTicks: [Int32: DiskTick] = [:]
     private var energyTicks: [Int32: EnergyTick] = [:]
     private var energyWindow = ProcessEnergyWindow()
+    private var energyMinuteLedger = ProcessEnergyMinuteLedger()
     private var previousHostCPU: HostCPUTicks?
     private var previousCoreCPU: [HostCPUTicks]?
     private var previousHostNetwork: HostNetworkSnapshot?
@@ -97,6 +98,7 @@ actor MemorySampler {
         var nextDiskTicks: [Int32: DiskTick] = [:]
         var nextEnergyTicks: [Int32: EnergyTick] = [:]
         var listedEnergy: [Int32: EnergyTick?] = [:]
+        var listedNames: [Int32: String] = [:]
         var nextIdentities: [Int32: ProcessIdentity] = [:]
         var rows: [ProcessRow] = []
         rows.reserveCapacity(listed.samples.count)
@@ -151,6 +153,7 @@ actor MemorySampler {
                 nextEnergyTicks[raw.pid] = baseline
             }
             listedEnergy[raw.pid] = energyReading
+            listedNames[raw.pid] = identity.name
 
             let memory = ProcessMemoryChoice.project(
                 footprint: raw.footprintBytes,
@@ -180,6 +183,12 @@ actor MemorySampler {
         energyTicks = nextEnergyTicks
         identityCache = nextIdentities
         let energyWindowRates = energyWindow.advance(listed: listedEnergy, listSucceeded: true)
+        let energyHourRates = energyMinuteLedger.advance(
+            listed: listedEnergy,
+            names: listedNames,
+            now: capturedAt,
+            listSucceeded: true
+        )
 
         rows.sort { lhs, rhs in
             if lhs.memoryBytes != rhs.memoryBytes {
@@ -221,7 +230,10 @@ actor MemorySampler {
                     deniedCount: listed.permissionDeniedCount,
                     processListFailed: false
                 ),
-                energyWindowRates: energyWindowRates
+                energyWindowRates: energyWindowRates,
+                energyHourRates: energyHourRates,
+                exitedEnergyProcesses: energyMinuteLedger.exitedProcesses,
+                energyLiveGenerations: energyMinuteLedger.liveGenerations
             )
         )
     }

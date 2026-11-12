@@ -13,6 +13,12 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var rows: [ProcessRow] = []
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
     @Published private(set) var energyWindowRates: [Int32: ProcessEnergyRates] = [:]
+    /// 1 分钟 or 1 小时. Views read `activeEnergyRates`, not either table directly.
+    @Published var energyRankingSpan = EnergyRankingSpan.oneMinute
+    /// Minute-ledger rates for the latest accepted process list. Empty when that list failed.
+    @Published private(set) var energyHourRates: [Int32: ProcessEnergyRates] = [:]
+    /// Sealed 1-hour generations. Empty when that list failed. Not part of `energyHourRates`.
+    @Published private(set) var exitedEnergyProcesses: [ExitedEnergyProcess] = []
     @Published private(set) var processListFailed = false
     /// This frame's permission footnote. Empty when the process list failed.
     @Published private(set) var processPermissionFootnote: String?
@@ -24,6 +30,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published var machineFacts: MachineFacts?
     /// Energy-page battery card. Nil hides it, including a Mac with no internal battery.
     @Published var energyBatteryCard: EnergyBatteryCard?
+    /// Latest energy-page battery reading. Nil until that read; not a second poll.
+    var energyBatteryReading: EnergyBatteryReading?
     /// The only session quit store. Phase and message are projections of this.
     @Published var quitOutcome = ProcessQuitOutcome()
     @Published var sidebarSubjectPid: Int32?
@@ -36,6 +44,7 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var cpuHistory = SystemCPUHistory()
     @Published private(set) var networkHistory = SystemNetworkHistory()
     @Published private(set) var diskHistory = SystemDiskHistory()
+    @Published private(set) var energyMachineHistory = EnergyMachineHistory()
     /// Nil unless the system is serious or critical. Overviews read this; the menu bar does not.
     @Published var thermalNotice: String?
     @Published var filter = ""
@@ -66,6 +75,8 @@ final class MemoryDashboardVM: ObservableObject {
     let snapshotExportStore = SnapshotExportStore()
     /// Last memory-page sort, readable on the MainActor. Not a second published sort field.
     private var publication = MemoryPageSortPublication()
+    private var selectedEnergyGeneration: Int?
+    private var energyLiveGenerations: [Int32: Int] = [:]
 
     @Published var selectedPid: Int32? {
         didSet {
@@ -82,6 +93,7 @@ final class MemoryDashboardVM: ObservableObject {
             if sidebarSubjectPid != effect.sidebarSubjectPid {
                 sidebarSubjectPid = effect.sidebarSubjectPid
             }
+            captureEnergySelectionGeneration()
             detail = nil
             let pid = selectedPid
             Task { await sampler.setSelectedPid(pid) }
@@ -132,7 +144,7 @@ final class MemoryDashboardVM: ObservableObject {
     /// Visible rows in the current table sort. Not stored and not published.
     var sortedRows: [ProcessRow] {
         if selectedPage == .energy {
-            return EnergyPage.sorted(visibleRows, windowRates: energyWindowRates, grouped: groupedByApp, sort: tableSort)
+            return EnergyPage.sorted(visibleRows, windowRates: activeEnergyRates, grouped: groupedByApp, sort: tableSort)
         }
         let projected = AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
         return tableSort.ordered(projected)
@@ -408,6 +420,10 @@ final class MemoryDashboardVM: ObservableObject {
                     diskHistory = nextDisk
                     rows = frame.rows
                     energyWindowRates = frame.energyWindowRates
+                    energyHourRates = frame.energyHourRates
+                    exitedEnergyProcesses = frame.exitedEnergyProcesses
+                    energyLiveGenerations = frame.energyLiveGenerations
+                    energyMachineHistory = recordedEnergyHistory(rows: frame.rows, at: frame.snapshot.capturedAt)
                     processListFailed = frame.processListFailed
                     processPermissionFootnote = frame.permissionFootnote
                     topMemorySeries = frame.topMemorySeries
@@ -448,9 +464,10 @@ final class MemoryDashboardVM: ObservableObject {
             observation: observation
         )
         quitOutcome = store
-        if selectedPid != effect.listSelectedPid {
+        if selectedPid != effect.listSelectedPid, !keepsExitedEnergySelection(replacingWith: effect.listSelectedPid) {
             selectedPid = effect.listSelectedPid
         }
+        reconcileEnergySelectionGeneration()
         if sidebarSubjectPid != effect.sidebarSubjectPid {
             sidebarSubjectPid = effect.sidebarSubjectPid
         }
@@ -461,5 +478,22 @@ final class MemoryDashboardVM: ObservableObject {
             applyRisingOnlySelection()
             applyWindowedOnlySelection()
         }
+    }
+    var selectedEnergyExitedOnly: Bool {
+        EnergyPage.blocksQuit(selectedPid: selectedPid, rememberedGeneration: selectedEnergyGeneration, liveRows: rows, liveGenerations: energyLiveGenerations, exited: exitedEnergyProcesses)
+    }
+    private func captureEnergySelectionGeneration() {
+        selectedEnergyGeneration = selectedPage == .energy ? selectedPid.flatMap { energyLiveGenerations[$0] } : nil
+    }
+    private func reconcileEnergySelectionGeneration() {
+        let decision = EnergyPage.resolvedSelection(
+            onEnergyPage: selectedPage == .energy,
+            selectedPid: selectedPid,
+            rememberedGeneration: selectedEnergyGeneration,
+            liveRows: rows,
+            liveGenerations: energyLiveGenerations
+        )
+        if selectedPid != decision.pid { selectedPid = decision.pid }
+        selectedEnergyGeneration = decision.generation
     }
 }

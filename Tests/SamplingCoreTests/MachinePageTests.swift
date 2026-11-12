@@ -292,7 +292,7 @@ final class MachinePageTests: XCTestCase {
         let app = try repoText("Pulse/PulseApp.swift")
         XCTAssertTrue(app.contains("selectPage(.machine)"))
         XCTAssertTrue(app.contains(".keyboardShortcut(\"5\", modifiers: .command)"))
-        XCTAssertTrue(app.contains(".disabled(!dashboard.selectedPage.allowsProcessQuit)"))
+        XCTAssertTrue(app.contains(".disabled(!dashboard.selectedPage.allowsProcessQuit || dashboard.selectedEnergyExitedOnly)"))
         XCTAssertFalse(app.contains("selectedPage ="))
         XCTAssertFalse(app.contains("selectPage(.gpu)"))
 

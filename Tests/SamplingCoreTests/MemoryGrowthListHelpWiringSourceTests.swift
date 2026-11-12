@@ -109,7 +109,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         XCTAssertFalse(vm.contains(sentence))
         XCTAssertFalse(vm.contains("MemoryGrowthListCopy"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 31, "battery card adds energyBatteryCard; energy page adds energyWindowRates; permission footnote adds processPermissionFootnote")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 35, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 4)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: vm), 1)
         let badge = try functionBody(named: "memoryGrowthListBadge", in: vm)
@@ -130,7 +130,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         XCTAssertFalse(package.contains("MemoryDashboardVM.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
-        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 101, "adds MenuBarReading.swift, PulseSettingsView.swift, BatteryMath.swift, ProcessEnergy.swift, ProcessRowCopy.swift, PressureNotice.swift, PressureNoticeCenter.swift, LoginItem.swift, ProcessQuitRoute.swift, ProcessPermissionFootnote.swift, ProcessPermissionFootnoteLabel.swift, the four save-snapshot files, MemoryDetailAttribution.swift, ProcessDetailSidebar+MemoryAttribution.swift, MemoryMagnitudeVisibleGroup.swift, MemoryGroupRowHighlight.swift, MemoryGroupRowCopy.swift, MemoryRevealGroupRow.swift, TopCardRevealTarget.swift, Top3ProcessTap.swift, MemoryDashboardVM+Top3Tap.swift, ProcessTree.swift, ProcessTreeView.swift, ProcessEnergyWindow.swift, EnergyPage.swift, EnergyProcessTable.swift, EnergyBattery.swift, EnergyBatteryReader.swift, EnergyBatteryCardView.swift, MemoryDashboardVM+EnergyBattery.swift, ProcessDetailSidebar+Energy.swift, and MemoryDashboardVM+HostWatch.swift")
+        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 106, "adds MenuBarReading.swift, PulseSettingsView.swift, BatteryMath.swift, ProcessEnergy.swift, ProcessRowCopy.swift, PressureNotice.swift, PressureNoticeCenter.swift, LoginItem.swift, ProcessQuitRoute.swift, ProcessPermissionFootnote.swift, ProcessPermissionFootnoteLabel.swift, the four save-snapshot files, MemoryDetailAttribution.swift, ProcessDetailSidebar+MemoryAttribution.swift, MemoryMagnitudeVisibleGroup.swift, MemoryGroupRowHighlight.swift, MemoryGroupRowCopy.swift, MemoryRevealGroupRow.swift, TopCardRevealTarget.swift, Top3ProcessTap.swift, MemoryDashboardVM+Top3Tap.swift, ProcessTree.swift, ProcessTreeView.swift, ProcessEnergyWindow.swift, EnergyPage.swift, EnergyProcessTable.swift, EnergyBattery.swift, EnergyBatteryReader.swift, EnergyBatteryCardView.swift, MemoryDashboardVM+EnergyBattery.swift, ProcessDetailSidebar+Energy.swift, MemoryDashboardVM+HostWatch.swift, ProcessEnergyMinuteLedger.swift, MemoryDashboardVM+EnergyRanking.swift, EnergyMachineHistory.swift, EnergyHistoryChart.swift, and MemoryDashboardVM+EnergyHistory.swift")
         let build = try markedSection("PBXBuildFile", in: project)
         let refs = try markedSection("PBXFileReference", in: project)
         let models = try modelsGroup(in: project)
