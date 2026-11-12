@@ -28,10 +28,88 @@ enum EnergyPageCopy {
     static let columns = [ProcessColumnTitle.name, impactTitle, wakeTitle]
 }
 
+/// One displayed energy-page rate. Partial means a grouped sum skipped a nil member.
+struct EnergyDisplayReading: Equatable, Sendable {
+    let watts: Double?
+    let wakeupsPerSecond: Double?
+    let energyReadingIsPartial: Bool
+    let wakeupReadingIsPartial: Bool
+
+    var rates: ProcessEnergyRates {
+        ProcessEnergyRates(watts: watts, wakeupsPerSecond: wakeupsPerSecond)
+    }
+}
+
+/// Rows the energy table shows, plus window rates keyed by those rows' pids.
+struct EnergyPageDisplay: Equatable, Sendable {
+    let rows: [ProcessRow]
+    let readings: [Int32: EnergyDisplayReading]
+
+    var rates: [Int32: ProcessEnergyRates] {
+        readings.mapValues(\.rates)
+    }
+}
+
 /// Energy-page filter, order, and empty state. Does not read `energyWatts`.
 enum EnergyPage {
     static func filtered(_ rows: [ProcessRow], query: String) -> [ProcessRow] {
         ProcessNameFilter.apply(rows, query: query)
+    }
+
+    /// Name-filtered rows in. Grouped rows keep the representative's sampled watts.
+    /// The reading table is the window sum, keyed by the displayed pid.
+    static func display(
+        rows: [ProcessRow],
+        windowRates: [Int32: ProcessEnergyRates],
+        grouped: Bool
+    ) -> EnergyPageDisplay {
+        guard grouped else {
+            return EnergyPageDisplay(
+                rows: rows,
+                readings: windowRates.mapValues { rate in
+                    EnergyDisplayReading(
+                        watts: rate.watts,
+                        wakeupsPerSecond: rate.wakeupsPerSecond,
+                        energyReadingIsPartial: false,
+                        wakeupReadingIsPartial: false
+                    )
+                }
+            )
+        }
+        var buckets: [String: [ProcessRow]] = [:]
+        var order: [String] = []
+        for row in rows {
+            if buckets[row.name] == nil {
+                order.append(row.name)
+            }
+            buckets[row.name, default: []].append(row)
+        }
+        var displayed: [ProcessRow] = []
+        var readings: [Int32: EnergyDisplayReading] = [:]
+        for name in order {
+            guard let members = buckets[name], !members.isEmpty else { continue }
+            let lead = representative(members)
+            let watts = ProcessEnergyGroup.sum(members.map { windowRates[$0.pid]?.watts })
+            let wakeups = ProcessEnergyGroup.sum(members.map { windowRates[$0.pid]?.wakeupsPerSecond })
+            displayed.append(copying(lead, memberCount: members.count))
+            readings[lead.pid] = EnergyDisplayReading(
+                watts: watts.value,
+                wakeupsPerSecond: wakeups.value,
+                energyReadingIsPartial: watts.isPartial,
+                wakeupReadingIsPartial: wakeups.isPartial
+            )
+        }
+        return EnergyPageDisplay(rows: displayed, readings: readings)
+    }
+
+    static func sorted(
+        _ rows: [ProcessRow],
+        windowRates: [Int32: ProcessEnergyRates],
+        grouped: Bool,
+        sort: ProcessTableSort
+    ) -> [ProcessRow] {
+        let shown = display(rows: rows, windowRates: windowRates, grouped: grouped)
+        return ordered(shown.rows, rates: shown.rates, sort: sort)
     }
 
     static func ordered(
@@ -84,6 +162,38 @@ enum EnergyPage {
             return .filteredEmpty
         }
         return .ready
+    }
+
+    /// Same lead as `AppGroupProjection.combine`: most memory, then the smaller pid.
+    private static func representative(_ members: [ProcessRow]) -> ProcessRow {
+        members.max { lhs, rhs in
+            if lhs.memoryBytes != rhs.memoryBytes {
+                return lhs.memoryBytes < rhs.memoryBytes
+            }
+            return lhs.pid > rhs.pid
+        } ?? members[0]
+    }
+
+    private static func copying(_ lead: ProcessRow, memberCount: Int) -> ProcessRow {
+        ProcessRow(
+            pid: lead.pid,
+            name: lead.name,
+            bundleIdentifier: lead.bundleIdentifier,
+            executablePath: lead.executablePath,
+            cpuPercent: lead.cpuPercent,
+            memoryBytes: lead.memoryBytes,
+            memorySource: lead.memorySource,
+            residentMemoryIsPartial: lead.residentMemoryIsPartial,
+            threadCount: lead.threadCount,
+            diskReadBytesPerSecond: lead.diskReadBytesPerSecond,
+            diskWriteBytesPerSecond: lead.diskWriteBytesPerSecond,
+            energyWatts: lead.energyWatts,
+            wakeupsPerSecond: lead.wakeupsPerSecond,
+            energyReadingIsPartial: lead.energyReadingIsPartial,
+            wakeupReadingIsPartial: lead.wakeupReadingIsPartial,
+            groupedMemberCount: memberCount,
+            parentPid: lead.parentPid
+        )
     }
 
     private static func metric(

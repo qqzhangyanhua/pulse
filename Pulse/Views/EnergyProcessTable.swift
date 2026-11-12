@@ -5,6 +5,14 @@ struct EnergyProcessTable: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var energyDisplay: EnergyPageDisplay {
+        EnergyPage.display(
+            rows: vm.visibleRows,
+            windowRates: vm.energyWindowRates,
+            grouped: vm.groupedByApp
+        )
+    }
+
     private var phase: EnergyPagePhase {
         EnergyPage.phase(
             loadState: vm.loadState,
@@ -114,7 +122,7 @@ struct EnergyProcessTable: View {
             List(vm.sortedRows, selection: $vm.selectedPid) { row in
                 EnergyProcessLine(
                     row: row,
-                    rates: vm.energyWindowRates[row.pid],
+                    rates: energyDisplay.readings[row.pid]?.rates,
                     selected: vm.selectedPid == row.pid
                 )
                 .contextMenu {
@@ -122,7 +130,7 @@ struct EnergyProcessTable: View {
                         let line = ProcessRowCopy.line(
                             page: .energy,
                             row: row,
-                            energyWindow: vm.energyWindowRates[row.pid]
+                            energyWindow: energyDisplay.readings[row.pid]?.rates
                         )
                         let board = NSPasteboard.general
                         board.clearContents()

@@ -342,7 +342,7 @@ final class MachinePageTests: XCTestCase {
         let excluded = package.components(separatedBy: "exclude:")[1].components(separatedBy: "sources:")[0]
         XCTAssertFalse(excluded.contains("BatteryMath.swift"))
 
-        let dashboard = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let dashboard = try repoText("Pulse/ViewModels/MemoryDashboardVM+HostWatch.swift")
         XCTAssertTrue(dashboard.contains("HostMachineReader.read()"))
         XCTAssertFalse(dashboard.contains("AppleSmartBattery"))
 

@@ -20,7 +20,7 @@ enum ProcessRowCopy {
             let rates = energyWindow ?? .missing
             return joined([
                 row.name,
-                String(row.pid),
+                row.groupedMemberCount.map(String.init) ?? String(row.pid),
                 ProcessEnergyText.watts(rates.watts),
                 ProcessEnergyText.wakeups(rates.wakeupsPerSecond),
             ])

@@ -74,6 +74,12 @@
 		B00000000000000000000065 /* ProcessEnergyWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000065 /* ProcessEnergyWindow.swift */; };
 		B00000000000000000000066 /* EnergyPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000066 /* EnergyPage.swift */; };
 		B00000000000000000000067 /* EnergyProcessTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000067 /* EnergyProcessTable.swift */; };
+		B0000000000000000000006A /* EnergyBattery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006A /* EnergyBattery.swift */; };
+		B0000000000000000000006B /* EnergyBatteryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006B /* EnergyBatteryReader.swift */; };
+		B0000000000000000000006C /* EnergyBatteryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006C /* EnergyBatteryCardView.swift */; };
+		B0000000000000000000006D /* MemoryDashboardVM+EnergyBattery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006D /* MemoryDashboardVM+EnergyBattery.swift */; };
+		B0000000000000000000006E /* MemoryDashboardVM+HostWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006E /* MemoryDashboardVM+HostWatch.swift */; };
+		B00000000000000000000068 /* ProcessDetailSidebar+Energy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000068 /* ProcessDetailSidebar+Energy.swift */; };
 		B00000000000000000000023 /* HostDiskReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000023 /* HostDiskReader.swift */; };
 		B00000000000000000000017 /* MenuBarStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000017 /* MenuBarStatus.swift */; };
 		B00000000000000000000061 /* Top3ProcessTap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000061 /* Top3ProcessTap.swift */; };
@@ -176,6 +182,12 @@
 		A00000000000000000000065 /* ProcessEnergyWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessEnergyWindow.swift; sourceTree = "<group>"; };
 		A00000000000000000000066 /* EnergyPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyPage.swift; sourceTree = "<group>"; };
 		A00000000000000000000067 /* EnergyProcessTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyProcessTable.swift; sourceTree = "<group>"; };
+		A0000000000000000000006A /* EnergyBattery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyBattery.swift; sourceTree = "<group>"; };
+		A0000000000000000000006B /* EnergyBatteryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyBatteryReader.swift; sourceTree = "<group>"; };
+		A0000000000000000000006C /* EnergyBatteryCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyBatteryCardView.swift; sourceTree = "<group>"; };
+		A0000000000000000000006D /* MemoryDashboardVM+EnergyBattery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+EnergyBattery.swift"; sourceTree = "<group>"; };
+		A0000000000000000000006E /* MemoryDashboardVM+HostWatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+HostWatch.swift"; sourceTree = "<group>"; };
+		A00000000000000000000068 /* ProcessDetailSidebar+Energy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessDetailSidebar+Energy.swift"; sourceTree = "<group>"; };
 		A00000000000000000000023 /* HostDiskReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostDiskReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000017 /* MenuBarStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatus.swift; sourceTree = "<group>"; };
 		A00000000000000000000061 /* Top3ProcessTap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Top3ProcessTap.swift; sourceTree = "<group>"; };
@@ -265,6 +277,7 @@
 				A0000000000000000000004E /* ProcessPermissionFootnote.swift */,
 				A0000000000000000000001B /* CPUPage.swift */,
 				A00000000000000000000066 /* EnergyPage.swift */,
+				A0000000000000000000006A /* EnergyBattery.swift */,
 				A0000000000000000000002E /* MemoryPageSortPublication.swift */,
 				A00000000000000000000020 /* NetworkPage.swift */,
 				A00000000000000000000024 /* DiskPage.swift */,
@@ -304,6 +317,7 @@
 				A00000000000000000000005 /* MemorySampler.swift */,
 				A00000000000000000000006 /* MachineInfo.swift */,
 				A0000000000000000000003B /* HostMachineReader.swift */,
+				A0000000000000000000006B /* EnergyBatteryReader.swift */,
 			);
 			path = Sampling;
 			sourceTree = "<group>";
@@ -325,6 +339,8 @@
 				A00000000000000000000052 /* MemoryDashboardVM+SnapshotExport.swift */,
 				A0000000000000000000003F /* WindowedAppLookup.swift */,
 				A00000000000000000000062 /* MemoryDashboardVM+Top3Tap.swift */,
+				A0000000000000000000006D /* MemoryDashboardVM+EnergyBattery.swift */,
+				A0000000000000000000006E /* MemoryDashboardVM+HostWatch.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -356,9 +372,11 @@
 				A00000000000000000000013 /* OverviewCards.swift */,
 				A0000000000000000000000C /* ProcessTablePane.swift */,
 				A00000000000000000000067 /* EnergyProcessTable.swift */,
+				A0000000000000000000006C /* EnergyBatteryCardView.swift */,
 				A0000000000000000000004F /* ProcessPermissionFootnoteLabel.swift */,
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
 				A00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift */,
+				A00000000000000000000068 /* ProcessDetailSidebar+Energy.swift */,
 				A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */,
 				A00000000000000000000064 /* ProcessTreeView.swift */,
 				A0000000000000000000000E /* SharedUI.swift */,
@@ -527,6 +545,12 @@
 				B00000000000000000000065 /* ProcessEnergyWindow.swift in Sources */,
 				B00000000000000000000066 /* EnergyPage.swift in Sources */,
 				B00000000000000000000067 /* EnergyProcessTable.swift in Sources */,
+				B0000000000000000000006A /* EnergyBattery.swift in Sources */,
+				B0000000000000000000006B /* EnergyBatteryReader.swift in Sources */,
+				B0000000000000000000006C /* EnergyBatteryCardView.swift in Sources */,
+				B0000000000000000000006D /* MemoryDashboardVM+EnergyBattery.swift in Sources */,
+				B0000000000000000000006E /* MemoryDashboardVM+HostWatch.swift in Sources */,
+				B00000000000000000000068 /* ProcessDetailSidebar+Energy.swift in Sources */,
 				B00000000000000000000023 /* HostDiskReader.swift in Sources */,
 				B00000000000000000000006 /* MachineInfo.swift in Sources */,
 				B00000000000000000000007 /* ProcessActions.swift in Sources */,
