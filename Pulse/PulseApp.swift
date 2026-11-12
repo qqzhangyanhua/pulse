@@ -101,7 +101,7 @@ private struct PulseWindowCommands: Commands {
         Button("退出选中进程") {
             Task { await dashboard.quitSelected() }
         }
-        .disabled(!dashboard.selectedPage.allowsProcessQuit)
+        .disabled(!dashboard.selectedPage.allowsProcessQuit || dashboard.selectedEnergyExitedOnly)
     }
 
     /// ⌘C stays with the name filter. An empty selection returns before the pasteboard.

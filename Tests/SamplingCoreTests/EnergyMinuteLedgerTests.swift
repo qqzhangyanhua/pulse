@@ -94,40 +94,54 @@ final class EnergyMinuteLedgerTests: XCTestCase {
         XCTAssertNotEqual(expired?.watts ?? -1, 1)
     }
 
-    func testCounterDecreaseReplacesTheAnchorAndKeepsEarlierBuckets() {
+    func testCounterDecreaseSealsEarlierBucketsOffTheLiveRate() {
         var ledger = ProcessEnergyMinuteLedger()
         _ = push(&ledger, energy: 0, wakeups: 0, at: 0)
         _ = push(&ledger, energy: 10_000_000_000, wakeups: 10, at: 10)
         let dropped = push(&ledger, energy: 1, wakeups: 1, at: 20)
-        XCTAssertEqual(dropped?.watts ?? -1, 1, accuracy: 1e-9)
-        XCTAssertNotNil(dropped?.watts)
+        XCTAssertNil(dropped?.watts)
+        XCTAssertNil(dropped?.wakeupsPerSecond)
+        XCTAssertNotEqual(dropped?.watts ?? -1, 1)
+        let sealed = ledger.exitedProcesses
+        XCTAssertEqual(sealed.count, 1)
+        XCTAssertEqual(sealed[0].rates.watts ?? -1, 1, accuracy: 1e-9)
+        XCTAssertEqual(sealed[0].rates.wakeupsPerSecond ?? -1, 1, accuracy: 1e-9)
         let rebuilt = push(&ledger, energy: 30_000_000_001, wakeups: 31, at: 30)
-        XCTAssertEqual(rebuilt?.watts ?? -1, 2, accuracy: 1e-9)
-        XCTAssertEqual(rebuilt?.wakeupsPerSecond ?? -1, 2, accuracy: 1e-9)
-        XCTAssertNotEqual(rebuilt?.watts ?? -1, 3)
+        XCTAssertEqual(rebuilt?.watts ?? -1, 3, accuracy: 1e-9)
+        XCTAssertEqual(rebuilt?.wakeupsPerSecond ?? -1, 3, accuracy: 1e-9)
+        XCTAssertNotEqual(rebuilt?.watts ?? -1, 2)
+        XCTAssertEqual(ledger.exitedProcesses[0].rates.watts ?? -1, 1, accuracy: 1e-9)
     }
 
-    func testWakeupDecreaseAloneAddsNothing() {
+    func testWakeupDecreaseSealsEarlierBucketsOffTheLiveRate() {
         var ledger = ProcessEnergyMinuteLedger()
         _ = push(&ledger, energy: 0, wakeups: 100, at: 0)
         _ = push(&ledger, energy: 10_000_000_000, wakeups: 110, at: 10)
         let dropped = push(&ledger, energy: 20_000_000_000, wakeups: 40, at: 20)
-        XCTAssertEqual(dropped?.watts ?? -1, 1, accuracy: 1e-9)
-        XCTAssertEqual(dropped?.wakeupsPerSecond ?? -1, 1, accuracy: 1e-9)
+        XCTAssertNil(dropped?.watts)
+        XCTAssertNil(dropped?.wakeupsPerSecond)
+        XCTAssertNotEqual(dropped?.watts ?? -1, 1)
         XCTAssertNotEqual(dropped?.watts ?? -1, 2)
+        XCTAssertEqual(ledger.exitedProcesses.count, 1)
+        XCTAssertEqual(ledger.exitedProcesses[0].rates.watts ?? -1, 1, accuracy: 1e-9)
+        XCTAssertEqual(ledger.exitedProcesses[0].rates.wakeupsPerSecond ?? -1, 1, accuracy: 1e-9)
     }
 
-    func testNonPositiveDurationReplacesTheAnchorWithoutAdding() {
+    func testNonPositiveDurationSealsEarlierBucketsWithoutAdding() {
         var ledger = ProcessEnergyMinuteLedger()
         _ = push(&ledger, energy: 0, wakeups: 0, at: 0)
         _ = push(&ledger, energy: 10_000_000_000, wakeups: 10, at: 10)
         let sameInstant = push(&ledger, energy: 50_000_000_000, wakeups: 50, at: 10)
-        XCTAssertEqual(sameInstant?.watts ?? -1, 1, accuracy: 1e-9)
-        XCTAssertNotNil(sameInstant?.watts)
+        XCTAssertNil(sameInstant?.watts)
+        XCTAssertNil(sameInstant?.wakeupsPerSecond)
+        XCTAssertNotEqual(sameInstant?.watts ?? -1, 1)
+        XCTAssertEqual(ledger.exitedProcesses.count, 1)
+        XCTAssertEqual(ledger.exitedProcesses[0].rates.watts ?? -1, 1, accuracy: 1e-9)
         let next = push(&ledger, energy: 70_000_000_000, wakeups: 70, at: 20)
-        XCTAssertEqual(next?.watts ?? -1, 1.5, accuracy: 1e-9)
-        XCTAssertEqual(next?.wakeupsPerSecond ?? -1, 1.5, accuracy: 1e-9)
-        XCTAssertNotEqual(next?.watts ?? -1, 2)
+        XCTAssertEqual(next?.watts ?? -1, 2, accuracy: 1e-9)
+        XCTAssertEqual(next?.wakeupsPerSecond ?? -1, 2, accuracy: 1e-9)
+        XCTAssertNotEqual(next?.watts ?? -1, 1.5)
+        XCTAssertEqual(ledger.exitedProcesses[0].rates.watts ?? -1, 1, accuracy: 1e-9)
     }
 
     func testBucketAtExactlyOneHourStaysAndOneSecondLaterDrops() {
@@ -176,24 +190,30 @@ final class EnergyMinuteLedgerTests: XCTestCase {
             listSucceeded: false
         )
         XCTAssertTrue(decreased.isEmpty)
+        XCTAssertTrue(ledger.exitedProcesses.isEmpty)
         let continued = push(&ledger, energy: 30_000_000_000, wakeups: 30, at: 30)
         XCTAssertEqual(continued?.watts ?? -1, 1, accuracy: 1e-9)
         XCTAssertEqual(continued?.wakeupsPerSecond ?? -1, 1, accuracy: 1e-9)
     }
 
-    func testLeavingTheListDropsBucketsAndThePidReturnsWithoutAnAnchor() {
+    func testLeavingTheListSealsBucketsAndThePidReturnsWithoutThatAnchor() {
         var ledger = ProcessEnergyMinuteLedger()
         _ = push(&ledger, energy: 0, wakeups: 0, at: 0)
         _ = push(&ledger, energy: 10_000_000_000, wakeups: 10, at: 10)
         let gone = ledger.advance(listed: [:], now: origin.addingTimeInterval(15), listSucceeded: true)
         XCTAssertTrue(gone.isEmpty)
+        XCTAssertEqual(ledger.exitedProcesses.count, 1)
+        XCTAssertEqual(ledger.exitedProcesses[0].rates.watts ?? -1, 1, accuracy: 1e-9)
+        XCTAssertEqual(ledger.exitedProcesses[0].name, "7")
         let returned = push(&ledger, energy: 10_000_000_000, wakeups: 10, at: 20)
         XCTAssertNil(returned?.watts)
         XCTAssertNil(returned?.wakeupsPerSecond)
         XCTAssertNotEqual(returned?.watts ?? -1, 0.5)
+        XCTAssertEqual(ledger.exitedProcesses.count, 1)
         let fresh = push(&ledger, energy: 20_000_000_000, wakeups: 20, at: 30)
         XCTAssertEqual(fresh?.watts ?? -1, 1, accuracy: 1e-9)
         XCTAssertNotEqual(fresh?.watts ?? -1, 20.0 / 30.0)
+        XCTAssertEqual(ledger.exitedProcesses[0].rates.watts ?? -1, 1, accuracy: 1e-9)
     }
 
     func testEveryListedPidGetsARateAndPidsStaySeparate() {
