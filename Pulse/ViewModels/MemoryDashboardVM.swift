@@ -9,7 +9,7 @@ final class MemoryDashboardVM: ObservableObject {
     /// Busiest core for the latest accepted frame. Nil is missing, not zero. Failure does not clear it.
     @Published private(set) var busiestCorePercent: Double?
     @Published private(set) var hostNetworkRates = HostNetworkRates.missing
-    @Published private(set) var hostConnection: HostConnection?
+    @Published var hostConnection: HostConnection?
     @Published var ssidPermission = WiFiSSIDPermission.notDetermined
     @Published var hostWiFi: HostWiFiReading?
     /// Idle until the user clicks. Not sampled and not saved.
@@ -48,7 +48,7 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var networkHistory = SystemNetworkHistory()
     @Published private(set) var diskHistory = SystemDiskHistory()
     /// GPU page readings. Samples taken off that page do not write this.
-    @Published private(set) var gpuPage = GPUPageState.initial
+    @Published var gpuPage = GPUPageState.initial
     @Published private(set) var energyMachineHistory = EnergyMachineHistory()
     /// Nil unless the system is serious or critical. Overviews read this; the menu bar does not.
     @Published var thermalNotice: String?
