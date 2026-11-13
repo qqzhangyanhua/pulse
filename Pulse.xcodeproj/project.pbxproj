@@ -42,7 +42,7 @@
 		B0000000000000000000003D /* SwapUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003D /* SwapUsage.swift */; };
 		B00000000000000000000044 /* KernelPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000044 /* KernelPressure.swift */; };
 		B00000000000000000000047 /* MenuBarReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000047 /* MenuBarReading.swift */; };
-		B0000000000000000000004A /* PressureNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004A /* PressureNotice.swift */; };
+		B00000000000000000000240 /* AlertRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000240 /* AlertRule.swift */; };
 		B0000000000000000000004B /* PressureNoticeCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004B /* PressureNoticeCenter.swift */; };
 		B0000000000000000000004C /* LoginItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004C /* LoginItem.swift */; };
 		B00000000000000000000076 /* ThermalAdviceThrottle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000076 /* ThermalAdviceThrottle.swift */; };
@@ -255,7 +255,7 @@
 		A0000000000000000000003D /* SwapUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapUsage.swift; sourceTree = "<group>"; };
 		A00000000000000000000044 /* KernelPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KernelPressure.swift; sourceTree = "<group>"; };
 		A00000000000000000000047 /* MenuBarReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarReading.swift; sourceTree = "<group>"; };
-		A0000000000000000000004A /* PressureNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PressureNotice.swift; sourceTree = "<group>"; };
+		A00000000000000000000240 /* AlertRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertRule.swift; sourceTree = "<group>"; };
 		A0000000000000000000004B /* PressureNoticeCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PressureNoticeCenter.swift; sourceTree = "<group>"; };
 		A0000000000000000000004C /* LoginItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItem.swift; sourceTree = "<group>"; };
 		A00000000000000000000076 /* ThermalAdviceThrottle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalAdviceThrottle.swift; sourceTree = "<group>"; };
@@ -464,7 +464,7 @@
 				A00000000000000000000191 /* MemoryPeak.swift */,
 				A00000000000000000000181 /* ProcessSocket.swift */,
 				A00000000000000000000047 /* MenuBarReading.swift */,
-				A0000000000000000000004A /* PressureNotice.swift */,
+				A00000000000000000000240 /* AlertRule.swift */,
 				A0000000000000000000004C /* LoginItem.swift */,
 				A00000000000000000000076 /* ThermalAdviceThrottle.swift */,
 				A00000000000000000000050 /* SnapshotExport.swift */,
@@ -762,7 +762,7 @@
 				B0000000000000000000003D /* SwapUsage.swift in Sources */,
 				B00000000000000000000044 /* KernelPressure.swift in Sources */,
 				B00000000000000000000047 /* MenuBarReading.swift in Sources */,
-				B0000000000000000000004A /* PressureNotice.swift in Sources */,
+				B00000000000000000000240 /* AlertRule.swift in Sources */,
 				B0000000000000000000004C /* LoginItem.swift in Sources */,
 				B00000000000000000000076 /* ThermalAdviceThrottle.swift in Sources */,
 				B00000000000000000000046 /* PulseSettingsView.swift in Sources */,

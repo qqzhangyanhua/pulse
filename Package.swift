@@ -122,7 +122,7 @@ let package = Package(
                 "Models/ProcessBSDInfo.swift",
                 "Models/ProcessSocket.swift",
                 "Models/MenuBarReading.swift",
-                "Models/PressureNotice.swift",
+                "Models/AlertRule.swift",
                 "Models/LoginItem.swift",
                 "Models/ThermalAdviceThrottle.swift",
                 "Sampling/CPULoad.swift",

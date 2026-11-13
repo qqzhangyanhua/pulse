@@ -1,14 +1,14 @@
 import Combine
 import UserNotifications
 
-/// Phase stays here so a failed frame can pass nil without growing the view model.
+/// Rule state stays here so a failed frame can pass nil without growing the view model.
 @MainActor
 final class PressureNoticeCenter: NSObject, UNUserNotificationCenterDelegate {
     static let requestIdentifier = "pulse.pressureNotice"
 
     private weak var dashboard: MemoryDashboardVM?
     private var cancellable: AnyCancellable?
-    private var phase = PressureNoticePhase.armed
+    private var ruleState = AlertRule.State.armed
     private var lastCapturedAt: Date?
     private var openMemoryPage: () -> Void = {}
 
@@ -58,13 +58,13 @@ final class PressureNoticeCenter: NSObject, UNUserNotificationCenterDelegate {
         if accepted, let capturedAt {
             lastCapturedAt = capturedAt
         }
-        let decision = PressureNotice.advance(
+        let decision = AlertRule.memoryPressure.advance(
             enabled: PressureNoticePreference.isEnabled(),
-            phase: phase,
+            state: ruleState,
             pressure: reading,
             at: capturedAt ?? Date(timeIntervalSince1970: 0)
         )
-        phase = decision.phase
+        ruleState = decision.state
         guard decision.send else { return }
         let name = TopConsumer.leading(in: dashboard.rows)?.name
         post(PressureNoticeCopy.body(heaviestAppName: name))
