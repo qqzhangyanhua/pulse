@@ -53,6 +53,8 @@ struct DashboardCore {
     private(set) var systemCpuPercent: Double?
     /// Nil is missing, not zero. A failed sample does not clear it.
     private(set) var busiestCorePercent: Double?
+    /// Nil when the CPU page is not reading, or the channel is unknown. Not zero.
+    private(set) var cpuEnergy: EnergyModelReading?
     private(set) var hostNetworkRates = HostNetworkRates.missing
     private(set) var hostWiFi: HostWiFiReading?
     /// Nil until the first path push. Not a byte rate.
@@ -243,6 +245,7 @@ struct DashboardCore {
         snapshot = frame.snapshot
         systemCpuPercent = frame.systemCpuPercent
         busiestCorePercent = frame.busiestCorePercent
+        cpuEnergy = frame.cpuEnergy
         hostNetworkRates = frame.hostNetworkRates
         hostDiskRates = frame.hostDiskRates
         hostWiFi = frame.hostWiFi

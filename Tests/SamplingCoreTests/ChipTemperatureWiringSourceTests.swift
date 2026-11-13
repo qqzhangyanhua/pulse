@@ -44,7 +44,7 @@ final class ChipTemperatureWiringSourceTests: XCTestCase {
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         XCTAssertFalse(vm.contains("selectedPage == .gpu"))
-        XCTAssertTrue(vm.contains("sampler.sample(readChipTemperature: selectedPage == .machine)"))
+        XCTAssertTrue(vm.contains("sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu)"))
 
         let extensionVM = try repoText("Pulse/ViewModels/MemoryDashboardVM+ChipTemperature.swift")
         XCTAssertFalse(extensionVM.contains("@Published"))
