@@ -207,7 +207,9 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         XCTAssertTrue(phase.contains("CPUPagePhaseResolver.resolve"))
         let table = try functionBody(named: "resourceTableBody", in: pane)
         XCTAssertTrue(table.contains("switch cpuPhase"))
-        XCTAssertTrue(pane.contains("row.networkAvailability.label"))
+        XCTAssertTrue(pane.contains("NetworkRateText.string(downloadBytesPerSecond)"))
+        XCTAssertTrue(pane.contains("NetworkRateText.string(uploadBytesPerSecond)"))
+        XCTAssertFalse(pane.contains("row.networkAvailability.label"))
 
         let views = repoRoot().appendingPathComponent("Pulse/Views", isDirectory: true)
         let files = try FileManager.default.contentsOfDirectory(at: views, includingPropertiesForKeys: nil)

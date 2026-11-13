@@ -144,7 +144,12 @@ private struct PulseWindowCommands: Commands {
             windowRates: dashboard.activeEnergyRates,
             grouped: dashboard.groupedByApp && AppGroupChrome.applies(on: dashboard.selectedPage)
         ).readings[row.pid]
-        let line = ProcessRowCopy.line(page: dashboard.selectedPage, row: row, energyWindow: reading?.rates)
+        let line = ProcessRowCopy.line(
+            page: dashboard.selectedPage,
+            row: row,
+            energyWindow: reading?.rates,
+            networkRate: dashboard.processNetworkRates[row.pid]
+        )
         switch dashboard.selectedPage {
         case .memory, .cpu, .disk, .network, .energy:
             break

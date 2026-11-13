@@ -116,10 +116,17 @@ final class ProcessRowCopyTests: XCTestCase {
         XCTAssertNotEqual(ProcessRowCopy.line(page: .disk, row: row), ProcessRowCopy.line(page: .disk, row: idle))
     }
 
-    func testNetworkLineUsesTheUnavailableLabelNotAnEmDash() {
+    func testNetworkLineUsesEmDashForMissingRatesAndKeepsARealZero() {
         let row = makeRow(pid: 42, name: "Safari", memory: 0, threads: 1, cpu: nil)
-        XCTAssertEqual(ProcessRowCopy.line(page: .network, row: row), "Safari\t42\t—\t0 字节\t暂不可用\t1")
+        XCTAssertEqual(ProcessRowCopy.line(page: .network, row: row), "Safari\t42\t—\t0 字节\t—\t—\t1")
         XCTAssertFalse(ProcessRowCopy.line(page: .network, row: row).contains("0 字节/秒"))
+        XCTAssertFalse(ProcessRowCopy.line(page: .network, row: row).contains("暂不可用"))
+        let measured = ProcessRowCopy.line(
+            page: .network,
+            row: row,
+            networkRate: ProcessNetworkRate(downloadBytesPerSecond: 1024, uploadBytesPerSecond: 0)
+        )
+        XCTAssertEqual(measured, "Safari\t42\t—\t0 字节\t1 KB/秒\t0 字节/秒\t1")
     }
 
     private func makeRow(

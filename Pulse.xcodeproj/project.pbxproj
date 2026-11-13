@@ -159,6 +159,9 @@
 		B00000000000000000000140 /* SleepAssertionReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000140 /* SleepAssertionReader.swift */; };
 		B00000000000000000000141 /* SleepAssertionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000141 /* SleepAssertionCardView.swift */; };
 		B00000000000000000000142 /* MemoryDashboardVM+SleepAssertion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000142 /* MemoryDashboardVM+SleepAssertion.swift */; };
+		B00000000000000000000250 /* NettopDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000250 /* NettopDecoder.swift */; };
+		B00000000000000000000251 /* NettopReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000251 /* NettopReader.swift */; };
+		B00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift */; };
 		B00000000000000000000201 /* PausedProcessLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000201 /* PausedProcessLedger.swift */; };
 		B00000000000000000000202 /* PausedProcessStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000202 /* PausedProcessStore.swift */; };
 		B00000000000000000000203 /* DashboardCore+Pause.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000203 /* DashboardCore+Pause.swift */; };
@@ -217,6 +220,9 @@
 		A00000000000000000000140 /* SleepAssertionReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepAssertionReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000141 /* SleepAssertionCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepAssertionCardView.swift; sourceTree = "<group>"; };
 		A00000000000000000000142 /* MemoryDashboardVM+SleepAssertion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+SleepAssertion.swift"; sourceTree = "<group>"; };
+		A00000000000000000000250 /* NettopDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NettopDecoder.swift; sourceTree = "<group>"; };
+		A00000000000000000000251 /* NettopReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NettopReader.swift; sourceTree = "<group>"; };
+		A00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+NetworkRates.swift"; sourceTree = "<group>"; };
 		A00000000000000000000201 /* PausedProcessLedger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PausedProcessLedger.swift; sourceTree = "<group>"; };
 		A00000000000000000000202 /* PausedProcessStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PausedProcessStore.swift; sourceTree = "<group>"; };
 		A00000000000000000000203 /* DashboardCore+Pause.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Pause.swift"; sourceTree = "<group>"; };
@@ -417,6 +423,7 @@
 				A00000000000000000000139 /* DashboardCore+SleepAssertion.swift */,
 				A00000000000000000000350 /* LaunchItem.swift */,
 				A00000000000000000000351 /* DashboardCore+LaunchItems.swift */,
+				A00000000000000000000250 /* NettopDecoder.swift */,
 				A00000000000000000000201 /* PausedProcessLedger.swift */,
 				A00000000000000000000202 /* PausedProcessStore.swift */,
 				A00000000000000000000203 /* DashboardCore+Pause.swift */,
@@ -521,6 +528,7 @@
 				A0000000000000000000006B /* EnergyBatteryReader.swift */,
 				A00000000000000000000140 /* SleepAssertionReader.swift */,
 				A00000000000000000000352 /* LaunchItemReader.swift */,
+				A00000000000000000000251 /* NettopReader.swift */,
 			);
 			path = Sampling;
 			sourceTree = "<group>";
@@ -547,6 +555,7 @@
 				A0000000000000000000006D /* MemoryDashboardVM+EnergyBattery.swift */,
 				A00000000000000000000142 /* MemoryDashboardVM+SleepAssertion.swift */,
 				A00000000000000000000354 /* MemoryDashboardVM+LaunchItems.swift */,
+				A00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift */,
 				A00000000000000000000205 /* MemoryDashboardVM+Pause.swift */,
 				A00000000000000000000223 /* MemoryDashboardVM+Priority.swift */,
 				A00000000000000000000074 /* MemoryDashboardVM+EnergyHistory.swift */,
@@ -742,6 +751,9 @@
 				B00000000000000000000352 /* LaunchItemReader.swift in Sources */,
 				B00000000000000000000353 /* MachineOverviewSection+LaunchItems.swift in Sources */,
 				B00000000000000000000354 /* MemoryDashboardVM+LaunchItems.swift in Sources */,
+				B00000000000000000000250 /* NettopDecoder.swift in Sources */,
+				B00000000000000000000251 /* NettopReader.swift in Sources */,
+				B00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift in Sources */,
 				B00000000000000000000201 /* PausedProcessLedger.swift in Sources */,
 				B00000000000000000000202 /* PausedProcessStore.swift in Sources */,
 				B00000000000000000000203 /* DashboardCore+Pause.swift in Sources */,

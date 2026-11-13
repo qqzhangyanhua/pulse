@@ -110,6 +110,7 @@ final class MemoryDashboardVM: ObservableObject {
     var energyBatteryRefreshTask: Task<Void, Never>?
     var sleepAssertionRefreshTask: Task<Void, Never>?
     var launchItemRefreshTask: Task<Void, Never>?
+    var nettopReader: NettopReader?
     var hostConnectionMonitor: HostConnectionMonitor?
     init() {
         beginThermalWatch()
@@ -123,6 +124,7 @@ final class MemoryDashboardVM: ObservableObject {
             energyBatteryRefreshTask?.cancel()
             sleepAssertionRefreshTask?.cancel()
             launchItemRefreshTask?.cancel()
+            stopProcessNetworkWatch()
             endThermalWatch()
             endConnectionWatch()
         }
@@ -434,6 +436,8 @@ final class MemoryDashboardVM: ObservableObject {
                 syncSleepAssertionWatch()
             case .startLaunchItemWatch, .stopLaunchItemWatch:
                 syncLaunchItemWatch()
+            case .startProcessNetworkWatch, .stopProcessNetworkWatch:
+                syncProcessNetworkWatch()
             case .lookupPublicIP(let queriedAt):
                 let transport = PublicIPURLSessionTransport()
                 Task { [weak self] in

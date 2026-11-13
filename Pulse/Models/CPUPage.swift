@@ -84,8 +84,11 @@ enum ProcessColumnTitle {
     /// CPU page keeps the memory column. Energy is watts, not an Activity Monitor score.
     static let cpuPage = [name, cpu, memory, energy, wakeups, threads]
 
-    /// Network page adds an unavailable marker column. It is not a sortable byte count.
-    static let networkPage = [name, cpu, memory, network, threads]
+    static let networkDownload = NetworkPageCopy.downloadTitle
+    static let networkUpload = NetworkPageCopy.uploadTitle
+
+    /// Network page download / upload. Missing cells are 「—」, not the old 「暂不可用」 marker.
+    static let networkPage = [name, cpu, memory, networkDownload, networkUpload, threads]
 
     /// Disk page adds read / write rate columns. Missing cells are 「—」, not 「暂不可用」.
     static let diskPage = [name, cpu, memory, diskRead, diskWrite, threads]
@@ -99,6 +102,8 @@ enum ProcessSortColumn: Equatable, Sendable {
     case disk
     case diskRead
     case diskWrite
+    case networkDownload
+    case networkUpload
     case energy
     case wakeups
 }
@@ -159,6 +164,8 @@ struct ProcessTableSort: Equatable, Sendable {
             return compareDoubles(lhs.diskReadBytesPerSecond ?? -1, rhs.diskReadBytesPerSecond ?? -1)
         case .diskWrite:
             return compareDoubles(lhs.diskWriteBytesPerSecond ?? -1, rhs.diskWriteBytesPerSecond ?? -1)
+        case .networkDownload, .networkUpload:
+            return .orderedSame
         case .energy:
             return compareDoubles(lhs.energyWatts ?? -1, rhs.energyWatts ?? -1)
         case .wakeups:
