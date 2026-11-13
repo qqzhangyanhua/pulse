@@ -26,6 +26,10 @@
 	<string>14.0</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSLocationUsageDescription</key>
+	<string>用来显示当前 Wi-Fi 的名称。Pulse 不保存位置，也不把位置用于其它功能。</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>用来显示当前 Wi-Fi 的名称。Pulse 不保存位置，也不把位置用于其它功能。</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Pulse. All rights reserved.</string>
 	<key>NSPrincipalClass</key>

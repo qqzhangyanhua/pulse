@@ -9,6 +9,11 @@ final class MemoryDashboardVM: ObservableObject {
     /// Busiest core for the latest accepted frame. Nil is missing, not zero. Failure does not clear it.
     @Published private(set) var busiestCorePercent: Double?
     @Published private(set) var hostNetworkRates = HostNetworkRates.missing
+    @Published private(set) var hostConnection: HostConnection?
+    @Published var ssidPermission = WiFiSSIDPermission.notDetermined
+    @Published var hostWiFi: HostWiFiReading?
+    /// Idle until the user clicks. Not sampled and not saved.
+    @Published var publicIPRequest = PublicIPRequestState.idle
     @Published private(set) var hostDiskRates = HostDiskRates.missing
     @Published private(set) var rows: [ProcessRow] = []
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
@@ -35,8 +40,6 @@ final class MemoryDashboardVM: ObservableObject {
     /// The only session quit store. Phase and message are projections of this.
     @Published var quitOutcome = ProcessQuitOutcome()
     @Published var sidebarSubjectPid: Int32?
-    var quitPhase: QuitPhase { sidebar.quitPhase }
-    var quitMessage: String? { sidebar.quitMessage }
     @Published private(set) var samplingFailed = false
     /// Gate projection. Not a second retry flag.
     @Published private(set) var isRetrying = false
@@ -105,7 +108,6 @@ final class MemoryDashboardVM: ObservableObject {
             Task { await sampler.setSelectedPid(pid) }
         }
     }
-
     private let sampler = MemorySampler()
     private var loopTask: Task<Void, Never>?
     private var sleepTask: Task<Void, Error>?
@@ -116,18 +118,19 @@ final class MemoryDashboardVM: ObservableObject {
     var thermalObserver: NSObjectProtocol?
     var machineRefreshTask: Task<Void, Never>?
     var energyBatteryRefreshTask: Task<Void, Never>?
-
+    var hostConnectionMonitor: HostConnectionMonitor?
     init() {
         beginThermalWatch()
+        beginConnectionWatch()
+        startWiFiSSIDWatch()
     }
-
-    // `isolated deinit` is Swift 6.2. Xcode 16.4 rejects it, and that
-    // production compiler cannot enable the IsolatedDeinit experiment.
+    // `isolated deinit` is Swift 6.2. Xcode 16.4 rejects it.
     deinit {
         MainActor.assumeIsolated {
             machineRefreshTask?.cancel()
             energyBatteryRefreshTask?.cancel()
             endThermalWatch()
+            endConnectionWatch()
         }
     }
 
@@ -179,9 +182,6 @@ final class MemoryDashboardVM: ObservableObject {
     var hasActiveFilter: Bool {
         !filter.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
-
-    var selectedPage: DashboardPage { navigation.selectedPage }
-    var tableSort: ProcessTableSort { navigation.sort }
 
     /// Live memory-page trend for the joint sidebar. A frozen absent card does not use it.
     var memoryGrowthSlot: MemoryGrowthSlot? {
@@ -403,6 +403,7 @@ final class MemoryDashboardVM: ObservableObject {
                     busiestCorePercent = frame.busiestCorePercent
                     hostNetworkRates = frame.hostNetworkRates
                     hostDiskRates = frame.hostDiskRates
+                    publishSampledWiFi(frame.hostWiFi)
                     var nextUsage = usageHistory
                     nextUsage.record(frame.snapshot)
                     usageHistory = nextUsage

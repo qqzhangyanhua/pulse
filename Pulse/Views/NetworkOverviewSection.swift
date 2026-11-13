@@ -23,6 +23,7 @@ struct NetworkOverviewSection: View {
     private var samplingBody: some View {
         VStack(spacing: 12) {
             ThermalAdviceCard()
+            NetworkConnectionCardView(placeholder: true)
             HStack(spacing: 12) {
                 samplingCard(
                     title: NetworkPageCopy.inboundTitle,
@@ -56,6 +57,7 @@ struct NetworkOverviewSection: View {
     private var readyBody: some View {
         VStack(spacing: 12) {
             ThermalAdviceCard()
+            NetworkConnectionCardView(placeholder: false)
             HStack(spacing: 12) {
                 NetworkRateCard(
                     title: NetworkPageCopy.inboundTitle,

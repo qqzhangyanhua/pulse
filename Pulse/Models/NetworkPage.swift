@@ -68,6 +68,23 @@ enum NetworkPageCopy {
     /// Tooltip only. The cells stay 「暂不可用」 / the detail sentence.
     static let processRateHelp = "没有进程速率。主机下行和上行在总览。"
     static let chartCollecting = "曲线采集中"
+    static let connectionTitle = "连接"
+    static let connectionStatusTitle = "状态"
+    static let connectionTypeTitle = "类型"
+    static let connectionConnected = "已连接"
+    static let connectionDisconnected = "未连接"
+    static let connectionRequiresLogin = "需要登录或配置"
+    static let connectionWiFi = "Wi-Fi"
+    static let connectionEthernet = "以太网"
+    static let connectionOther = "其它"
+    static let connectionSignalTitle = "信号"
+    static let connectionSSIDTitle = "名称"
+    static let ssidNeedsLocation = "需要定位权限才能显示 Wi-Fi 名称"
+    static let ssidLocationDenied = "定位未授权"
+    static let ssidAllow = "允许"
+    static let signalStrong = "强"
+    static let signalMedium = "中"
+    static let signalWeak = "弱"
 
     /// Overview slot. Missing host rates stay 「—」, never 「0 字节/秒」.
     static func overviewLine(rates: HostNetworkRates) -> String {
