@@ -61,23 +61,23 @@ final class ChipTemperatureWiringSourceTests: XCTestCase {
         XCTAssertFalse(extensionVM.contains("Timer"))
     }
 
-    func testTheCardIsANumberOnTheMachinePageAndAbsentElsewhere() throws {
+    func testTheCardDrawsTheCurveOnTheMachinePageAndIsAbsentElsewhere() throws {
         let overview = try repoText("Pulse/Views/MachineOverviewSection.swift")
-        XCTAssertTrue(overview.contains("chipTemperatureCard"))
+        XCTAssertEqual(occurrenceCount(of: "chipTemperatureCard", in: overview), 1)
         let card = try repoText("Pulse/Views/MachineOverviewSection+ChipTemperature.swift")
         XCTAssertTrue(card.contains("ChipTemperatureCopy.title"))
         XCTAssertTrue(card.contains("vm.chipTemperature.text"))
-        for forbidden in [
-            "HistoryAnnotatedChart",
-            "SparklineChart",
-            "ChartPlaceholder",
-            "过热",
-            "危险",
-            "CPU 温度",
-            "GPU 温度",
-            "核心温度",
-            "SMC 温度",
-        ] {
+        XCTAssertTrue(card.contains("vm.chipTemperature.showsCurve"))
+        XCTAssertTrue(card.contains("HistoryAnnotatedChart"))
+        XCTAssertTrue(card.contains("SparklineChart"))
+        XCTAssertTrue(card.contains("ChartPlaceholder(text: GPUPageCopy.chartCollecting)"))
+        XCTAssertTrue(card.contains("vm.chipTemperature.curveDomain"))
+        XCTAssertTrue(card.contains("ChipTemperatureCopy.degrees"))
+        XCTAssertTrue(card.contains("PulsePalette.accent"))
+        XCTAssertFalse(card.contains("CPUPercentText"))
+        XCTAssertFalse(card.contains("0...100"))
+        XCTAssertFalse(card.contains("percentDomain"))
+        for forbidden in ["过热", "危险", "CPU 温度", "GPU 温度", "核心温度", "SMC 温度"] {
             XCTAssertFalse(card.contains(forbidden), forbidden)
         }
 
