@@ -216,6 +216,10 @@ extension DashboardCore {
     }
 
     private mutating func finishPageChange(from previous: DashboardPage) -> [DashboardEffect] {
+        historyCurveRange = .live
+        historyCurveSamples = []
+        historyCurveEvents = []
+        historyCurveEnd = nil
         publishGPUPageTransition(from: previous, to: selectedPage)
         publishChipTemperaturePageTransition(from: previous, to: selectedPage)
         var effects = publishMemoryPageSort()
