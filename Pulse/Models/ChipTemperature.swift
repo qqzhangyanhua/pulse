@@ -52,6 +52,7 @@ struct ChipTemperaturePageState: Equatable, Sendable {
 
 enum ChipTemperatureCopy {
     static let title = "芯片温度"
+    static let chartCollecting = "曲线采集中"
 
     /// Integer degrees, half away from zero, with a space and the unit.
     static func degrees(_ celsius: Double) -> String {
