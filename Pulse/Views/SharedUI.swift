@@ -70,7 +70,7 @@ enum ResourceTab: String, CaseIterable, Identifiable {
         case .disk: return "internaldrive"
         case .network: return "network"
         case .machine: return "desktopcomputer"
-        case .gpu: return "display"
+        case .gpu: return "cube"
         }
     }
 }
