@@ -137,7 +137,7 @@ struct DashboardCore {
                 if let applied = SamplingRetryApply.apply(held, accepted: true, sampleSucceeded: false) {
                     samplingFailed = applied.samplingFailed
                     loadState = applied.loadState
-                    recordGPU(nodes: nil, failed: true, at: nil, page: page)
+                    recordGPU(nodes: nil, failed: true, at: nil)
                     recordChip(sensors: nil, failed: true, at: nil, page: page)
                     observation = ProcessQuitSession.Observation(samplingFailed: true)
                 } else {
@@ -216,7 +216,7 @@ struct DashboardCore {
         var nextDisk = diskHistory
         nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
         diskHistory = nextDisk
-        recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt, page: page)
+        recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
         recordChip(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt, page: page)
         rows = frame.rows
         energyWindowRates = frame.energyWindowRates
@@ -259,13 +259,12 @@ struct DashboardCore {
         return effects
     }
 
+    /// Nil nodes means this tick did not read GPU. A missing percent is not stored as 0.
     private mutating func recordGPU(
         nodes: [GPUAcceleratorNode]?,
         failed: Bool,
-        at date: Date?,
-        page: DashboardPage
+        at date: Date?
     ) {
-        guard page == .gpu else { return }
         let frame: GPUFrameOutcome
         if failed {
             frame = .failed

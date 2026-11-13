@@ -242,7 +242,7 @@ struct SampledFrame: Sendable {
     let exitedEnergyProcesses: [ExitedEnergyProcess]
     /// Live generation ids from the minute ledger. Empty when the process list failed.
     let energyLiveGenerations: [Int32: Int]
-    /// Accelerator nodes for this tick. Nil when the GPU page did not ask for a read.
+    /// Accelerator nodes for this tick. Nil when this tick did not read GPU.
     let gpuNodes: [GPUAcceleratorNode]?
     /// HID temperature services for this tick. Nil when the machine page did not ask.
     let chipTemperatureSensors: [ChipTemperatureSensor]?

@@ -15,13 +15,17 @@ struct GPUAcceleratorNode: Equatable, Sendable {
     var statistics: [String: GPUStatistic]
     /// Same-node device-channel percent. Nil when that channel was not read.
     var ioReportDevicePercent: Double?
+    /// Registry `gpu-core-count` on this accelerator. Nil when that key was not a positive whole number.
+    var coreCount: Int?
 
     init(
         statistics: [String: GPUStatistic] = [:],
-        ioReportDevicePercent: Double? = nil
+        ioReportDevicePercent: Double? = nil,
+        coreCount: Int? = nil
     ) {
         self.statistics = statistics
         self.ioReportDevicePercent = ioReportDevicePercent
+        self.coreCount = coreCount
     }
 }
 
@@ -50,11 +54,18 @@ enum GPUPageChrome: Equatable, Sendable {
 struct GPUPageState: Equatable, Sendable {
     var utilizationPercent: Double?
     var inUseMemoryBytes: UInt64?
+    var coreCount: Int?
     var history: SystemCPUHistory
     var visitSucceeded: Bool
     var chrome: GPUPageChrome
 
     var utilizationText: String { CPUPercentText.string(utilizationPercent) }
+
+    /// Hidden when the registry key is missing. Not a dash.
+    var coreCountText: String? {
+        guard let coreCount, coreCount > 0 else { return nil }
+        return GPUPageCopy.coreCountLine(coreCount)
+    }
 
     var memoryText: String {
         guard let inUseMemoryBytes else { return CPUPercentText.missing }
@@ -67,6 +78,7 @@ struct GPUPageState: Equatable, Sendable {
     static let initial = GPUPageState(
         utilizationPercent: nil,
         inUseMemoryBytes: nil,
+        coreCount: nil,
         history: SystemCPUHistory(),
         visitSucceeded: false,
         chrome: .skeleton
@@ -80,6 +92,32 @@ enum GPUPageCopy {
     static let failureTitle = "暂时读不到 GPU 数据"
     static let failureMessage = SamplingRetryChrome.overviewFailureMessage
     static let chartCollecting = "曲线采集中"
+
+    static func coreCountLine(_ count: Int) -> String {
+        "\(count) 核 GPU"
+    }
+}
+
+enum GPUCoreCount {
+    static let registryKey = "gpu-core-count"
+
+    /// A positive whole number from the registry. Anything else stays missing.
+    static func parse(_ value: Double?) -> Int? {
+        guard let value, value.isFinite, value > 0, value <= Double(Int.max), value == value.rounded() else {
+            return nil
+        }
+        return Int(value)
+    }
+
+    /// First positive count in input order. Counts are not summed.
+    static func first(in nodes: [GPUAcceleratorNode]) -> Int? {
+        for node in nodes {
+            if let count = node.coreCount, count > 0 {
+                return count
+            }
+        }
+        return nil
+    }
 }
 
 enum GPUPageProjection {
@@ -93,14 +131,11 @@ enum GPUPageProjection {
         current: GPUPageState,
         transition: GPUPageTransition
     ) -> GPUPageState {
+        // The curve lives for the process. Leave does not clear it, and enter keeps it.
         switch transition {
         case .justLeft:
-            var next = current
-            next.history.reset()
-            return next
-        case .justEntered:
-            return applyFrame(frame, nodes: nodes, sampledAt: sampledAt, to: .initial)
-        case .stayed:
+            return current
+        case .justEntered, .stayed:
             return applyFrame(frame, nodes: nodes, sampledAt: sampledAt, to: current)
         }
     }
@@ -130,6 +165,7 @@ enum GPUPageProjection {
             var next = current
             next.utilizationPercent = reading.utilization
             next.inUseMemoryBytes = reading.memory
+            next.coreCount = GPUCoreCount.first(in: nodes)
             next.visitSucceeded = true
             next.chrome = .readings
             next.history.record(percent: reading.utilization, at: sampledAt)
