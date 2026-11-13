@@ -18,6 +18,27 @@ final class HistoryStore: @unchecked Sendable {
         }
     }
 
+    func samples(from start: Date, to end: Date) -> [HistorySample] {
+        queue.sync {
+            guard let database else { return [] }
+            return readSamples(table: "sample", from: start, to: end, database: database)
+        }
+    }
+
+    func minuteSamples(from start: Date, to end: Date) -> [HistorySample] {
+        queue.sync {
+            guard let database else { return [] }
+            return readSamples(table: "minute", from: start, to: end, database: database)
+        }
+    }
+
+    func events(from start: Date, to end: Date) -> [HistoryEvent] {
+        queue.sync {
+            guard let database else { return [] }
+            return readEvents(from: start, to: end, database: database)
+        }
+    }
+
     func write(_ draft: HistoryDraft) {
         queue.sync {
             guard let database else { return }
@@ -175,6 +196,92 @@ final class HistoryStore: @unchecked Sendable {
             bindOptionalText(statement, 3, detail)
             sqlite3_step(statement)
         }
+    }
+
+    private func readSamples(
+        table: String,
+        from start: Date,
+        to end: Date,
+        database: OpaquePointer
+    ) -> [HistorySample] {
+        guard table == "sample" || table == "minute" else { return [] }
+        let sql = """
+        SELECT at, used_bytes, pressure, swap_bytes, cpu, net_in, net_out, disk_read, disk_write, gpu
+        FROM \(table) WHERE at >= ? AND at <= ? ORDER BY at
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK, let statement else {
+            return []
+        }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_double(statement, 1, start.timeIntervalSince1970)
+        sqlite3_bind_double(statement, 2, end.timeIntervalSince1970)
+        var rows: [HistorySample] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            rows.append(HistorySample(
+                at: Date(timeIntervalSince1970: sqlite3_column_double(statement, 0)),
+                usedBytes: optionalUInt(statement, 1),
+                pressure: optionalPressure(statement, 2),
+                swapUsedBytes: optionalUInt(statement, 3),
+                cpuPercent: optionalDouble(statement, 4),
+                networkInBytesPerSecond: optionalDouble(statement, 5),
+                networkOutBytesPerSecond: optionalDouble(statement, 6),
+                diskReadBytesPerSecond: optionalDouble(statement, 7),
+                diskWriteBytesPerSecond: optionalDouble(statement, 8),
+                gpuPercent: optionalDouble(statement, 9)
+            ))
+        }
+        return rows
+    }
+
+    private func readEvents(from start: Date, to end: Date, database: OpaquePointer) -> [HistoryEvent] {
+        let sql = "SELECT kind, detail FROM event WHERE at >= ? AND at <= ? ORDER BY id"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK, let statement else {
+            return []
+        }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_double(statement, 1, start.timeIntervalSince1970)
+        sqlite3_bind_double(statement, 2, end.timeIntervalSince1970)
+        var events: [HistoryEvent] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let kind = optionalText(statement, 0) else { continue }
+            let detail = optionalText(statement, 1)
+            switch kind {
+            case "pressure":
+                if let detail { events.append(.pressure(detail)) }
+            case "thermal":
+                if let detail { events.append(.thermal(detail)) }
+            case "sleep":
+                events.append(.sleep)
+            case "wake":
+                events.append(.wake)
+            default:
+                break
+            }
+        }
+        return events
+    }
+
+    private func optionalUInt(_ statement: OpaquePointer, _ index: Int32) -> UInt64? {
+        guard sqlite3_column_type(statement, index) != SQLITE_NULL else { return nil }
+        return UInt64(bitPattern: sqlite3_column_int64(statement, index))
+    }
+
+    private func optionalDouble(_ statement: OpaquePointer, _ index: Int32) -> Double? {
+        guard sqlite3_column_type(statement, index) != SQLITE_NULL else { return nil }
+        return sqlite3_column_double(statement, index)
+    }
+
+    private func optionalText(_ statement: OpaquePointer, _ index: Int32) -> String? {
+        guard sqlite3_column_type(statement, index) != SQLITE_NULL else { return nil }
+        guard let raw = sqlite3_column_text(statement, index) else { return nil }
+        return String(cString: UnsafeRawPointer(raw).assumingMemoryBound(to: CChar.self))
+    }
+
+    private func optionalPressure(_ statement: OpaquePointer, _ index: Int32) -> PressureLevel? {
+        guard let raw = optionalText(statement, index) else { return nil }
+        return PressureLevel(rawValue: raw)
     }
 
     private func deleteSamples(before date: Date, database: OpaquePointer) {

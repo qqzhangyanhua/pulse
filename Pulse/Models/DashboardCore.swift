@@ -99,6 +99,10 @@ struct DashboardCore {
     var energyBatteryReading: EnergyBatteryReading?
     /// Held sleep assertions from the energy page. Empty until a successful read.
     var sleepAssertions: [SleepAssertionRow] = []
+    /// False until a sleep-assertion read returns, including a read that found nobody.
+    var sleepAssertionsKnown = false
+    /// Toolbar diagnosis panel. Not a second sampling path.
+    var symptomPanelOpen = false
     /// Launch items from the machine page. Empty until that read. Not cleared on leave.
     var launchItems: [LaunchItemRow] = []
     /// Latest per-process download / upload. Empty off the network page. Nil rates are 「—」.

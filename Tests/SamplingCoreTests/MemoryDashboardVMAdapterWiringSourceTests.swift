@@ -55,6 +55,8 @@ final class MemoryDashboardVMAdapterWiringSourceTests: XCTestCase {
         "energyBatteryCard",
         "energyBatteryReading",
         "launchItems",
+        "sleepAssertionsKnown",
+        "symptomPanelOpen",
         "thermalNotice",
         "thermalAdvice",
         "thermalAdviceLastUpdate",

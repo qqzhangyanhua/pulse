@@ -17,6 +17,16 @@ struct MemoryDashboardView: View {
             }
         }
         .animation(reduceMotion ? nil : PulseMotion.page, value: fullPageIdentity)
+        .sheet(isPresented: Binding(
+            get: { vm.symptomPanelOpen },
+            set: { vm.setSymptomPanelOpen($0) }
+        )) {
+            SymptomPanel(
+                findings: { vm.symptomFinding($0) },
+                open: { page, pid in vm.openSymptomCause(page: page, pid: pid) },
+                close: { vm.setSymptomPanelOpen(false) }
+            )
+        }
         .background(PulsePalette.windowBackground)
         .navigationTitle("Pulse")
         .navigationSubtitle(vm.machineLabel ?? "机型读取中")
@@ -34,6 +44,12 @@ struct MemoryDashboardView: View {
                     Text("保存当前快照")
                 }
                 .accessibilityLabel("保存当前快照")
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button("诊断") {
+                    vm.setSymptomPanelOpen(true)
+                }
+                .accessibilityLabel("诊断")
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 if !vm.selectedPage.isFullPage {
