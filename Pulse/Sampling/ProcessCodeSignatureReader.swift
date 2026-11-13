@@ -20,7 +20,7 @@ enum ProcessCodeSignatureReader {
         )
     }
 
-    /// Nil when the guest cannot be copied. An unsigned guest is facts, not nil.
+    /// Nil when the guest or its static code cannot be copied. An unsigned guest is facts, not nil.
     private static func signatureFacts(pid: Int32) -> ProcessSigningFacts? {
         var guest: SecCode?
         let attributes = [kSecGuestAttributePid as String: NSNumber(value: pid)] as CFDictionary
@@ -32,8 +32,13 @@ enum ProcessCodeSignatureReader {
         )
         guard guestStatus == errSecSuccess, let guest else { return nil }
 
+        // Signing information takes a static code. The guest from the pid is a dynamic code.
+        var staticCode: SecStaticCode?
+        let staticStatus = SecCodeCopyStaticCode(guest, SecCSFlags(rawValue: 0), &staticCode)
+        guard staticStatus == errSecSuccess, let staticCode else { return nil }
+
         var information: CFDictionary?
-        let status = SecCodeCopySigningInformation(guest, signingInformation, &information)
+        let status = SecCodeCopySigningInformation(staticCode, signingInformation, &information)
         if status == errSecCSUnsigned {
             return ProcessSigningFacts(
                 status: status,
@@ -63,14 +68,10 @@ enum ProcessCodeSignatureReader {
 
     /// Leaf certificate first, as `kSecCodeInfoCertificates` returns them.
     private static func summaries(in info: NSDictionary) -> [String] {
-        guard let certificates = info[kSecCodeInfoCertificates as String] else { return [] }
-        let array = certificates as CFArray
+        guard let certificates = info[kSecCodeInfoCertificates as String] as? NSArray else { return [] }
         var result: [String] = []
-        for index in 0..<CFArrayGetCount(array) {
-            guard let pointer = CFArrayGetValueAtIndex(array, index) else { continue }
-            let value = Unmanaged<CFTypeRef>.fromOpaque(pointer).takeUnretainedValue()
-            guard CFGetTypeID(value) == SecCertificateGetTypeID() else { continue }
-            let certificate = value as! SecCertificate
+        for item in certificates {
+            guard let certificate = item as? SecCertificate else { continue }
             if let summary = SecCertificateCopySubjectSummary(certificate) as String? {
                 result.append(summary)
             }

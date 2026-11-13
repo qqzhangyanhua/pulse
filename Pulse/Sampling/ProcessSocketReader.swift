@@ -127,7 +127,7 @@ enum ProcessSocketReader {
     /// `insi_fport` is a network-order port in the low 16 bits. Nil address when unspecified.
     private static func endpoint(_ bytes: [UInt8], family: Int32) -> (address: String, port: Int)? {
         guard let rawPort = int32(bytes, at: Layout.foreignPort) else { return nil }
-        let port = hostPort(rawPort)
+        guard let port = hostPort(rawPort) else { return nil }
         guard let address = presentation(family: family, bytes: bytes) else { return nil }
         return (address, port)
     }
