@@ -132,6 +132,7 @@ struct MemoryDashboardView: View {
                 }
                 EnergyHistoryChart()
                     .frame(height: 150)
+                SleepAssertionCardView()
                 ProcessTablePane()
             }
             .padding(12)
