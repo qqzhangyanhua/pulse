@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Full GPU page. Two readings, one utilization curve, and the shared throttle card.
+/// Full GPU page. Two readings, an optional core-count line, one utilization curve, and the shared throttle card.
 struct GPUOverviewSection: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
 
@@ -64,6 +64,11 @@ struct GPUOverviewSection: View {
                 readingCard(title: GPUPageCopy.memory, value: vm.gpuPage.memoryText, symbol: "memorychip")
             }
             .frame(height: 132)
+            if let cores = vm.gpuPage.coreCountText {
+                Text(cores)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
             PulseCard {
                 chart
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -76,7 +81,10 @@ struct GPUOverviewSection: View {
     }
 
     private var accessibilityLabel: String {
-        let line = "\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)"
+        var line = "\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)"
+        if let cores = vm.gpuPage.coreCountText {
+            line += "，\(cores)"
+        }
         if let note = HistoryCurvePresentation.annotation(
             current: vm.gpuPage.utilizationPercent,
             sampleCount: vm.gpuPage.history.samples.count

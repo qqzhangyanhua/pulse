@@ -44,6 +44,8 @@ struct DashboardCore {
     /// Idle until the user clicks. Not sampled and not saved.
     var publicIPRequest = PublicIPRequestState.idle
     private(set) var hostDiskRates = HostDiskRates.missing
+    /// Host 换入 / 换出. Previous counters stay here. Not disk throughput.
+    private(set) var memoryPage = MemoryPageState.initial
     private(set) var rows: [ProcessRow] = []
     private(set) var energyWindowRates: [Int32: ProcessEnergyRates] = [:]
     private(set) var energyHourRates: [Int32: ProcessEnergyRates] = [:]
@@ -137,7 +139,7 @@ struct DashboardCore {
                 if let applied = SamplingRetryApply.apply(held, accepted: true, sampleSucceeded: false) {
                     samplingFailed = applied.samplingFailed
                     loadState = applied.loadState
-                    recordGPU(nodes: nil, failed: true, at: nil, page: page)
+                    recordGPU(nodes: nil, failed: true, at: nil)
                     recordChip(sensors: nil, failed: true, at: nil, page: page)
                     observation = ProcessQuitSession.Observation(samplingFailed: true)
                 } else {
@@ -216,8 +218,13 @@ struct DashboardCore {
         var nextDisk = diskHistory
         nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
         diskHistory = nextDisk
-        recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt, page: page)
+        recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
         recordChip(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt, page: page)
+        memoryPage = MemoryPageProjection.apply(
+            counters: frame.hostPageCounters,
+            sampledAt: frame.snapshot.capturedAt,
+            current: memoryPage
+        )
         rows = frame.rows
         energyWindowRates = frame.energyWindowRates
         energyHourRates = frame.energyHourRates
@@ -259,13 +266,12 @@ struct DashboardCore {
         return effects
     }
 
+    /// Nil nodes means this tick did not read GPU. A missing percent is not stored as 0.
     private mutating func recordGPU(
         nodes: [GPUAcceleratorNode]?,
         failed: Bool,
-        at date: Date?,
-        page: DashboardPage
+        at date: Date?
     ) {
-        guard page == .gpu else { return }
         let frame: GPUFrameOutcome
         if failed {
             frame = .failed

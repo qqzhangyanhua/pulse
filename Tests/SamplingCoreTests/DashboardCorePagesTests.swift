@@ -258,7 +258,7 @@ final class DashboardCorePagesTests: XCTestCase {
         XCTAssertEqual(core.machineFacts, facts)
     }
 
-    func testGPUAndChipPagesResetWhenEnteredAndLeft() {
+    func testGPUCurveSurvivesPageChangesAndChipPageStillResets() {
         var core = DashboardCore(ownPid: 1)
         let entered = core.selectPage(.gpu)
         XCTAssertTrue(entered.contains(.setGPUSampling(on: true)))
@@ -275,13 +275,15 @@ final class DashboardCorePagesTests: XCTestCase {
         XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41])
 
         _ = core.selectPage(.memory)
-        XCTAssertTrue(core.gpuPage.history.samples.isEmpty)
+        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41])
         XCTAssertEqual(core.gpuPage.utilizationPercent, 41)
+        XCTAssertEqual(core.gpuPage.chrome, .readings)
 
         _ = core.selectPage(.gpu)
-        XCTAssertEqual(core.gpuPage.chrome, .skeleton)
-        XCTAssertNil(core.gpuPage.utilizationPercent)
-        XCTAssertFalse(core.gpuPage.visitSucceeded)
+        XCTAssertEqual(core.gpuPage.chrome, .readings)
+        XCTAssertEqual(core.gpuPage.utilizationPercent, 41)
+        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41])
+        XCTAssertTrue(core.gpuPage.visitSucceeded)
 
         var failed = DashboardCore(ownPid: 1)
         _ = failed.apply(

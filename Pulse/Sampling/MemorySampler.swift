@@ -38,7 +38,7 @@ actor MemorySampler {
         topMemoryStore.retain(only: MemoryGrowthTopSeries.pids(from: lastRows, sort: sort))
     }
 
-    func sample(readGPU: Bool, readChipTemperature: Bool = false) -> Result<SampledFrame, HostMemoryError> {
+    func sample(readChipTemperature: Bool = false) -> Result<SampledFrame, HostMemoryError> {
         let host: RawHostMemory
         do {
             host = try HostMemoryReader.read()
@@ -67,11 +67,16 @@ actor MemorySampler {
             capturedAt: capturedAt,
             swapUsedBytes: swapUsedBytes
         )
+        let hostPageCounters = HostPageCounters(
+            pageins: host.pageins,
+            pageouts: host.pageouts,
+            pageSize: host.pageSize
+        )
         let systemCpuPercent = consumeSystemCPU()
         let busiestCorePercent = consumeBusiestCore()
         let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
         let hostDiskRates = consumeSystemDisk(at: capturedAt)
-        let gpuNodes = readGPU ? HostGPUReader.read() : nil
+        let gpuNodes = HostGPUReader.read()
         let chipTemperatureSensors = readChipTemperature ? HostChipTemperatureReader.read() : nil
         let hostWiFi = HostWiFiReader.read()
 
@@ -95,7 +100,8 @@ actor MemorySampler {
                     ),
                     gpuNodes: gpuNodes,
                     hostWiFi: hostWiFi,
-                    chipTemperatureSensors: chipTemperatureSensors
+                    chipTemperatureSensors: chipTemperatureSensors,
+                    hostPageCounters: hostPageCounters
                 )
             )
         }
@@ -244,7 +250,8 @@ actor MemorySampler {
                 energyLiveGenerations: energyMinuteLedger.liveGenerations,
                 gpuNodes: gpuNodes,
                 hostWiFi: hostWiFi,
-                chipTemperatureSensors: chipTemperatureSensors
+                chipTemperatureSensors: chipTemperatureSensors,
+                hostPageCounters: hostPageCounters
             )
         )
     }

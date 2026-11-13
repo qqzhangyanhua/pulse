@@ -238,6 +238,8 @@ struct SampledFrame: Sendable {
     let hostNetworkRates: HostNetworkRates
     /// Host disk read/write rates for this tick. Nil insides on first frame, failure, or wrap.
     let hostDiskRates: HostDiskRates
+    /// Host `pageins` / `pageouts`. Nil is unread, not zero pages. Not disk throughput.
+    let hostPageCounters: HostPageCounters?
     /// Bounded Top N=5 memory series for this tick. Empty when the process list failed.
     let topMemorySeries: [Int32: [ChartSample]]
     /// This frame only. Nil when the list failed or no task-info read was denied.
@@ -250,7 +252,7 @@ struct SampledFrame: Sendable {
     let exitedEnergyProcesses: [ExitedEnergyProcess]
     /// Live generation ids from the minute ledger. Empty when the process list failed.
     let energyLiveGenerations: [Int32: Int]
-    /// Accelerator nodes for this tick. Nil when the GPU page did not ask for a read.
+    /// Accelerator nodes for this tick. Nil when this tick did not read GPU.
     let gpuNodes: [GPUAcceleratorNode]?
     /// HID temperature services for this tick. Nil when the machine page did not ask.
     let chipTemperatureSensors: [ChipTemperatureSensor]?
@@ -274,7 +276,8 @@ struct SampledFrame: Sendable {
         energyLiveGenerations: [Int32: Int] = [:],
         gpuNodes: [GPUAcceleratorNode]? = nil,
         hostWiFi: HostWiFiReading? = nil,
-        chipTemperatureSensors: [ChipTemperatureSensor]? = nil
+        chipTemperatureSensors: [ChipTemperatureSensor]? = nil,
+        hostPageCounters: HostPageCounters? = nil
     ) {
         self.snapshot = snapshot
         self.rows = rows
@@ -293,5 +296,6 @@ struct SampledFrame: Sendable {
         self.gpuNodes = gpuNodes
         self.hostWiFi = hostWiFi
         self.chipTemperatureSensors = chipTemperatureSensors
+        self.hostPageCounters = hostPageCounters
     }
 }

@@ -84,6 +84,7 @@ let package = Package(
                 "Models/ProcessPermissionFootnote.swift",
                 "Models/CPUPage.swift",
                 "Models/GPUPage.swift",
+                "Models/MemoryPage.swift",
                 "Models/ChipTemperature.swift",
                 "Models/EnergyPage.swift",
                 "Models/EnergyBattery.swift",
