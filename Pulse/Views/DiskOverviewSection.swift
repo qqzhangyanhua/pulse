@@ -192,29 +192,16 @@ private struct DiskRateCard: View {
         }
     }
 
-    @ViewBuilder
     private var chart: some View {
-        if let history {
-            HistoryRangeChart(
-                plot: history,
-                tint: PulsePalette.chartDisk,
-                domain: domain,
-                formatY: { DiskRateText.string($0) }
-            )
-        } else if samples.count < 2 {
-            ChartPlaceholder(text: DiskPageCopy.chartCollecting)
-        } else {
-            HistoryAnnotatedChart(
-                annotation: HistoryCurvePresentation.annotation(current: rate, sampleCount: samples.count)
-            ) {
-                SparklineChart(
-                    samples: samples,
-                    tint: PulsePalette.chartDisk,
-                    domain: domain,
-                    formatY: { DiskRateText.string($0) }
-                )
-            }
-        }
+        HistoryRateChart(
+            history: history,
+            samples: samples,
+            rate: rate,
+            tint: PulsePalette.chartDisk,
+            domain: domain,
+            placeholder: DiskPageCopy.chartCollecting,
+            formatY: { DiskRateText.string($0) }
+        )
     }
 
     private var domain: ClosedRange<Double> {

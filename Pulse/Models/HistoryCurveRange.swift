@@ -100,13 +100,13 @@ enum HistoryCurveSeries {
         value: (HistorySample) -> Double?
     ) -> [HistoryCurvePoint] {
         guard step >= 1, end >= start else { return [] }
-        let origin = bucketStart(start, step: step)
-        let last = bucketStart(end, step: step)
+        let origin = HistoryPolicy.bucketStart(start, step: step)
+        let last = HistoryPolicy.bucketStart(end, step: step)
         let width = Int((last.timeIntervalSince(origin) / step).rounded(.down))
         guard width >= 0, width < 20_000 else { return [] }
         var latest: [Date: HistorySample] = [:]
         for sample in samples where sample.at >= start && sample.at <= end {
-            let bucket = bucketStart(sample.at, step: step)
+            let bucket = HistoryPolicy.bucketStart(sample.at, step: step)
             if let current = latest[bucket], current.at > sample.at { continue }
             latest[bucket] = sample
         }
@@ -120,14 +120,5 @@ enum HistoryCurveSeries {
         events.enumerated().map { index, row in
             HistoryCurveMark(id: index, at: row.at, label: label(row.event))
         }
-    }
-
-    private static func bucketStart(_ date: Date, step: TimeInterval) -> Date {
-        let whole = Int64(date.timeIntervalSince1970.rounded(.down))
-        let width = Int64(step.rounded(.down))
-        guard width > 0 else { return date }
-        let remainder = whole % width
-        guard remainder >= 0 else { return date }
-        return Date(timeIntervalSince1970: TimeInterval(whole - remainder))
     }
 }

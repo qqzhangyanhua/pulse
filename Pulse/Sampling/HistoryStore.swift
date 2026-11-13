@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 import SQLite3
 
-/// Writes rows it is given. Retention and gaps stay in `HistoryPolicy`.
+/// Writes the draft it is given. Retention and bucketing stay on that draft.
 final class HistoryStore: @unchecked Sendable {
     static let shared = HistoryStore()
 
@@ -26,17 +26,10 @@ final class HistoryStore: @unchecked Sendable {
             if database == nil { open() }
             guard let database else { return }
             insertSample(draft.sample, into: "sample", database: database)
-            insertSample(
-                HistoryPolicy.rolled(draft.sample, step: HistoryPolicy.minuteBucket),
-                into: "minute",
-                database: database
-            )
-            insertSample(
-                HistoryPolicy.rolled(draft.sample, step: HistoryPolicy.quarterBucket),
-                into: "quarter",
-                database: database
-            )
-            insertTop(draft.top, at: draft.sample.at, database: database)
+            insertSample(draft.minute, into: "minute", database: database)
+            insertSample(draft.quarter, into: "quarter", database: database)
+            deleteTop(at: draft.topAt, database: database)
+            insertTop(draft.top, at: draft.topAt, database: database)
             insertEvents(draft.events, at: draft.sample.at, database: database)
             deleteRows(from: "sample", before: draft.dropRawBefore, database: database)
             deleteRows(from: "minute", before: draft.dropMinuteBefore, database: database)
@@ -275,6 +268,15 @@ final class HistoryStore: @unchecked Sendable {
         bindOptionalDouble(statement, 8, sample.diskReadBytesPerSecond)
         bindOptionalDouble(statement, 9, sample.diskWriteBytesPerSecond)
         bindOptionalDouble(statement, 10, sample.gpuPercent)
+        sqlite3_step(statement)
+    }
+
+    private func deleteTop(at date: Date, database: OpaquePointer) {
+        let sql = "DELETE FROM top_process WHERE at = ?"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK, let statement else { return }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_double(statement, 1, date.timeIntervalSince1970)
         sqlite3_step(statement)
     }
 
