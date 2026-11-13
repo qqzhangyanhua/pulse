@@ -7,9 +7,11 @@ import SwiftUI
 struct PulseSettingsView: View {
     @AppStorage(MenuBarReadingPreference.defaultsKey) private var storedMode = MenuBarReadingMode.dot.rawValue
     @AppStorage(PressureNoticePreference.defaultsKey) private var pressureNoticeEnabled = true
+    @AppStorage(AlertRuleStore.defaultsKey) private var storedCustomRules = ""
     @State private var notificationDenied = false
     @State private var registrationError: String?
     @State private var statusGeneration = 0
+    @State private var editor: AlertRuleEditorModel?
 
     var body: some View {
         Form {
@@ -21,13 +23,30 @@ struct PulseSettingsView: View {
                 }
                 .pickerStyle(.radioGroup)
             }
-            Section("通知") {
+            Section("告警规则") {
                 Toggle("压力偏高时通知", isOn: $pressureNoticeEnabled)
+                    .accessibilityLabel("告警规则：压力偏高时通知")
+                Text(AlertRuleCopy.builtinNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("内置告警规则不能删除")
                 if notificationDenied {
                     Text(PressureNoticeCopy.permissionDenied)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                if alertCatalog.custom.isEmpty {
+                    Text(AlertRuleCopy.emptyCustom)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(alertCatalog.custom) { rule in
+                    alertRuleRow(rule)
+                }
+                Button(AlertRuleCopy.addButton) {
+                    editor = .fresh()
+                }
+                .accessibilityLabel(AlertRuleCopy.addButton)
             }
             Section("登录时打开 Pulse") {
                 Toggle("登录时打开 Pulse", isOn: loginItemOn)
@@ -45,9 +64,16 @@ struct PulseSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420)
+        .frame(width: 460)
         .padding(20)
         .onAppear(perform: refreshNoticePermission)
+        .sheet(item: $editor) { model in
+            AlertRuleEditor(model: model) { saved in
+                saveAlertRule(saved)
+            } onCancel: {
+                editor = nil
+            }
+        }
         .onChange(of: pressureNoticeEnabled) { _, enabled in
             guard enabled else { return }
             PressureNoticeCenter.requestPermission { denied in
@@ -56,6 +82,59 @@ struct PulseSettingsView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             rereadLoginItem()
+        }
+    }
+
+    private var alertCatalog: AlertRuleCatalog {
+        AlertRuleStore.catalog(stored: storedCustomRules)
+    }
+
+    private func alertRuleRow(_ rule: CustomAlertRule) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle(rule.notificationBody, isOn: customEnabled(rule))
+                .accessibilityLabel("停用或启用告警规则：\(rule.notificationBody)")
+            Text(rule.listDetail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack {
+                Button("编辑") { editor = .editing(rule) }
+                    .accessibilityLabel("编辑告警规则：\(rule.notificationBody)")
+                Button("删除") {
+                    storedCustomRules = AlertRuleStore.stored(alertCatalog.removing(id: rule.id))
+                }
+                .accessibilityLabel("删除告警规则：\(rule.notificationBody)")
+            }
+        }
+    }
+
+    private func customEnabled(_ rule: CustomAlertRule) -> Binding<Bool> {
+        Binding(
+            get: { rule.enabled },
+            set: { enabled in
+                storedCustomRules = AlertRuleStore.stored(
+                    alertCatalog.settingEnabled(id: rule.id, enabled: enabled)
+                )
+                if enabled {
+                    allowNotices()
+                }
+            }
+        )
+    }
+
+    private func saveAlertRule(_ model: AlertRuleEditorModel) {
+        guard let rule = model.validated() else { return }
+        let next = model.isNew ? alertCatalog.adding(rule) : alertCatalog.replacing(rule)
+        guard next.custom.contains(rule) else { return }
+        storedCustomRules = AlertRuleStore.stored(next)
+        editor = nil
+        if rule.enabled {
+            allowNotices()
+        }
+    }
+
+    private func allowNotices() {
+        PressureNoticeCenter.requestPermission { denied in
+            notificationDenied = denied
         }
     }
 

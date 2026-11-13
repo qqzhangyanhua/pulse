@@ -9,11 +9,17 @@ final class PressureNoticeCenter: NSObject, UNUserNotificationCenterDelegate {
     private weak var dashboard: MemoryDashboardVM?
     private var cancellable: AnyCancellable?
     private var ruleState = AlertRule.State.armed
+    private var customEngine = AlertRuleEngine()
     private var lastCapturedAt: Date?
     private var openMemoryPage: () -> Void = {}
+    private var openCustomRule: (DashboardPage, Int32?) -> Void = { _, _ in }
 
-    func install(openMemoryPage: @escaping () -> Void) {
+    func install(
+        openMemoryPage: @escaping () -> Void,
+        openCustomRule: @escaping (DashboardPage, Int32?) -> Void
+    ) {
         self.openMemoryPage = openMemoryPage
+        self.openCustomRule = openCustomRule
         UNUserNotificationCenter.current().delegate = self
     }
 
@@ -65,24 +71,64 @@ final class PressureNoticeCenter: NSObject, UNUserNotificationCenterDelegate {
             at: capturedAt ?? Date(timeIntervalSince1970: 0)
         )
         ruleState = decision.state
-        guard decision.send else { return }
-        let name = TopConsumer.leading(in: dashboard.rows)?.name
-        post(PressureNoticeCopy.body(heaviestAppName: name))
+        if decision.send {
+            let name = TopConsumer.leading(in: dashboard.rows)?.name
+            post(PressureNoticeCopy.body(heaviestAppName: name))
+        }
+        guard accepted, let capturedAt else { return }
+        postCustomRules(at: capturedAt)
     }
 
-    private func post(_ body: String) {
+    /// Custom rules run only on an accepted frame. A failed sample leaves their state alone.
+    private func postCustomRules(at date: Date) {
+        guard let dashboard else { return }
+        let stored = UserDefaults.standard.string(forKey: AlertRuleStore.defaultsKey) ?? ""
+        let rules = AlertRuleStore.catalog(stored: stored).custom
+        let notices = customEngine.evaluate(rules: rules, frame: alertFrame(dashboard), at: date)
+        for notice in notices {
+            post(
+                notice.body,
+                identifier: notice.id,
+                route: AlertNoticeRoute(page: notice.page, pid: notice.pid)
+            )
+        }
+    }
+
+    private func alertFrame(_ dashboard: MemoryDashboardVM) -> AlertFrame {
+        AlertFrame.sampled(
+            systemCpuPercent: dashboard.systemCpuPercent,
+            usedMemoryBytes: dashboard.snapshot?.usedBytes,
+            memoryPressure: dashboard.snapshot?.pressure,
+            chipCelsius: dashboard.machinePageCelsius,
+            diskFreeBytes: dashboard.machineFacts?.volume.availableBytes,
+            processes: dashboard.rows.map { row in
+                AlertProcessSample(
+                    pid: row.pid,
+                    name: row.name,
+                    cpuPercent: row.cpuPercent,
+                    memoryBytes: row.memoryBytes
+                )
+            }
+        )
+    }
+
+    private func post(
+        _ body: String,
+        identifier: String = Self.requestIdentifier,
+        route: AlertNoticeRoute? = nil
+    ) {
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
             let status = settings.authorizationStatus
             Task { @MainActor in
                 switch status {
                 case .authorized, .provisional:
-                    self.add(body, center: center)
+                    self.add(body, identifier: identifier, route: route, center: center)
                 case .notDetermined:
                     center.requestAuthorization(options: [.alert]) { granted, _ in
                         guard granted else { return }
                         Task { @MainActor in
-                            self.add(body, center: center)
+                            self.add(body, identifier: identifier, route: route, center: center)
                         }
                     }
                 case .denied:
@@ -94,13 +140,25 @@ final class PressureNoticeCenter: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    private func add(_ body: String, center: UNUserNotificationCenter) {
+    private func add(
+        _ body: String,
+        identifier: String,
+        route: AlertNoticeRoute?,
+        center: UNUserNotificationCenter
+    ) {
         let content = UNMutableNotificationContent()
         content.title = "Pulse"
         content.body = body
         content.interruptionLevel = .passive
+        if let route {
+            var info: [AnyHashable: Any] = [AlertNoticeRoute.pageKey: route.page.rawValue]
+            if let pid = route.pid {
+                info[AlertNoticeRoute.pidKey] = String(pid)
+            }
+            content.userInfo = info
+        }
         let request = UNNotificationRequest(
-            identifier: Self.requestIdentifier,
+            identifier: identifier,
             content: content,
             trigger: nil
         )
@@ -121,9 +179,14 @@ final class PressureNoticeCenter: NSObject, UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let identifier = response.notification.request.identifier
+        let info = response.notification.request.content.userInfo
+        let page = info[AlertNoticeRoute.pageKey] as? String
+        let pid = info[AlertNoticeRoute.pidKey] as? String
         MainActor.assumeIsolated {
             if identifier == Self.requestIdentifier {
                 self.openMemoryPage()
+            } else if let route = AlertNoticeRoute.decode(page: page, pid: pid) {
+                self.openCustomRule(route.page, route.pid)
             }
         }
         completionHandler()

@@ -6,6 +6,8 @@ struct AlertRule: Equatable, Sendable {
     struct State: Equatable, Sendable {
         enum Phase: Equatable, Sendable {
             case armed
+            /// Custom rules wait here until `duration` elapses. Builtin pressure never enters it.
+            case pending(since: Date)
             case fired(clearSince: Date?)
         }
 
@@ -62,6 +64,8 @@ struct AlertRule: Equatable, Sendable {
             }
         }
         switch (next.phase, pressure) {
+        case (.pending, _):
+            return Decision(send: false, state: state)
         case (.armed, .elevated):
             if let until = next.cooldownUntil, date < until {
                 return Decision(send: false, state: next)
@@ -91,6 +95,78 @@ struct AlertRule: Equatable, Sendable {
             }
             return Decision(send: false, state: next)
         }
+    }
+
+    /// Custom rules. `breached == nil` is a missing reading: no send and no state change.
+    /// A true reading must last `duration` before one send. Further trues stay quiet.
+    /// Cooldown and the daily cap are checked only when that send would happen.
+    func advance(
+        enabled: Bool,
+        state: State,
+        breached: Bool?,
+        at date: Date,
+        duration: TimeInterval,
+        calendar: Calendar = .current
+    ) -> Decision {
+        guard enabled, let breached else {
+            return Decision(send: false, state: state)
+        }
+        var next = state
+        if dailyLimit != nil {
+            let start = calendar.startOfDay(for: date)
+            if next.dayStart != start {
+                next.dayStart = start
+                next.sendsOnDay = 0
+            }
+        }
+        switch next.phase {
+        case .armed:
+            guard breached else { return Decision(send: false, state: next) }
+            if duration > 0 {
+                next.phase = .pending(since: date)
+                return Decision(send: false, state: next)
+            }
+            return sendIfAllowed(next, at: date)
+        case .pending(let since):
+            guard breached else {
+                next.phase = .armed
+                return Decision(send: false, state: next)
+            }
+            if date.timeIntervalSince(since) < duration {
+                return Decision(send: false, state: next)
+            }
+            return sendIfAllowed(next, at: date)
+        case .fired(let clearSince):
+            if breached {
+                next.phase = .fired(clearSince: nil)
+                return Decision(send: false, state: next)
+            }
+            let started = clearSince ?? date
+            if date.timeIntervalSince(started) >= rearm {
+                next.phase = .armed
+            } else {
+                next.phase = .fired(clearSince: started)
+            }
+            return Decision(send: false, state: next)
+        }
+    }
+
+    private func sendIfAllowed(_ state: State, at date: Date) -> Decision {
+        var next = state
+        if let until = next.cooldownUntil, date < until {
+            return Decision(send: false, state: next)
+        }
+        if let limit = dailyLimit, next.sendsOnDay >= limit {
+            return Decision(send: false, state: next)
+        }
+        next.phase = .fired(clearSince: nil)
+        if dailyLimit != nil {
+            next.sendsOnDay += 1
+        }
+        if cooldown > 0 {
+            next.cooldownUntil = date.addingTimeInterval(cooldown)
+        }
+        return Decision(send: true, state: next)
     }
 }
 
@@ -125,5 +201,26 @@ enum PressureNoticePreference {
     static func isEnabled(in defaults: UserDefaults = .standard) -> Bool {
         guard defaults.object(forKey: defaultsKey) != nil else { return true }
         return defaults.bool(forKey: defaultsKey)
+    }
+}
+
+extension AlertFrame {
+    /// Menu-bar code must not name the chip-temperature type. The caller passes an already gated Celsius.
+    static func sampled(
+        systemCpuPercent: Double?,
+        usedMemoryBytes: UInt64?,
+        memoryPressure: PressureLevel?,
+        chipCelsius: Double?,
+        diskFreeBytes: UInt64?,
+        processes: [AlertProcessSample]
+    ) -> AlertFrame {
+        AlertFrame(
+            systemCpuPercent: systemCpuPercent,
+            usedMemoryBytes: usedMemoryBytes,
+            memoryPressure: memoryPressure,
+            chipTemperatureCelsius: chipCelsius,
+            diskFreeBytes: diskFreeBytes,
+            processes: processes
+        )
     }
 }

@@ -43,6 +43,8 @@
 		B00000000000000000000044 /* KernelPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000044 /* KernelPressure.swift */; };
 		B00000000000000000000047 /* MenuBarReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000047 /* MenuBarReading.swift */; };
 		B00000000000000000000240 /* AlertRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000240 /* AlertRule.swift */; };
+		B00000000000000000000330 /* AlertRule+Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000330 /* AlertRule+Settings.swift */; };
+		B00000000000000000000331 /* PulseSettingsView+AlertRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000331 /* PulseSettingsView+AlertRules.swift */; };
 		B0000000000000000000004B /* PressureNoticeCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004B /* PressureNoticeCenter.swift */; };
 		B0000000000000000000004C /* LoginItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000004C /* LoginItem.swift */; };
 		B00000000000000000000076 /* ThermalAdviceThrottle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000076 /* ThermalAdviceThrottle.swift */; };
@@ -256,6 +258,8 @@
 		A00000000000000000000044 /* KernelPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KernelPressure.swift; sourceTree = "<group>"; };
 		A00000000000000000000047 /* MenuBarReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarReading.swift; sourceTree = "<group>"; };
 		A00000000000000000000240 /* AlertRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertRule.swift; sourceTree = "<group>"; };
+		A00000000000000000000330 /* AlertRule+Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AlertRule+Settings.swift"; sourceTree = "<group>"; };
+		A00000000000000000000331 /* PulseSettingsView+AlertRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PulseSettingsView+AlertRules.swift"; sourceTree = "<group>"; };
 		A0000000000000000000004B /* PressureNoticeCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PressureNoticeCenter.swift; sourceTree = "<group>"; };
 		A0000000000000000000004C /* LoginItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItem.swift; sourceTree = "<group>"; };
 		A00000000000000000000076 /* ThermalAdviceThrottle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalAdviceThrottle.swift; sourceTree = "<group>"; };
@@ -465,6 +469,7 @@
 				A00000000000000000000181 /* ProcessSocket.swift */,
 				A00000000000000000000047 /* MenuBarReading.swift */,
 				A00000000000000000000240 /* AlertRule.swift */,
+				A00000000000000000000330 /* AlertRule+Settings.swift */,
 				A0000000000000000000004C /* LoginItem.swift */,
 				A00000000000000000000076 /* ThermalAdviceThrottle.swift */,
 				A00000000000000000000050 /* SnapshotExport.swift */,
@@ -597,6 +602,7 @@
 				A0000000000000000000000E /* SharedUI.swift */,
 				A00000000000000000000078 /* ThermalAdviceCard.swift */,
 				A00000000000000000000046 /* PulseSettingsView.swift */,
+				A00000000000000000000331 /* PulseSettingsView+AlertRules.swift */,
 				A00000000000000000000053 /* SnapshotExportPreview.swift */,
 			);
 			path = Views;
@@ -763,9 +769,11 @@
 				B00000000000000000000044 /* KernelPressure.swift in Sources */,
 				B00000000000000000000047 /* MenuBarReading.swift in Sources */,
 				B00000000000000000000240 /* AlertRule.swift in Sources */,
+				B00000000000000000000330 /* AlertRule+Settings.swift in Sources */,
 				B0000000000000000000004C /* LoginItem.swift in Sources */,
 				B00000000000000000000076 /* ThermalAdviceThrottle.swift in Sources */,
 				B00000000000000000000046 /* PulseSettingsView.swift in Sources */,
+				B00000000000000000000331 /* PulseSettingsView+AlertRules.swift in Sources */,
 				B0000000000000000000003E /* WindowedAppFilter.swift in Sources */,
 				B0000000000000000000003F /* WindowedAppLookup.swift in Sources */,
 				B00000000000000000000040 /* AppGroupProjection.swift in Sources */,

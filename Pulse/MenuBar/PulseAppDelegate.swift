@@ -72,9 +72,23 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate, ObservableObject 
     }
 
     private func installPressureNotices() {
-        pressureNotices.install { [weak self] in
-            self?.focusMemoryPage()
+        pressureNotices.install(
+            openMemoryPage: { [weak self] in
+                self?.focusMemoryPage()
+            },
+            openCustomRule: { [weak self] page, pid in
+                self?.openCustomAlert(page: page, pid: pid)
+            }
+        )
+    }
+
+    /// Custom 告警规则 click. Builtin pressure stays on `focusMemoryPage` and does not select a pid.
+    private func openCustomAlert(page: DashboardPage, pid: Int32?) {
+        dashboard.selectPage(page)
+        if let pid {
+            dashboard.select(pid: pid)
         }
+        activateMainWindow()
     }
 
     /// Status item 「打开 Pulse」 with zero windows. The app scene installs this; a window is not required.
