@@ -179,7 +179,9 @@ actor MemorySampler {
                     diskWriteBytesPerSecond: disk.rates.writeBytesPerSecond,
                     energyWatts: energy.rates.watts,
                     wakeupsPerSecond: energy.rates.wakeupsPerSecond,
-                    parentPid: raw.parentPid
+                    parentPid: raw.parentPid,
+                    userID: raw.userID,
+                    startTimeSeconds: raw.startTimeSeconds
                 )
             )
         }

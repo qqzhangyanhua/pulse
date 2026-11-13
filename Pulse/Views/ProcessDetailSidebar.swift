@@ -184,6 +184,7 @@ struct ProcessDetailSidebar: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 header(detail)
+                processInfo(detail)
                 switch projection {
                 case .memoryExisting:
                     metrics(detail)
