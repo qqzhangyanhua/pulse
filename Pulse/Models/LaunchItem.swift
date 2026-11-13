@@ -21,6 +21,10 @@ enum LaunchItemCopy {
     static let enabled = "已启用"
     static let notEnabled = "未启用"
     static let needsApproval = "需要批准"
+
+    static func startedLine(label: String) -> String {
+        "由 \(label) 启动，退出后可能自动重启"
+    }
 }
 
 /// Enabled state of one legacy plist. The Darwin reader fills this in.
@@ -143,4 +147,13 @@ enum LaunchItemPlistDecoder {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }
+}
+
+/// The launch item whose program path equals `path`.
+/// Nil when the path is missing, none match, or more than one path matches. Not a prefix.
+func launchItem(forExecutablePath path: String?, items: [LaunchItemRow]) -> LaunchItemRow? {
+    guard let path else { return nil }
+    let matches = items.filter { $0.programPath == path }
+    guard matches.count == 1 else { return nil }
+    return matches[0]
 }
