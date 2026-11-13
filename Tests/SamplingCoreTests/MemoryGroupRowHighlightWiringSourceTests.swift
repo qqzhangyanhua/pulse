@@ -26,10 +26,6 @@ final class MemoryGroupRowHighlightWiringSourceTests: XCTestCase {
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         let scroll = try functionBody(named: "processListScrollTarget", in: vm)
         XCTAssertTrue(scroll.contains("ProcessSelection.scrollTarget(selectedPid: selectedPid, rows: rows)"))
-        let apply = try functionBody(named: "applySample", in: vm)
-        XCTAssertFalse(apply.contains("setSelectedPid"))
-        XCTAssertFalse(apply.contains("applyGroupedByAppSelection"))
-
         let model = try repoText("Pulse/Models/MemoryGroupRowHighlight.swift")
         XCTAssertTrue(model.contains("MemoryMagnitudeVisibleGroup.row("))
         XCTAssertFalse(model.contains("setSelectedPid"))

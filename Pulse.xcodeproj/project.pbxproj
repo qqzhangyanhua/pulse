@@ -130,6 +130,7 @@
 		B00000000000000000000096 /* MemoryDashboardVM+ChipTemperature.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000096 /* MemoryDashboardVM+ChipTemperature.swift */; };
 		B00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift */; };
 		B00000000000000000000098 /* MemoryDashboardVM+MemoryGrowthList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000098 /* MemoryDashboardVM+MemoryGrowthList.swift */; };
+		B00000000000000000000099 /* DashboardCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000099 /* DashboardCore.swift */; };
 		B00000000000000000000090 /* PublicIPLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000090 /* PublicIPLookup.swift */; };
 		B00000000000000000000091 /* PublicIPURLSessionTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000091 /* PublicIPURLSessionTransport.swift */; };
 		B00000000000000000000013 /* OverviewCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* OverviewCards.swift */; };
@@ -144,6 +145,7 @@
 /* Begin PBXFileReference section */
 		A00000000000000000000001 /* PulseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseApp.swift; sourceTree = "<group>"; };
 		A00000000000000000000002 /* MemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryModels.swift; sourceTree = "<group>"; };
+		A00000000000000000000099 /* DashboardCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardCore.swift; sourceTree = "<group>"; };
 		A00000000000000000000049 /* ProcessRowCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRowCopy.swift; sourceTree = "<group>"; };
 		A00000000000000000000043 /* ProcessMemoryChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessMemoryChoice.swift; sourceTree = "<group>"; };
 		A00000000000000000000028 /* ByteFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteFormat.swift; sourceTree = "<group>"; };
@@ -312,6 +314,7 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000002 /* MemoryModels.swift */,
+				A00000000000000000000099 /* DashboardCore.swift */,
 				A00000000000000000000049 /* ProcessRowCopy.swift */,
 				A00000000000000000000043 /* ProcessMemoryChoice.swift */,
 				A00000000000000000000028 /* ByteFormat.swift */,
@@ -576,6 +579,7 @@
 			files = (
 				B00000000000000000000001 /* PulseApp.swift in Sources */,
 				B00000000000000000000002 /* MemoryModels.swift in Sources */,
+				B00000000000000000000099 /* DashboardCore.swift in Sources */,
 				B00000000000000000000049 /* ProcessRowCopy.swift in Sources */,
 				B00000000000000000000043 /* ProcessMemoryChoice.swift in Sources */,
 				B00000000000000000000028 /* ByteFormat.swift in Sources */,

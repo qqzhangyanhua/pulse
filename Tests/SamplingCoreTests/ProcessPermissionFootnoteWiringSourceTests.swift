@@ -125,11 +125,11 @@ final class ProcessPermissionFootnoteWiringSourceTests: XCTestCase {
         XCTAssertEqual(occurrenceCount(of: "rows.append(", in: sampler), 1)
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
-        XCTAssertTrue(vm.contains("@Published private(set) var processPermissionFootnote: String?"))
-        let apply = try functionBody(named: "applySample", in: vm)
-        XCTAssertEqual(occurrenceCount(of: "processPermissionFootnote = frame.permissionFootnote", in: apply), 1)
-        XCTAssertFalse(apply.contains("processPermissionFootnote = \"0\""))
-        XCTAssertFalse(apply.contains("另有"))
+        XCTAssertTrue(vm.contains("var processPermissionFootnote: String? { core.processPermissionFootnote }"))
+        let core = try repoText("Pulse/Models/DashboardCore.swift")
+        XCTAssertEqual(occurrenceCount(of: "processPermissionFootnote = frame.permissionFootnote", in: core), 1)
+        XCTAssertFalse(core.contains("processPermissionFootnote = \"0\""))
+        XCTAssertFalse(core.contains("另有"))
     }
 
     func testTableDrawsTheSentenceUnderTheListAndKeepsMissingCells() throws {

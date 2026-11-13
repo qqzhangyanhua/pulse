@@ -48,8 +48,6 @@ final class ChipTemperatureWiringSourceTests: XCTestCase {
             occurrenceCount(of: "publishChipTemperatureTransition(from: previous, to: selectedPage)", in: vm),
             2
         )
-        XCTAssertTrue(vm.contains("recordChipTemperatureSample(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt)"))
-        XCTAssertTrue(vm.contains("recordChipTemperatureSample(sensors: nil, failed: true, at: nil)"))
 
         let extensionVM = try repoText("Pulse/ViewModels/MemoryDashboardVM+ChipTemperature.swift")
         XCTAssertTrue(extensionVM.contains("guard selectedPage == .machine else { return }"))

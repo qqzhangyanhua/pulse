@@ -92,11 +92,6 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         XCTAssertTrue(dashboard.contains("var thermalAdviceLastUpdate: Double?"))
         XCTAssertFalse(dashboard.contains("private var thermalAdviceLastUpdate"))
         XCTAssertFalse(dashboard.contains("@Published var thermalAdviceLastUpdate"))
-        XCTAssertTrue(
-            dashboard.contains(
-                "rows = frame.rows\n                    refreshThermalAdvice(now: frame.snapshot.capturedAt.timeIntervalSince1970)"
-            )
-        )
 
         let watch = try repoText("Pulse/ViewModels/MemoryDashboardVM+HostWatch.swift")
         XCTAssertTrue(

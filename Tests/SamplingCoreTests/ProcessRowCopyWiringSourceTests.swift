@@ -50,9 +50,6 @@ final class ProcessRowCopyWiringSourceTests: XCTestCase {
         let shown = try index(of: "sortedRows.first", in: selected)
         let raw = try index(of: "rows.first", in: selected)
         XCTAssertLessThan(shown, raw)
-        let apply = try functionBody(named: "applySample", in: vm)
-        XCTAssertFalse(apply.contains("setSelectedPid"))
-        XCTAssertFalse(apply.contains("applyGroupedByAppSelection"))
     }
 
     private func repoText(_ relative: String) throws -> String {

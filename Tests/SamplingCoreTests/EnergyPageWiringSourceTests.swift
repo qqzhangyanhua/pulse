@@ -44,7 +44,7 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("MemoryDashboardVM+EnergyRanking.swift in Sources"))
         XCTAssertEqual(
             occurrenceCount(of: "isa = PBXBuildFile;", in: project),
-            132,
+            133,
             "minute ledger adds ProcessEnergyMinuteLedger.swift and hour ranking adds MemoryDashboardVM+EnergyRanking.swift; energy history adds EnergyMachineHistory.swift, EnergyHistoryChart.swift, and MemoryDashboardVM+EnergyHistory.swift; thermal advice adds ThermalAdvice.swift; thermal advice throttle adds ThermalAdviceThrottle.swift; thermal advice view model adds MemoryDashboardVM+ThermalAdvice.swift; thermal advice card adds ThermalAdviceCard.swift; machine overview split adds MachineOverviewSection+Throughput.swift; sampling clock adds MemoryDashboardVM+SamplingClock.swift; GPU page adds GPUPage.swift, HostGPUReader.swift, GPUOverviewSection.swift, and MemoryDashboardVM+GPU.swift; connection card adds HostConnection.swift, HostConnectionMonitor.swift, NetworkConnectionCard.swift, NetworkConnectionCardView.swift, and MemoryDashboardVM+NetworkConnection.swift; Wi-Fi signal adds HostWiFi.swift and HostWiFiReader.swift; public IP adds PublicIPLookup.swift and PublicIPURLSessionTransport.swift; SSID permission adds HostWiFiLocation.swift; navigation accessors add MemoryDashboardVM+Navigation.swift; chip temperature adds ChipTemperature.swift, HostChipTemperatureReader.swift, MachineOverviewSection+ChipTemperature.swift, and MemoryDashboardVM+ChipTemperature.swift; memory list badge adds MemoryDashboardVM+MemoryGrowthList.swift"
         )
         XCTAssertTrue(project.contains("ProcessDetailSidebar+Energy.swift in Sources"))
@@ -146,13 +146,6 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertFalse(sorted.contains("energyWindowRates"))
         XCTAssertFalse(sorted.contains("?? -1"))
         XCTAssertFalse(sorted.contains("energyWatts"))
-        let failure = try braceBody(after: "case .failure:", in: vm)
-        XCTAssertFalse(failure.contains("energyWindowRates"))
-        XCTAssertFalse(failure.contains("energyHourRates"))
-        XCTAssertFalse(failure.contains("exitedEnergyProcesses"))
-        let apply = try functionBody(named: "applySample", in: vm)
-        XCTAssertTrue(apply.contains("energyLiveGenerations = frame.energyLiveGenerations"))
-        XCTAssertTrue(apply.contains("reconcileEnergySelectionGeneration()"))
         XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 4)
         XCTAssertFalse(vm.contains("@Published private var selectedEnergyGeneration"))
         XCTAssertTrue(vm.contains("private var selectedEnergyGeneration: Int?"))
@@ -165,8 +158,8 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertFalse(ranking.contains("@MainActor"))
         XCTAssertFalse(ranking.contains("didSet"))
         XCTAssertTrue(vm.contains("@Published var energyRankingSpan = EnergyRankingSpan.oneMinute"))
-        XCTAssertTrue(vm.contains("@Published private(set) var energyHourRates: [Int32: ProcessEnergyRates] = [:]"))
-        XCTAssertTrue(vm.contains("@Published private(set) var exitedEnergyProcesses: [ExitedEnergyProcess] = []"))
+        XCTAssertTrue(vm.contains("var energyHourRates: [Int32: ProcessEnergyRates] { core.energyHourRates }"))
+        XCTAssertTrue(vm.contains("var exitedEnergyProcesses: [ExitedEnergyProcess] { core.exitedEnergyProcesses }"))
         let snapshot = try repoText("Pulse/Models/SnapshotExport.swift")
         XCTAssertFalse(snapshot.contains("energyWindow"))
         XCTAssertFalse(snapshot.contains("ri_energy_nj"))

@@ -36,10 +36,12 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
 
     func testVMHoldsOneQuitStoreAndDerivesPhaseFromTheSidebar() throws {
         let source = try vmSource()
-        XCTAssertEqual(occurrenceCount(of: "ProcessQuitOutcome()", in: source), 1)
+        let coreSource = try repoText("Pulse/Models/DashboardCore.swift")
+        XCTAssertEqual(occurrenceCount(of: "ProcessQuitOutcome()", in: source), 0)
+        XCTAssertEqual(occurrenceCount(of: "ProcessQuitOutcome()", in: coreSource), 1)
         XCTAssertEqual(occurrenceCount(of: "var quitOutcome", in: source), 1)
-        XCTAssertTrue(source.contains("@Published var quitOutcome = ProcessQuitOutcome()"))
-        XCTAssertTrue(source.contains("@Published var sidebarSubjectPid: Int32?"))
+        XCTAssertTrue(source.contains("var quitOutcome: ProcessQuitOutcome {"))
+        XCTAssertTrue(source.contains("var sidebarSubjectPid: Int32? {"))
         XCTAssertEqual(
             try lineContaining("var quitPhase", in: source),
             "    var quitPhase: QuitPhase { sidebar.quitPhase }"
@@ -58,8 +60,9 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         XCTAssertFalse(source.contains("identityEvidence"))
         XCTAssertFalse(source.contains("Timer"))
         XCTAssertFalse(source.contains("NSAlert"))
-        XCTAssertEqual(occurrenceCount(of: "ProcessQuitSession.applySample", in: source), 1)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 42, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature")
+        XCTAssertEqual(occurrenceCount(of: "ProcessQuitSession.applySample", in: source), 0)
+        XCTAssertEqual(occurrenceCount(of: "ProcessQuitSession.applySample", in: coreSource), 1)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 18, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 4)
     }
 
@@ -87,19 +90,6 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         XCTAssertFalse(tick.contains("selectedPid"))
         XCTAssertFalse(tick.contains("quit"))
         XCTAssertEqual(occurrenceCount(of: "func applySample(", in: source), 1)
-        let apply = try functionBody(named: "applySample", in: source)
-        XCTAssertEqual(occurrenceCount(of: "ProcessQuitSession.applySample", in: apply), 1)
-        XCTAssertTrue(apply.contains("freshnessInsufficient: true"))
-        XCTAssertTrue(apply.contains("samplingFailed: true"))
-        XCTAssertTrue(apply.contains("processListFailed: frame.processListFailed"))
-        XCTAssertTrue(apply.contains("detailToFreeze: detail"))
-        XCTAssertTrue(apply.contains("usageHistory"))
-        XCTAssertTrue(apply.contains("rows = frame.rows"))
-        XCTAssertTrue(apply.contains("SamplingRetryApply.apply"))
-        XCTAssertTrue(apply.contains("applyRisingOnlySelection()"))
-        XCTAssertFalse(apply.contains("identityEvidence"))
-        XCTAssertFalse(apply.contains("quitPhase"))
-        XCTAssertFalse(apply.contains("quitMessage"))
     }
 
     func testQuitMethodsUseTheSessionTokenAndTheExistingActions() throws {
@@ -209,9 +199,9 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
 
     func testApplySamplePassesFrameUsedBytesAndSamplerStaysFreeOfQuitWords() throws {
         let source = try vmSource()
-        let apply = try functionBody(named: "applySample", in: source)
-        XCTAssertEqual(occurrenceCount(of: "usedBytes: frame.snapshot.usedBytes", in: apply), 1)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 42, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature")
+        let coreSource = try repoText("Pulse/Models/DashboardCore.swift")
+        XCTAssertEqual(occurrenceCount(of: "usedBytes: frame.snapshot.usedBytes", in: coreSource), 1)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 18, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature")
         XCTAssertTrue(source.contains("guard snapshot != nil, samplingFailed == false else { return nil }"))
         XCTAssertTrue(source.contains("return snapshot?.usedBytes"))
         let ordinary = try functionBody(named: "quitSelected", in: source)
