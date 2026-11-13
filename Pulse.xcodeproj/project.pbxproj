@@ -139,6 +139,7 @@
 		B00000000000000000000105 /* DashboardCore+GPU.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000105 /* DashboardCore+GPU.swift */; };
 		B00000000000000000000106 /* DashboardCore+Machine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000106 /* DashboardCore+Machine.swift */; };
 		B00000000000000000000107 /* DashboardCore+Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000107 /* DashboardCore+Snapshot.swift */; };
+		B00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift */; };
 		B00000000000000000000138 /* SleepAssertion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000138 /* SleepAssertion.swift */; };
 		B00000000000000000000139 /* DashboardCore+SleepAssertion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000139 /* DashboardCore+SleepAssertion.swift */; };
 		B00000000000000000000140 /* SleepAssertionReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000140 /* SleepAssertionReader.swift */; };
@@ -167,6 +168,7 @@
 		A00000000000000000000105 /* DashboardCore+GPU.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+GPU.swift"; sourceTree = "<group>"; };
 		A00000000000000000000106 /* DashboardCore+Machine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Machine.swift"; sourceTree = "<group>"; };
 		A00000000000000000000107 /* DashboardCore+Snapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Snapshot.swift"; sourceTree = "<group>"; };
+		A00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessDetailSidebar+QuitSafety.swift"; sourceTree = "<group>"; };
 		A00000000000000000000138 /* SleepAssertion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepAssertion.swift; sourceTree = "<group>"; };
 		A00000000000000000000139 /* DashboardCore+SleepAssertion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+SleepAssertion.swift"; sourceTree = "<group>"; };
 		A00000000000000000000140 /* SleepAssertionReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepAssertionReader.swift; sourceTree = "<group>"; };
@@ -511,6 +513,7 @@
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
 				A00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift */,
 				A00000000000000000000068 /* ProcessDetailSidebar+Energy.swift */,
+				A00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift */,
 				A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */,
 				A00000000000000000000064 /* ProcessTreeView.swift */,
 				A0000000000000000000000E /* SharedUI.swift */,
@@ -728,6 +731,7 @@
 				B00000000000000000000072 /* EnergyHistoryChart.swift in Sources */,
 				B00000000000000000000074 /* MemoryDashboardVM+EnergyHistory.swift in Sources */,
 				B00000000000000000000068 /* ProcessDetailSidebar+Energy.swift in Sources */,
+				B00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift in Sources */,
 				B00000000000000000000023 /* HostDiskReader.swift in Sources */,
 				B00000000000000000000006 /* MachineInfo.swift in Sources */,
 				B00000000000000000000007 /* ProcessActions.swift in Sources */,
