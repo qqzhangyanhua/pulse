@@ -41,7 +41,7 @@ final class SnapshotExportWiringSourceTests: XCTestCase {
 
     func testFreezeCopiesThePublishedFrameAndDoesNotSample() throws {
         let source = try WiringSourceText.text(for: "MemoryDashboardVM")
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 36, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 37, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 4)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: source), 1)
         let body = try functionBody(named: "requestSaveCurrentSnapshot", in: source)
@@ -87,8 +87,8 @@ final class SnapshotExportWiringSourceTests: XCTestCase {
         XCTAssertTrue(dashboard.contains("保存当前快照"))
         let group = try braceBody(after: "ToolbarItemGroup(placement: .primaryAction)", in: dashboard)
         XCTAssertFalse(group.contains("保存当前快照"))
-        let machineBranch = try braceBody(after: "if vm.selectedPage != .machine", in: dashboard)
-        XCTAssertFalse(machineBranch.contains("保存当前快照"))
+        let fullPageBranch = try braceBody(after: "if !vm.selectedPage.isFullPage", in: dashboard)
+        XCTAssertFalse(fullPageBranch.contains("保存当前快照"))
         XCTAssertTrue(dashboard.contains("requestSaveCurrentSnapshot(savedAt:"))
         XCTAssertTrue(dashboard.contains("Date()"))
         let request = try functionBody(named: "requestSaveCurrentSnapshot", in: try WiringSourceText.text(for: "MemoryDashboardVM"))

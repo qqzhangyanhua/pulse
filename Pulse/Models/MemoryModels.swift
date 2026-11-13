@@ -242,6 +242,8 @@ struct SampledFrame: Sendable {
     let exitedEnergyProcesses: [ExitedEnergyProcess]
     /// Live generation ids from the minute ledger. Empty when the process list failed.
     let energyLiveGenerations: [Int32: Int]
+    /// Accelerator nodes for this tick. Nil when the GPU page did not ask for a read.
+    let gpuNodes: [GPUAcceleratorNode]?
 
     init(
         snapshot: MemorySnapshot,
@@ -257,7 +259,8 @@ struct SampledFrame: Sendable {
         energyWindowRates: [Int32: ProcessEnergyRates] = [:],
         energyHourRates: [Int32: ProcessEnergyRates] = [:],
         exitedEnergyProcesses: [ExitedEnergyProcess] = [],
-        energyLiveGenerations: [Int32: Int] = [:]
+        energyLiveGenerations: [Int32: Int] = [:],
+        gpuNodes: [GPUAcceleratorNode]? = nil
     ) {
         self.snapshot = snapshot
         self.rows = rows
@@ -273,5 +276,6 @@ struct SampledFrame: Sendable {
         self.energyHourRates = energyHourRates
         self.exitedEnergyProcesses = exitedEnergyProcesses
         self.energyLiveGenerations = energyLiveGenerations
+        self.gpuNodes = gpuNodes
     }
 }

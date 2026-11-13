@@ -44,8 +44,8 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("MemoryDashboardVM+EnergyRanking.swift in Sources"))
         XCTAssertEqual(
             occurrenceCount(of: "isa = PBXBuildFile;", in: project),
-            112,
-            "minute ledger adds ProcessEnergyMinuteLedger.swift and hour ranking adds MemoryDashboardVM+EnergyRanking.swift; energy history adds EnergyMachineHistory.swift, EnergyHistoryChart.swift, and MemoryDashboardVM+EnergyHistory.swift; thermal advice adds ThermalAdvice.swift; thermal advice throttle adds ThermalAdviceThrottle.swift; thermal advice view model adds MemoryDashboardVM+ThermalAdvice.swift; thermal advice card adds ThermalAdviceCard.swift; machine overview split adds MachineOverviewSection+Throughput.swift; sampling clock adds MemoryDashboardVM+SamplingClock.swift"
+            116,
+            "minute ledger adds ProcessEnergyMinuteLedger.swift and hour ranking adds MemoryDashboardVM+EnergyRanking.swift; energy history adds EnergyMachineHistory.swift, EnergyHistoryChart.swift, and MemoryDashboardVM+EnergyHistory.swift; thermal advice adds ThermalAdvice.swift; thermal advice throttle adds ThermalAdviceThrottle.swift; thermal advice view model adds MemoryDashboardVM+ThermalAdvice.swift; thermal advice card adds ThermalAdviceCard.swift; machine overview split adds MachineOverviewSection+Throughput.swift; sampling clock adds MemoryDashboardVM+SamplingClock.swift; GPU page adds GPUPage.swift, HostGPUReader.swift, GPUOverviewSection.swift, and MemoryDashboardVM+GPU.swift"
         )
         XCTAssertTrue(project.contains("ProcessDetailSidebar+Energy.swift in Sources"))
     }
@@ -132,7 +132,9 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(app.contains("activeEnergyRates"))
         XCTAssertFalse(app.contains("energyWindowRates"))
         let status = try repoText("Pulse/MenuBar/MenuBarStatus.swift")
-        XCTAssertTrue(status.contains("self != .machine"))
+        XCTAssertTrue(status.contains("var isFullPage: Bool { self == .machine || self == .gpu }"))
+        XCTAssertTrue(status.contains("var allowsProcessQuit: Bool { !isFullPage }"))
+        XCTAssertFalse(status.contains(".energy"))
         XCTAssertFalse(status.contains("self != .energy"))
         let popover = try repoText("Pulse/MenuBar/MenuBarPopoverView.swift")
         XCTAssertFalse(popover.contains("能耗"))

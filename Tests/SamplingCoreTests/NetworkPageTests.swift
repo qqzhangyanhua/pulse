@@ -103,13 +103,13 @@ final class NetworkPageTests: XCTestCase {
         XCTAssertNotEqual(row.networkAvailability.label, "0 字节/秒")
     }
 
-    func testNetworkTabIsSelectableAndGPUStaysGray() {
+    func testNetworkAndGPUTabsAreSelectable() {
         XCTAssertTrue(DashboardPage.memory.isSelectable)
         XCTAssertTrue(DashboardPage.cpu.isSelectable)
         XCTAssertTrue(DashboardPage.network.isSelectable)
         XCTAssertTrue(DashboardPage.disk.isSelectable)
         XCTAssertTrue(DashboardPage.machine.isSelectable)
-        XCTAssertFalse(DashboardPage.gpu.isSelectable)
+        XCTAssertTrue(DashboardPage.gpu.isSelectable)
     }
 
     func testColdStartStaysOnMemoryAndNetworkDefaultsToCPUSort() {
@@ -123,12 +123,12 @@ final class NetworkPageTests: XCTestCase {
         XCTAssertNotEqual(navigation.sort, ProcessTableSort.defaultSort(for: .memory))
 
         navigation.updateSort(ProcessTableSort(column: .name, descending: false))
-        navigation.select(.gpu)
-        XCTAssertEqual(navigation.selectedPage, .network)
-        XCTAssertEqual(navigation.sort.column, .name)
-
         navigation.select(.network)
         XCTAssertEqual(navigation.sort.column, .name, "Re-selecting the open page keeps the user's sort")
+
+        navigation.select(.gpu)
+        XCTAssertEqual(navigation.selectedPage, .gpu)
+        XCTAssertEqual(navigation.sort, ProcessTableSort(column: .memory, descending: true))
 
         navigation.select(.cpu)
         XCTAssertEqual(navigation.selectedPage, .cpu)

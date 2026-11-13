@@ -1,7 +1,6 @@
 import Foundation
 
-/// Pages the status item can land on. The main window presents memory, CPU, energy, network, disk, and machine.
-/// GPU stays in the enum so a click can force memory instead of following it.
+/// Pages the main window can show. Tab order is `ResourceTab`, not this declaration order.
 enum DashboardPage: String, Equatable, Sendable, CaseIterable {
     case memory
     case cpu
@@ -11,18 +10,14 @@ enum DashboardPage: String, Equatable, Sendable, CaseIterable {
     case machine
     case gpu
 
-    /// Memory, CPU, energy, network, disk, and machine are tappable. GPU stays disabled.
-    var isSelectable: Bool {
-        switch self {
-        case .memory, .cpu, .energy, .network, .disk, .machine:
-            return true
-        case .gpu:
-            return false
-        }
-    }
+    /// Machine and GPU fill the window and hide process chrome.
+    var isFullPage: Bool { self == .machine || self == .gpu }
 
-    /// The machine page has no process list.
-    var allowsProcessQuit: Bool { self != .machine }
+    /// Every current page is tappable, including GPU after 本机.
+    var isSelectable: Bool { true }
+
+    /// Opposite of `isFullPage`. Machine and GPU keep the view-menu quit disabled.
+    var allowsProcessQuit: Bool { !isFullPage }
 }
 
 struct MenuBarNavigation: Equatable, Sendable {
