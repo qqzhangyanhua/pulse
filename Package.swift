@@ -134,6 +134,7 @@ let package = Package(
                 "Models/ProcessSocket.swift",
                 "Models/MenuBarReading.swift",
                 "Models/AlertRule.swift",
+                "Models/AlertRule+Settings.swift",
                 "Models/LoginItem.swift",
                 "Models/LaunchItem.swift",
                 "Models/ThermalAdviceThrottle.swift",

@@ -196,11 +196,11 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 ## 菜单栏
 
 - 状态项画一个压力色点：正常为冷静绿，偏高为琥珀，无数据或失败为灰，并附提示「暂时读不到」。默认栏上没有文字。设置里可选「仅色点」「色点 + 已用内存」「色点 + CPU」，默认仅色点；后两种在色点旁显示对应读数，缺失为「—」，数字等宽。选择存在 UserDefaults，重启后保留。`⌘,` 或轻量条里的「设置」打开设置窗口。
-- 压力升到偏高时发一条系统通知，默认开，设置里可关。同一轮偏高只发一次；连续正常满 5 分钟后才重新可发。缺帧或采样失败不发，也不重置这一轮。文案是「内存压力偏高，可以看看谁占得最多」，有占用最多的 App 时带上名字。点击走「打开 Pulse」的同一条路径，打开主窗内存页。系统拒绝通知权限时不弹错误，设置里显示「系统通知未授权」。
+- 压力升到偏高时发一条系统通知，默认开，设置里可关。同一轮偏高只发一次；连续正常满 5 分钟后才重新可发。缺帧或采样失败不发，也不重置这一轮。文案是「内存压力偏高，可以看看谁占得最多」，有占用最多的 App 时带上名字。这条内置告警规则的点击走「打开 Pulse」的同一条路径，打开主窗内存页，不选中进程。自定义告警规则在同一处投递：条件持续满足后只发一条系统通知；点击打开对应页面，有进程时再 `select(pid:)`。芯片温度和磁盘剩余经常读不到，读不到不发，也不当成 0。系统拒绝通知权限时不弹错误，设置里显示「系统通知未授权」。
 - 左键弹出轻量条，右键或 Control 点击弹出「退出 Pulse」。
 - 轻量条自上而下：压力一行、「已用 xx GB」一行、最忙一核达到 90% 时的「最忙的一核 · xx%」（可选），然后是 Top3 进程（名称 + 内存），最后是「打开 Pulse」和「设置」。
 - Top3 用最后一次内存页表头排序，取完整列表的前 3 个，不受过滤影响。少于 3 个时不补位。
-- 点 Top3 某行：关掉轻量条。PID 还在完整 `rows` 里时，先只调整挡住它的名称查询、「仅上涨」或「仅窗口 App」，再选中，然后只调用一次 `MemoryDashboardVM.focusMemoryPage`，最后只激活主窗。不调用 `onOpenPulse`，也不调用 `PulseAppDelegate.focusMemoryPage`。PID 已经不在列表里时不调整过滤、不写这个 PID、不选同名替代，仍是一次 VM 切页和一次激活。「打开 Pulse」、通知点击和重开主窗仍只走 `PulseAppDelegate.focusMemoryPage`。Mac 上的主窗激活、滚入视口、焦点、VoiceOver，以及下一次采样之后的终态，都还没验。
+- 点 Top3 某行：关掉轻量条。PID 还在完整 `rows` 里时，先只调整挡住它的名称查询、「仅上涨」或「仅窗口 App」，再选中，然后只调用一次 `MemoryDashboardVM.focusMemoryPage`，最后只激活主窗。不调用 `onOpenPulse`，也不调用 `PulseAppDelegate.focusMemoryPage`。PID 已经不在列表里时不调整过滤、不写这个 PID、不选同名替代，仍是一次 VM 切页和一次激活。「打开 Pulse」、内置压力通知点击和重开主窗仍只走 `PulseAppDelegate.focusMemoryPage`。自定义告警规则的点击不走这条路径。Mac 上的主窗激活、滚入视口、焦点、VoiceOver，以及下一次采样之后的终态，都还没验。
 
 ### Top3 点击后继续诊断
 
@@ -219,15 +219,15 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 
 点击时 PID 已经不在 `rows`：不做这次准备，不写这个消失的 PID，也不选同名的另一行。然后仍是一次 `MemoryDashboardVM.focusMemoryPage`。不保证原来的选中还在，因为这一次共享清选中仍可能按现有开关清掉它。控制器接着只做一次窗口激活，不再切页。
 
-现码没有「只激活、不切页」的函数。`MenuBarController.install` 收来的 `onOpenPulse`，在 `PulseAppDelegate.didLaunch` 里就是 `self.focusMemoryPage`。`PulseAppDelegate.focusMemoryPage` 先 `dashboard.focusMemoryPage()`，再 `NSApp.activate`，已有主窗则 `deminiaturize` / `makeKeyAndOrderFront`，否则 `openMainWindow`，然后改 `sceneActive` 并 `applyPace`。Top3 若在状态切页之后再调用 `onOpenPulse`，状态切页会跑第二次。所以 Top3 不调用 `onOpenPulse`，也不调用 `PulseAppDelegate.focusMemoryPage`。窗口激活用一条现在还不存在的 Top3 回调，只做上面这一段激活，不调用 `dashboard.focusMemoryPage()`。`PulseAppDelegate.focusMemoryPage` 的函数体不改，普通打开和通知仍只走它。
+现码没有「只激活、不切页」的函数。`MenuBarController.install` 收来的 `onOpenPulse`，在 `PulseAppDelegate.didLaunch` 里就是 `self.focusMemoryPage`。`PulseAppDelegate.focusMemoryPage` 先 `dashboard.focusMemoryPage()`，再 `NSApp.activate`，已有主窗则 `deminiaturize` / `makeKeyAndOrderFront`，否则 `openMainWindow`，然后改 `sceneActive` 并 `applyPace`。Top3 若在状态切页之后再调用 `onOpenPulse`，状态切页会跑第二次。所以 Top3 不调用 `onOpenPulse`，也不调用 `PulseAppDelegate.focusMemoryPage`。窗口激活用一条现在还不存在的 Top3 回调，只做上面这一段激活，不调用 `dashboard.focusMemoryPage()`。`PulseAppDelegate.focusMemoryPage` 的函数体不改，普通打开和内置压力通知仍只走它。自定义告警规则不调用这个函数。
 
-| 职责 | Top3 进程行 | 「打开 Pulse」 | 通知点击、重开主窗 |
+| 职责 | Top3 进程行 | 「打开 Pulse」 | 内置压力通知点击、重开主窗 |
 | --- | --- | --- | --- |
 | 收起轻量条 | `handlePopoverTap` 一次，在状态之前 | 同左 | 不走这里 |
 | 过滤准备 | 仅 PID 仍在 `rows` 时，规则见上 | 不做 | 不做 |
 | 选中 | `selectPidIfPresent` 一次 | 不写 | 不写 |
 | 状态切页 | `MemoryDashboardVM.focusMemoryPage` 一次 | 含在下面这一次共享入口里 | 同左 |
-| 窗口激活 | 新的只激活回调一次 | `onOpenPulse` 一次，即未改动的 `PulseAppDelegate.focusMemoryPage` | 通知闭包和重开直接调用这个 `focusMemoryPage` |
+| 窗口激活 | 新的只激活回调一次 | `onOpenPulse` 一次，即未改动的 `PulseAppDelegate.focusMemoryPage` | 内置压力通知闭包和重开直接调用这个 `focusMemoryPage` |
 
 Top3 进程行只按这个顺序：`dismissPopover`，生产入口（需要时准备，然后选中，然后 `MemoryDashboardVM.focusMemoryPage` 一次），然后只激活回调一次。「打开 Pulse」仍是收起之后 `onOpenPulse` 一次，不进生产入口，也不再加只激活回调。两道 `selectedPid` 门的函数体不改。
 
@@ -239,13 +239,13 @@ Top3 进程行只按这个顺序：`dismissPopover`，生产入口（需要时�
 
 Top3 验收调用 `handlePopoverTap` 使用的那一个生产入口，断言的是控制器按上表调度完之后的状态，不是入口内部在 `MemoryDashboardVM.focusMemoryPage` 之前的中间选择。送进去的是真实状态：当前 `selectedPid`、`DashboardNavigation`、名称查询、「仅上涨」、「仅窗口 App」、「按 App」、`rows`、上涨序列和窗口集。同一次结果还带上这次调度：状态切页 1 次、窗口激活 1 次、`onOpenPulse` 0 次。红和绿是同一次用户动作（点进程 4）和同一句最终断言：这一次清选中跑完之后的 `selectedPid` 等于 4。按今天的语义，这一次门会把它变成 `nil`。变绿只在入口内部、于那一次 `MemoryDashboardVM.focusMemoryPage` 之前加上已锁定的准备。测试不写准备，也不再调用 `onOpenPulse`。
 
-新增这个入口时，函数体先保持今天的进程行语义：还在才 `selectPidIfPresent`，然后 `MemoryDashboardVM.focusMemoryPage` 一次，不做准备。控制器随后只走新的激活回调一次。测试因此能编译。失败是最终选择为 `nil`，不是找不到符号。这道红记下之后，只把准备放进入口内部。同一句断言变成 4。源码接线读 `handlePopoverTap`：进程行是收起、该入口、只激活回调，这个顺序里 `onOpenPulse` 出现 0 次，`MemoryDashboardVM.focusMemoryPage` 只出现在入口里的那一次；「打开 Pulse」分支仍是收起后 `onOpenPulse` 1 次，且不调用该入口。`PulseAppDelegate.focusMemoryPage` 仍先 `dashboard.focusMemoryPage()` 再激活。通知闭包和重开仍只调用它。直接调用 `MemoryGrowthRisingFilter.selectedPid`，在仅上涨开着且无徽标时仍返回 `nil`。
+新增这个入口时，函数体先保持今天的进程行语义：还在才 `selectPidIfPresent`，然后 `MemoryDashboardVM.focusMemoryPage` 一次，不做准备。控制器随后只走新的激活回调一次。测试因此能编译。失败是最终选择为 `nil`，不是找不到符号。这道红记下之后，只把准备放进入口内部。同一句断言变成 4。源码接线读 `handlePopoverTap`：进程行是收起、该入口、只激活回调，这个顺序里 `onOpenPulse` 出现 0 次，`MemoryDashboardVM.focusMemoryPage` 只出现在入口里的那一次；「打开 Pulse」分支仍是收起后 `onOpenPulse` 1 次，且不调用该入口。`PulseAppDelegate.focusMemoryPage` 仍先 `dashboard.focusMemoryPage()` 再激活。内置压力通知闭包和重开仍只调用它。直接调用 `MemoryGrowthRisingFilter.selectedPid`，在仅上涨开着且无徽标时仍返回 `nil`。
 
 下面这些都走同一套控制器调度。Linux 上的 `swift test` 会调用这个入口；那不是 Mac 主窗激活，也不是下一次采样之后的终态：
 
 - 名称、仅上涨、仅窗口各自只在挡住该 PID 时调整；一起挡住时一起调。查询可匹配或空白、已有上涨徽标、已在窗口集的保持。最终选择是被点 PID。状态切页 1 次，激活 1 次，`onOpenPulse` 0 次。
 - 目标已不在 `rows`：不准备，过滤保持原样，不写入该 PID，不选同名替代，然后仍是一次 `MemoryDashboardVM.focusMemoryPage`，再激活 1 次。`onOpenPulse` 0 次。
-- 「打开 Pulse」不准备，`onOpenPulse` 1 次。通知点击不进这个入口，仍只调用 `PulseAppDelegate.focusMemoryPage`。
+- 「打开 Pulse」不准备，`onOpenPulse` 1 次。内置压力通知点击不进这个入口，仍只调用 `PulseAppDelegate.focusMemoryPage`。自定义告警规则点击另走 `selectPage`，有 pid 时 `select(pid:)`，再 `activateMainWindow()`。
 - 「按 App」开着，且组代表和被点 PID 不同：调度留下的选择和操作 PID 是被点的那个。揭示 id 再用现成 `MemoryRevealGroupRow` 从这次最终状态计算，可以是代表。
 - 已在内存页时排序不变；从其它页进来时仍是现有内存默认排序。不另写一次排序，也不把状态切页再跑一遍。
 
@@ -253,6 +253,8 @@ Top3 验收调用 `handlePopoverTap` 使用的那一个生产入口，断言的�
 
 ## 设置
 
+- 「告警规则」一节列出内置的「压力偏高时通知」。键 `pulse.pressureNotice` 缺省为开，可以关掉，不能删除。重新可发仍是连续正常满 5 分钟，不是 30 分钟冷却。
+- 自定义告警规则的对象是整机或一个 App（名称与进程列表完全一致）。指标是 CPU、内存占用、内存压力、芯片温度、磁盘剩余。CPU、内存占用和芯片温度是超过阈值；磁盘剩余是低于阈值；内存压力只认偏高。条件要连续保持设定的时长才发一条系统通知。默认持续 5 分钟、冷却 30 分钟、每日 3 次。冷却和每日上限只在真正发送时检查。条件还在持续时，冷却结束也不再发第二条；条件解除后立刻可以重新计时。停用冻结这条规则，不发送。App 只允许 CPU 和内存占用。芯片温度只在本机页本次读取成功且为有限值时参与；磁盘剩余用本机页的可用字节。两者为 nil 时不发，也不当成 0；磁盘剩余真实为 0 且低于阈值则会发。没有退出、没有改优先级、没有专注过滤。点击打开对应页面；CPU 和内存选中对应进程，芯片温度和磁盘剩余只打开本机页。
 - 「登录时打开 Pulse」的开关每次从 `SMAppService.mainApp.status` 读取，不另存布尔值。只有已启用为开；未注册为关。Pulse 启动时不会自己注册。打开调用 `register()`，关闭调用 `unregister()`。只注册 Pulse 自己，不清理其它登录项。
 - 需要批准时开关为关，说明「需要在系统设置的登录项里允许 Pulse。」，并可用「打开系统设置」跳到登录项。注册失败时开关为关，并显示失败原因。在系统设置里移除该项后，Pulse 下次读到的状态为关。
 - 本机页的「启动项」不是这个开关。它只列出三个目录里的项，不注册、不关闭、也不清理其它登录项。
@@ -330,7 +332,8 @@ Tab 选中胶囊、总览高度和工具栏里的页专属开关用同一段动�
 
 **菜单栏与窗口**
 - [ ] 色点随压力变色，失败时为灰并有提示；默认栏上没有文字。设置可改为已用内存或 CPU，缺失显示「—」，重启后仍保留
-- [ ] 压力升到偏高时系统通知只来一次，点击打开内存页；回到正常不满 5 分钟不再发，满 5 分钟后再次偏高会再发。设置可关闭。通知权限被拒时设置显示「系统通知未授权」，不弹错误
+- [ ] 压力升到偏高时系统通知只来一次，点击打开内存页、不选中进程；回到正常不满 5 分钟不再发，满 5 分钟后再次偏高会再发。设置可关闭。通知权限被拒时设置显示「系统通知未授权」，不弹错误
+- [ ] 设置「告警规则」可以添加、编辑、删除、停用自定义规则。对象是整机或一个 App，指标是 CPU、内存占用、内存压力、芯片温度、磁盘剩余。持续满足后发一条系统通知，默认冷却 30 分钟、每日 3 次。点击打开对应页面并选中进程；芯片温度和磁盘剩余只打开本机页。读不到不发，也不当成 0。内置「压力偏高时通知」不能删除。这一条还没在 Mac 上跑过，不能勾成通过
 - [ ] 轻量条四块内容正确，Top3 跟随内存页表头。点仍在列表里的一行后，内存页仍选中该 PID，并且看得到它、进得了现有详情：挡住它的名称查询清空（空白或能匹配则保持原文，不改成全名），挡住它的「仅上涨」或「仅窗口 App」关掉，没挡住的开关和「按 App」保持；已在内存页不改当前排序，从别的页进来仍用内存默认排序；按 App 时滚到可见组行，选中和退出仍是被点 PID。目标已经不在列表时只打开内存页，不改这些过滤，也不选同名替代。这一条是锁定后的预期，还没在 Mac 上跑过，不能勾成通过
 - [ ] 启动时没有主窗口，菜单栏色点在读数成功后离开「暂时读不到」，采样间隔约 3 秒；「打开 Pulse」能打开主窗。带着主窗启动时第一段间隔仍约 1.5 秒
 - [ ] 关掉主窗后菜单栏仍在更新，`⌘Q` 退出，并继续此前暂停的进程、清空暂停记录；重开主窗保持上次尺寸和位置。这一条里的暂停恢复还没在 Mac 上跑过，不能勾成通过
