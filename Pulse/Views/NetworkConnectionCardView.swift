@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Status, type, Wi-Fi signal, and a click-only public IP. Sampling keeps skeletons, not a fetch.
+/// Status, type, Wi-Fi signal, SSID, and a click-only public IP. Sampling keeps skeletons, not a fetch.
 struct NetworkConnectionCardView: View {
     var placeholder: Bool
     @EnvironmentObject private var vm: MemoryDashboardVM
@@ -18,11 +18,14 @@ struct NetworkConnectionCardView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi)
+                    let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi, ssidPermission: vm.ssidPermission)
                     valueRow(card.status)
                     valueRow(card.type)
                     if let signal = card.signal {
                         valueRow(signal)
+                    }
+                    if let ssid = card.ssid {
+                        ssidRow(ssid)
                     }
                     publicIPRow
                 }
@@ -46,6 +49,38 @@ struct NetworkConnectionCardView: View {
             Text(NetworkPageCopy.connectionTitle)
                 .font(.subheadline.weight(.medium))
         }
+    }
+
+    private func ssidRow(_ row: NetworkConnectionSSID) -> some View {
+        HStack(spacing: 8) {
+            Text(row.title)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            ssidValue(row)
+            if let note = row.note {
+                Text(note)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            if row.allowsRequest {
+                Button(NetworkPageCopy.ssidAllow) {
+                    vm.allowWiFiSSID()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func ssidValue(_ row: NetworkConnectionSSID) -> some View {
+        Text(row.value)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.primary)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .help(row.help ?? row.value)
     }
 
     private func valueRow(_ row: NetworkConnectionRow) -> some View {
@@ -123,10 +158,16 @@ struct NetworkConnectionCardView: View {
         if placeholder {
             return "\(NetworkPageCopy.connectionTitle)，\(NetworkPageCopy.sampling)"
         }
-        let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi)
+        let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi, ssidPermission: vm.ssidPermission)
         var label = "\(NetworkPageCopy.connectionTitle)，\(card.status.title) \(card.status.value)，\(card.type.title) \(card.type.value)"
         if let signal = card.signal {
             label += "，\(signal.title) \(signal.value)"
+        }
+        if let ssid = card.ssid {
+            label += "，\(ssid.title) \(ssid.value)"
+            if let note = ssid.note {
+                label += "，\(note)"
+            }
         }
         switch vm.publicIPRequest {
         case .success(let address, _):
@@ -139,10 +180,10 @@ struct NetworkConnectionCardView: View {
         return label
     }
 
-    /// 148 fits title, status, type, and the public-IP row. 174 adds the signal row.
+    /// 148 fits title, status, type, and the public-IP row. Wi-Fi adds signal and the name: 206.
     private var cardHeight: CGFloat {
         if placeholder { return 148 }
-        let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi)
-        return card.signal == nil ? 148 : 174
+        let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi, ssidPermission: vm.ssidPermission)
+        return card.ssid == nil ? 148 : 206
     }
 }

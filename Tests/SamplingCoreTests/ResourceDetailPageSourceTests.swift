@@ -154,7 +154,7 @@ final class ResourceDetailPageSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("path = LastLiveTotalReducer.swift;"))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 40, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 41, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission")
         for name in ["selectPage", "applySample", "applyRisingOnlySelection"] {
             let source = try functionBody(named: name, in: vm)
             XCTAssertFalse(source.contains("ResourceDetailPageProjection"), name)

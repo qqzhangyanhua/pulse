@@ -20,4 +20,14 @@ final class HostWiFiTests: XCTestCase {
         XCTAssertEqual(reading?.noise, -90)
         XCTAssertNil(reading?.ssid)
     }
+
+    func testProvidedSSIDIsKeptAndAMissingInterfaceDropsIt() {
+        let reading = HostWiFi.reading(hasInterface: true, rssi: -55, noise: -90, ssid: "Cafe Wi-Fi")
+        XCTAssertEqual(reading?.ssid, "Cafe Wi-Fi")
+        XCTAssertEqual(reading?.rssi, -55)
+        let zero = HostWiFi.reading(hasInterface: true, rssi: 0, noise: -90, ssid: "Cafe Wi-Fi")
+        XCTAssertNil(zero?.rssi)
+        XCTAssertEqual(zero?.ssid, "Cafe Wi-Fi")
+        XCTAssertNil(HostWiFi.reading(hasInterface: false, rssi: -55, noise: -90, ssid: "Cafe Wi-Fi"))
+    }
 }

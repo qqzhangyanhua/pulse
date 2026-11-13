@@ -14,8 +14,23 @@ extension MemoryDashboardVM {
         hostConnectionMonitor = nil
     }
 
+    func publishHostConnection(_ connection: HostConnection) {
+        hostConnection = connection
+    }
+
     func publishSampledWiFi(_ reading: HostWiFiReading?) {
         hostWiFi = reading
+    }
+
+    /// Does not prompt. The allow button is the only request.
+    func startWiFiSSIDWatch() {
+        HostWiFiLocation.start { [weak self] permission in
+            self?.ssidPermission = permission
+        }
+    }
+
+    func allowWiFiSSID() {
+        HostWiFiLocation.request()
     }
 
     /// Click path only. A second click while loading does not start another request.

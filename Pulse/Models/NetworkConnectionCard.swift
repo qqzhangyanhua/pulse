@@ -5,14 +5,28 @@ struct NetworkConnectionRow: Equatable, Sendable {
     var value: String
 }
 
-/// Status, type, and a Wi-Fi signal row. Nil is missing 「—」, not a disconnected link.
-/// The signal row exists only when the primary interface is Wi-Fi.
+/// Wi-Fi name row. The allow flag is the only prompt affordance.
+struct NetworkConnectionSSID: Equatable, Sendable {
+    var title: String
+    var value: String
+    var note: String?
+    var allowsRequest: Bool
+    var help: String?
+}
+
+/// Status, type, signal, and SSID. Nil is missing 「—」, not a disconnected link.
+/// Signal and SSID exist only when the primary interface is Wi-Fi.
 struct NetworkConnectionCard: Equatable, Sendable {
     var status: NetworkConnectionRow
     var type: NetworkConnectionRow
     var signal: NetworkConnectionRow?
+    var ssid: NetworkConnectionSSID?
 
-    static func project(_ connection: HostConnection?, wifi: HostWiFiReading? = nil) -> NetworkConnectionCard {
+    static func project(
+        _ connection: HostConnection?,
+        wifi: HostWiFiReading? = nil,
+        ssidPermission: WiFiSSIDPermission = .notDetermined
+    ) -> NetworkConnectionCard {
         NetworkConnectionCard(
             status: NetworkConnectionRow(
                 title: NetworkPageCopy.connectionStatusTitle,
@@ -22,8 +36,43 @@ struct NetworkConnectionCard: Equatable, Sendable {
                 title: NetworkPageCopy.connectionTypeTitle,
                 value: typeValue(connection?.interface)
             ),
-            signal: signalRow(interface: connection?.interface, wifi: wifi)
+            signal: signalRow(interface: connection?.interface, wifi: wifi),
+            ssid: ssidRow(interface: connection?.interface, wifi: wifi, permission: ssidPermission)
         )
+    }
+
+    private static func ssidRow(
+        interface: ConnectionInterface?,
+        wifi: HostWiFiReading?,
+        permission: WiFiSSIDPermission
+    ) -> NetworkConnectionSSID? {
+        guard interface == .wifi else { return nil }
+        switch permission {
+        case .notDetermined:
+            return NetworkConnectionSSID(
+                title: NetworkPageCopy.connectionSSIDTitle,
+                value: NetworkRateText.missing,
+                note: NetworkPageCopy.ssidNeedsLocation,
+                allowsRequest: true,
+                help: nil
+            )
+        case .denied:
+            return NetworkConnectionSSID(
+                title: NetworkPageCopy.connectionSSIDTitle,
+                value: NetworkRateText.missing,
+                note: NetworkPageCopy.ssidLocationDenied,
+                allowsRequest: false,
+                help: nil
+            )
+        case .authorized:
+            return NetworkConnectionSSID(
+                title: NetworkPageCopy.connectionSSIDTitle,
+                value: wifi?.ssid ?? NetworkRateText.missing,
+                note: nil,
+                allowsRequest: false,
+                help: wifi?.ssid
+            )
+        }
     }
 
     private static func signalRow(interface: ConnectionInterface?, wifi: HostWiFiReading?) -> NetworkConnectionRow? {

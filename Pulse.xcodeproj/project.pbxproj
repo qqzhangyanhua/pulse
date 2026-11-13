@@ -123,6 +123,7 @@
 		B00000000000000000000083 /* NetworkConnectionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000083 /* NetworkConnectionCardView.swift */; };
 		B00000000000000000000084 /* HostWiFi.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000084 /* HostWiFi.swift */; };
 		B00000000000000000000085 /* HostWiFiReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000085 /* HostWiFiReader.swift */; };
+		B00000000000000000000092 /* HostWiFiLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000092 /* HostWiFiLocation.swift */; };
 		B00000000000000000000090 /* PublicIPLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000090 /* PublicIPLookup.swift */; };
 		B00000000000000000000091 /* PublicIPURLSessionTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000091 /* PublicIPURLSessionTransport.swift */; };
 		B00000000000000000000013 /* OverviewCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* OverviewCards.swift */; };
@@ -255,6 +256,7 @@
 		A00000000000000000000083 /* NetworkConnectionCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkConnectionCardView.swift; sourceTree = "<group>"; };
 		A00000000000000000000084 /* HostWiFi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostWiFi.swift; sourceTree = "<group>"; };
 		A00000000000000000000085 /* HostWiFiReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostWiFiReader.swift; sourceTree = "<group>"; };
+		A00000000000000000000092 /* HostWiFiLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostWiFiLocation.swift; sourceTree = "<group>"; };
 		A00000000000000000000090 /* PublicIPLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicIPLookup.swift; sourceTree = "<group>"; };
 		A00000000000000000000091 /* PublicIPURLSessionTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicIPURLSessionTransport.swift; sourceTree = "<group>"; };
 		A00000000000000000000013 /* OverviewCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewCards.swift; sourceTree = "<group>"; };
@@ -362,6 +364,7 @@
 				A00000000000000000000080 /* HostConnectionMonitor.swift */,
 				A00000000000000000000084 /* HostWiFi.swift */,
 				A00000000000000000000085 /* HostWiFiReader.swift */,
+				A00000000000000000000092 /* HostWiFiLocation.swift */,
 				A00000000000000000000091 /* PublicIPURLSessionTransport.swift */,
 				A00000000000000000000023 /* HostDiskReader.swift */,
 				A0000000000000000000007C /* HostGPUReader.swift */,
@@ -638,6 +641,7 @@
 				B00000000000000000000083 /* NetworkConnectionCardView.swift in Sources */,
 				B00000000000000000000084 /* HostWiFi.swift in Sources */,
 				B00000000000000000000085 /* HostWiFiReader.swift in Sources */,
+				B00000000000000000000092 /* HostWiFiLocation.swift in Sources */,
 				B00000000000000000000090 /* PublicIPLookup.swift in Sources */,
 				B00000000000000000000091 /* PublicIPURLSessionTransport.swift in Sources */,
 				B00000000000000000000077 /* MemoryDashboardVM+ThermalAdvice.swift in Sources */,
