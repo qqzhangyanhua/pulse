@@ -356,6 +356,7 @@ struct ProcessDetailSidebar: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                quitSafetyJudgment(for: detail.row.name)
             }
             Spacer(minLength: 8)
             if AppGroupChrome.showsProcessTreeButton(groupedByApp: vm.groupedByApp, page: vm.selectedPage) {
