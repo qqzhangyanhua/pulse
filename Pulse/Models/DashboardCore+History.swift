@@ -15,9 +15,11 @@ extension DashboardCore {
         pendingHistoryEvents = []
         lastHistoryPressure = pressure
         let gpuPercent = frame.gpuNodes == nil ? nil : gpuPage.utilizationPercent
+        let capturedAt = frame.snapshot.capturedAt
+        let retention = historyRetention
         historyDraft = HistoryDraft(
             sample: HistorySample(
-                at: frame.snapshot.capturedAt,
+                at: capturedAt,
                 usedBytes: frame.snapshot.usedBytes,
                 pressure: pressure,
                 swapUsedBytes: frame.snapshot.swapUsedBytes,
@@ -35,7 +37,9 @@ extension DashboardCore {
                 limit: 10
             ),
             events: events,
-            dropRawBefore: HistoryPolicy.dropRaw(before: frame.snapshot.capturedAt)
+            dropRawBefore: HistoryPolicy.dropRaw(before: capturedAt),
+            dropMinuteBefore: HistoryPolicy.minuteDrop(before: capturedAt, retention: retention),
+            retentionCutoff: HistoryPolicy.retentionCutoff(retention, now: capturedAt)
         )
     }
 
