@@ -337,6 +337,58 @@ final class DashboardCorePagesTests: XCTestCase {
         XCTAssertNotEqual(frozen?.savedAt, capturedAt)
     }
 
+    func testFrozenSnapshotKeepsPathHostnameAndAddressOutOfTheDefaultReport() throws {
+        var core = DashboardCore(ownPid: 1)
+        let savedAt = Date(timeIntervalSince1970: 1_700_000_500)
+        core.noteSnapshotHostname("alices-mac.local")
+        XCTAssertNil(core.frozenSnapshot(savedAt: savedAt))
+
+        let capturedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let path = "/Users/alice/bin/tool"
+        _ = core.apply(
+            result: success(frame(rows: [row(pid: 7, name: "Mail", cpu: 12, path: path)], capturedAt: capturedAt)),
+            accepted: true,
+            page: .memory
+        )
+        core.noteSnapshotHostname("  ")
+        XCTAssertNil(core.frozenSnapshot(savedAt: savedAt)?.hostname)
+
+        core.noteSnapshotHostname("alices-mac.local")
+        _ = core.requestPublicIP(now: savedAt)
+        _ = core.finishPublicIPLookup(address: "203.0.113.9", queriedAt: savedAt)
+        let frozen = try XCTUnwrap(core.frozenSnapshot(savedAt: savedAt))
+        XCTAssertEqual(frozen.processes.map(\.name), ["Mail"])
+        XCTAssertEqual(frozen.processes.map(\.executablePath), [path])
+        XCTAssertEqual(frozen.hostname, "alices-mac.local")
+        XCTAssertEqual(frozen.ipAddress, "203.0.113.9")
+
+        var calendar = Calendar(identifier: .gregorian)
+        let zone = TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = zone
+        let doc = SnapshotDocument.make(frozen: frozen, calendar: calendar, timeZone: zone)
+        let hidden = "已隐去：进程名、带用户名的路径、主机名、IP"
+        XCTAssertTrue(doc.previewText.contains(hidden))
+        XCTAssertTrue(doc.html.contains(hidden))
+        XCTAssertTrue(doc.markdown.contains(hidden))
+        XCTAssertTrue(doc.markdown.hasPrefix("# Pulse 采样\n\n\(hidden)"))
+        for secret in ["Mail", path, "alice", "alices-mac.local", "203.0.113.9"] {
+            XCTAssertFalse(doc.previewText.contains(secret), secret)
+            XCTAssertFalse(doc.html.contains(secret), secret)
+            XCTAssertFalse(doc.markdown.contains(secret), secret)
+        }
+
+        _ = core.finishPublicIPLookup(address: nil, queriedAt: savedAt)
+        let cleared = try XCTUnwrap(core.frozenSnapshot(savedAt: savedAt))
+        XCTAssertNil(cleared.ipAddress)
+        XCTAssertEqual(cleared.hostname, "alices-mac.local")
+        let after = SnapshotDocument.make(frozen: cleared, calendar: calendar, timeZone: zone)
+        let lines = after.previewText.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        XCTAssertEqual(lines.dropFirst().first, "已隐去：进程名、带用户名的路径、主机名")
+        XCTAssertFalse(after.previewText.contains("203.0.113.9"))
+        XCTAssertFalse(after.html.contains("203.0.113.9"))
+        XCTAssertFalse(after.markdown.contains("203.0.113.9"))
+    }
+
     private func success(_ frame: SampledFrame) -> Result<SampledFrame, PageDeliveryError> {
         .success(frame)
     }
@@ -389,12 +441,12 @@ final class DashboardCorePagesTests: XCTestCase {
         )
     }
 
-    private func row(pid: Int32, name: String, cpu: Double?, watts: Double? = nil) -> ProcessRow {
+    private func row(pid: Int32, name: String, cpu: Double?, watts: Double? = nil, path: String? = nil) -> ProcessRow {
         ProcessRow(
             pid: pid,
             name: name,
             bundleIdentifier: nil,
-            executablePath: nil,
+            executablePath: path,
             cpuPercent: cpu,
             memoryBytes: 1_000,
             threadCount: 1,

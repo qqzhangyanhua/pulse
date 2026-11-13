@@ -15,7 +15,7 @@ final class MemoryDashboardVM: ObservableObject {
     var hostConnection: HostConnection? { core.hostConnection }
     var ssidPermission: WiFiSSIDPermission { core.ssidPermission }
     var hostWiFi: HostWiFiReading? { core.hostWiFi }
-    /// Idle until the user clicks. Not sampled and not saved.
+    /// Idle until the user clicks. Not sampled. Save does not query.
     var publicIPRequest: PublicIPRequestState { core.publicIPRequest }
     var hostDiskRates: HostDiskRates { core.hostDiskRates }
     /// Host 换入 / 换出. Nil rates are 「—」, not zero. Not a disk rate.
@@ -221,6 +221,7 @@ final class MemoryDashboardVM: ObservableObject {
         started = true
         updateCore { core in
             core.noteMachineLabel(MachineInfo.toolbarLabel())
+            core.noteSnapshotHostname(ProcessInfo.processInfo.hostName)
             return core.publishMemoryPageSort()
         }
         loopTask = Task { [weak self] in

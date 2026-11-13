@@ -13,7 +13,17 @@ extension DashboardCore {
             hostDiskRates: hostDiskRates,
             samplingFailed: samplingFailed,
             processListFailed: processListFailed,
-            savedAt: savedAt
+            savedAt: savedAt,
+            hostname: snapshotHostname,
+            ipAddress: heldAddress
         )
+    }
+
+    /// Address already held after a manual query. Nil while idle, loading, or failed.
+    private var heldAddress: String? {
+        if case .success(let address, _) = publicIPRequest {
+            return address
+        }
+        return nil
     }
 }

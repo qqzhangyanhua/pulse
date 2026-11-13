@@ -51,6 +51,7 @@ let package = Package(
             sources: [
                 "Models/MemoryModels.swift",
                 "Models/SnapshotExport.swift",
+                "Models/SnapshotExport+Redaction.swift",
                 "Models/SnapshotExportFile.swift",
                 "Models/ProcessRowCopy.swift",
                 "Models/ProcessMemoryChoice.swift",

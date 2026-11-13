@@ -177,6 +177,7 @@
 		B0000000000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000F /* Assets.xcassets */; };
 		B00000000000000000000012 /* Charts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000000012 /* Charts.framework */; };
 		B00000000000000000000050 /* SnapshotExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000050 /* SnapshotExport.swift */; };
+		B00000000000000000000270 /* SnapshotExport+Redaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000270 /* SnapshotExport+Redaction.swift */; };
 		B00000000000000000000051 /* SnapshotExportFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000051 /* SnapshotExportFile.swift */; };
 		B00000000000000000000052 /* MemoryDashboardVM+SnapshotExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000052 /* MemoryDashboardVM+SnapshotExport.swift */; };
 		B00000000000000000000053 /* SnapshotExportPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000053 /* SnapshotExportPreview.swift */; };
@@ -260,6 +261,7 @@
 		A0000000000000000000004C /* LoginItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItem.swift; sourceTree = "<group>"; };
 		A00000000000000000000076 /* ThermalAdviceThrottle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalAdviceThrottle.swift; sourceTree = "<group>"; };
 		A00000000000000000000050 /* SnapshotExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotExport.swift; sourceTree = "<group>"; };
+		A00000000000000000000270 /* SnapshotExport+Redaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SnapshotExport+Redaction.swift"; sourceTree = "<group>"; };
 		A00000000000000000000051 /* SnapshotExportFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotExportFile.swift; sourceTree = "<group>"; };
 		A00000000000000000000052 /* MemoryDashboardVM+SnapshotExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+SnapshotExport.swift"; sourceTree = "<group>"; };
 		A00000000000000000000053 /* SnapshotExportPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotExportPreview.swift; sourceTree = "<group>"; };
@@ -468,6 +470,7 @@
 				A0000000000000000000004C /* LoginItem.swift */,
 				A00000000000000000000076 /* ThermalAdviceThrottle.swift */,
 				A00000000000000000000050 /* SnapshotExport.swift */,
+				A00000000000000000000270 /* SnapshotExport+Redaction.swift */,
 				A00000000000000000000051 /* SnapshotExportFile.swift */,
 			);
 			path = Models;
@@ -865,6 +868,7 @@
 				B0000000000000000000001A /* PulseAppDelegate.swift in Sources */,
 				B0000000000000000000004B /* PressureNoticeCenter.swift in Sources */,
 				B00000000000000000000050 /* SnapshotExport.swift in Sources */,
+				B00000000000000000000270 /* SnapshotExport+Redaction.swift in Sources */,
 				B00000000000000000000051 /* SnapshotExportFile.swift in Sources */,
 				B00000000000000000000052 /* MemoryDashboardVM+SnapshotExport.swift in Sources */,
 				B00000000000000000000053 /* SnapshotExportPreview.swift in Sources */,

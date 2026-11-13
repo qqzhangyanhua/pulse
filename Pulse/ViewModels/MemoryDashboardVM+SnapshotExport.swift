@@ -32,6 +32,18 @@ extension MemoryDashboardVM {
         snapshotExportStore.setHideNames(hide)
     }
 
+    func setSnapshotExportHidesUsernamePath(_ hide: Bool) {
+        snapshotExportStore.setHidesUsernamePath(hide)
+    }
+
+    func setSnapshotExportHidesHostname(_ hide: Bool) {
+        snapshotExportStore.setHidesHostname(hide)
+    }
+
+    func setSnapshotExportHidesIPAddress(_ hide: Bool) {
+        snapshotExportStore.setHidesIPAddress(hide)
+    }
+
     func noteSnapshotExportCancelledPanel() {
         snapshotExportStore.cancelSavePanel()
     }

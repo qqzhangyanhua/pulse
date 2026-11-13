@@ -53,7 +53,8 @@ struct DashboardCore {
     /// Nil until the first path push. Not a byte rate.
     var hostConnection: HostConnection?
     var ssidPermission = WiFiSSIDPermission.notDetermined
-    /// Idle until the user clicks. Not sampled and not saved.
+    /// Idle until the user clicks. Not sampled. Save does not query.
+    /// A report includes the address only when that report turns IP redaction off.
     var publicIPRequest = PublicIPRequestState.idle
     private(set) var hostDiskRates = HostDiskRates.missing
     /// Host 换入 / 换出. Previous counters stay here. Not disk throughput.
@@ -114,6 +115,8 @@ struct DashboardCore {
     var energyRankingSpan = EnergyRankingSpan.oneMinute
     /// Toolbar label recorded from `MachineInfo`. Nil until the adapter notes it.
     private(set) var machineLabel: String?
+    /// Host name recorded at start. Blank is nil. The adapter supplies it.
+    private(set) var snapshotHostname: String?
     /// Projection of the sampling gate's retrying bit. Not a second retry flag.
     private(set) var isRetrying = false
 
@@ -194,6 +197,12 @@ struct DashboardCore {
     /// Records the toolbar label. The adapter reads `MachineInfo` once at start.
     mutating func noteMachineLabel(_ label: String) {
         machineLabel = label
+    }
+
+    /// Records the host name for snapshot redaction. The adapter reads it once at start.
+    mutating func noteSnapshotHostname(_ hostname: String) {
+        let trimmed = hostname.trimmingCharacters(in: .whitespacesAndNewlines)
+        snapshotHostname = trimmed.isEmpty ? nil : trimmed
     }
 
     /// Records the sampling gate's retrying bit. Not a second retry flag.
