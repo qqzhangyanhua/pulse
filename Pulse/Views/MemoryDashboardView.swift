@@ -152,8 +152,9 @@ struct MemoryDashboardView: View {
         .background(PulsePalette.windowBackground)
     }
 
-    /// Crossfade in a clipped slot. Memory is 148 + 12 + 104; other resource pages are 150.
-    /// The table is a sibling, so it only follows this height and is not faded or rebuilt.
+    /// Crossfade in a clipped slot. Memory is 148 + 12 + 104.
+    /// Network is the 112-pt connection card, a 12-pt gap, and the 150-pt rate row.
+    /// CPU and disk stay 150. The table is a sibling, so it only follows this height.
     private var resourceOverview: some View {
         let page = vm.selectedPage
         return ZStack(alignment: .topLeading) {
@@ -180,8 +181,10 @@ struct MemoryDashboardView: View {
 
     private func overviewHeight(_ page: DashboardPage) -> CGFloat {
         switch page {
-        case .cpu, .network, .disk:
+        case .cpu, .disk:
             150
+        case .network:
+            274
         case .energy:
             0
         case .gpu:

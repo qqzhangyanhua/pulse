@@ -103,7 +103,7 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
         XCTAssertFalse(vm.contains("samplingWindowExpanded"))
         XCTAssertFalse(vm.contains("MemoryDetailSamplingWindow"))
         XCTAssertFalse(vm.contains("MemoryDetailPresentation"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 37, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 38, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection")
 
         let didSet = try braceBody(after: "var selectedPid", in: vm)
         XCTAssertTrue(didSet.contains("detail = nil"))

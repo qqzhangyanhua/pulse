@@ -9,6 +9,7 @@ final class MemoryDashboardVM: ObservableObject {
     /// Busiest core for the latest accepted frame. Nil is missing, not zero. Failure does not clear it.
     @Published private(set) var busiestCorePercent: Double?
     @Published private(set) var hostNetworkRates = HostNetworkRates.missing
+    @Published private(set) var hostConnection: HostConnection?
     @Published private(set) var hostDiskRates = HostDiskRates.missing
     @Published private(set) var rows: [ProcessRow] = []
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
@@ -105,7 +106,6 @@ final class MemoryDashboardVM: ObservableObject {
             Task { await sampler.setSelectedPid(pid) }
         }
     }
-
     private let sampler = MemorySampler()
     private var loopTask: Task<Void, Never>?
     private var sleepTask: Task<Void, Error>?
@@ -116,18 +116,18 @@ final class MemoryDashboardVM: ObservableObject {
     var thermalObserver: NSObjectProtocol?
     var machineRefreshTask: Task<Void, Never>?
     var energyBatteryRefreshTask: Task<Void, Never>?
-
+    var hostConnectionMonitor: HostConnectionMonitor?
     init() {
         beginThermalWatch()
+        beginConnectionWatch()
     }
-
-    // `isolated deinit` is Swift 6.2. Xcode 16.4 rejects it, and that
-    // production compiler cannot enable the IsolatedDeinit experiment.
+    // `isolated deinit` is Swift 6.2. Xcode 16.4 rejects it.
     deinit {
         MainActor.assumeIsolated {
             machineRefreshTask?.cancel()
             energyBatteryRefreshTask?.cancel()
             endThermalWatch()
+            endConnectionWatch()
         }
     }
 
@@ -496,4 +496,5 @@ final class MemoryDashboardVM: ObservableObject {
         if selectedPid != decision.pid { selectedPid = decision.pid }
         selectedEnergyGeneration = decision.generation
     }
+    func publishHostConnection(_ connection: HostConnection) { hostConnection = connection }
 }
