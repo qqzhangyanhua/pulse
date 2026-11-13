@@ -49,6 +49,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var diskHistory = SystemDiskHistory()
     /// GPU page readings. Samples taken off that page do not write this.
     @Published private(set) var gpuPage = GPUPageState.initial
+    /// Machine-page chip temperature. Other pages do not write this.
+    @Published private(set) var chipTemperature = ChipTemperaturePageState.initial
     @Published private(set) var energyMachineHistory = EnergyMachineHistory()
     /// Nil unless the system is serious or critical. Overviews read this; the menu bar does not.
     @Published var thermalNotice: String?
@@ -205,15 +207,6 @@ final class MemoryDashboardVM: ObservableObject {
         )
     }
 
-    /// Per-row memory-tab list badge. Top5 ∩ `.rising`; selection is not a gate.
-    func memoryGrowthListBadge(for rowPid: Int32) -> MemoryGrowthListBadge? {
-        MemoryGrowthList.badge(
-            page: selectedPage,
-            rowPid: rowPid,
-            seriesByPid: topMemorySeries
-        )
-    }
-
     /// 「打开 Pulse」 and dock reopen. Always memory; does not follow the last tab.
     /// Page-only: does not write `selectedPid`. Pair with `selectPidIfPresent` when a pid is known.
     func focusMemoryPage() {
@@ -222,6 +215,7 @@ final class MemoryDashboardVM: ObservableObject {
         next.focusMemoryPage()
         navigation = next
         publishGPUTransition(from: previous, to: selectedPage)
+        publishChipTemperatureTransition(from: previous, to: selectedPage)
         publishMemoryPageSort()
         applyRisingOnlySelection()
         applyWindowedOnlySelection()
@@ -247,6 +241,7 @@ final class MemoryDashboardVM: ObservableObject {
         next.select(page)
         navigation = next
         publishGPUTransition(from: previous, to: selectedPage)
+        publishChipTemperatureTransition(from: previous, to: selectedPage)
         publishMemoryPageSort()
         applyRisingOnlySelection()
         applyWindowedOnlySelection()
@@ -365,7 +360,7 @@ final class MemoryDashboardVM: ObservableObject {
     }
 
     private func tick(_ flight: SamplingFlight) async {
-        let result = await sampler.sample(readGPU: selectedPage == .gpu)
+        let result = await sampler.sample(readGPU: selectedPage == .gpu, readChipTemperature: selectedPage == .machine)
         if Task.isCancelled {
             samplingGate.invalidate()
             isRetrying = samplingGate.retrying
@@ -417,6 +412,7 @@ final class MemoryDashboardVM: ObservableObject {
                     nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
                     diskHistory = nextDisk
                     recordGPUSample(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
+                    recordChipTemperatureSample(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt)
                     rows = frame.rows
                     refreshThermalAdvice(now: frame.snapshot.capturedAt.timeIntervalSince1970)
                     energyWindowRates = frame.energyWindowRates
@@ -450,6 +446,7 @@ final class MemoryDashboardVM: ObservableObject {
                     samplingFailed = applied.samplingFailed
                     loadState = applied.loadState
                     recordGPUSample(nodes: nil, failed: true, at: nil)
+                    recordChipTemperatureSample(sensors: nil, failed: true, at: nil)
                     observation = ProcessQuitSession.Observation(samplingFailed: true)
                 } else {
                     observation = ProcessQuitSession.Observation(freshnessInsufficient: true)
