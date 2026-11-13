@@ -23,17 +23,28 @@ enum ChipTemperaturePageTransition: Equatable, Sendable {
     case justEntered
 }
 
-/// Current chip temperature for this visit.
+/// Current chip temperature and this visit's curve. The curve stores raw Celsius.
 struct ChipTemperaturePageState: Equatable, Sendable {
     var celsius: Double?
+    var history: SystemCPUHistory = SystemCPUHistory()
     var visitSucceeded: Bool
 
     /// Integer degrees, half away from zero. Missing is 「—」, never 0.
     /// A value from before this visit succeeded is not shown.
     var text: String {
         guard visitSucceeded, let celsius, celsius.isFinite else { return CPUPercentText.missing }
-        let rounded = celsius.rounded(.toNearestOrAwayFromZero)
-        return "\(Int(rounded)) °C"
+        return ChipTemperatureCopy.degrees(celsius)
+    }
+
+    /// Fewer than two points is not a line.
+    var showsCurve: Bool { history.samples.count >= 2 }
+
+    /// Sample span, not a 0…100 percent axis, so a small rise or fall stays visible.
+    var curveDomain: ClosedRange<Double> {
+        let values = history.samples.map(\.value)
+        guard let low = values.min(), let high = values.max() else { return 0...1 }
+        let pad = max((high - low) * 0.25, 0.5)
+        return (low - pad)...(high + pad)
     }
 
     static let initial = ChipTemperaturePageState(celsius: nil, visitSucceeded: false)
@@ -41,6 +52,12 @@ struct ChipTemperaturePageState: Equatable, Sendable {
 
 enum ChipTemperatureCopy {
     static let title = "芯片温度"
+
+    /// Integer degrees, half away from zero, with a space and the unit.
+    static func degrees(_ celsius: Double) -> String {
+        let rounded = celsius.rounded(.toNearestOrAwayFromZero)
+        return "\(Int(rounded)) °C"
+    }
 }
 
 enum ChipTemperaturePageProjection {
@@ -55,17 +72,20 @@ enum ChipTemperaturePageProjection {
     ) -> ChipTemperaturePageState {
         switch transition {
         case .justLeft:
-            return current
+            var next = current
+            next.history.reset()
+            return next
         case .justEntered:
-            return applyFrame(frame, sensors: sensors, to: .initial)
+            return applyFrame(frame, sensors: sensors, sampledAt: sampledAt, to: .initial)
         case .stayed:
-            return applyFrame(frame, sensors: sensors, to: current)
+            return applyFrame(frame, sensors: sensors, sampledAt: sampledAt, to: current)
         }
     }
 
     private static func applyFrame(
         _ frame: ChipTemperatureFrameOutcome,
         sensors: [ChipTemperatureSensor],
+        sampledAt: Date?,
         to current: ChipTemperaturePageState
     ) -> ChipTemperaturePageState {
         switch frame {
@@ -73,8 +93,12 @@ enum ChipTemperaturePageProjection {
             return current
         case .succeeded:
             var next = current
-            next.celsius = hottest(in: sensors)
+            let chosen = hottest(in: sensors)
+            next.celsius = chosen
             next.visitSucceeded = true
+            if let chosen {
+                next.history.record(percent: chosen, at: sampledAt)
+            }
             return next
         }
     }

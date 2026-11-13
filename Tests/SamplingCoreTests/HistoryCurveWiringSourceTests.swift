@@ -217,6 +217,8 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
                 XCTAssertEqual(charts, 1, file.lastPathComponent)
             case "MachineOverviewSection.swift":
                 XCTAssertEqual(charts, 1, "CPU and memory share one annotated chart")
+            case "MachineOverviewSection+ChipTemperature.swift":
+                XCTAssertEqual(charts, 1, "chip temperature draws one annotated chart")
             case "SharedUI.swift":
                 XCTAssertEqual(charts, 1, "wrapper type lives in SharedUI")
             default:
