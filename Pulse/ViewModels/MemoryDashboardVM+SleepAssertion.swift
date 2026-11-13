@@ -25,7 +25,7 @@ extension MemoryDashboardVM {
 
     func refreshSleepAssertions() {
         guard let assertions = SleepAssertionReader.read() else { return }
-        guard assertions != sleepAssertions else { return }
+        guard assertions != core.sleepAssertions || !core.sleepAssertionsKnown else { return }
         mutateCore { $0.apply(sleepAssertions: assertions) }
     }
 }
