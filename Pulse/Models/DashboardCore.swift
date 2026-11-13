@@ -32,6 +32,8 @@ enum DashboardEffect: Equatable {
     case stopEnergyBatteryWatch
     case startSleepAssertionWatch
     case stopSleepAssertionWatch
+    case startLaunchItemWatch
+    case stopLaunchItemWatch
     /// Outbound public-IP lookup. Returned only from the query click.
     case lookupPublicIP(queriedAt: Date)
     /// System location prompt for the Wi-Fi name. Returned only from the allow click.
@@ -91,6 +93,8 @@ struct DashboardCore {
     var energyBatteryReading: EnergyBatteryReading?
     /// Held sleep assertions from the energy page. Empty until a successful read.
     var sleepAssertions: [SleepAssertionRow] = []
+    /// Launch items from the machine page. Empty until that read. Not cleared on leave.
+    var launchItems: [LaunchItemRow] = []
     /// Nil unless the system is serious or critical.
     var thermalNotice: String?
     /// Top CPU processes while `thermalNotice` is showing. Nil hides the card.

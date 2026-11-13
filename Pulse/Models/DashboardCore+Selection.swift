@@ -221,8 +221,10 @@ extension DashboardCore {
         effects += applyWindowedOnlySelection()
         if selectedPage == .machine {
             effects.append(.startMachineWatch)
+            effects.append(.startLaunchItemWatch)
         } else {
             effects.append(.stopMachineWatch)
+            effects.append(.stopLaunchItemWatch)
         }
         if selectedPage == .energy {
             effects.append(.startEnergyBatteryWatch)
