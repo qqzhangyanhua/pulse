@@ -74,6 +74,19 @@ final class LaunchItemWiringSourceTests: XCTestCase {
         }
     }
 
+    func testProcessInfoShowsTheLaunchItemLineOnlyAfterAnExactMatch() throws {
+        let info = try repoText("Pulse/Views/ProcessDetailSidebar+ProcessInfo.swift")
+        XCTAssertTrue(info.contains("Text(\"进程信息\")"))
+        XCTAssertTrue(info.contains("launchItem(forExecutablePath: executablePath, items: launchItems)"))
+        XCTAssertTrue(info.contains("LaunchItemCopy.startedLine(label:"))
+        XCTAssertTrue(info.contains("if let launchLine"))
+        XCTAssertFalse(info.contains("LoginItem"))
+
+        let gpu = try repoText("Pulse/Views/GPUOverviewSection.swift")
+        XCTAssertFalse(gpu.contains("startedLine"))
+        XCTAssertFalse(gpu.contains("launchItem(forExecutablePath:"))
+    }
+
     func testWatchStartsOnlyOnTheMachinePage() throws {
         let tail = try functionBody(
             named: "finishPageChange",
