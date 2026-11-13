@@ -113,6 +113,9 @@
 		B00000000000000000000079 /* MachineOverviewSection+Throughput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000079 /* MachineOverviewSection+Throughput.swift */; };
 		B0000000000000000000007A /* MemoryDashboardVM+SamplingClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000007A /* MemoryDashboardVM+SamplingClock.swift */; };
 		B0000000000000000000007B /* GPUPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000007B /* GPUPage.swift */; };
+		B00000000000000000000168 /* GPUShare.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000168 /* GPUShare.swift */; };
+		B00000000000000000000169 /* HostGPUShareReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000169 /* HostGPUShareReader.swift */; };
+		B00000000000000000000170 /* GPUShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000170 /* GPUShareCard.swift */; };
 		B0000000000000000000007C /* HostGPUReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000007C /* HostGPUReader.swift */; };
 		B0000000000000000000007D /* GPUOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000007D /* GPUOverviewSection.swift */; };
 		B0000000000000000000007E /* MemoryDashboardVM+GPU.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000007E /* MemoryDashboardVM+GPU.swift */; };
@@ -298,8 +301,11 @@
 		A00000000000000000000079 /* MachineOverviewSection+Throughput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MachineOverviewSection+Throughput.swift"; sourceTree = "<group>"; };
 		A0000000000000000000007A /* MemoryDashboardVM+SamplingClock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+SamplingClock.swift"; sourceTree = "<group>"; };
 		A0000000000000000000007B /* GPUPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPUPage.swift; sourceTree = "<group>"; };
+		A00000000000000000000168 /* GPUShare.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPUShare.swift; sourceTree = "<group>"; };
 		A0000000000000000000007C /* HostGPUReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostGPUReader.swift; sourceTree = "<group>"; };
+		A00000000000000000000169 /* HostGPUShareReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostGPUShareReader.swift; sourceTree = "<group>"; };
 		A0000000000000000000007D /* GPUOverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPUOverviewSection.swift; sourceTree = "<group>"; };
+		A00000000000000000000170 /* GPUShareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPUShareCard.swift; sourceTree = "<group>"; };
 		A0000000000000000000007E /* MemoryDashboardVM+GPU.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+GPU.swift"; sourceTree = "<group>"; };
 		A0000000000000000000007F /* HostConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostConnection.swift; sourceTree = "<group>"; };
 		A00000000000000000000080 /* HostConnectionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostConnectionMonitor.swift; sourceTree = "<group>"; };
@@ -397,6 +403,7 @@
 				A0000000000000000000004E /* ProcessPermissionFootnote.swift */,
 				A0000000000000000000001B /* CPUPage.swift */,
 				A0000000000000000000007B /* GPUPage.swift */,
+				A00000000000000000000168 /* GPUShare.swift */,
 				A00000000000000000000148 /* MemoryPage.swift */,
 				A00000000000000000000094 /* ChipTemperature.swift */,
 				A00000000000000000000066 /* EnergyPage.swift */,
@@ -444,6 +451,7 @@
 				A00000000000000000000091 /* PublicIPURLSessionTransport.swift */,
 				A00000000000000000000023 /* HostDiskReader.swift */,
 				A0000000000000000000007C /* HostGPUReader.swift */,
+				A00000000000000000000169 /* HostGPUShareReader.swift */,
 				A00000000000000000000095 /* HostChipTemperatureReader.swift */,
 				A00000000000000000000113 /* ProcessCodeSignatureReader.swift */,
 				A00000000000000000000014 /* CPULoad.swift */,
@@ -524,6 +532,7 @@
 				A00000000000000000000025 /* DiskOverviewSection.swift */,
 				A0000000000000000000003C /* MachineOverviewSection.swift */,
 				A0000000000000000000007D /* GPUOverviewSection.swift */,
+				A00000000000000000000170 /* GPUShareCard.swift */,
 				A00000000000000000000079 /* MachineOverviewSection+Throughput.swift */,
 				A00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift */,
 				A00000000000000000000013 /* OverviewCards.swift */,
@@ -739,6 +748,9 @@
 				B0000000000000000000006E /* MemoryDashboardVM+HostWatch.swift in Sources */,
 				B0000000000000000000007A /* MemoryDashboardVM+SamplingClock.swift in Sources */,
 				B0000000000000000000007B /* GPUPage.swift in Sources */,
+				B00000000000000000000168 /* GPUShare.swift in Sources */,
+				B00000000000000000000169 /* HostGPUShareReader.swift in Sources */,
+				B00000000000000000000170 /* GPUShareCard.swift in Sources */,
 				B00000000000000000000148 /* MemoryPage.swift in Sources */,
 				B00000000000000000000094 /* ChipTemperature.swift in Sources */,
 				B0000000000000000000007C /* HostGPUReader.swift in Sources */,
