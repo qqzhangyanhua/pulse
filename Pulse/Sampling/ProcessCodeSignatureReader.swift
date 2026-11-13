@@ -71,7 +71,9 @@ enum ProcessCodeSignatureReader {
         guard let certificates = info[kSecCodeInfoCertificates as String] as? NSArray else { return [] }
         var result: [String] = []
         for item in certificates {
-            guard let certificate = item as? SecCertificate else { continue }
+            let value = item as CFTypeRef
+            guard CFGetTypeID(value) == SecCertificateGetTypeID() else { continue }
+            let certificate = value as! SecCertificate
             if let summary = SecCertificateCopySubjectSummary(certificate) as String? {
                 result.append(summary)
             }
