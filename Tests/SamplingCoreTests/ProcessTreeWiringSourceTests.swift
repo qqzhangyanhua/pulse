@@ -62,6 +62,18 @@ final class ProcessTreeWiringSourceTests: XCTestCase {
         )
     }
 
+    func testClickPathsLookUpWindowedPidsWithoutWritingTheCache() throws {
+        let top3 = try repoText("Pulse/ViewModels/MemoryDashboardVM+Top3Tap.swift")
+        XCTAssertTrue(top3.contains("WindowedAppLookup.pids"))
+
+        let focus = try functionBody(
+            named: "focusProcessFromTree",
+            in: try repoText("Pulse/ViewModels/MemoryDashboardVM+TopAppLocation.swift")
+        )
+        XCTAssertTrue(focus.contains("WindowedAppLookup.pids"))
+        XCTAssertFalse(focus.contains("noteWindowedPids"))
+    }
+
     private func repoText(_ relative: String) throws -> String {
         try String(contentsOf: repoRoot().appendingPathComponent(relative), encoding: .utf8)
     }

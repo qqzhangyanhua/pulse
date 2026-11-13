@@ -124,11 +124,39 @@ final class DashboardCoreSelectionTests: XCTestCase {
         XCTAssertNil(core.selectedPid)
     }
 
-    func testSelectingAMissingPidForwardsOnlyTheCorrectedPid() {
+    func testTreeFocusUsesTheLiveDecisionSetAndLeavesTheStoredWindowedPids() {
+        var kept = DashboardCore(ownPid: 1)
+        accept(&kept, rows: [
+            row(4, "Mail", memory: 10, cpu: 1),
+            row(9, "Notes", memory: 20, cpu: 1),
+        ])
+        _ = kept.setWindowedOnly(true, windowedPids: [9])
+
+        _ = kept.focusProcessFromTree(4, decisionWindowedPids: [4, 9])
+
+        XCTAssertTrue(kept.windowedOnlyFilter)
+        XCTAssertEqual(kept.windowedPids, Set<Int32>([9]))
+
+        var cleared = DashboardCore(ownPid: 1)
+        accept(&cleared, rows: [
+            row(4, "Mail", memory: 10, cpu: 1),
+            row(9, "Notes", memory: 20, cpu: 1),
+        ])
+        _ = cleared.setWindowedOnly(true, windowedPids: [9])
+
+        _ = cleared.focusProcessFromTree(4, decisionWindowedPids: [9])
+
+        XCTAssertFalse(cleared.windowedOnlyFilter)
+        XCTAssertEqual(cleared.windowedPids, Set<Int32>([9]))
+    }
+
+    func testSelectingAMissingPidCorrectsOnceWithoutCaptureOrForward() {
         var core = DashboardCore(ownPid: 1)
         _ = core.selectPage(.energy)
         accept(&core, rows: [row(20, "Mail", memory: 80, cpu: 1)], generations: [20: 9, 99: 4])
-        _ = core.select(pid: 20)
+        let legal = core.select(pid: 20)
+        XCTAssertEqual(legal, [.forwardSelectedPid(20)])
+        XCTAssertNil(core.detail)
         XCTAssertEqual(core.selectedEnergyGeneration, 9)
         XCTAssertEqual(core.sidebarSubjectPid, 20)
         core.detail = ProcessDetail(row: row(20, "Mail", memory: 80, cpu: 1), memorySeries: [], cpuSeries: [])
@@ -139,12 +167,13 @@ final class DashboardCoreSelectionTests: XCTestCase {
         XCTAssertEqual(core.selectedEnergyGeneration, 9)
 
         let corrected = core.select(pid: 99)
-        XCTAssertEqual(corrected, [.forwardSelectedPid(nil)])
+        XCTAssertEqual(corrected, [])
         XCTAssertNil(core.selectedPid)
-        XCTAssertNil(core.detail)
-        XCTAssertNil(core.selectedEnergyGeneration)
+        XCTAssertEqual(core.detail?.row.pid, 20)
+        XCTAssertEqual(core.selectedEnergyGeneration, 9)
         XCTAssertEqual(core.sidebarSubjectPid, 20)
         XCTAssertFalse(corrected.contains(.forwardSelectedPid(99)))
+        XCTAssertFalse(corrected.contains(.forwardSelectedPid(nil)))
     }
 
     private func accept(

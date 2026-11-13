@@ -8,7 +8,9 @@ extension MemoryDashboardVM {
     }
 
     /// Tree jump or return. A memory keep that would drop `pid` turns off first.
+    /// The lookup decides the switch only. It is not written into `core.windowedPids`.
     func focusProcessFromTree(_ pid: Int32) {
-        mutateCore { $0.focusProcessFromTree(pid) }
+        let decisionWindowedPids = WindowedAppLookup.pids(in: rows)
+        mutateCore { $0.focusProcessFromTree(pid, decisionWindowedPids: decisionWindowedPids) }
     }
 }

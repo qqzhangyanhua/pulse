@@ -27,7 +27,8 @@ extension DashboardCore {
     }
 
     /// Tree jump or return. A memory keep that would drop `pid` turns off first.
-    mutating func focusProcessFromTree(_ pid: Int32) -> [DashboardEffect] {
+    /// The parameter shadows the stored set. `setWindowedOnly` replaces storage only when the switch turns on.
+    mutating func focusProcessFromTree(_ pid: Int32, decisionWindowedPids windowedPids: Set<Int32>) -> [DashboardEffect] {
         let next = ProcessTree.filtersAfterFocus(
             pid: pid,
             page: selectedPage,

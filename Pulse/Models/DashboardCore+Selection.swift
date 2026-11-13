@@ -68,28 +68,28 @@ extension DashboardCore {
         ProcessSelection.scrollTarget(selectedPid: selectedPid, rows: rows)
     }
 
-    /// List selection, including the early return on an unstable pid.
-    /// Capture, `detail = nil`, and `forwardSelectedPid` run only for the settled pid.
+    /// List selection. The same pid returns nothing.
+    /// A missing pid is written back to the legal pid once and returns nothing.
+    /// That write does not capture, clear `detail`, forward, or call `followListSelection` again.
+    /// Capture, `detail = nil`, and `forwardSelectedPid` run only when `followListSelection` already agrees.
     mutating func select(pid: Int32?) -> [DashboardEffect] {
         guard pid != selectedPid else { return [] }
         selectedPid = pid
-        while true {
-            let effect = ProcessQuitSession.followListSelection(
-                listSelectedPid: selectedPid,
-                sidebarSubjectPid: sidebarSubjectPid,
-                rows: rows
-            )
-            if selectedPid != effect.listSelectedPid {
-                selectedPid = effect.listSelectedPid
-                continue
-            }
-            if sidebarSubjectPid != effect.sidebarSubjectPid {
-                sidebarSubjectPid = effect.sidebarSubjectPid
-            }
-            captureEnergySelectionGeneration()
-            detail = nil
-            return [.forwardSelectedPid(selectedPid)]
+        let effect = ProcessQuitSession.followListSelection(
+            listSelectedPid: selectedPid,
+            sidebarSubjectPid: sidebarSubjectPid,
+            rows: rows
+        )
+        if selectedPid != effect.listSelectedPid {
+            selectedPid = effect.listSelectedPid
+            return []
         }
+        if sidebarSubjectPid != effect.sidebarSubjectPid {
+            sidebarSubjectPid = effect.sidebarSubjectPid
+        }
+        captureEnergySelectionGeneration()
+        detail = nil
+        return [.forwardSelectedPid(selectedPid)]
     }
 
     mutating func selectPage(_ page: DashboardPage) -> [DashboardEffect] {
