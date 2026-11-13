@@ -65,6 +65,12 @@ struct GPUOverviewSection: View {
                     readingCard(title: GPUPageCopy.memory, value: vm.gpuPage.memoryText, symbol: "memorychip")
                 }
                 .frame(height: 132)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(EnergyModelCopy.gpuPowerLine(watts: vm.cpuEnergy?.gpuWatts))
+                    Text(EnergyModelCopy.gpuFrequencyLine(hertz: vm.cpuEnergy?.gpuHertz))
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
                 if let cores = vm.gpuPage.coreCountText {
                     Text(cores)
                         .font(.subheadline)
@@ -85,6 +91,8 @@ struct GPUOverviewSection: View {
 
     private var accessibilityLabel: String {
         var line = "\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)"
+        line += "，\(EnergyModelCopy.gpuPowerLine(watts: vm.cpuEnergy?.gpuWatts))"
+        line += "，\(EnergyModelCopy.gpuFrequencyLine(hertz: vm.cpuEnergy?.gpuHertz))"
         if let cores = vm.gpuPage.coreCountText {
             line += "，\(cores)"
         }

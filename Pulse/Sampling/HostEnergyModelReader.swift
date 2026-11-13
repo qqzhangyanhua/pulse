@@ -1,12 +1,14 @@
 import Darwin
 import Foundation
 
-/// CPU watts and cluster frequency. Opened with `dlopen`, not linked.
-/// The first sample has no delta, so watts and frequency stay nil.
+/// One `dlopen` of IOReport. Energy Model is one subscription.
+/// CPU Stats and GPU Stats are separate group deltas on that same library.
+/// The first sample of a subscription has no delta, so watts and frequency stay nil.
 enum HostEnergyModelReader {
     private static let frameworkPath = "/System/Library/PrivateFrameworks/IOReport.framework/IOReport"
     private static let energyGroup = "Energy Model"
     private static let cpuStatsGroup = "CPU Stats"
+    private static let gpuStatsGroup = "GPU Stats"
     private static let channelsKey = "IOReportChannels"
 
     private typealias CopyChannels = @convention(c) (
@@ -53,29 +55,78 @@ enum HostEnergyModelReader {
     private static var unavailable = false
     private static var energy = Subscription?.none
     private static var cpuStats = Subscription?.none
+    private static var gpuStats = Subscription?.none
     private static var previousAt: Date?
 
-    static func read(at date: Date = Date()) -> EnergyModelReading? {
+    /// `cpu`, `gpu`, and `rails` choose which channels to decode.
+    /// The energy subscription is still the one Energy Model group.
+    /// Previous cumulative is 0 because the sample is already a delta.
+    static func read(
+        at date: Date = Date(),
+        cpu: Bool = false,
+        gpu: Bool = false,
+        rails: Bool = false
+    ) -> EnergyModelReading? {
+        guard cpu || gpu || rails else { return nil }
         guard let symbols = loadedSymbols() else { return nil }
         let elapsed = previousAt.map { date.timeIntervalSince($0) } ?? 0
         let current = energyChannels(symbols: symbols)
-        let frequencies = clusterFrequencies(symbols: symbols)
-        let reading = EnergyModelDecoder.cpuReading(
-            channels: current.map { channel in
-                (
-                    previous: EnergyModelChannel(name: channel.name, unit: channel.unit, cumulative: 0),
-                    current: channel
-                )
-            },
-            elapsed: elapsed,
-            performanceHertz: frequencies.performance,
-            efficiencyHertz: frequencies.efficiency
-        )
+        let channels = current.map { channel in
+            (
+                previous: EnergyModelChannel(name: channel.name, unit: channel.unit, cumulative: 0),
+                current: channel
+            )
+        }
+        var reading = EnergyModelReading()
+        if cpu {
+            let frequencies = clusterFrequencies(symbols: symbols)
+            let cpuReading = EnergyModelDecoder.cpuReading(
+                channels: channels,
+                elapsed: elapsed,
+                performanceHertz: frequencies.performance,
+                efficiencyHertz: frequencies.efficiency
+            )
+            reading.cpuWatts = cpuReading.cpuWatts
+            reading.performanceHertz = cpuReading.performanceHertz
+            reading.efficiencyHertz = cpuReading.efficiencyHertz
+        }
+        if gpu {
+            reading.gpuWatts = EnergyModelDecoder.gpuWatts(channels: channels, elapsed: elapsed)
+            reading.gpuHertz = gpuFrequency(symbols: symbols)
+        }
+        if rails {
+            reading.aneWatts = EnergyModelDecoder.aneWatts(channels: channels, elapsed: elapsed)
+            reading.dramWatts = EnergyModelDecoder.dramWatts(channels: channels, elapsed: elapsed)
+        }
         previousAt = date
-        if reading.cpuWatts == nil, reading.performanceHertz == nil, reading.efficiencyHertz == nil, current.isEmpty {
+        if current.isEmpty,
+           reading.cpuWatts == nil,
+           reading.performanceHertz == nil,
+           reading.efficiencyHertz == nil,
+           reading.gpuWatts == nil,
+           reading.gpuHertz == nil,
+           reading.aneWatts == nil,
+           reading.dramWatts == nil {
             return nil
         }
         return reading
+    }
+
+    /// One GPU Stats delta. Frequency is the state with the greatest residency,
+    /// and only when that state's name parses as hertz.
+    private static func gpuFrequency(symbols: Symbols) -> Double? {
+        var states: [(name: String, residency: Int64)] = []
+        withDeltaChannels(in: gpuStatsGroup, slot: &gpuStats, symbols: symbols) { channels in
+            for channel in channels {
+                let count = symbols.stateCount(channel)
+                guard count > 0, count <= 64 else { continue }
+                for index in 0..<count {
+                    guard let name = string(symbols.stateName(channel, index)) else { continue }
+                    states.append((name: name, residency: symbols.stateResidency(channel, index)))
+                }
+            }
+        }
+        return EnergyModelDecoder.dominantHertz(states)
     }
 
     /// One CPU Stats delta. Each cluster's frequency is the state that spent the
