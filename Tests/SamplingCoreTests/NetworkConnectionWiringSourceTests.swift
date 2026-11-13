@@ -30,8 +30,9 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
         let skeleton = try braceBody(after: "if placeholder", in: view)
         XCTAssertTrue(skeleton.contains("SkeletonBlock"))
         XCTAssertFalse(skeleton.contains("hostConnection"))
+        XCTAssertFalse(skeleton.contains("hostWiFi"))
         XCTAssertFalse(skeleton.contains("NetworkConnectionCard.project"))
-        XCTAssertTrue(view.contains("NetworkConnectionCard.project(vm.hostConnection)"))
+        XCTAssertTrue(view.contains("NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi)"))
         XCTAssertFalse(view.contains("Timer"))
     }
 
@@ -92,9 +93,49 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
         let height = try functionBody(named: "overviewHeight", in: dashboard)
         XCTAssertFalse(height.contains("case .cpu, .network, .disk:"))
         XCTAssertTrue(height.contains("case .network:"))
-        XCTAssertTrue(height.contains("274"))
+        XCTAssertTrue(height.contains("300"))
+        XCTAssertTrue(dashboard.contains("alignment: .top"))
         let card = try repoText("Pulse/Views/NetworkConnectionCardView.swift")
-        XCTAssertTrue(card.contains(".frame(height: 112)"))
+        XCTAssertTrue(card.contains("138"))
+        XCTAssertTrue(card.contains("112"))
+        XCTAssertTrue(card.contains("alignment: .top"))
+    }
+
+    func testWiFiSignalIsReadOnceFromSampleWithoutATimer() throws {
+        let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
+        let sample = try functionBody(named: "sample", in: sampler)
+        let call = try lineContaining("HostWiFiReader.read()", in: sampler)
+        XCTAssertTrue(sample.contains("HostWiFiReader.read()"))
+        XCTAssertEqual(occurrenceCount(of: "HostWiFiReader.read()", in: sampler), 1)
+        XCTAssertFalse(call.contains("Timer"))
+        XCTAssertFalse(sample.contains("Timer"))
+
+        let reader = try repoText("Pulse/Sampling/HostWiFiReader.swift")
+        XCTAssertFalse(reader.contains("Timer"))
+        XCTAssertFalse(reader.contains("ssid"))
+        XCTAssertTrue(reader.contains("CWWiFiClient.shared().interface()"))
+        XCTAssertTrue(reader.contains("rssiValue()"))
+        XCTAssertTrue(reader.contains("noiseMeasurement()"))
+
+        let portable = try repoText("Pulse/Sampling/HostWiFi.swift")
+        XCTAssertTrue(portable.contains("import Foundation"))
+        for token in ["import CoreWLAN", "import Darwin", "import AppKit", "import SwiftUI"] {
+            XCTAssertFalse(portable.contains(token), token)
+        }
+
+        let package = try repoText("Package.swift")
+        let parts = package.components(separatedBy: "sources:")
+        XCTAssertEqual(parts.count, 2)
+        XCTAssertTrue(parts[1].contains("\"Sampling/HostWiFi.swift\""))
+        XCTAssertTrue(parts[0].contains("\"Sampling/HostWiFiReader.swift\""))
+        XCTAssertFalse(parts[1].contains("HostWiFiReader.swift"))
+    }
+
+    private func lineContaining(_ needle: String, in source: String) throws -> String {
+        guard let line = source.split(separator: "\n", omittingEmptySubsequences: false).first(where: { $0.contains(needle) }) else {
+            throw NetworkConnectionSourceError.missing(needle)
+        }
+        return String(line)
     }
 
     private func assertCard(in body: String, call: String, before rateCall: String) throws {

@@ -16,13 +16,16 @@ struct NetworkConnectionCardView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    let card = NetworkConnectionCard.project(vm.hostConnection)
+                    let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi)
                     valueRow(card.status)
                     valueRow(card.type)
+                    if let signal = card.signal {
+                        valueRow(signal)
+                    }
                 }
             }
         }
-        .frame(height: 112)
+        .frame(height: cardHeight, alignment: .top)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
     }
@@ -58,7 +61,18 @@ struct NetworkConnectionCardView: View {
         if placeholder {
             return "\(NetworkPageCopy.connectionTitle)，\(NetworkPageCopy.sampling)"
         }
-        let card = NetworkConnectionCard.project(vm.hostConnection)
-        return "\(NetworkPageCopy.connectionTitle)，\(card.status.title) \(card.status.value)，\(card.type.title) \(card.type.value)"
+        let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi)
+        var label = "\(NetworkPageCopy.connectionTitle)，\(card.status.title) \(card.status.value)，\(card.type.title) \(card.type.value)"
+        if let signal = card.signal {
+            label += "，\(signal.title) \(signal.value)"
+        }
+        return label
+    }
+
+    /// 112 fits title, status, and type. 138 adds the signal row. Ethernet stays short.
+    private var cardHeight: CGFloat {
+        if placeholder { return 112 }
+        let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi)
+        return card.signal == nil ? 112 : 138
     }
 }

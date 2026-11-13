@@ -244,6 +244,8 @@ struct SampledFrame: Sendable {
     let energyLiveGenerations: [Int32: Int]
     /// Accelerator nodes for this tick. Nil when the GPU page did not ask for a read.
     let gpuNodes: [GPUAcceleratorNode]?
+    /// Wi-Fi signal for this tick. Nil when there is no interface. RSSI 0 stays a nil rssi.
+    let hostWiFi: HostWiFiReading?
 
     init(
         snapshot: MemorySnapshot,
@@ -260,7 +262,8 @@ struct SampledFrame: Sendable {
         energyHourRates: [Int32: ProcessEnergyRates] = [:],
         exitedEnergyProcesses: [ExitedEnergyProcess] = [],
         energyLiveGenerations: [Int32: Int] = [:],
-        gpuNodes: [GPUAcceleratorNode]? = nil
+        gpuNodes: [GPUAcceleratorNode]? = nil,
+        hostWiFi: HostWiFiReading? = nil
     ) {
         self.snapshot = snapshot
         self.rows = rows
@@ -277,5 +280,6 @@ struct SampledFrame: Sendable {
         self.exitedEnergyProcesses = exitedEnergyProcesses
         self.energyLiveGenerations = energyLiveGenerations
         self.gpuNodes = gpuNodes
+        self.hostWiFi = hostWiFi
     }
 }
