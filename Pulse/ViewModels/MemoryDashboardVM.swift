@@ -375,6 +375,12 @@ final class MemoryDashboardVM: ObservableObject {
                 let follow = next.resolveForceQuit(generation: generation, confirmed: confirmed)
                 core = next
                 await performExternal(follow)
+            case .confirmResumeBeforeQuit(let pid, let displayName):
+                let confirmed = ProcessActions.confirmResumeBeforeQuit(displayName: displayName)
+                var next = core
+                let follow = next.resolveResumeBeforeQuit(pid: pid, confirmed: confirmed)
+                core = next
+                await performExternal(follow)
             default:
                 perform([effect])
             }
@@ -396,8 +402,14 @@ final class MemoryDashboardVM: ObservableObject {
                 Task { await sampler.setSelectedPid(pid) }
             case .forwardMemoryPageSort(let sort):
                 Task { await sampler.setMemoryPageSort(sort) }
-            case .terminate, .confirmForceQuit:
+            case .terminate, .confirmForceQuit, .confirmResumeBeforeQuit:
                 break
+            case .pauseProcess(let pid):
+                ProcessPause.stop(pid)
+                ProcessPause.store(core.pausedLedger)
+            case .resumeProcess(let pid):
+                ProcessPause.resume(pid)
+                ProcessPause.store(core.pausedLedger)
             case .setGPUSampling:
                 break
             case .startMachineWatch, .stopMachineWatch:

@@ -22,6 +22,18 @@ enum ProcessActions {
         return alert.runModal() == .alertFirstButtonReturn
     }
 
+    /// A paused process cannot handle quit until it is continued. Cancel leaves it paused.
+    @MainActor
+    static func confirmResumeBeforeQuit(displayName: String) -> Bool {
+        let alert = NSAlert()
+        alert.messageText = "先继续“\(displayName)”？"
+        alert.informativeText = "这个进程已暂停。先继续它，退出请求才能被处理。"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "继续")
+        alert.addButton(withTitle: "取消")
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
     @MainActor
     static func forceTerminate(pid: pid_t) async -> ProcessActionResult {
         await quitApplicationOrSignal(pid: pid, timeoutNanoseconds: 2_000_000_000, force: true) { app in

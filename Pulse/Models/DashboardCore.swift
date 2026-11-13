@@ -12,6 +12,12 @@ enum DashboardEffect: Equatable {
     case terminate(pid: Int32, force: Bool, token: UInt64?)
     /// `ProcessActions.confirmForceQuit`. The Bool comes back through `resolveForceQuit`.
     case confirmForceQuit(displayName: String, generation: UInt64)
+    /// SIGSTOP for a process this core just recorded as paused.
+    case pauseProcess(pid: Int32)
+    /// SIGCONT. The ledger record is already gone.
+    case resumeProcess(pid: Int32)
+    /// Quitting a paused process. The Bool comes back through `resolveResumeBeforeQuit`.
+    case confirmResumeBeforeQuit(pid: Int32, displayName: String)
     /// Sampler `setMemoryPageSort` for the sort just written into the memory-page publication.
     case forwardMemoryPageSort(ProcessTableSort)
     /// Next tick reads the GPU page. Not a second sampler task.
@@ -58,6 +64,8 @@ struct DashboardCore {
     var detail: ProcessDetail?
     private(set) var topMemorySeries: [Int32: [ChartSample]] = [:]
     var quitOutcome = ProcessQuitOutcome()
+    /// Processes this session paused. Pid plus start time. Not a signal sender.
+    var pausedLedger = PausedProcessLedger()
     var sidebarSubjectPid: Int32?
     private(set) var samplingFailed = false
     private(set) var usageHistory = UsageHistory()

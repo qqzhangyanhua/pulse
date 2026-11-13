@@ -24,9 +24,13 @@ extension DashboardCore {
     }
 
     /// Ordinary quit. Empty when the page disallows it, the energy selection is exited-only, or no attempt is issued.
+    /// A paused process asks to continue first, and does not start the quit attempt yet.
     mutating func quitSelected() -> [DashboardEffect] {
         guard selectedPage.allowsProcessQuit else { return [] }
         guard !selectedEnergyExitedOnly else { return [] }
+        if let prompt = resumeBeforeQuitPrompt() {
+            return [prompt]
+        }
         var store = quitOutcome
         let issued = ProcessQuitSession.ordinaryTerminate(
             store: &store,
