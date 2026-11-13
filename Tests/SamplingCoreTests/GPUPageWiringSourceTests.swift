@@ -100,7 +100,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         XCTAssertFalse(vm.contains("selectedPage == .gpu"))
-        XCTAssertTrue(vm.contains("sampler.sample(readChipTemperature: selectedPage == .machine)"))
+        XCTAssertTrue(vm.contains("sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu)"))
         XCTAssertTrue(vm.contains("func selectPage("))
         XCTAssertTrue(vm.contains("func focusMemoryPage("))
 

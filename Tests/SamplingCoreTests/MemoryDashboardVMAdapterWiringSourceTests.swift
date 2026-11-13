@@ -22,6 +22,7 @@ final class MemoryDashboardVMAdapterWiringSourceTests: XCTestCase {
         "snapshot",
         "systemCpuPercent",
         "busiestCorePercent",
+        "cpuEnergy",
         "hostNetworkRates",
         "hostWiFi",
         "hostConnection",

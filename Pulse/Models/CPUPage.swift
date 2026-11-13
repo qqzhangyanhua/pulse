@@ -3,7 +3,7 @@ import Foundation
 /// Display text for a CPU percent. Missing samples stay an em dash and are never shown as 0%.
 enum CPUPercentText {
     static let missing = "—"
-    private static let posix = Locale(identifier: "en_US_POSIX")
+    static let posix = Locale(identifier: "en_US_POSIX")
 
     static func string(_ value: Double?) -> String {
         guard let value else { return missing }
@@ -34,6 +34,17 @@ enum CPUPageCopy {
 
     static func busiestCoreLine(percent: Double?) -> String {
         "最忙的一核 · \(CPUPercentText.string(percent))"
+    }
+
+    static func powerLine(watts: Double?) -> String {
+        guard let watts, watts.isFinite else { return "CPU 功耗 · —" }
+        return "CPU 功耗 · \(String(format: "%.1f", locale: CPUPercentText.posix, watts)) W"
+    }
+
+    static func frequencyLine(title: String, hertz: Double?) -> String {
+        guard let hertz, hertz.isFinite, hertz >= 0 else { return "\(title) · —" }
+        let ghz = hertz / 1_000_000_000
+        return "\(title) · \(String(format: "%.2f", locale: CPUPercentText.posix, ghz)) GHz"
     }
 }
 

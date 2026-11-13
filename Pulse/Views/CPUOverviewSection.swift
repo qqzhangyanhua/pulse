@@ -82,6 +82,19 @@ struct CPUOverviewSection: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+                        Text(CPUPageCopy.powerLine(watts: vm.cpuEnergy?.cpuWatts))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .accessibilityLabel(CPUPageCopy.powerLine(watts: vm.cpuEnergy?.cpuWatts))
+                        Text(CPUPageCopy.frequencyLine(title: "性能核", hertz: vm.cpuEnergy?.performanceHertz))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        Text(CPUPageCopy.frequencyLine(title: "能效核", hertz: vm.cpuEnergy?.efficiencyHertz))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                         if vm.thermalAdvice == nil, let notice = vm.thermalNotice {
                             ThermalNoticeLine(text: notice)
                         }
@@ -101,10 +114,14 @@ struct CPUOverviewSection: View {
 
     private var readyAccessibilityLabel: String {
         let core = CPUPageCopy.busiestCoreLine(percent: vm.busiestCorePercent)
+        let power = CPUPageCopy.powerLine(watts: vm.cpuEnergy?.cpuWatts)
+        let performance = CPUPageCopy.frequencyLine(title: "性能核", hertz: vm.cpuEnergy?.performanceHertz)
+        let efficiency = CPUPageCopy.frequencyLine(title: "能效核", hertz: vm.cpuEnergy?.efficiencyHertz)
+        let readings = "\(core)，\(power)，\(performance)，\(efficiency)"
         if let note = HistoryCurvePresentation.annotation(current: vm.systemCpuPercent, sampleCount: vm.cpuHistory.samples.count) {
-            return "\(overviewLine)，\(note)" + "，\(core)"
+            return "\(overviewLine)，\(note)" + "，\(readings)"
         }
-        return overviewLine + "，\(core)"
+        return overviewLine + "，\(readings)"
     }
 
     private var cpuLabel: some View {
