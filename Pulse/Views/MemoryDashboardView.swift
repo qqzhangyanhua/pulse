@@ -153,9 +153,9 @@ struct MemoryDashboardView: View {
     }
 
     /// Crossfade in a clipped slot. Memory is 148 + 12 + 104.
-    /// Network is the connection card (174 with the signal row, 148 without;
+    /// Network is the connection card (206 on Wi-Fi, 148 otherwise;
     /// both include the public-IP row), a 12-pt gap, and the 150-pt rate row.
-    /// Top alignment leaves spare space under the rate charts when the signal row is hidden.
+    /// Top alignment leaves spare space under the rate charts when the Wi-Fi rows are hidden.
     /// CPU and disk stay 150. The table is a sibling, so it only follows this height.
     private var resourceOverview: some View {
         let page = vm.selectedPage
@@ -186,7 +186,7 @@ struct MemoryDashboardView: View {
         case .cpu, .disk:
             150
         case .network:
-            336
+            368
         case .energy:
             0
         case .gpu:

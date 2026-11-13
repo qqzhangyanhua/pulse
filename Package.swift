@@ -26,6 +26,7 @@ let package = Package(
                 "Sampling/HostNetworkReader.swift",
                 "Sampling/HostConnectionMonitor.swift",
                 "Sampling/HostWiFiReader.swift",
+                "Sampling/HostWiFiLocation.swift",
                 "Sampling/PublicIPURLSessionTransport.swift",
                 "Sampling/HostDiskReader.swift",
                 "Sampling/HostGPUReader.swift",

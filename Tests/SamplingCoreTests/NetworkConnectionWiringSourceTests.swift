@@ -32,7 +32,7 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
         XCTAssertFalse(skeleton.contains("hostConnection"))
         XCTAssertFalse(skeleton.contains("hostWiFi"))
         XCTAssertFalse(skeleton.contains("NetworkConnectionCard.project"))
-        XCTAssertTrue(view.contains("NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi)"))
+        XCTAssertTrue(view.contains("NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi, ssidPermission: vm.ssidPermission)"))
         XCTAssertFalse(view.contains("Timer"))
     }
 
@@ -93,16 +93,18 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
         let height = try functionBody(named: "overviewHeight", in: dashboard)
         XCTAssertFalse(height.contains("case .cpu, .network, .disk:"))
         XCTAssertTrue(height.contains("case .network:"))
-        // Signal row and public-IP row. Placeholder or no signal is 148; signal is 174.
-        // The clipped slot is 336 (174 + 12 + 150) so the spare gap stays under the rate charts.
-        XCTAssertTrue(height.contains("336"))
+        // Wi-Fi adds the SSID row. Placeholder or non-Wi-Fi is 148; Wi-Fi is 206.
+        // The clipped slot is 368 (206 + 12 + 150) so the spare gap stays under the rate charts.
+        XCTAssertTrue(height.contains("368"))
+        XCTAssertFalse(height.contains("336"))
         XCTAssertFalse(height.contains("274"))
         XCTAssertFalse(height.contains("300"))
         XCTAssertFalse(height.contains("310"))
         XCTAssertTrue(dashboard.contains("alignment: .top"))
         let card = try repoText("Pulse/Views/NetworkConnectionCardView.swift")
-        XCTAssertTrue(card.contains("174"))
+        XCTAssertTrue(card.contains("206"))
         XCTAssertTrue(card.contains("148"))
+        XCTAssertFalse(card.contains("174"))
         XCTAssertFalse(card.contains("112"))
         XCTAssertFalse(card.contains("138"))
         XCTAssertTrue(card.contains("alignment: .top"))
@@ -119,14 +121,19 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
 
         let reader = try repoText("Pulse/Sampling/HostWiFiReader.swift")
         XCTAssertFalse(reader.contains("Timer"))
-        XCTAssertFalse(reader.contains("ssid"))
+        XCTAssertTrue(reader.contains("interface.ssid()"))
+        XCTAssertTrue(reader.contains("HostWiFiLocation.currentPermission()"))
+        XCTAssertTrue(reader.contains(".authorized"))
+        XCTAssertFalse(reader.contains("requestWhenInUseAuthorization"))
+        XCTAssertFalse(reader.contains("requestAlwaysAuthorization"))
         XCTAssertTrue(reader.contains("CWWiFiClient.shared().interface()"))
         XCTAssertTrue(reader.contains("rssiValue()"))
         XCTAssertTrue(reader.contains("noiseMeasurement()"))
 
         let portable = try repoText("Pulse/Sampling/HostWiFi.swift")
         XCTAssertTrue(portable.contains("import Foundation"))
-        for token in ["import CoreWLAN", "import Darwin", "import AppKit", "import SwiftUI"] {
+        XCTAssertTrue(portable.contains("enum WiFiSSIDPermission"))
+        for token in ["import CoreWLAN", "import CoreLocation", "import Darwin", "import AppKit", "import SwiftUI"] {
             XCTAssertFalse(portable.contains(token), token)
         }
 
@@ -226,10 +233,108 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
             .map { "Pulse/MenuBar/\($0.lastPathComponent)" }
         for relative in files {
             let text = try repoText(relative)
-            for token in ["PublicIP", "ipify", "checkip", "HostWiFi"] {
+            for token in ["PublicIP", "ipify", "checkip", "HostWiFi", "ssid", "CLLocation"] {
                 XCTAssertFalse(text.contains(token), "\(relative) \(token)")
             }
         }
+    }
+
+    func testSSIDPromptIsOnlyTheAllowButton() throws {
+        let pulse = repoRoot().appendingPathComponent("Pulse", isDirectory: true)
+        guard let enumerator = FileManager.default.enumerator(at: pulse, includingPropertiesForKeys: nil) else {
+            throw NetworkConnectionSourceError.missing("Pulse")
+        }
+        var sawLocationFile = false
+        for case let url as URL in enumerator {
+            guard ["swift", "plist", "entitlements"].contains(url.pathExtension) else { continue }
+            let text = try String(contentsOf: url, encoding: .utf8)
+            if url.lastPathComponent == "HostWiFiLocation.swift" {
+                sawLocationFile = true
+                continue
+            }
+            XCTAssertFalse(text.contains("requestWhenInUseAuthorization"), url.path)
+        }
+        XCTAssertTrue(sawLocationFile)
+
+        let location = try repoText("Pulse/Sampling/HostWiFiLocation.swift")
+        XCTAssertEqual(occurrenceCount(of: "requestWhenInUseAuthorization", in: location), 1)
+        let request = try functionBody(named: "request", in: location)
+        XCTAssertTrue(request.contains("requestWhenInUseAuthorization()"))
+        XCTAssertFalse(location.replacingOccurrences(of: request, with: "").contains("requestWhenInUseAuthorization"))
+        let started = try functionBody(named: "start", in: location)
+        XCTAssertFalse(started.contains("requestWhenInUseAuthorization"))
+        XCTAssertFalse(started.contains(".request()"))
+        XCTAssertFalse(location.contains("Timer"))
+        XCTAssertTrue(location.contains("import CoreLocation"))
+        XCTAssertTrue(location.contains("locationManagerDidChangeAuthorization"))
+        XCTAssertTrue(location.contains("MainActor.assumeIsolated"))
+        XCTAssertTrue(location.contains("case .notDetermined"))
+        XCTAssertTrue(location.contains("case .denied, .restricted"))
+        XCTAssertTrue(location.contains("case .authorized, .authorizedAlways, .authorizedWhenInUse"))
+        XCTAssertFalse(location.contains("requestAlwaysAuthorization"))
+
+        let card = try repoText("Pulse/Views/NetworkConnectionCardView.swift")
+        let allow = try braceBody(after: "Button(NetworkPageCopy.ssidAllow)", in: card)
+        XCTAssertTrue(allow.contains("vm.allowWiFiSSID()"))
+        XCTAssertTrue(card.contains(".lineLimit(1)"))
+        XCTAssertTrue(card.contains(".truncationMode(.middle)"))
+        XCTAssertTrue(card.contains(".help("))
+        let skeleton = try braceBody(after: "if placeholder", in: card)
+        XCTAssertFalse(skeleton.contains("allowWiFiSSID"))
+        XCTAssertFalse(skeleton.contains("ssidAllow"))
+
+        let action = try repoText("Pulse/ViewModels/MemoryDashboardVM+NetworkConnection.swift")
+        let allowBody = try functionBody(named: "allowWiFiSSID", in: action)
+        XCTAssertTrue(allowBody.contains("HostWiFiLocation.request()"))
+        XCTAssertFalse(allowBody.contains("requestWhenInUseAuthorization"))
+        let watch = try functionBody(named: "startWiFiSSIDWatch", in: action)
+        XCTAssertTrue(watch.contains("HostWiFiLocation.start"))
+        XCTAssertFalse(watch.contains("allowWiFiSSID"))
+        XCTAssertFalse(watch.contains(".request()"))
+        XCTAssertFalse(watch.contains("requestWhenInUseAuthorization"))
+
+        let dashboard = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let initial = try initializerBody(in: dashboard)
+        XCTAssertFalse(initial.contains("allowWiFiSSID"))
+        XCTAssertFalse(initial.contains("requestWhenInUseAuthorization"))
+        let connectionWatch = try index(of: "beginConnectionWatch()", in: initial)
+        let ssidWatch = try index(of: "startWiFiSSIDWatch()", in: initial)
+        XCTAssertLessThan(connectionWatch, ssidWatch)
+
+        for relative in [
+            "Pulse/Sampling/MemorySampler.swift",
+            "Pulse/PulseApp.swift",
+            "Pulse/MenuBar/PulseAppDelegate.swift",
+        ] {
+            let text = try repoText(relative)
+            XCTAssertFalse(text.contains("allowWiFiSSID"), relative)
+            XCTAssertFalse(text.contains("requestWhenInUseAuthorization"), relative)
+        }
+
+        let reader = try repoText("Pulse/Sampling/HostWiFiReader.swift")
+        XCTAssertFalse(reader.contains("requestWhenInUseAuthorization"))
+        XCTAssertFalse(reader.contains("requestAlwaysAuthorization"))
+
+        let package = try repoText("Package.swift")
+        let parts = package.components(separatedBy: "sources:")
+        XCTAssertEqual(parts.count, 2)
+        XCTAssertTrue(parts[0].contains("\"Sampling/HostWiFiLocation.swift\""))
+        XCTAssertFalse(parts[1].contains("HostWiFiLocation.swift"))
+        XCTAssertTrue(parts[1].contains("\"Sampling/HostWiFi.swift\""))
+
+        let project = try repoText("Pulse.xcodeproj/project.pbxproj")
+        XCTAssertTrue(project.contains("HostWiFiLocation.swift in Sources"))
+
+        let entitlements = try repoText("Pulse/Pulse.entitlements")
+        XCTAssertTrue(entitlements.contains("com.apple.security.personal-information.location"))
+        XCTAssertFalse(entitlements.contains("<dict/>"))
+        let info = try repoText("Pulse/Info.plist")
+        XCTAssertTrue(info.contains("<key>NSLocationUsageDescription</key>"))
+        XCTAssertTrue(info.contains("<key>NSLocationWhenInUseUsageDescription</key>"))
+        XCTAssertEqual(
+            occurrenceCount(of: "用来显示当前 Wi-Fi 的名称。Pulse 不保存位置，也不把位置用于其它功能。", in: info),
+            2
+        )
     }
 
     private func lineContaining(_ needle: String, in source: String) throws -> String {

@@ -10,7 +10,7 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var busiestCorePercent: Double?
     @Published private(set) var hostNetworkRates = HostNetworkRates.missing
     @Published private(set) var hostConnection: HostConnection?
-    /// Latest accepted sample's Wi-Fi reading. The path monitor does not write this.
+    @Published var ssidPermission = WiFiSSIDPermission.notDetermined
     @Published var hostWiFi: HostWiFiReading?
     /// Idle until the user clicks. Not sampled and not saved.
     @Published var publicIPRequest = PublicIPRequestState.idle
@@ -122,6 +122,7 @@ final class MemoryDashboardVM: ObservableObject {
     init() {
         beginThermalWatch()
         beginConnectionWatch()
+        startWiFiSSIDWatch()
     }
     // `isolated deinit` is Swift 6.2. Xcode 16.4 rejects it.
     deinit {
@@ -496,5 +497,4 @@ final class MemoryDashboardVM: ObservableObject {
         if selectedPid != decision.pid { selectedPid = decision.pid }
         selectedEnergyGeneration = decision.generation
     }
-    func publishHostConnection(_ connection: HostConnection) { hostConnection = connection }
 }

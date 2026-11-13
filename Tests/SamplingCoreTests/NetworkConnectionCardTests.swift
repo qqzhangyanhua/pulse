@@ -102,6 +102,69 @@ final class NetworkConnectionCardTests: XCTestCase {
         XCTAssertNil(card.signal)
     }
 
+    func testNotDeterminedSSIDShowsTheHintAndAllowAffordance() {
+        let card = NetworkConnectionCard.project(
+            connection(status: .connected, interface: .wifi),
+            wifi: HostWiFiReading(rssi: -55, noise: -90, ssid: "Cafe Wi-Fi"),
+            ssidPermission: .notDetermined
+        )
+        XCTAssertEqual(card.ssid?.title, "名称")
+        XCTAssertEqual(card.ssid?.value, "—")
+        XCTAssertEqual(card.ssid?.note, "需要定位权限才能显示 Wi-Fi 名称")
+        XCTAssertEqual(card.ssid?.allowsRequest, true)
+        XCTAssertNil(card.ssid?.help)
+        XCTAssertNotEqual(card.ssid?.value, "Cafe Wi-Fi")
+        XCTAssertEqual(card.signal?.value, "强 (−55 dBm)")
+    }
+
+    func testDeniedSSIDShowsUnauthorizedWithoutTheAllowAffordance() {
+        let card = NetworkConnectionCard.project(
+            connection(status: .connected, interface: .wifi),
+            wifi: HostWiFiReading(rssi: -70, noise: -90, ssid: "Cafe Wi-Fi"),
+            ssidPermission: .denied
+        )
+        XCTAssertEqual(card.ssid?.value, "—")
+        XCTAssertEqual(card.ssid?.note, "定位未授权")
+        XCTAssertEqual(card.ssid?.allowsRequest, false)
+        XCTAssertNil(card.ssid?.help)
+        XCTAssertNotEqual(card.ssid?.value, "Cafe Wi-Fi")
+    }
+
+    func testAuthorizedSSIDShowsTheNameWithoutTheAllowAffordance() {
+        let card = NetworkConnectionCard.project(
+            connection(status: .connected, interface: .wifi),
+            wifi: HostWiFiReading(rssi: -61, noise: -90, ssid: "Cafe Wi-Fi"),
+            ssidPermission: .authorized
+        )
+        XCTAssertEqual(card.ssid?.title, "名称")
+        XCTAssertEqual(card.ssid?.value, "Cafe Wi-Fi")
+        XCTAssertEqual(card.ssid?.help, "Cafe Wi-Fi")
+        XCTAssertNil(card.ssid?.note)
+        XCTAssertEqual(card.ssid?.allowsRequest, false)
+    }
+
+    func testAuthorizedMissingNameShowsADashWithoutTheAllowAffordance() {
+        let card = NetworkConnectionCard.project(
+            connection(status: .connected, interface: .wifi),
+            wifi: nil,
+            ssidPermission: .authorized
+        )
+        XCTAssertEqual(card.ssid?.value, "—")
+        XCTAssertNil(card.ssid?.note)
+        XCTAssertNil(card.ssid?.help)
+        XCTAssertEqual(card.ssid?.allowsRequest, false)
+    }
+
+    func testEthernetHidesTheSSIDRow() {
+        let card = NetworkConnectionCard.project(
+            connection(status: .connected, interface: .ethernet),
+            wifi: HostWiFiReading(rssi: -55, noise: -90, ssid: "Cafe Wi-Fi"),
+            ssidPermission: .authorized
+        )
+        XCTAssertNil(card.ssid)
+        XCTAssertNil(card.signal)
+    }
+
     func testOtherNoneAndMissingConnectionHideTheSignalRow() {
         let reading = HostWiFiReading(rssi: -55, noise: -90, ssid: nil)
         XCTAssertNil(
@@ -117,6 +180,21 @@ final class NetworkConnectionCardTests: XCTestCase {
             ).signal
         )
         XCTAssertNil(NetworkConnectionCard.project(nil, wifi: reading).signal)
+        XCTAssertNil(
+            NetworkConnectionCard.project(
+                connection(status: .connected, interface: .other),
+                wifi: reading,
+                ssidPermission: .authorized
+            ).ssid
+        )
+        XCTAssertNil(
+            NetworkConnectionCard.project(
+                connection(status: .disconnected, interface: .none),
+                wifi: reading,
+                ssidPermission: .notDetermined
+            ).ssid
+        )
+        XCTAssertNil(NetworkConnectionCard.project(nil, wifi: reading, ssidPermission: .authorized).ssid)
     }
 
     private func signalValue(_ rssi: Int) -> String {
