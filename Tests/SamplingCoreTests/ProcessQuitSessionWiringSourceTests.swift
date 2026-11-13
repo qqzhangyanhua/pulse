@@ -205,13 +205,6 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         throw SourceSliceError.missing(name)
     }
 
-    private func braceBody(after needle: String, in source: String) throws -> String {
-        guard let start = source.range(of: needle)?.upperBound,
-              let brace = source[start...].firstIndex(of: "{")
-        else { throw SourceSliceError.missing(needle) }
-        return try balancedSlice(from: brace, in: source, label: needle)
-    }
-
     private func lineContaining(_ needle: String, in source: String) throws -> String {
         guard let line = source.components(separatedBy: .newlines).first(where: { $0.contains(needle) }) else {
             throw SourceSliceError.missing(needle)

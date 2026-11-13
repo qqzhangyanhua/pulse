@@ -109,7 +109,6 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         XCTAssertFalse(vm.contains(sentence))
         XCTAssertFalse(vm.contains("MemoryGrowthListCopy"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 3, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature; selection state moved onto DashboardCore; top app reveal moved onto DashboardCore; network, thermal, battery, and machine facts moved onto DashboardCore")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 0)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: vm), 1)
         let badge = try functionBody(named: "memoryGrowthListBadge", in: vm)

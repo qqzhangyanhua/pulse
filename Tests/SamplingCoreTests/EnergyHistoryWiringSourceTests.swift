@@ -120,10 +120,6 @@ final class EnergyHistoryWiringSourceTests: XCTestCase {
         }
         throw EnergyHistorySourceError.missing("balanced brace for \(label)")
     }
-
-    private func occurrenceCount(of needle: String, in haystack: String) -> Int {
-        haystack.components(separatedBy: needle).count - 1
-    }
 }
 
 private enum EnergyHistorySourceError: Error, CustomStringConvertible {

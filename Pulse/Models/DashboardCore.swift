@@ -88,6 +88,10 @@ struct DashboardCore {
     var windowedPids: Set<Int32> = []
     var selectedEnergyGeneration: Int?
     var energyRankingSpan = EnergyRankingSpan.oneMinute
+    /// Toolbar label recorded from `MachineInfo`. Nil until the adapter notes it.
+    private(set) var machineLabel: String?
+    /// Projection of the sampling gate's retrying bit. Not a second retry flag.
+    private(set) var isRetrying = false
 
     init(ownPid: Int32) {
         self.ownPid = ownPid
@@ -161,6 +165,21 @@ struct DashboardCore {
         samplingFailed = next.samplingFailed
         processListFailed = next.processListFailed
         return [.requestRetryWake]
+    }
+
+    /// Records the toolbar label. The adapter reads `MachineInfo` once at start.
+    mutating func noteMachineLabel(_ label: String) {
+        machineLabel = label
+    }
+
+    /// Records the sampling gate's retrying bit. Not a second retry flag.
+    mutating func noteRetrying(_ retrying: Bool) {
+        isRetrying = retrying
+    }
+
+    /// Replaces the windowed-app pid set supplied by the adapter.
+    mutating func noteWindowedPids(_ pids: Set<Int32>) {
+        windowedPids = pids
     }
 
     /// Memory page notifies Sampler with the live sort. Any other page leaves the publication alone.

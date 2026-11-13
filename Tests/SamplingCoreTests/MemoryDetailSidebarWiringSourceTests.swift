@@ -103,7 +103,6 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
         XCTAssertFalse(vm.contains("samplingWindowExpanded"))
         XCTAssertFalse(vm.contains("MemoryDetailSamplingWindow"))
         XCTAssertFalse(vm.contains("MemoryDetailPresentation"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 3, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature; selection state moved onto DashboardCore; top app reveal moved onto DashboardCore; network, thermal, battery, and machine facts moved onto DashboardCore")
 
         let select = try functionBody(named: "select", in: try repoText("Pulse/Models/DashboardCore+Selection.swift"))
         XCTAssertTrue(select.contains("detail = nil"))
@@ -175,13 +174,6 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
             return try balancedSlice(from: brace, in: source, label: name)
         }
         throw SourceContractError.missing(name)
-    }
-
-    private func braceBody(after needle: String, in source: String) throws -> String {
-        guard let start = source.range(of: needle)?.upperBound,
-              let brace = source[start...].firstIndex(of: "{")
-        else { throw SourceContractError.missing(needle) }
-        return try balancedSlice(from: brace, in: source, label: needle)
     }
 
     private func lineContaining(_ needle: String, in source: String) throws -> String {

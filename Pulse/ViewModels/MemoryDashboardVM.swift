@@ -33,13 +33,10 @@ final class MemoryDashboardVM: ObservableObject {
     var processListFailed: Bool { core.processListFailed }
     /// This frame's permission footnote. Empty when the process list failed.
     var processPermissionFootnote: String? { core.processPermissionFootnote }
-    var detail: ProcessDetail? {
-        get { core.detail }
-        set { core.detail = newValue }
-    }
+    var detail: ProcessDetail? { core.detail }
     /// Bounded Top N=5 memory series. List rows look up `memoryGrowthListBadge(for:)`.
     var topMemorySeries: [Int32: [ChartSample]] { core.topMemorySeries }
-    @Published private(set) var machineLabel: String?
+    var machineLabel: String? { core.machineLabel }
     /// Host facts for the machine page. Nil until that page is opened. Not a sample frame.
     var machineFacts: MachineFacts? { core.machineFacts }
     /// Energy-page battery card. Nil hides it, including a Mac with no internal battery.
@@ -47,17 +44,11 @@ final class MemoryDashboardVM: ObservableObject {
     /// Latest energy-page battery reading. Nil until that read; not a second poll.
     var energyBatteryReading: EnergyBatteryReading? { core.energyBatteryReading }
     /// The only session quit store. Phase and message are projections of this.
-    var quitOutcome: ProcessQuitOutcome {
-        get { core.quitOutcome }
-        set { core.quitOutcome = newValue }
-    }
-    var sidebarSubjectPid: Int32? {
-        get { core.sidebarSubjectPid }
-        set { core.sidebarSubjectPid = newValue }
-    }
+    var quitOutcome: ProcessQuitOutcome { core.quitOutcome }
+    var sidebarSubjectPid: Int32? { core.sidebarSubjectPid }
     var samplingFailed: Bool { core.samplingFailed }
     /// Gate projection. Not a second retry flag.
-    @Published private(set) var isRetrying = false
+    var isRetrying: Bool { core.isRetrying }
     var usageHistory: UsageHistory { core.usageHistory }
     var cpuHistory: SystemCPUHistory { core.cpuHistory }
     var networkHistory: SystemNetworkHistory { core.networkHistory }
@@ -170,7 +161,7 @@ final class MemoryDashboardVM: ObservableObject {
     /// Select-if-present against the live `rows`. Missing / vanished pids are not written.
     func selectPidIfPresent(_ pid: Int32) {
         guard let accepted = ProcessSelection.acceptedPid(pid, in: rows) else { return }
-        selectedPid = accepted
+        select(pid: accepted)
     }
 
     /// Process-list identity to reveal. Nil when nothing is selected or the pid left `rows`.
@@ -215,8 +206,10 @@ final class MemoryDashboardVM: ObservableObject {
     func start() {
         guard !started else { return }
         started = true
-        machineLabel = MachineInfo.toolbarLabel()
-        updateCore { $0.publishMemoryPageSort() }
+        updateCore { core in
+            core.noteMachineLabel(MachineInfo.toolbarLabel())
+            return core.publishMemoryPageSort()
+        }
         loopTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { break }
@@ -253,7 +246,7 @@ final class MemoryDashboardVM: ObservableObject {
 
     private func finishSamplingLoop() {
         samplingGate.invalidate()
-        isRetrying = samplingGate.retrying
+        recordGateRetrying()
         sleepTask?.cancel()
     }
 
@@ -295,11 +288,11 @@ final class MemoryDashboardVM: ObservableObject {
         let result = await sampler.sample(readGPU: selectedPage == .gpu, readChipTemperature: selectedPage == .machine)
         if Task.isCancelled {
             samplingGate.invalidate()
-            isRetrying = samplingGate.retrying
+            recordGateRetrying()
             return
         }
         let accepted = samplingGate.accept(flight)
-        isRetrying = samplingGate.retrying
+        recordGateRetrying()
         applySample(result, accepted: accepted)
     }
 
@@ -313,7 +306,7 @@ final class MemoryDashboardVM: ObservableObject {
             page: next.selectedPage
         )
         if accepted {
-            next.windowedPids = WindowedAppLookup.pids(in: next.rows)
+            next.noteWindowedPids(WindowedAppLookup.pids(in: next.rows))
         }
         core = next
         perform(effects)
@@ -332,6 +325,13 @@ final class MemoryDashboardVM: ObservableObject {
         let effects = mutate(&next)
         core = next
         await performExternal(effects)
+    }
+
+    /// Writes the gate bit onto `core`. The gate remains the only retry decision.
+    private func recordGateRetrying() {
+        var next = core
+        next.noteRetrying(samplingGate.retrying)
+        core = next
     }
 
     private func updateCore(_ mutate: (inout DashboardCore) -> [DashboardEffect]) {
@@ -375,7 +375,7 @@ final class MemoryDashboardVM: ObservableObject {
             switch effect {
             case .requestRetryWake:
                 samplingGate.requestManualRetry()
-                isRetrying = samplingGate.retrying
+                recordGateRetrying()
                 sleepTask?.cancel()
             case .applyRisingAndWindowedSelection:
                 updateCore { core in

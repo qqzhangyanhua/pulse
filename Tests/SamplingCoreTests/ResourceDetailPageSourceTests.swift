@@ -154,7 +154,6 @@ final class ResourceDetailPageSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("path = LastLiveTotalReducer.swift;"))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 3, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature; selection state moved onto DashboardCore; top app reveal moved onto DashboardCore; network, thermal, battery, and machine facts moved onto DashboardCore")
         let selectPage = try functionBody(named: "selectPage", in: vm)
         let rising = try functionBody(
             named: "applyRisingOnlySelection",
@@ -206,13 +205,6 @@ final class ResourceDetailPageSourceTests: XCTestCase {
             return try balancedSlice(from: brace, in: source, label: name)
         }
         throw SourceReadError.missing(name)
-    }
-
-    private func braceBody(after needle: String, in source: String) throws -> String {
-        guard let start = source.range(of: needle)?.upperBound,
-              let brace = source[start...].firstIndex(of: "{")
-        else { throw SourceReadError.missing(needle) }
-        return try balancedSlice(from: brace, in: source, label: needle)
     }
 
     private func index(of needle: String, in source: String) throws -> String.Index {

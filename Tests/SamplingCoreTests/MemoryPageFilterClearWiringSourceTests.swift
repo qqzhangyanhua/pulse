@@ -312,16 +312,6 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         return try balancedSlice(from: brace, in: source, label: name)
     }
 
-    private func braceBody(after needle: String, in source: String) throws -> String {
-        guard let start = source.range(of: needle)?.upperBound else {
-            throw SourceSliceError.missing(needle)
-        }
-        guard let brace = source[start...].firstIndex(of: "{") else {
-            throw SourceSliceError.missing("brace after \(needle)")
-        }
-        return try balancedSlice(from: brace, in: source, label: needle)
-    }
-
     private func switchArm(_ label: String, in source: String) throws -> String {
         let needle = "case \(label):"
         guard let range = source.range(of: needle) else {
