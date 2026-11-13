@@ -92,9 +92,105 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
         let height = try functionBody(named: "overviewHeight", in: dashboard)
         XCTAssertFalse(height.contains("case .cpu, .network, .disk:"))
         XCTAssertTrue(height.contains("case .network:"))
-        XCTAssertTrue(height.contains("274"))
+        XCTAssertTrue(height.contains("310"))
+        XCTAssertFalse(height.contains("274"))
         let card = try repoText("Pulse/Views/NetworkConnectionCardView.swift")
-        XCTAssertTrue(card.contains(".frame(height: 112)"))
+        XCTAssertTrue(card.contains(".frame(height: 148)"))
+        XCTAssertFalse(card.contains(".frame(height: 112)"))
+    }
+
+    func testPublicIPLookupRunsOnlyFromTheButton() throws {
+        let card = try repoText("Pulse/Views/NetworkConnectionCardView.swift")
+        let query = try braceBody(after: "Button(PublicIPCopy.query)", in: card)
+        let retry = try braceBody(after: "Button(PublicIPCopy.retry)", in: card)
+        XCTAssertTrue(query.contains("vm.requestPublicIP()"))
+        XCTAssertTrue(retry.contains("vm.requestPublicIP()"))
+        let skeleton = try braceBody(after: "if placeholder", in: card)
+        XCTAssertFalse(skeleton.contains("requestPublicIP"))
+        XCTAssertFalse(skeleton.contains("PublicIPLookup"))
+        XCTAssertFalse(skeleton.contains("Button("))
+        XCTAssertTrue(card.contains("NSPasteboard.general"))
+        XCTAssertTrue(card.contains("TimeZone.current"))
+        let label = try functionBody(named: "accessibilityLabel", in: card)
+        XCTAssertTrue(label.contains("address"))
+        XCTAssertTrue(label.contains("PublicIPCopy.failed"))
+        XCTAssertFalse(card.contains("ConnectionInterface"))
+        XCTAssertFalse(card.contains(".ethernet"))
+        XCTAssertFalse(card.contains(".wifi"))
+
+        let action = try repoText("Pulse/ViewModels/MemoryDashboardVM+NetworkConnection.swift")
+        let request = try functionBody(named: "requestPublicIP", in: action)
+        XCTAssertTrue(request.contains("PublicIPLookup.lookup"))
+        XCTAssertFalse(action.contains("NSPasteboard"))
+        XCTAssertFalse(action.contains("Timer"))
+        let watch = try functionBody(named: "beginConnectionWatch", in: action)
+        XCTAssertFalse(watch.contains("PublicIP"))
+        XCTAssertFalse(watch.contains("requestPublicIP"))
+        XCTAssertFalse(watch.contains("ipify"))
+        XCTAssertFalse(watch.contains("checkip"))
+
+        let dashboard = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let initial = try initializerBody(in: dashboard)
+        XCTAssertFalse(initial.contains("PublicIP"))
+        XCTAssertFalse(initial.contains("requestPublicIP"))
+        XCTAssertFalse(initial.contains("ipify"))
+        let start = try functionBody(named: "start", in: dashboard)
+        XCTAssertFalse(start.contains("PublicIP"))
+        XCTAssertFalse(start.contains("requestPublicIP"))
+
+        let model = try repoText("Pulse/Models/PublicIPLookup.swift")
+        XCTAssertFalse(model.contains("TimeZone.current"))
+        XCTAssertFalse(model.contains("import AppKit"))
+        XCTAssertFalse(model.contains("import Network"))
+        XCTAssertFalse(model.contains("NSPasteboard"))
+
+        for relative in [
+            "Pulse/Sampling/MemorySampler.swift",
+            "Pulse/PulseApp.swift",
+            "Pulse/MenuBar/PulseAppDelegate.swift",
+        ] {
+            let text = try repoText(relative)
+            for token in ["PublicIPLookup", "requestPublicIP", "PublicIP", "ipify", "checkip"] {
+                XCTAssertFalse(text.contains(token), "\(relative) \(token)")
+            }
+        }
+    }
+
+    func testPublicIPTransportIsEphemeralAndExcluded() throws {
+        let transport = try repoText("Pulse/Sampling/PublicIPURLSessionTransport.swift")
+        XCTAssertTrue(transport.contains("URLSessionConfiguration.ephemeral"))
+        XCTAssertTrue(transport.contains("timeoutIntervalForRequest = 8"))
+
+        let package = try repoText("Package.swift")
+        let parts = package.components(separatedBy: "sources:")
+        XCTAssertEqual(parts.count, 2)
+        XCTAssertTrue(parts[0].contains("\"Sampling/PublicIPURLSessionTransport.swift\""))
+        XCTAssertFalse(parts[1].contains("PublicIPURLSessionTransport.swift"))
+        XCTAssertTrue(parts[1].contains("\"Models/PublicIPLookup.swift\""))
+
+        let project = try repoText("Pulse.xcodeproj/project.pbxproj")
+        XCTAssertTrue(project.contains("PublicIPLookup.swift in Sources"))
+        XCTAssertTrue(project.contains("PublicIPURLSessionTransport.swift in Sources"))
+    }
+
+    func testSnapshotsAndMenuBarDoNotMentionPublicIP() throws {
+        var files = [
+            "Pulse/Models/SnapshotExport.swift",
+            "Pulse/Models/SnapshotExportFile.swift",
+            "Pulse/ViewModels/MemoryDashboardVM+SnapshotExport.swift",
+            "Pulse/Views/SnapshotExportPreview.swift",
+        ]
+        let menuBar = repoRoot().appendingPathComponent("Pulse/MenuBar", isDirectory: true)
+        let entries = try FileManager.default.contentsOfDirectory(at: menuBar, includingPropertiesForKeys: nil)
+        files += entries
+            .filter { $0.pathExtension == "swift" }
+            .map { "Pulse/MenuBar/\($0.lastPathComponent)" }
+        for relative in files {
+            let text = try repoText(relative)
+            for token in ["PublicIP", "ipify", "checkip", "HostWiFi"] {
+                XCTAssertFalse(text.contains(token), "\(relative) \(token)")
+            }
+        }
     }
 
     private func assertCard(in body: String, call: String, before rateCall: String) throws {
@@ -130,6 +226,14 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
             throw NetworkConnectionSourceError.missing(needle)
         }
         return found
+    }
+
+    private func initializerBody(in source: String) throws -> String {
+        guard let found = source.range(of: "init() {") else {
+            throw NetworkConnectionSourceError.missing("init()")
+        }
+        let brace = source.index(before: found.upperBound)
+        return try balancedSlice(from: brace, in: source, label: "init")
     }
 
     private func functionBody(named name: String, in source: String) throws -> String {

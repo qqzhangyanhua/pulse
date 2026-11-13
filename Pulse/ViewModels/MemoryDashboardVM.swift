@@ -10,6 +10,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var busiestCorePercent: Double?
     @Published private(set) var hostNetworkRates = HostNetworkRates.missing
     @Published private(set) var hostConnection: HostConnection?
+    /// Idle until the user clicks. Not sampled and not saved.
+    @Published var publicIPRequest = PublicIPRequestState.idle
     @Published private(set) var hostDiskRates = HostDiskRates.missing
     @Published private(set) var rows: [ProcessRow] = []
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
@@ -36,8 +38,6 @@ final class MemoryDashboardVM: ObservableObject {
     /// The only session quit store. Phase and message are projections of this.
     @Published var quitOutcome = ProcessQuitOutcome()
     @Published var sidebarSubjectPid: Int32?
-    var quitPhase: QuitPhase { sidebar.quitPhase }
-    var quitMessage: String? { sidebar.quitMessage }
     @Published private(set) var samplingFailed = false
     /// Gate projection. Not a second retry flag.
     @Published private(set) var isRetrying = false

@@ -13,4 +13,22 @@ extension MemoryDashboardVM {
         hostConnectionMonitor?.cancel()
         hostConnectionMonitor = nil
     }
+
+    /// Click path only. A second click while loading does not start another request.
+    func requestPublicIP() {
+        guard publicIPRequest != .loading else { return }
+        publicIPRequest = publicIPRequest.begin()
+        let queriedAt = Date()
+        let transport = PublicIPURLSessionTransport()
+        Task { [weak self] in
+            let result = await PublicIPLookup.lookup(using: transport)
+            guard let self else { return }
+            switch result {
+            case .success(let address):
+                self.publicIPRequest = PublicIPRequestState.loading.succeed(address: address, at: queriedAt)
+            case .failure:
+                self.publicIPRequest = PublicIPRequestState.loading.fail()
+            }
+        }
+    }
 }
