@@ -184,8 +184,7 @@ final class DashboardCoreSelectionTests: XCTestCase {
             result: Result<SampledFrame, SelectionDeliveryError>.success(frame),
             accepted: true,
             page: core.selectedPage,
-            batteryPercent: nil,
-            selectedPid: core.selectedPid
+            batteryPercent: nil
         )
     }
 

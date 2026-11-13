@@ -139,8 +139,9 @@ final class KeyboardShortcutWiringSourceTests: XCTestCase {
         XCTAssertFalse(app.contains(".disabled(nameFilterFocused"))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        let quit = try functionBody(named: "quitSelected", in: vm)
+        let quit = try functionBody(named: "quitSelected", in: try repoText("Pulse/Models/DashboardCore+Quit.swift"))
         XCTAssertTrue(quit.contains("ProcessQuitSession.ordinaryTerminate"))
+        XCTAssertTrue(vm.contains("func quitSelected("))
         XCTAssertTrue(vm.contains("func forceQuitSelected("))
         XCTAssertFalse(vm.contains("keyboardShortcut"))
 

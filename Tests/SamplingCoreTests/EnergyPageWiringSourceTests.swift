@@ -44,8 +44,8 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("MemoryDashboardVM+EnergyRanking.swift in Sources"))
         XCTAssertEqual(
             occurrenceCount(of: "isa = PBXBuildFile;", in: project),
-            134,
-            "minute ledger adds ProcessEnergyMinuteLedger.swift and hour ranking adds MemoryDashboardVM+EnergyRanking.swift; energy history adds EnergyMachineHistory.swift, EnergyHistoryChart.swift, and MemoryDashboardVM+EnergyHistory.swift; thermal advice adds ThermalAdvice.swift; thermal advice throttle adds ThermalAdviceThrottle.swift; thermal advice view model adds MemoryDashboardVM+ThermalAdvice.swift; thermal advice card adds ThermalAdviceCard.swift; machine overview split adds MachineOverviewSection+Throughput.swift; sampling clock adds MemoryDashboardVM+SamplingClock.swift; GPU page adds GPUPage.swift, HostGPUReader.swift, GPUOverviewSection.swift, and MemoryDashboardVM+GPU.swift; connection card adds HostConnection.swift, HostConnectionMonitor.swift, NetworkConnectionCard.swift, NetworkConnectionCardView.swift, and MemoryDashboardVM+NetworkConnection.swift; Wi-Fi signal adds HostWiFi.swift and HostWiFiReader.swift; public IP adds PublicIPLookup.swift and PublicIPURLSessionTransport.swift; SSID permission adds HostWiFiLocation.swift; navigation accessors add MemoryDashboardVM+Navigation.swift; chip temperature adds ChipTemperature.swift, HostChipTemperatureReader.swift, MachineOverviewSection+ChipTemperature.swift, and MemoryDashboardVM+ChipTemperature.swift; memory list badge adds MemoryDashboardVM+MemoryGrowthList.swift"
+            136,
+            "minute ledger adds ProcessEnergyMinuteLedger.swift and hour ranking adds MemoryDashboardVM+EnergyRanking.swift; energy history adds EnergyMachineHistory.swift, EnergyHistoryChart.swift, and MemoryDashboardVM+EnergyHistory.swift; thermal advice adds ThermalAdvice.swift; thermal advice throttle adds ThermalAdviceThrottle.swift; thermal advice view model adds MemoryDashboardVM+ThermalAdvice.swift; thermal advice card adds ThermalAdviceCard.swift; machine overview split adds MachineOverviewSection+Throughput.swift; sampling clock adds MemoryDashboardVM+SamplingClock.swift; GPU page adds GPUPage.swift, HostGPUReader.swift, GPUOverviewSection.swift, and MemoryDashboardVM+GPU.swift; connection card adds HostConnection.swift, HostConnectionMonitor.swift, NetworkConnectionCard.swift, NetworkConnectionCardView.swift, and MemoryDashboardVM+NetworkConnection.swift; Wi-Fi signal adds HostWiFi.swift and HostWiFiReader.swift; public IP adds PublicIPLookup.swift and PublicIPURLSessionTransport.swift; SSID permission adds HostWiFiLocation.swift; navigation accessors add MemoryDashboardVM+Navigation.swift; chip temperature adds ChipTemperature.swift, HostChipTemperatureReader.swift, MachineOverviewSection+ChipTemperature.swift, and MemoryDashboardVM+ChipTemperature.swift; memory list badge adds MemoryDashboardVM+MemoryGrowthList.swift; quit and top-app location add DashboardCore+Quit.swift and DashboardCore+TopAppLocation.swift"
         )
         XCTAssertTrue(project.contains("ProcessDetailSidebar+Energy.swift in Sources"))
     }
@@ -68,8 +68,6 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(body.contains("正在退出…"))
         XCTAssertTrue(body.contains("sidebar.quitMessage"))
         XCTAssertTrue(body.contains("sidebar.releaseNote"))
-        let session = try repoText("Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift")
-        XCTAssertEqual(occurrenceCount(of: "guard !selectedEnergyExitedOnly else { return }", in: session), 2)
     }
 
     func testEnergyTableReadsWindowRatesAndTheCPUTableKeepsTwoFrameWatts() throws {
@@ -147,9 +145,6 @@ final class EnergyPageWiringSourceTests: XCTestCase {
         XCTAssertFalse(sorted.contains("?? -1"))
         XCTAssertFalse(sorted.contains("energyWatts"))
         XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 0)
-        XCTAssertFalse(vm.contains("@Published private var selectedEnergyGeneration"))
-        XCTAssertTrue(vm.contains("private var selectedEnergyGeneration: Int?"))
-        XCTAssertFalse(vm.contains("selectedPid = nil"))
         let ranking = try repoText("Pulse/ViewModels/MemoryDashboardVM+EnergyRanking.swift")
         let selection = try repoText("Pulse/Models/DashboardCore+Selection.swift")
         XCTAssertTrue(selection.contains("case .oneHour:"))

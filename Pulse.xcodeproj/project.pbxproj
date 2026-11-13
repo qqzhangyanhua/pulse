@@ -132,6 +132,8 @@
 		B00000000000000000000098 /* MemoryDashboardVM+MemoryGrowthList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000098 /* MemoryDashboardVM+MemoryGrowthList.swift */; };
 		B00000000000000000000099 /* DashboardCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000099 /* DashboardCore.swift */; };
 		B00000000000000000000100 /* DashboardCore+Selection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000100 /* DashboardCore+Selection.swift */; };
+		B00000000000000000000101 /* DashboardCore+Quit.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000101 /* DashboardCore+Quit.swift */; };
+		B00000000000000000000102 /* DashboardCore+TopAppLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000102 /* DashboardCore+TopAppLocation.swift */; };
 		B00000000000000000000090 /* PublicIPLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000090 /* PublicIPLookup.swift */; };
 		B00000000000000000000091 /* PublicIPURLSessionTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000091 /* PublicIPURLSessionTransport.swift */; };
 		B00000000000000000000013 /* OverviewCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* OverviewCards.swift */; };
@@ -148,6 +150,8 @@
 		A00000000000000000000002 /* MemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryModels.swift; sourceTree = "<group>"; };
 		A00000000000000000000099 /* DashboardCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardCore.swift; sourceTree = "<group>"; };
 		A00000000000000000000100 /* DashboardCore+Selection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardCore+Selection.swift; sourceTree = "<group>"; };
+		A00000000000000000000101 /* DashboardCore+Quit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardCore+Quit.swift; sourceTree = "<group>"; };
+		A00000000000000000000102 /* DashboardCore+TopAppLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardCore+TopAppLocation.swift; sourceTree = "<group>"; };
 		A00000000000000000000049 /* ProcessRowCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRowCopy.swift; sourceTree = "<group>"; };
 		A00000000000000000000043 /* ProcessMemoryChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessMemoryChoice.swift; sourceTree = "<group>"; };
 		A00000000000000000000028 /* ByteFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteFormat.swift; sourceTree = "<group>"; };
@@ -318,6 +322,8 @@
 				A00000000000000000000002 /* MemoryModels.swift */,
 				A00000000000000000000099 /* DashboardCore.swift */,
 				A00000000000000000000100 /* DashboardCore+Selection.swift */,
+				A00000000000000000000101 /* DashboardCore+Quit.swift */,
+				A00000000000000000000102 /* DashboardCore+TopAppLocation.swift */,
 				A00000000000000000000049 /* ProcessRowCopy.swift */,
 				A00000000000000000000043 /* ProcessMemoryChoice.swift */,
 				A00000000000000000000028 /* ByteFormat.swift */,
@@ -584,6 +590,8 @@
 				B00000000000000000000002 /* MemoryModels.swift in Sources */,
 				B00000000000000000000099 /* DashboardCore.swift in Sources */,
 				B00000000000000000000100 /* DashboardCore+Selection.swift in Sources */,
+				B00000000000000000000101 /* DashboardCore+Quit.swift in Sources */,
+				B00000000000000000000102 /* DashboardCore+TopAppLocation.swift in Sources */,
 				B00000000000000000000049 /* ProcessRowCopy.swift in Sources */,
 				B00000000000000000000043 /* ProcessMemoryChoice.swift in Sources */,
 				B00000000000000000000028 /* ByteFormat.swift in Sources */,

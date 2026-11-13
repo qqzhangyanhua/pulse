@@ -34,108 +34,6 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         XCTAssertFalse(package.contains("MemoryDashboardVM.swift"))
     }
 
-    func testVMHoldsOneQuitStoreAndDerivesPhaseFromTheSidebar() throws {
-        let source = try vmSource()
-        let coreSource = try repoText("Pulse/Models/DashboardCore.swift")
-        XCTAssertEqual(occurrenceCount(of: "ProcessQuitOutcome()", in: source), 0)
-        XCTAssertEqual(occurrenceCount(of: "ProcessQuitOutcome()", in: coreSource), 1)
-        XCTAssertEqual(occurrenceCount(of: "var quitOutcome", in: source), 1)
-        XCTAssertTrue(source.contains("var quitOutcome: ProcessQuitOutcome {"))
-        XCTAssertTrue(source.contains("var sidebarSubjectPid: Int32? {"))
-        XCTAssertEqual(
-            try lineContaining("var quitPhase", in: source),
-            "    var quitPhase: QuitPhase { sidebar.quitPhase }"
-        )
-        XCTAssertEqual(
-            try lineContaining("var quitMessage", in: source),
-            "    var quitMessage: String? { sidebar.quitMessage }"
-        )
-        XCTAssertFalse(source.contains("quitPhase ="))
-        XCTAssertFalse(source.contains("quitMessage ="))
-        XCTAssertFalse(source.contains("func applyQuit"))
-        XCTAssertFalse(source.contains("selectedPid = nil"))
-        XCTAssertFalse(source.contains(".click("))
-        XCTAssertFalse(source.contains("applyPresenceFromRows"))
-        XCTAssertFalse(source.contains(".complete("))
-        XCTAssertFalse(source.contains("identityEvidence"))
-        XCTAssertFalse(source.contains("Timer"))
-        XCTAssertFalse(source.contains("NSAlert"))
-        XCTAssertEqual(occurrenceCount(of: "ProcessQuitSession.applySample", in: source), 0)
-        XCTAssertEqual(occurrenceCount(of: "ProcessQuitSession.applySample", in: coreSource), 1)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 11, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature; selection state moved onto DashboardCore")
-        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 0)
-    }
-
-    func testSelectedPidDidSetDoesNotTouchTheQuitStore() throws {
-        let body = try functionBody(named: "select", in: try repoText("Pulse/Models/DashboardCore+Selection.swift"))
-        XCTAssertTrue(body.contains("ProcessQuitSession.followListSelection"))
-        XCTAssertFalse(body.contains("quitOutcome"))
-        XCTAssertFalse(body.contains("quitPhase"))
-        XCTAssertFalse(body.contains("quitMessage"))
-        XCTAssertFalse(body.contains("setSelectedPid(sidebarSubjectPid)"))
-        XCTAssertFalse(body.contains(".idle"))
-        let perform = try functionBody(named: "perform", in: try vmSource())
-        XCTAssertTrue(perform.contains("sampler.setSelectedPid(pid)"))
-        let samplerLine = try lineContaining("sampler.setSelectedPid", in: perform)
-        XCTAssertEqual(samplerLine.trimmingCharacters(in: .whitespaces), "Task { await sampler.setSelectedPid(pid) }")
-        XCTAssertFalse(samplerLine.contains("sidebarSubjectPid"))
-        XCTAssertFalse(perform.contains("quitOutcome"))
-    }
-
-    func testTickRoutesEverySampleOutcomeThroughOneApply() throws {
-        let source = try vmSource()
-        let tick = try functionBody(named: "tick", in: source)
-        XCTAssertTrue(tick.contains("applySample(result, accepted: accepted)"))
-        XCTAssertFalse(tick.contains("selectedPid"))
-        XCTAssertFalse(tick.contains("quit"))
-        XCTAssertEqual(occurrenceCount(of: "func applySample(", in: source), 1)
-    }
-
-    func testQuitMethodsUseTheSessionTokenAndTheExistingActions() throws {
-        let source = try vmSource()
-        let ordinary = try functionBody(named: "quitSelected", in: source)
-        XCTAssertTrue(ordinary.contains("ProcessQuitSession.ordinaryTerminate"))
-        XCTAssertTrue(ordinary.contains("ProcessActions.terminate(pid: issued.pid)"))
-        XCTAssertTrue(ordinary.contains("taskCancelled: Task.isCancelled"))
-        XCTAssertTrue(ordinary.contains("ProcessQuitSession.finish"))
-        XCTAssertTrue(ordinary.contains("pid: issued.pid"))
-        XCTAssertTrue(ordinary.contains("token: issued.token"))
-        XCTAssertFalse(ordinary.contains("pid: selectedPid"))
-        XCTAssertFalse(ordinary.contains("pid: sidebarSubjectPid"))
-        XCTAssertFalse(ordinary.contains("quitPhase"))
-
-        let force = try functionBody(named: "forceQuitSelected", in: source)
-        XCTAssertLessThan(
-            try index(of: "ProcessQuitSession.requestForce", in: force),
-            try index(of: "ProcessActions.confirmForceQuit(displayName: request.displayName)", in: force)
-        )
-        XCTAssertLessThan(
-            try index(of: "ProcessActions.confirmForceQuit(displayName: request.displayName)", in: force),
-            try index(of: "ProcessQuitSession.cancelForce", in: force)
-        )
-        XCTAssertLessThan(
-            try index(of: "ProcessQuitSession.cancelForce", in: force),
-            try index(of: "ProcessQuitSession.confirmForce", in: force)
-        )
-        XCTAssertLessThan(
-            try index(of: "ProcessQuitSession.confirmForce", in: force),
-            try index(of: "ProcessActions.forceTerminate(pid: issued.pid)", in: force)
-        )
-        XCTAssertTrue(force.contains("ProcessQuitSession.finish"))
-        XCTAssertTrue(force.contains("taskCancelled: Task.isCancelled"))
-        XCTAssertFalse(force.contains("NSAlert"))
-        XCTAssertFalse(force.contains(".sheet"))
-        XCTAssertFalse(force.contains("quitPhase ="))
-        let dismiss = try functionBody(named: "dismissSidebar", in: source)
-        XCTAssertTrue(dismiss.contains("ProcessQuitSession.dismissSidebar()"))
-        XCTAssertFalse(dismiss.contains("quitOutcome"))
-        XCTAssertFalse(dismiss.contains("complete"))
-        let rising = try functionBody(named: "applyRisingOnlySelection", in: try repoText("Pulse/Models/DashboardCore+Selection.swift"))
-        XCTAssertTrue(rising.contains("ProcessQuitSession.risingOnlySelection"))
-        XCTAssertTrue(rising.contains("MemoryGrowthRisingFilter.selectedPid"))
-        XCTAssertFalse(rising.contains("quitOutcome ="))
-    }
-
     func testSidebarReadsTheProjectionAndKeepsTheExistingControls() throws {
         let sidebar = try WiringSourceText.text(for: "ProcessDetailSidebar")
         XCTAssertTrue(sidebar.contains("vm.sidebar"))
@@ -197,24 +95,8 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
     }
 
     func testApplySamplePassesFrameUsedBytesAndSamplerStaysFreeOfQuitWords() throws {
-        let source = try vmSource()
         let coreSource = try repoText("Pulse/Models/DashboardCore.swift")
         XCTAssertEqual(occurrenceCount(of: "usedBytes: frame.snapshot.usedBytes", in: coreSource), 1)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 11, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature; selection state moved onto DashboardCore")
-        XCTAssertTrue(source.contains("guard snapshot != nil, samplingFailed == false else { return nil }"))
-        XCTAssertTrue(source.contains("return snapshot?.usedBytes"))
-        let ordinary = try functionBody(named: "quitSelected", in: source)
-        XCTAssertTrue(ordinary.contains("usedBytes: quitReleaseBaseline"))
-        let force = try functionBody(named: "forceQuitSelected", in: source)
-        XCTAssertLessThan(
-            try index(of: "ProcessQuitSession.requestForce", in: force),
-            try index(of: "usedBytes: quitReleaseBaseline", in: force)
-        )
-        XCTAssertLessThan(
-            try index(of: "ProcessQuitSession.confirmForce", in: force),
-            try index(of: "usedBytes: quitReleaseBaseline", in: force)
-        )
-        XCTAssertEqual(occurrenceCount(of: "usedBytes: quitReleaseBaseline", in: force), 1)
         let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
         XCTAssertFalse(sampler.contains("ProcessQuit"))
         XCTAssertFalse(sampler.contains("releaseNote"))
@@ -278,22 +160,6 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
         XCTAssertEqual(occurrenceCount(of: "ProcessQuitRoute.swift", in: project), 6)
         XCTAssertTrue(project.contains("ProcessQuitRoute.swift in Sources"))
-
-        let quit = try repoText("Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift")
-        XCTAssertTrue(quit.contains("ProcessActions.terminate(pid: issued.pid)"))
-        XCTAssertTrue(quit.contains("ProcessActions.forceTerminate(pid: issued.pid)"))
-        XCTAssertTrue(quit.contains("ProcessActions.confirmForceQuit(displayName: request.displayName)"))
-        XCTAssertFalse(quit.contains("proc_pidpath"))
-        XCTAssertFalse(quit.contains("ProcessQuitRoute"))
-        XCTAssertFalse(quit.contains("SIGTERM"))
-        XCTAssertFalse(quit.contains("SIGKILL"))
-        let ordinary = try functionBody(named: "quitSelected", in: quit)
-        XCTAssertFalse(ordinary.contains("confirmForceQuit"))
-        let forceQuit = try functionBody(named: "forceQuitSelected", in: quit)
-        XCTAssertLessThan(
-            try index(of: "if !confirmed", in: forceQuit),
-            try index(of: "ProcessActions.forceTerminate(pid: issued.pid)", in: forceQuit)
-        )
     }
 
     /// Source shape only. Not a VM instance, not NSAlert, not MainActor, not a real quit.
@@ -309,22 +175,6 @@ final class ProcessQuitSessionWiringSourceTests: XCTestCase {
         let outcome = try repoText("Pulse/Models/ProcessQuitOutcome.swift")
         XCTAssertTrue(outcome.contains("if isAbsent(pending.targetPid)"))
         XCTAssertTrue(outcome.contains("pendingForceConfirmation = nil"))
-        let force = try functionBody(named: "forceQuitSelected", in: try vmSource())
-        XCTAssertLessThan(
-            try index(of: "ProcessQuitSession.confirmForce", in: force),
-            try index(of: "ProcessQuitSession.releaseClosedForceConfirmation", in: force)
-        )
-        XCTAssertLessThan(
-            try index(of: "ProcessQuitSession.releaseClosedForceConfirmation", in: force),
-            try index(of: "quitOutcome = confirming", in: force)
-        )
-        XCTAssertLessThan(
-            try index(of: "ProcessQuitSession.cancelForce", in: force),
-            try index(of: "ProcessQuitSession.confirmForce", in: force)
-        )
-        XCTAssertTrue(force.contains("if !confirmed"))
-        XCTAssertTrue(force.contains("ProcessActions.forceTerminate(pid: issued.pid)"))
-        XCTAssertFalse(force.contains("NSAlert"))
         let entitlements = try repoText("Pulse/Pulse.entitlements")
         XCTAssertFalse(entitlements.contains("ProcessQuit"))
     }

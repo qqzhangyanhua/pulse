@@ -10,8 +10,7 @@ final class DashboardCoreSampleTests: XCTestCase {
             result: success(frame),
             accepted: true,
             page: .energy,
-            batteryPercent: 55,
-            selectedPid: nil
+            batteryPercent: 55
         )
 
         XCTAssertEqual(core.loadState, .ready)
@@ -53,8 +52,7 @@ final class DashboardCoreSampleTests: XCTestCase {
             result: success(frame),
             accepted: true,
             page: .gpu,
-            batteryPercent: 55,
-            selectedPid: nil
+            batteryPercent: 55
         )
         XCTAssertEqual(gpu.gpuPage.utilizationPercent, 41)
         XCTAssertEqual(gpu.gpuPage.inUseMemoryBytes, 8_192)
@@ -68,8 +66,7 @@ final class DashboardCoreSampleTests: XCTestCase {
             result: success(frame),
             accepted: true,
             page: .machine,
-            batteryPercent: nil,
-            selectedPid: nil
+            batteryPercent: nil
         )
         XCTAssertEqual(machine.chipTemperature.celsius, 62)
         XCTAssertTrue(machine.chipTemperature.visitSucceeded)
@@ -84,15 +81,13 @@ final class DashboardCoreSampleTests: XCTestCase {
             result: success(frame),
             accepted: true,
             page: .memory,
-            batteryPercent: nil,
-            selectedPid: nil
+            batteryPercent: nil
         )
         let effects = core.apply(
             result: unavailable(),
             accepted: true,
             page: .gpu,
-            batteryPercent: nil,
-            selectedPid: nil
+            batteryPercent: nil
         )
 
         XCTAssertEqual(core.snapshot?.usedBytes, 12_345_678)
@@ -117,15 +112,13 @@ final class DashboardCoreSampleTests: XCTestCase {
             result: success(frame),
             accepted: true,
             page: .machine,
-            batteryPercent: nil,
-            selectedPid: nil
+            batteryPercent: nil
         )
         _ = machine.apply(
             result: unavailable(),
             accepted: true,
             page: .machine,
-            batteryPercent: nil,
-            selectedPid: nil
+            batteryPercent: nil
         )
         XCTAssertEqual(machine.chipTemperature.celsius, 62)
         XCTAssertNotEqual(machine.chipTemperature.celsius, 0)
@@ -137,8 +130,7 @@ final class DashboardCoreSampleTests: XCTestCase {
             result: unavailable(),
             accepted: true,
             page: .gpu,
-            batteryPercent: nil,
-            selectedPid: nil
+            batteryPercent: nil
         )
         XCTAssertEqual(cold.loadState, .failed)
         XCTAssertTrue(cold.samplingFailed)
@@ -157,8 +149,7 @@ final class DashboardCoreSampleTests: XCTestCase {
             result: success(makeFrame(processListFailed: false)),
             accepted: true,
             page: .memory,
-            batteryPercent: nil,
-            selectedPid: nil
+            batteryPercent: nil
         )
         var stale = makeFrame(processListFailed: false)
         stale = SampledFrame(
@@ -176,8 +167,7 @@ final class DashboardCoreSampleTests: XCTestCase {
             result: success(stale),
             accepted: false,
             page: .memory,
-            batteryPercent: nil,
-            selectedPid: nil
+            batteryPercent: nil
         )
 
         XCTAssertEqual(core.rows.map(\.pid), [4242])
@@ -197,8 +187,7 @@ final class DashboardCoreSampleTests: XCTestCase {
             result: success(frame),
             accepted: true,
             page: .memory,
-            batteryPercent: nil,
-            selectedPid: nil
+            batteryPercent: nil
         )
 
         XCTAssertTrue(core.processListFailed)
@@ -216,8 +205,7 @@ final class DashboardCoreSampleTests: XCTestCase {
             result: unavailable(),
             accepted: true,
             page: .memory,
-            batteryPercent: nil,
-            selectedPid: nil
+            batteryPercent: nil
         )
         let failedWake = cold.retry()
         XCTAssertEqual(failedWake, [.requestRetryWake])
@@ -232,8 +220,7 @@ final class DashboardCoreSampleTests: XCTestCase {
             result: success(makeFrame(processListFailed: true)),
             accepted: true,
             page: .memory,
-            batteryPercent: nil,
-            selectedPid: nil
+            batteryPercent: nil
         )
         let listedWake = listed.retry()
         XCTAssertEqual(listedWake, [.requestRetryWake])
@@ -252,16 +239,11 @@ final class DashboardCoreSampleTests: XCTestCase {
     }
 
     private func successEffects(now: Double) -> [DashboardEffect] {
-        [.refreshThermalAdvice(now: now)] + failureEffects() + [.applyRisingAndWindowedSelection]
+        [.refreshThermalAdvice(now: now), .applyRisingAndWindowedSelection]
     }
 
     private func failureEffects() -> [DashboardEffect] {
-        [
-            .replaceListSelection(nil),
-            .reconcileEnergySelection,
-            .replaceSidebarSubject(nil),
-            .replaceDetail(nil),
-        ]
+        []
     }
 
     private func makeFrame(

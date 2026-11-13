@@ -101,15 +101,8 @@ final class MemoryDashboardVM: ObservableObject {
         get { core.groupedByApp }
         set { setGroupedByApp(newValue) }
     }
-    /// One-shot memory Top card reveal. The next locate replaces it.
-    @Published var topAppLocateReveal: TopAppLocation.Reveal?
     var navigation: DashboardNavigation { core.navigation }
     let snapshotExportStore = SnapshotExportStore()
-    private var selectedEnergyGeneration: Int? {
-        get { core.selectedEnergyGeneration }
-        set { core.selectedEnergyGeneration = newValue }
-    }
-    private var energyLiveGenerations: [Int32: Int] { core.energyLiveGenerations }
 
     var selectedPid: Int32? {
         get { core.selectedPid }
@@ -327,8 +320,7 @@ final class MemoryDashboardVM: ObservableObject {
             result: result,
             accepted: accepted,
             page: next.selectedPage,
-            batteryPercent: historyBatteryPercent,
-            selectedPid: next.selectedPid
+            batteryPercent: historyBatteryPercent
         )
         if accepted {
             next.windowedPids = WindowedAppLookup.pids(in: next.rows)
@@ -347,11 +339,51 @@ final class MemoryDashboardVM: ObservableObject {
         perform(effects)
     }
 
+    func mutateCore(_ mutate: (inout DashboardCore) -> [DashboardEffect]) {
+        updateCore(mutate)
+    }
+
+    func runCore(_ mutate: (inout DashboardCore) -> [DashboardEffect]) async {
+        var next = core
+        let effects = mutate(&next)
+        core = next
+        await performExternal(effects)
+    }
+
     private func updateCore(_ mutate: (inout DashboardCore) -> [DashboardEffect]) {
         var next = core
         let effects = mutate(&next)
         core = next
         perform(effects)
+    }
+
+    private func performExternal(_ effects: [DashboardEffect]) async {
+        for effect in effects {
+            switch effect {
+            case .terminate(let pid, let force, let token):
+                let result = force
+                    ? await ProcessActions.forceTerminate(pid: pid)
+                    : await ProcessActions.terminate(pid: pid)
+                if let token {
+                    var next = core
+                    next.finishQuit(
+                        pid: pid,
+                        token: token,
+                        result: result,
+                        taskCancelled: Task.isCancelled
+                    )
+                    core = next
+                }
+            case .confirmForceQuit(let displayName, let generation):
+                let confirmed = ProcessActions.confirmForceQuit(displayName: displayName)
+                var next = core
+                let follow = next.resolveForceQuit(generation: generation, confirmed: confirmed)
+                core = next
+                await performExternal(follow)
+            default:
+                perform([effect])
+            }
+        }
     }
 
     private func perform(_ effects: [DashboardEffect]) {
@@ -363,20 +395,6 @@ final class MemoryDashboardVM: ObservableObject {
                 sleepTask?.cancel()
             case .refreshThermalAdvice(let now):
                 refreshThermalAdvice(now: now)
-            case .replaceListSelection(let pid):
-                if selectedPid != pid, !keepsExitedEnergySelection(replacingWith: pid) {
-                    selectedPid = pid
-                }
-            case .reconcileEnergySelection:
-                reconcileEnergySelectionGeneration()
-            case .replaceSidebarSubject(let pid):
-                if sidebarSubjectPid != pid {
-                    sidebarSubjectPid = pid
-                }
-            case .replaceDetail(let liveDetail):
-                if detail != liveDetail {
-                    detail = liveDetail
-                }
             case .applyRisingAndWindowedSelection:
                 updateCore { core in
                     core.applyRisingOnlySelection() + core.applyWindowedOnlySelection()
@@ -385,6 +403,8 @@ final class MemoryDashboardVM: ObservableObject {
                 Task { await sampler.setSelectedPid(pid) }
             case .forwardMemoryPageSort(let sort):
                 Task { await sampler.setMemoryPageSort(sort) }
+            case .terminate, .confirmForceQuit:
+                break
             case .setGPUSampling:
                 break
             case .startMachineWatch, .stopMachineWatch:
@@ -394,18 +414,5 @@ final class MemoryDashboardVM: ObservableObject {
             }
         }
     }
-    var selectedEnergyExitedOnly: Bool {
-        EnergyPage.blocksQuit(selectedPid: selectedPid, rememberedGeneration: selectedEnergyGeneration, liveRows: rows, liveGenerations: energyLiveGenerations, exited: exitedEnergyProcesses)
-    }
-    private func reconcileEnergySelectionGeneration() {
-        let decision = EnergyPage.resolvedSelection(
-            onEnergyPage: selectedPage == .energy,
-            selectedPid: selectedPid,
-            rememberedGeneration: selectedEnergyGeneration,
-            liveRows: rows,
-            liveGenerations: energyLiveGenerations
-        )
-        if selectedPid != decision.pid { selectedPid = decision.pid }
-        selectedEnergyGeneration = decision.generation
-    }
+    var selectedEnergyExitedOnly: Bool { core.selectedEnergyExitedOnly }
 }

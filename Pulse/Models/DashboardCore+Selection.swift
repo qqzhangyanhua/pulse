@@ -228,7 +228,7 @@ extension DashboardCore {
         return effects
     }
 
-    private mutating func commitQuitSelection(_ effect: ProcessQuitSession.Selection) -> [DashboardEffect] {
+    mutating func commitQuitSelection(_ effect: ProcessQuitSession.Selection) -> [DashboardEffect] {
         var effects: [DashboardEffect] = []
         if selectedPid != effect.listSelectedPid {
             effects += select(pid: effect.listSelectedPid)

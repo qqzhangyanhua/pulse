@@ -72,6 +72,8 @@ let package = Package(
                 "Models/ProcessQuitSession.swift",
                 "Models/DashboardCore.swift",
                 "Models/DashboardCore+Selection.swift",
+                "Models/DashboardCore+Quit.swift",
+                "Models/DashboardCore+TopAppLocation.swift",
                 "Models/ProcessQuitRoute.swift",
                 "Models/ProcessPermissionFootnote.swift",
                 "Models/CPUPage.swift",

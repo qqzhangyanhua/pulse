@@ -5,13 +5,14 @@ import Foundation
 enum DashboardEffect: Equatable {
     case requestRetryWake
     case refreshThermalAdvice(now: Double)
-    case replaceListSelection(Int32?)
-    case reconcileEnergySelection
-    case replaceSidebarSubject(Int32?)
-    case replaceDetail(ProcessDetail?)
     case applyRisingAndWindowedSelection
     /// Sampler `setSelectedPid` for the pid after list selection settles.
     case forwardSelectedPid(Int32?)
+    /// `ProcessActions.terminate` when `force` is false, `forceTerminate` when true.
+    /// `token` is nil when this pid did not issue a quit-store attempt.
+    case terminate(pid: Int32, force: Bool, token: UInt64?)
+    /// `ProcessActions.confirmForceQuit`. The Bool comes back through `resolveForceQuit`.
+    case confirmForceQuit(displayName: String, generation: UInt64)
     /// Sampler `setMemoryPageSort` for the sort just written into the memory-page publication.
     case forwardMemoryPageSort(ProcessTableSort)
     /// Next tick reads the GPU page. Not a second sampler task.
@@ -62,6 +63,8 @@ struct DashboardCore {
     var risingOnlyFilter = false
     var windowedOnlyFilter = false
     var groupedByApp = false
+    /// One-shot memory Top card reveal. The next locate replaces it.
+    var topAppLocateReveal: TopAppLocation.Reveal?
     /// Windowed-app pids supplied by the adapter. Not a live lookup.
     var windowedPids: Set<Int32> = []
     var selectedEnergyGeneration: Int?
@@ -76,8 +79,7 @@ struct DashboardCore {
         result: Result<SampledFrame, Failure>,
         accepted: Bool,
         page: DashboardPage,
-        batteryPercent: Double?,
-        selectedPid: Int32?
+        batteryPercent: Double?
     ) -> [DashboardEffect] {
         let held = SamplingRetryApply.Held(
             loadState: loadState,
@@ -123,7 +125,6 @@ struct DashboardCore {
         }
         return finishSample(
             observation: observation,
-            selectedPid: selectedPid,
             applyFilters: applyFilters,
             thermalNow: thermalNow
         )
@@ -200,7 +201,6 @@ struct DashboardCore {
 
     private mutating func finishSample(
         observation: ProcessQuitSession.Observation,
-        selectedPid: Int32?,
         applyFilters: Bool,
         thermalNow: Double?
     ) -> [DashboardEffect] {
@@ -217,10 +217,7 @@ struct DashboardCore {
         if let thermalNow {
             effects.append(.refreshThermalAdvice(now: thermalNow))
         }
-        effects.append(.replaceListSelection(effect.listSelectedPid))
-        effects.append(.reconcileEnergySelection)
-        effects.append(.replaceSidebarSubject(effect.sidebarSubjectPid))
-        effects.append(.replaceDetail(effect.liveDetail))
+        effects += absorbSampleSelection(effect)
         if applyFilters {
             effects.append(.applyRisingAndWindowedSelection)
         }

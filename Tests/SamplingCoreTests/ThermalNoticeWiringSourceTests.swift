@@ -296,36 +296,54 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         XCTAssertFalse(advice.contains("addObserver"))
         XCTAssertEqual(occurrenceCount(of: "func terminateThermalAdvice(pid: Int32) async", in: advice), 1)
 
+        XCTAssertFalse(advice.contains("selectedPid ="))
         let method = try functionBody(named: "terminateThermalAdvice", in: advice)
-        XCTAssertTrue(method.contains("pid == selectedPid"))
-        XCTAssertTrue(method.contains("selectedPage.allowsProcessQuit"))
-        XCTAssertTrue(method.contains("ProcessQuitSession.ordinaryTerminate("))
-        XCTAssertTrue(method.contains("usedBytes: quitReleaseBaseline"))
-        XCTAssertTrue(method.contains("ProcessActions.terminate(pid: pid)"))
-        XCTAssertTrue(method.contains("ProcessQuitSession.finish("))
-        XCTAssertTrue(method.contains("pid: issued.pid"))
-        XCTAssertTrue(method.contains("token: issued.token"))
-        XCTAssertTrue(method.contains("result: result"))
-        XCTAssertTrue(method.contains("taskCancelled: Task.isCancelled"))
-        XCTAssertFalse(method.contains("selectedPid ="))
-        XCTAssertFalse(method.contains("confirmForceQuit"))
+        XCTAssertTrue(method.contains("beginThermalTerminate(pid: pid)"))
+        XCTAssertFalse(method.contains("ProcessActions"))
+        XCTAssertFalse(method.contains("ordinaryTerminate"))
         XCTAssertFalse(method.contains("selectedEnergyExitedOnly"))
         XCTAssertFalse(method.contains("quitSelected"))
-        XCTAssertEqual(occurrenceCount(of: "ProcessActions.terminate(pid: pid)", in: method), 1)
+        XCTAssertFalse(method.contains("confirmForceQuit"))
+
+        let core = try functionBody(
+            named: "beginThermalTerminate",
+            in: try repoText("Pulse/Models/DashboardCore+Quit.swift")
+        )
+        XCTAssertTrue(core.contains("pid == selectedPid"))
+        XCTAssertTrue(core.contains("selectedPage.allowsProcessQuit"))
+        XCTAssertTrue(core.contains("ProcessQuitSession.ordinaryTerminate("))
+        XCTAssertTrue(core.contains("usedBytes: quitReleaseBaseline"))
+        XCTAssertTrue(core.contains(".terminate(pid: pid, force: false"))
+        XCTAssertFalse(core.contains("selectedPid ="))
+        XCTAssertFalse(core.contains("confirmForceQuit"))
+        XCTAssertFalse(core.contains("selectedEnergyExitedOnly"))
+        XCTAssertFalse(core.contains("quitSelected"))
         XCTAssertLessThan(
-            try index(of: "selectedPage.allowsProcessQuit", in: method),
-            try index(of: "ProcessQuitSession.ordinaryTerminate(", in: method)
+            try index(of: "selectedPage.allowsProcessQuit", in: core),
+            try index(of: "ProcessQuitSession.ordinaryTerminate(", in: core)
         )
         XCTAssertLessThan(
-            try index(of: "ProcessQuitSession.ordinaryTerminate(", in: method),
-            try index(of: "ProcessActions.terminate(pid: pid)", in: method)
+            try index(of: "ProcessQuitSession.ordinaryTerminate(", in: core),
+            try index(of: ".terminate(pid: pid, force: false", in: core)
         )
+        let issueGate = try braceBody(after: "if pid == selectedPid", in: core)
+        XCTAssertTrue(issueGate.contains("ProcessQuitSession.ordinaryTerminate("))
+        XCTAssertFalse(issueGate.contains(".terminate(pid: pid"))
+
+        let perform = try functionBody(named: "performExternal", in: dashboard)
+        XCTAssertEqual(occurrenceCount(of: "ProcessActions.terminate(pid: pid)", in: perform), 1)
+        XCTAssertTrue(perform.contains("ProcessActions.forceTerminate(pid: pid)"))
+        XCTAssertTrue(perform.contains("finishQuit("))
+        XCTAssertTrue(perform.contains("pid: pid"))
+        XCTAssertTrue(perform.contains("token: token"))
+        XCTAssertTrue(perform.contains("result: result"))
+        XCTAssertTrue(perform.contains("taskCancelled: Task.isCancelled"))
         XCTAssertLessThan(
-            try index(of: "ProcessActions.terminate(pid: pid)", in: method),
-            try index(of: "ProcessQuitSession.finish(", in: method)
+            try index(of: "ProcessActions.terminate(pid: pid)", in: perform),
+            try index(of: "finishQuit(", in: perform)
         )
-        let finishGate = try braceBody(after: "if let issued", in: method)
-        XCTAssertTrue(finishGate.contains("ProcessQuitSession.finish("))
+        let finishGate = try braceBody(after: "if let token", in: perform)
+        XCTAssertTrue(finishGate.contains("finishQuit("))
         XCTAssertFalse(finishGate.contains("ProcessActions.terminate"))
         XCTAssertEqual(occurrenceCount(of: "addObserver", in: try WiringSourceText.text(for: "MemoryDashboardVM")), 1)
     }
