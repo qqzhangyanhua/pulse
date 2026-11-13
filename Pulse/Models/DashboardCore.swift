@@ -44,6 +44,8 @@ struct DashboardCore {
     /// Idle until the user clicks. Not sampled and not saved.
     var publicIPRequest = PublicIPRequestState.idle
     private(set) var hostDiskRates = HostDiskRates.missing
+    /// Host 换入 / 换出. Previous counters stay here. Not disk throughput.
+    private(set) var memoryPage = MemoryPageState.initial
     private(set) var rows: [ProcessRow] = []
     private(set) var energyWindowRates: [Int32: ProcessEnergyRates] = [:]
     private(set) var energyHourRates: [Int32: ProcessEnergyRates] = [:]
@@ -218,6 +220,11 @@ struct DashboardCore {
         diskHistory = nextDisk
         recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
         recordChip(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt, page: page)
+        memoryPage = MemoryPageProjection.apply(
+            counters: frame.hostPageCounters,
+            sampledAt: frame.snapshot.capturedAt,
+            current: memoryPage
+        )
         rows = frame.rows
         energyWindowRates = frame.energyWindowRates
         energyHourRates = frame.energyHourRates

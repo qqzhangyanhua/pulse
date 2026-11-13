@@ -67,6 +67,11 @@ actor MemorySampler {
             capturedAt: capturedAt,
             swapUsedBytes: swapUsedBytes
         )
+        let hostPageCounters = HostPageCounters(
+            pageins: host.pageins,
+            pageouts: host.pageouts,
+            pageSize: host.pageSize
+        )
         let systemCpuPercent = consumeSystemCPU()
         let busiestCorePercent = consumeBusiestCore()
         let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
@@ -95,7 +100,8 @@ actor MemorySampler {
                     ),
                     gpuNodes: gpuNodes,
                     hostWiFi: hostWiFi,
-                    chipTemperatureSensors: chipTemperatureSensors
+                    chipTemperatureSensors: chipTemperatureSensors,
+                    hostPageCounters: hostPageCounters
                 )
             )
         }
@@ -242,7 +248,8 @@ actor MemorySampler {
                 energyLiveGenerations: energyMinuteLedger.liveGenerations,
                 gpuNodes: gpuNodes,
                 hostWiFi: hostWiFi,
-                chipTemperatureSensors: chipTemperatureSensors
+                chipTemperatureSensors: chipTemperatureSensors,
+                hostPageCounters: hostPageCounters
             )
         )
     }

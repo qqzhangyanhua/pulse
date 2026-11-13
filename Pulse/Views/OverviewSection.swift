@@ -141,6 +141,18 @@ struct OverviewSection: View {
                     caption: swap.caption,
                     iconColor: .secondary
                 )
+                pageRateCard(
+                    systemImage: "arrow.down.to.line",
+                    title: MemoryPageCopy.pageIn,
+                    value: vm.memoryPage.pageInText,
+                    caption: MemoryPageCopy.pageInCaption
+                )
+                pageRateCard(
+                    systemImage: "arrow.up.to.line",
+                    title: MemoryPageCopy.pageOut,
+                    value: vm.memoryPage.pageOutText,
+                    caption: MemoryPageCopy.pageOutCaption
+                )
                 TopAppCard(consumer: consumer) { pid in
                     guard let consumer else { return }
                     vm.locateMemoryTopApp(name: consumer.name, pid: pid)
@@ -149,12 +161,31 @@ struct OverviewSection: View {
             .frame(height: 104)
         }
     }
+
+    private func pageRateCard(
+        systemImage: String,
+        title: String,
+        value: String,
+        caption: String
+    ) -> some View {
+        MetricStatCard(
+            systemImage: systemImage,
+            title: title,
+            value: value,
+            caption: caption,
+            iconColor: .secondary
+        )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title)，\(value)，\(caption)")
+    }
 }
 
 private enum SamplingStat: String, CaseIterable, Identifiable {
     case pressure = "压力"
     case available = "可用"
     case swap = "交换"
+    case pageIn = "换入"
+    case pageOut = "换出"
     case top = "占用最多的 App"
 
     var id: String { rawValue }
@@ -164,6 +195,8 @@ private enum SamplingStat: String, CaseIterable, Identifiable {
         case .pressure: return "gauge.medium"
         case .available: return "memorychip"
         case .swap: return "arrow.left.arrow.right"
+        case .pageIn: return "arrow.down.to.line"
+        case .pageOut: return "arrow.up.to.line"
         case .top: return "crown.fill"
         }
     }

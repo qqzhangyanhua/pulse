@@ -17,6 +17,10 @@ struct RawHostMemory: Sendable, Equatable {
     let usedBytes: UInt64
     let pressure: PressureLevel
     let pressureMetric: Double
+    /// Cumulative `vm_statistics64.pageins`. Not a per-process counter.
+    let pageins: UInt64
+    /// Cumulative `vm_statistics64.pageouts`.
+    let pageouts: UInt64
 }
 
 /// Reads `vm_statistics64` / `host_statistics64` and maps pages onto Activity Monitor categories.
@@ -78,7 +82,9 @@ enum HostMemoryReader {
             cachedBytes: cachedBytes,
             usedBytes: min(usedBytes, totalBytes),
             pressure: pressure,
-            pressureMetric: usedRatio
+            pressureMetric: usedRatio,
+            pageins: UInt64(stats.pageins),
+            pageouts: UInt64(stats.pageouts)
         )
     }
 
