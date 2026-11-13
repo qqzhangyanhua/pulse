@@ -211,7 +211,7 @@ final class HistoryPolicyTests: XCTestCase {
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         XCTAssertTrue(vm.contains("historyRetention = HistoryRetentionPreference.retention()"))
-        XCTAssertTrue(vm.contains("sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu)"))
+        XCTAssertTrue(vm.contains("sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu, readGPUEnergy: selectedPage == .gpu, readMachineRails: selectedPage == .energy)"))
         XCTAssertFalse(vm.contains("UserDefaults"))
         XCTAssertEqual(
             vm.components(separatedBy: "addObserver").count - 1,
