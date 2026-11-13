@@ -4,7 +4,6 @@ import Foundation
 /// The core does not touch the sampler, the clock, or `ProcessInfo`.
 enum DashboardEffect: Equatable {
     case requestRetryWake
-    case refreshThermalAdvice(now: Double)
     case applyRisingAndWindowedSelection
     /// Sampler `setSelectedPid` for the pid after list selection settles.
     case forwardSelectedPid(Int32?)
@@ -21,6 +20,10 @@ enum DashboardEffect: Equatable {
     case stopMachineWatch
     case startEnergyBatteryWatch
     case stopEnergyBatteryWatch
+    /// Outbound public-IP lookup. Returned only from the query click.
+    case lookupPublicIP(queriedAt: Date)
+    /// System location prompt for the Wi-Fi name. Returned only from the allow click.
+    case requestLocationAuthorization
 }
 
 /// Portable dashboard state. Mutations return effects the adapter performs.
@@ -34,7 +37,12 @@ struct DashboardCore {
     /// Nil is missing, not zero. A failed sample does not clear it.
     private(set) var busiestCorePercent: Double?
     private(set) var hostNetworkRates = HostNetworkRates.missing
-    var hostWiFi: HostWiFiReading?
+    private(set) var hostWiFi: HostWiFiReading?
+    /// Nil until the first path push. Not a byte rate.
+    var hostConnection: HostConnection?
+    var ssidPermission = WiFiSSIDPermission.notDetermined
+    /// Idle until the user clicks. Not sampled and not saved.
+    var publicIPRequest = PublicIPRequestState.idle
     private(set) var hostDiskRates = HostDiskRates.missing
     private(set) var rows: [ProcessRow] = []
     private(set) var energyWindowRates: [Int32: ProcessEnergyRates] = [:]
@@ -54,6 +62,17 @@ struct DashboardCore {
     private(set) var diskHistory = SystemDiskHistory()
     var gpuPage = GPUPageState.initial
     var chipTemperature = ChipTemperaturePageState.initial
+    /// Nil until the machine page's reader returns. Not cleared on leave.
+    var machineFacts: MachineFacts?
+    /// Nil hides the energy-page card, including a Mac with no internal battery.
+    var energyBatteryCard: EnergyBatteryCard?
+    var energyBatteryReading: EnergyBatteryReading?
+    /// Nil unless the system is serious or critical.
+    var thermalNotice: String?
+    /// Top CPU processes while `thermalNotice` is showing. Nil hides the card.
+    var thermalAdvice: ThermalAdvice?
+    /// Seconds of the last published advice. Nil publishes on the next sample.
+    var thermalAdviceLastUpdate: Double?
     private(set) var energyMachineHistory = EnergyMachineHistory()
     var selectedPid: Int32?
     var navigation = DashboardNavigation()
@@ -78,8 +97,7 @@ struct DashboardCore {
     mutating func apply<Failure>(
         result: Result<SampledFrame, Failure>,
         accepted: Bool,
-        page: DashboardPage,
-        batteryPercent: Double?
+        page: DashboardPage
     ) -> [DashboardEffect] {
         let held = SamplingRetryApply.Held(
             loadState: loadState,
@@ -96,7 +114,7 @@ struct DashboardCore {
             switch result {
             case .success(let frame):
                 if let applied = SamplingRetryApply.apply(held, accepted: true, sampleSucceeded: true) {
-                    commitSuccess(frame, applied: applied, page: page, batteryPercent: batteryPercent)
+                    commitSuccess(frame, applied: applied, page: page)
                     thermalNow = frame.snapshot.capturedAt.timeIntervalSince1970
                     observation = ProcessQuitSession.Observation(
                         rows: frame.rows,
@@ -158,8 +176,7 @@ struct DashboardCore {
     private mutating func commitSuccess(
         _ frame: SampledFrame,
         applied: SamplingRetryApply.Held,
-        page: DashboardPage,
-        batteryPercent: Double?
+        page: DashboardPage
     ) {
         samplingFailed = applied.samplingFailed
         snapshot = frame.snapshot
@@ -190,8 +207,7 @@ struct DashboardCore {
         energyMachineHistory = recordedEnergyHistory(
             rows: frame.rows,
             at: frame.snapshot.capturedAt,
-            page: page,
-            batteryPercent: batteryPercent
+            page: page
         )
         processListFailed = frame.processListFailed
         processPermissionFootnote = frame.permissionFootnote
@@ -215,7 +231,7 @@ struct DashboardCore {
         quitOutcome = store
         var effects: [DashboardEffect] = []
         if let thermalNow {
-            effects.append(.refreshThermalAdvice(now: thermalNow))
+            refreshThermalAdvice(now: thermalNow)
         }
         effects += absorbSampleSelection(effect)
         if applyFilters {
@@ -275,13 +291,12 @@ struct DashboardCore {
     private func recordedEnergyHistory(
         rows: [ProcessRow],
         at date: Date,
-        page: DashboardPage,
-        batteryPercent: Double?
+        page: DashboardPage
     ) -> EnergyMachineHistory {
         var history = energyMachineHistory
         history.record(
             processWatts: processWatts(rows),
-            batteryPercent: page == .energy ? batteryPercent : nil,
+            batteryPercent: historyBatteryPercent(on: page),
             at: date
         )
         return history

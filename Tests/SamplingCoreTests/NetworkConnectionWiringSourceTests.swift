@@ -166,7 +166,8 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
 
         let action = try repoText("Pulse/ViewModels/MemoryDashboardVM+NetworkConnection.swift")
         let request = try functionBody(named: "requestPublicIP", in: action)
-        XCTAssertTrue(request.contains("PublicIPLookup.lookup"))
+        XCTAssertTrue(request.contains("requestPublicIP(now:"))
+        XCTAssertFalse(request.contains("PublicIPLookup.lookup"))
         XCTAssertFalse(action.contains("NSPasteboard"))
         XCTAssertFalse(action.contains("Timer"))
         let watch = try functionBody(named: "beginConnectionWatch", in: action)
@@ -176,6 +177,9 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
         XCTAssertFalse(watch.contains("checkip"))
 
         let dashboard = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let perform = try functionBody(named: "perform", in: dashboard)
+        XCTAssertEqual(occurrenceCount(of: "PublicIPLookup.lookup", in: dashboard), 1)
+        XCTAssertTrue(perform.contains("PublicIPLookup.lookup"))
         let initial = try initializerBody(in: dashboard)
         XCTAssertFalse(initial.contains("PublicIP"))
         XCTAssertFalse(initial.contains("requestPublicIP"))
@@ -286,7 +290,8 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
 
         let action = try repoText("Pulse/ViewModels/MemoryDashboardVM+NetworkConnection.swift")
         let allowBody = try functionBody(named: "allowWiFiSSID", in: action)
-        XCTAssertTrue(allowBody.contains("HostWiFiLocation.request()"))
+        XCTAssertTrue(allowBody.contains("allowWiFiSSID()"))
+        XCTAssertFalse(allowBody.contains("HostWiFiLocation.request()"))
         XCTAssertFalse(allowBody.contains("requestWhenInUseAuthorization"))
         let watch = try functionBody(named: "startWiFiSSIDWatch", in: action)
         XCTAssertTrue(watch.contains("HostWiFiLocation.start"))
@@ -295,6 +300,9 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
         XCTAssertFalse(watch.contains("requestWhenInUseAuthorization"))
 
         let dashboard = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let perform = try functionBody(named: "perform", in: dashboard)
+        XCTAssertEqual(occurrenceCount(of: "HostWiFiLocation.request()", in: dashboard), 1)
+        XCTAssertTrue(perform.contains("HostWiFiLocation.request()"))
         let initial = try initializerBody(in: dashboard)
         XCTAssertFalse(initial.contains("allowWiFiSSID"))
         XCTAssertFalse(initial.contains("requestWhenInUseAuthorization"))

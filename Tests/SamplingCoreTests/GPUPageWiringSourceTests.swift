@@ -94,15 +94,10 @@ final class GPUPageWiringSourceTests: XCTestCase {
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         XCTAssertTrue(vm.contains("sample(readGPU: selectedPage == .gpu"))
-        XCTAssertEqual(
-            occurrenceCount(of: "publishGPUTransition(from: previous, to: selectedPage)", in: vm),
-            1
-        )
         XCTAssertTrue(vm.contains("func selectPage("))
         XCTAssertTrue(vm.contains("func focusMemoryPage("))
 
         let gpuVM = try repoText("Pulse/ViewModels/MemoryDashboardVM+GPU.swift")
-        XCTAssertTrue(gpuVM.contains("guard selectedPage == .gpu else { return }"))
         XCTAssertFalse(gpuVM.contains("Task.sleep"))
         XCTAssertFalse(gpuVM.contains("@MainActor"))
         XCTAssertFalse(gpuVM.contains("@Published"))

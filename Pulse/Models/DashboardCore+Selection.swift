@@ -93,13 +93,15 @@ extension DashboardCore {
     }
 
     mutating func selectPage(_ page: DashboardPage) -> [DashboardEffect] {
+        let previous = navigation.selectedPage
         navigation.select(page)
-        return finishPageChange()
+        return finishPageChange(from: previous)
     }
 
     mutating func focusMemoryPage() -> [DashboardEffect] {
+        let previous = navigation.selectedPage
         navigation.focusMemoryPage()
-        return finishPageChange()
+        return finishPageChange(from: previous)
     }
 
     mutating func setTableSort(_ sort: ProcessTableSort) -> [DashboardEffect] {
@@ -210,7 +212,9 @@ extension DashboardCore {
         )
     }
 
-    private mutating func finishPageChange() -> [DashboardEffect] {
+    private mutating func finishPageChange(from previous: DashboardPage) -> [DashboardEffect] {
+        publishGPUPageTransition(from: previous, to: selectedPage)
+        publishChipTemperaturePageTransition(from: previous, to: selectedPage)
         var effects = publishMemoryPageSort()
         effects.append(.setGPUSampling(on: selectedPage == .gpu))
         effects += applyRisingOnlySelection()

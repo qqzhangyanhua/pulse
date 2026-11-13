@@ -41,25 +41,10 @@ final class SnapshotExportWiringSourceTests: XCTestCase {
 
     func testFreezeCopiesThePublishedFrameAndDoesNotSample() throws {
         let source = try WiringSourceText.text(for: "MemoryDashboardVM")
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 10, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature; selection state moved onto DashboardCore; top app reveal moved onto DashboardCore")
         XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 0)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: source), 1)
         let body = try functionBody(named: "requestSaveCurrentSnapshot", in: source)
-        for local in [
-            "let snapshot = snapshot",
-            "let rows = rows",
-            "let systemCpuPercent = systemCpuPercent",
-            "let busiestCorePercent = busiestCorePercent",
-            "let hostNetworkRates = hostNetworkRates",
-            "let hostDiskRates = hostDiskRates",
-            "let samplingFailed = samplingFailed",
-            "let processListFailed = processListFailed",
-        ] {
-            let localAt = try index(of: local, in: body)
-            let freezeAt = try index(of: "SnapshotExport.freeze", in: body)
-            XCTAssertLessThan(localAt, freezeAt, local)
-        }
-        XCTAssertTrue(body.contains("rows: rows"))
+        XCTAssertTrue(body.contains("core.frozenSnapshot(savedAt: savedAt)"))
         XCTAssertTrue(body.contains("savedAt: savedAt"))
         XCTAssertFalse(body.contains("await"))
         XCTAssertFalse(body.contains("Date("))

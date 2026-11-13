@@ -12,14 +12,11 @@ final class MemoryDashboardVM: ObservableObject {
     /// Busiest core for the latest accepted frame. Nil is missing, not zero. Failure does not clear it.
     var busiestCorePercent: Double? { core.busiestCorePercent }
     var hostNetworkRates: HostNetworkRates { core.hostNetworkRates }
-    @Published var hostConnection: HostConnection?
-    @Published var ssidPermission = WiFiSSIDPermission.notDetermined
-    var hostWiFi: HostWiFiReading? {
-        get { core.hostWiFi }
-        set { core.hostWiFi = newValue }
-    }
+    var hostConnection: HostConnection? { core.hostConnection }
+    var ssidPermission: WiFiSSIDPermission { core.ssidPermission }
+    var hostWiFi: HostWiFiReading? { core.hostWiFi }
     /// Idle until the user clicks. Not sampled and not saved.
-    @Published var publicIPRequest = PublicIPRequestState.idle
+    var publicIPRequest: PublicIPRequestState { core.publicIPRequest }
     var hostDiskRates: HostDiskRates { core.hostDiskRates }
     var rows: [ProcessRow] { core.rows }
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
@@ -44,11 +41,11 @@ final class MemoryDashboardVM: ObservableObject {
     var topMemorySeries: [Int32: [ChartSample]] { core.topMemorySeries }
     @Published private(set) var machineLabel: String?
     /// Host facts for the machine page. Nil until that page is opened. Not a sample frame.
-    @Published var machineFacts: MachineFacts?
+    var machineFacts: MachineFacts? { core.machineFacts }
     /// Energy-page battery card. Nil hides it, including a Mac with no internal battery.
-    @Published var energyBatteryCard: EnergyBatteryCard?
+    var energyBatteryCard: EnergyBatteryCard? { core.energyBatteryCard }
     /// Latest energy-page battery reading. Nil until that read; not a second poll.
-    var energyBatteryReading: EnergyBatteryReading?
+    var energyBatteryReading: EnergyBatteryReading? { core.energyBatteryReading }
     /// The only session quit store. Phase and message are projections of this.
     var quitOutcome: ProcessQuitOutcome {
         get { core.quitOutcome }
@@ -66,22 +63,16 @@ final class MemoryDashboardVM: ObservableObject {
     var networkHistory: SystemNetworkHistory { core.networkHistory }
     var diskHistory: SystemDiskHistory { core.diskHistory }
     /// GPU page readings. Samples taken off that page do not write this.
-    var gpuPage: GPUPageState {
-        get { core.gpuPage }
-        set { core.gpuPage = newValue }
-    }
+    var gpuPage: GPUPageState { core.gpuPage }
     /// Machine-page chip temperature. Other pages do not write this.
-    var chipTemperature: ChipTemperaturePageState {
-        get { core.chipTemperature }
-        set { core.chipTemperature = newValue }
-    }
+    var chipTemperature: ChipTemperaturePageState { core.chipTemperature }
     var energyMachineHistory: EnergyMachineHistory { core.energyMachineHistory }
     /// Nil unless the system is serious or critical. Overviews read this; the menu bar does not.
-    @Published var thermalNotice: String?
+    var thermalNotice: String? { core.thermalNotice }
     /// Top CPU processes while `thermalNotice` is showing. Nil hides the card; the menu bar does not read this.
-    @Published var thermalAdvice: ThermalAdvice?
+    var thermalAdvice: ThermalAdvice? { core.thermalAdvice }
     /// Seconds of the last published advice. Nil publishes on the next sample.
-    var thermalAdviceLastUpdate: Double?
+    var thermalAdviceLastUpdate: Double? { core.thermalAdviceLastUpdate }
     var filter: String {
         get { core.filter }
         set { setFilter(newValue) }
@@ -319,8 +310,7 @@ final class MemoryDashboardVM: ObservableObject {
         let effects = next.apply(
             result: result,
             accepted: accepted,
-            page: next.selectedPage,
-            batteryPercent: historyBatteryPercent
+            page: next.selectedPage
         )
         if accepted {
             next.windowedPids = WindowedAppLookup.pids(in: next.rows)
@@ -330,13 +320,7 @@ final class MemoryDashboardVM: ObservableObject {
     }
 
     private func changePage(_ mutate: (inout DashboardCore) -> [DashboardEffect]) {
-        let previous = selectedPage
-        var next = core
-        let effects = mutate(&next)
-        core = next
-        publishGPUTransition(from: previous, to: selectedPage)
-        publishChipTemperatureTransition(from: previous, to: selectedPage)
-        perform(effects)
+        updateCore(mutate)
     }
 
     func mutateCore(_ mutate: (inout DashboardCore) -> [DashboardEffect]) {
@@ -393,8 +377,6 @@ final class MemoryDashboardVM: ObservableObject {
                 samplingGate.requestManualRetry()
                 isRetrying = samplingGate.retrying
                 sleepTask?.cancel()
-            case .refreshThermalAdvice(let now):
-                refreshThermalAdvice(now: now)
             case .applyRisingAndWindowedSelection:
                 updateCore { core in
                     core.applyRisingOnlySelection() + core.applyWindowedOnlySelection()
@@ -411,6 +393,21 @@ final class MemoryDashboardVM: ObservableObject {
                 syncMachineWatch()
             case .startEnergyBatteryWatch, .stopEnergyBatteryWatch:
                 syncEnergyBatteryWatch()
+            case .lookupPublicIP(let queriedAt):
+                let transport = PublicIPURLSessionTransport()
+                Task { [weak self] in
+                    let result = await PublicIPLookup.lookup(using: transport)
+                    guard let self else { return }
+                    let address: String?
+                    if case .success(let found) = result {
+                        address = found
+                    } else {
+                        address = nil
+                    }
+                    self.updateCore { $0.finishPublicIPLookup(address: address, queriedAt: queriedAt) }
+                }
+            case .requestLocationAuthorization:
+                HostWiFiLocation.request()
             }
         }
     }

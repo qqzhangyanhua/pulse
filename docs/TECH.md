@@ -30,7 +30,7 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 
 - `MemorySampler.sample()` 每次产出一帧不可变的 `SampledFrame`：主机内存快照、进程行、选中进程详情、整机 CPU、最忙一核、主机网络 / 磁盘速率、Top5 内存序列、权限脚注。主线程只读这帧。
 - 主窗、菜单栏、各资源页都读同一个 VM 的同一帧。没有第二个采样器，也没有第二条轮询。这个 VM 归 `PulseAppDelegate`，启动完成就 `start()`，关窗不释放。
-- 仪表盘的同步状态在 `DashboardCore`（`MemoryDashboardVM` 只发布这一份 `core`）。采样应用、选中、页面、排序、过滤、结束进程、能耗页选中代次、定位 Top App 和 Top3 点击的状态步骤都在这里，并返回 `DashboardEffect`。适配器执行采样器、`ProcessActions`、本机页和电池观察。有窗口 App 的 pid 仍由适配器查询后传入。结束进程的结果再作为输入交回 `DashboardCore`。
+- 仪表盘的同步状态在 `DashboardCore`（`MemoryDashboardVM` 只发布这一份 `core`）。采样应用、选中、页面、排序、过滤、结束进程、能耗页选中代次、定位 Top App 和 Top3 点击、网络连接与公网 IP、定位授权效果、GPU 与芯片温度的页面切换、降频提示与散热建议、电池卡片、本机信息，以及快照冻结的状态步骤都在这里，并返回 `DashboardEffect`。公网 IP 查询和定位授权只在用户点击时返回。适配器执行采样器、`ProcessActions`、本机页和电池观察、公网 IP 传输、`ProcessInfo` 热状态通知、读数和快照文件 IO。有窗口 App 的 pid 仍由适配器查询后传入。结束进程的结果、读数和查询结果再作为输入交回 `DashboardCore`。
 - `Models/` 里的类型是纯投影：输入现有字段，输出文案和状态，不采样、不存历史。
 - 「保存当前快照」不新增采样器。它在主线程抄下已经发布的那一帧，做成预览和本机 HTML。
 

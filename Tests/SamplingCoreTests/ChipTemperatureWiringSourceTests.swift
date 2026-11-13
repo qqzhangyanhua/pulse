@@ -44,14 +44,8 @@ final class ChipTemperatureWiringSourceTests: XCTestCase {
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         XCTAssertTrue(vm.contains("sampler.sample(readGPU: selectedPage == .gpu, readChipTemperature: selectedPage == .machine)"))
-        XCTAssertEqual(
-            occurrenceCount(of: "publishChipTemperatureTransition(from: previous, to: selectedPage)", in: vm),
-            1
-        )
 
         let extensionVM = try repoText("Pulse/ViewModels/MemoryDashboardVM+ChipTemperature.swift")
-        XCTAssertTrue(extensionVM.contains("guard selectedPage == .machine else { return }"))
-        XCTAssertTrue(extensionVM.contains("transition == .justEntered && samplingFailed ? .failed : .pending"))
         XCTAssertFalse(extensionVM.contains("@Published"))
         XCTAssertFalse(extensionVM.contains("@MainActor"))
         XCTAssertFalse(extensionVM.contains("didSet"))

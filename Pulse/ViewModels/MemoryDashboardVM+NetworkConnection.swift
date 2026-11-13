@@ -15,39 +15,22 @@ extension MemoryDashboardVM {
     }
 
     func publishHostConnection(_ connection: HostConnection) {
-        hostConnection = connection
-    }
-
-    func publishSampledWiFi(_ reading: HostWiFiReading?) {
-        hostWiFi = reading
+        mutateCore { $0.apply(hostConnection: connection) }
     }
 
     /// Does not prompt. The allow button is the only request.
     func startWiFiSSIDWatch() {
         HostWiFiLocation.start { [weak self] permission in
-            self?.ssidPermission = permission
+            self?.mutateCore { $0.apply(ssidPermission: permission) }
         }
     }
 
     func allowWiFiSSID() {
-        HostWiFiLocation.request()
+        mutateCore { $0.allowWiFiSSID() }
     }
 
     /// Click path only. A second click while loading does not start another request.
     func requestPublicIP() {
-        guard publicIPRequest != .loading else { return }
-        publicIPRequest = publicIPRequest.begin()
-        let queriedAt = Date()
-        let transport = PublicIPURLSessionTransport()
-        Task { [weak self] in
-            let result = await PublicIPLookup.lookup(using: transport)
-            guard let self else { return }
-            switch result {
-            case .success(let address):
-                self.publicIPRequest = PublicIPRequestState.loading.succeed(address: address, at: queriedAt)
-            case .failure:
-                self.publicIPRequest = PublicIPRequestState.loading.fail()
-            }
-        }
+        mutateCore { $0.requestPublicIP(now: Date()) }
     }
 }

@@ -257,7 +257,7 @@ final class DashboardCoreQuitTests: XCTestCase {
             ),
             accepted: accepted,
             page: core.selectedPage,
-            batteryPercent: nil
+
         )
     }
 

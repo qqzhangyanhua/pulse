@@ -48,7 +48,6 @@ final class EnergyBatteryWiringSourceTests: XCTestCase {
         XCTAssertTrue(tail.contains("startEnergyBatteryWatch"))
         XCTAssertTrue(tail.contains("stopEnergyBatteryWatch"))
         XCTAssertTrue(vm.contains("energyBatteryRefreshTask?.cancel()"))
-        XCTAssertTrue(vm.contains("@Published var energyBatteryCard: EnergyBatteryCard?"))
 
         let watch = try repoText("Pulse/ViewModels/MemoryDashboardVM+EnergyBattery.swift")
         let sync = try functionBody(named: "syncEnergyBatteryWatch", in: watch)
@@ -58,7 +57,7 @@ final class EnergyBatteryWiringSourceTests: XCTestCase {
         XCTAssertFalse(sync.contains("Timer"))
         let refresh = try functionBody(named: "refreshEnergyBattery", in: watch)
         XCTAssertTrue(refresh.contains("EnergyBatteryReader.read()"))
-        XCTAssertTrue(refresh.contains("EnergyBattery.card("))
+        XCTAssertTrue(refresh.contains("apply(energyBatteryReading: reading)"))
         XCTAssertFalse(watch.contains("IOPSGetTimeRemainingEstimate"))
         XCTAssertFalse(watch.contains("HostMachineReader"))
     }

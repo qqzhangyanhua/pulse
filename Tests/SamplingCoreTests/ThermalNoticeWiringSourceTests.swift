@@ -46,7 +46,9 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
             XCTAssertFalse(sampler.contains(token), token)
         }
         XCTAssertTrue(vm.contains("ProcessInfo.thermalStateDidChangeNotification"))
-        XCTAssertTrue(vm.contains("ThermalNotice.message(for:"))
+        let thermal = try repoText("Pulse/Models/DashboardCore+Thermal.swift")
+        XCTAssertTrue(thermal.contains("ThermalNotice.message(for:"))
+        XCTAssertFalse(vm.contains("ThermalNotice.message(for:"))
         XCTAssertFalse(vm.contains("Timer"))
         XCTAssertEqual(occurrenceCount(of: "addObserver", in: vm), 1)
     }
@@ -88,26 +90,20 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("path = \"MemoryDashboardVM+ThermalAdvice.swift\";"))
 
         let dashboard = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
-        XCTAssertTrue(dashboard.contains("@Published var thermalAdvice: ThermalAdvice?"))
+        XCTAssertTrue(dashboard.contains("var thermalAdvice: ThermalAdvice? { core.thermalAdvice }"))
         XCTAssertTrue(dashboard.contains("var thermalAdviceLastUpdate: Double?"))
         XCTAssertFalse(dashboard.contains("private var thermalAdviceLastUpdate"))
         XCTAssertFalse(dashboard.contains("@Published var thermalAdviceLastUpdate"))
 
         let watch = try repoText("Pulse/ViewModels/MemoryDashboardVM+HostWatch.swift")
-        XCTAssertTrue(
-            watch.contains(
-                "thermalNotice = ThermalNotice.message(for: ThermalCondition(state))\n"
-                    + "        if thermalNotice == nil {\n"
-                    + "            thermalAdvice = nil\n"
-                    + "            thermalAdviceLastUpdate = nil\n"
-                    + "        }"
-            )
-        )
+        XCTAssertTrue(watch.contains("apply(thermalCondition: ThermalCondition(state))"))
+        XCTAssertFalse(watch.contains("thermalAdvice ="))
 
-        let advice = try repoText("Pulse/ViewModels/MemoryDashboardVM+ThermalAdvice.swift")
+        let advice = try repoText("Pulse/Models/DashboardCore+Thermal.swift")
         XCTAssertFalse(advice.contains("Timer"))
         XCTAssertFalse(advice.contains("addObserver"))
         XCTAssertFalse(advice.contains("ProcessEnumerator"))
+        XCTAssertFalse(advice.contains("ProcessInfo"))
         let cleared = try range(of: "thermalAdvice = nil", in: advice)
         let throttle = try range(of: "ThermalAdviceThrottle.shouldUpdate(", in: advice)
         let projectCall = try range(of: "ThermalAdviceProjection.project(", in: advice)
@@ -119,7 +115,7 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         XCTAssertLessThan(unmeasured.lowerBound, stored.lowerBound)
         let hold = try braceBody(after: "if projected.processes.isEmpty, projected.noHighLoad == false", in: advice)
         XCTAssertEqual(compact(hold), "{return}")
-        XCTAssertTrue(advice.contains("excludingPid: ProcessInfo.processInfo.processIdentifier"))
+        XCTAssertTrue(advice.contains("excludingPid: ownPid"))
         XCTAssertEqual(occurrenceCount(of: "addObserver", in: try WiringSourceText.text(for: "MemoryDashboardVM")), 1)
     }
 
