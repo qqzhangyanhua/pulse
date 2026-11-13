@@ -65,11 +65,18 @@ struct GPUOverviewSection: View {
                     readingCard(title: GPUPageCopy.memory, value: vm.gpuPage.memoryText, symbol: "memorychip")
                 }
                 .frame(height: 132)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(EnergyModelCopy.gpuPowerLine(watts: vm.cpuEnergy?.gpuWatts))
+                    Text(EnergyModelCopy.gpuFrequencyLine(hertz: vm.cpuEnergy?.gpuHertz))
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
                 if let cores = vm.gpuPage.coreCountText {
                     Text(cores)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
+                HistoryRangeControl(range: vm.historyCurveRange, select: vm.selectHistoryCurveRange)
                 PulseCard {
                     chart
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -85,6 +92,8 @@ struct GPUOverviewSection: View {
 
     private var accessibilityLabel: String {
         var line = "\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)"
+        line += "，\(EnergyModelCopy.gpuPowerLine(watts: vm.cpuEnergy?.gpuWatts))"
+        line += "，\(EnergyModelCopy.gpuFrequencyLine(hertz: vm.cpuEnergy?.gpuHertz))"
         if let cores = vm.gpuPage.coreCountText {
             line += "，\(cores)"
         }
@@ -130,7 +139,14 @@ struct GPUOverviewSection: View {
 
     @ViewBuilder
     private var chart: some View {
-        if vm.gpuPage.showsCurve {
+        if let plot = vm.historyCurvePlot(\.gpuPercent) {
+            HistoryRangeChart(
+                plot: plot,
+                tint: PulsePalette.accent,
+                domain: domain,
+                formatY: { CPUPercentText.string($0) }
+            )
+        } else if vm.gpuPage.showsCurve {
             HistoryAnnotatedChart(
                 annotation: HistoryCurvePresentation.annotation(
                     current: vm.gpuPage.utilizationPercent,
@@ -150,7 +166,8 @@ struct GPUOverviewSection: View {
     }
 
     private var domain: ClosedRange<Double> {
-        let peak = vm.gpuPage.history.samples.map(\.value).max() ?? 0
-        return 0...max(peak * 1.2, 5)
+        let live = vm.gpuPage.history.samples.map(\.value).max() ?? 0
+        let stored = vm.historyCurvePlot(\.gpuPercent)?.points.compactMap(\.value).max() ?? 0
+        return 0...max(max(live, stored) * 1.2, 5)
     }
 }

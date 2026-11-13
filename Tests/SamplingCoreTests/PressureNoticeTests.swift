@@ -3,158 +3,158 @@ import XCTest
 
 final class PressureNoticeTests: XCTestCase {
     func testFirstElevatedFrameWhileArmedSendsAndFires() {
-        let decision = PressureNotice.advance(
+        let decision = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: .armed,
+            state: .armed,
             pressure: .elevated,
             at: Date(timeIntervalSince1970: 1_700_000_000)
         )
         XCTAssertTrue(decision.send)
-        XCTAssertEqual(decision.phase, .fired(normalSince: nil))
+        XCTAssertEqual(decision.state.phase, .fired(clearSince: nil))
     }
 
     func testElevatedWhileFiredDoesNotSendAndClearsTheNormalStreak() {
         let streak = Date(timeIntervalSince1970: 1_700_000_100)
-        let decision = PressureNotice.advance(
+        let decision = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: .fired(normalSince: streak),
+            state: fired(clearSince: streak),
             pressure: .elevated,
             at: Date(timeIntervalSince1970: 1_700_000_120)
         )
         XCTAssertFalse(decision.send)
-        XCTAssertEqual(decision.phase, .fired(normalSince: nil))
+        XCTAssertEqual(decision.state.phase, .fired(clearSince: nil))
     }
 
     func testFiveMinutesOfContinuousNormalRearmsAndAShorterGapDoesNot() {
-        let fired = PressureNotice.advance(
+        let fired = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: .armed,
+            state: .armed,
             pressure: .elevated,
             at: Date(timeIntervalSince1970: 1_700_000_000)
         )
-        let started = PressureNotice.advance(
+        let started = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: fired.phase,
+            state: fired.state,
             pressure: .normal,
             at: Date(timeIntervalSince1970: 1_700_000_100)
         )
         XCTAssertFalse(started.send)
-        XCTAssertEqual(started.phase, .fired(normalSince: Date(timeIntervalSince1970: 1_700_000_100)))
+        XCTAssertEqual(started.state.phase, .fired(clearSince: Date(timeIntervalSince1970: 1_700_000_100)))
 
-        let short = PressureNotice.advance(
+        let short = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: started.phase,
+            state: started.state,
             pressure: .normal,
             at: Date(timeIntervalSince1970: 1_700_000_399)
         )
         XCTAssertFalse(short.send)
-        XCTAssertEqual(short.phase, .fired(normalSince: Date(timeIntervalSince1970: 1_700_000_100)))
+        XCTAssertEqual(short.state.phase, .fired(clearSince: Date(timeIntervalSince1970: 1_700_000_100)))
 
-        let rearmed = PressureNotice.advance(
+        let rearmed = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: short.phase,
+            state: short.state,
             pressure: .normal,
             at: Date(timeIntervalSince1970: 1_700_000_400)
         )
         XCTAssertFalse(rearmed.send)
-        XCTAssertEqual(rearmed.phase, .armed)
+        XCTAssertEqual(rearmed.state.phase, .armed)
 
-        let again = PressureNotice.advance(
+        let again = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: rearmed.phase,
+            state: rearmed.state,
             pressure: .elevated,
             at: Date(timeIntervalSince1970: 1_700_000_401)
         )
         XCTAssertTrue(again.send)
-        XCTAssertEqual(again.phase, .fired(normalSince: nil))
+        XCTAssertEqual(again.state.phase, .fired(clearSince: nil))
     }
 
     func testNilFrameDoesNotSendOrResetPhase() {
-        let armed = PressureNotice.advance(
+        let armed = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: .armed,
+            state: .armed,
             pressure: nil,
             at: Date(timeIntervalSince1970: 1_700_000_000)
         )
         XCTAssertFalse(armed.send)
-        XCTAssertEqual(armed.phase, .armed)
+        XCTAssertEqual(armed.state.phase, .armed)
 
-        let streak = PressureNoticePhase.fired(normalSince: Date(timeIntervalSince1970: 1_700_000_100))
-        let skipped = PressureNotice.advance(
+        let streak = fired(clearSince: Date(timeIntervalSince1970: 1_700_000_100))
+        let skipped = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: streak,
+            state: streak,
             pressure: nil,
             at: Date(timeIntervalSince1970: 1_700_000_400)
         )
         XCTAssertFalse(skipped.send)
-        XCTAssertEqual(skipped.phase, streak)
+        XCTAssertEqual(skipped.state, streak)
 
-        let rearmed = PressureNotice.advance(
+        let rearmed = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: skipped.phase,
+            state: skipped.state,
             pressure: .normal,
             at: Date(timeIntervalSince1970: 1_700_000_400)
         )
         XCTAssertFalse(rearmed.send)
-        XCTAssertEqual(rearmed.phase, .armed)
+        XCTAssertEqual(rearmed.state.phase, .armed)
     }
 
     func testShortNormalGapAfterElevatedDoesNotRearm() {
-        let broken = PressureNotice.advance(
+        let broken = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: .fired(normalSince: Date(timeIntervalSince1970: 1_700_000_100)),
+            state: fired(clearSince: Date(timeIntervalSince1970: 1_700_000_100)),
             pressure: .elevated,
             at: Date(timeIntervalSince1970: 1_700_000_200)
         )
-        let restarted = PressureNotice.advance(
+        let restarted = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: broken.phase,
+            state: broken.state,
             pressure: .normal,
             at: Date(timeIntervalSince1970: 1_700_000_210)
         )
         XCTAssertFalse(restarted.send)
-        XCTAssertEqual(restarted.phase, .fired(normalSince: Date(timeIntervalSince1970: 1_700_000_210)))
+        XCTAssertEqual(restarted.state.phase, .fired(clearSince: Date(timeIntervalSince1970: 1_700_000_210)))
 
-        let stillFired = PressureNotice.advance(
+        let stillFired = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: restarted.phase,
+            state: restarted.state,
             pressure: .normal,
             at: Date(timeIntervalSince1970: 1_700_000_509)
         )
         XCTAssertFalse(stillFired.send)
-        XCTAssertEqual(stillFired.phase, .fired(normalSince: Date(timeIntervalSince1970: 1_700_000_210)))
+        XCTAssertEqual(stillFired.state.phase, .fired(clearSince: Date(timeIntervalSince1970: 1_700_000_210)))
     }
 
     func testNormalWhileArmedDoesNotSend() {
-        let decision = PressureNotice.advance(
+        let decision = AlertRule.memoryPressure.advance(
             enabled: true,
-            phase: .armed,
+            state: .armed,
             pressure: .normal,
             at: Date(timeIntervalSince1970: 1_700_000_000)
         )
         XCTAssertFalse(decision.send)
-        XCTAssertEqual(decision.phase, .armed)
+        XCTAssertEqual(decision.state.phase, .armed)
     }
 
     func testSwitchOffDoesNotSendOrAdvance() {
-        let armed = PressureNotice.advance(
+        let armed = AlertRule.memoryPressure.advance(
             enabled: false,
-            phase: .armed,
+            state: .armed,
             pressure: .elevated,
             at: Date(timeIntervalSince1970: 1_700_000_000)
         )
         XCTAssertFalse(armed.send)
-        XCTAssertEqual(armed.phase, .armed)
+        XCTAssertEqual(armed.state.phase, .armed)
 
-        let streak = PressureNoticePhase.fired(normalSince: Date(timeIntervalSince1970: 1_700_000_100))
-        let held = PressureNotice.advance(
+        let streak = fired(clearSince: Date(timeIntervalSince1970: 1_700_000_100))
+        let held = AlertRule.memoryPressure.advance(
             enabled: false,
-            phase: streak,
+            state: streak,
             pressure: .normal,
             at: Date(timeIntervalSince1970: 1_700_000_400)
         )
         XCTAssertFalse(held.send)
-        XCTAssertEqual(held.phase, streak)
+        XCTAssertEqual(held.state, streak)
     }
 
     func testCopyNamesTheHeaviestAppAndStaysCalm() {
@@ -229,5 +229,9 @@ final class PressureNoticeTests: XCTestCase {
         defaults.set(true, forKey: PressureNoticePreference.defaultsKey)
         XCTAssertTrue(PressureNoticePreference.isEnabled(in: defaults))
         defaults.removePersistentDomain(forName: suite)
+    }
+
+    private func fired(clearSince: Date?) -> AlertRule.State {
+        AlertRule.State(phase: .fired(clearSince: clearSince))
     }
 }

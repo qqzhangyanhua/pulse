@@ -4,6 +4,8 @@ struct ProcessLine: View {
     let row: ProcessRow
     var selected: Bool
     var showsNetwork: Bool
+    var downloadBytesPerSecond: Double?
+    var uploadBytesPerSecond: Double?
     var showsDisk: Bool
     var showsEnergy: Bool
     /// Phase-6 chip. Per-row Top5 ∩ `.rising`; selection is not a gate. Nil paints nothing.
@@ -38,10 +40,12 @@ struct ProcessLine: View {
             metric(ByteFormat.memory(row.memoryBytes), dot: PulsePalette.accent)
                 .frame(width: ProcessColumn.memory, alignment: .trailing)
             if showsNetwork {
-                Text(row.networkAvailability.label)
-                    .help(NetworkPageCopy.processRateHelp)
-                    .foregroundStyle(selected ? Color.white.opacity(0.82) : Color.secondary)
-                    .frame(width: ProcessColumn.network, alignment: .trailing)
+                diskCell(NetworkRateText.string(downloadBytesPerSecond))
+                    .frame(width: ProcessColumn.networkRate, alignment: .trailing)
+                    .accessibilityLabel("\(NetworkPageCopy.downloadTitle) \(NetworkRateText.string(downloadBytesPerSecond))")
+                diskCell(NetworkRateText.string(uploadBytesPerSecond))
+                    .frame(width: ProcessColumn.networkRate, alignment: .trailing)
+                    .accessibilityLabel("\(NetworkPageCopy.uploadTitle) \(NetworkRateText.string(uploadBytesPerSecond))")
             }
             if showsDisk {
                 diskCell(DiskRateText.string(row.diskReadBytesPerSecond))
@@ -79,7 +83,8 @@ struct ProcessLine: View {
         parts.append("CPU \(ByteFormat.cpu(row.cpuPercent))")
         parts.append("内存 \(ByteFormat.memory(row.memoryBytes))")
         if showsNetwork {
-            parts.append("网络 \(row.networkAvailability.label)")
+            parts.append("\(NetworkPageCopy.downloadTitle) \(NetworkRateText.string(downloadBytesPerSecond))")
+            parts.append("\(NetworkPageCopy.uploadTitle) \(NetworkRateText.string(uploadBytesPerSecond))")
         }
         if showsDisk {
             parts.append("\(DiskPageCopy.readTitle) \(DiskRateText.string(row.diskReadBytesPerSecond))")

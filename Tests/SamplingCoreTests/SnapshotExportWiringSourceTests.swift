@@ -8,6 +8,7 @@ final class SnapshotExportWiringSourceTests: XCTestCase {
     func testPackageListsExportModelsAndKeepsTheAppTargetOut() throws {
         let package = try repoText("Package.swift")
         XCTAssertEqual(occurrenceCount(of: "\"Models/SnapshotExport.swift\"", in: package), 1)
+        XCTAssertEqual(occurrenceCount(of: "\"Models/SnapshotExport+Redaction.swift\"", in: package), 1)
         XCTAssertEqual(occurrenceCount(of: "\"Models/SnapshotExportFile.swift\"", in: package), 1)
         XCTAssertTrue(package.contains("\"ViewModels\""))
         XCTAssertTrue(package.contains("\"Views\""))
@@ -23,7 +24,7 @@ final class SnapshotExportWiringSourceTests: XCTestCase {
         let models = try group("Models", path: "path = Models;", in: project)
         let viewModels = try group("ViewModels", path: "path = ViewModels;", in: project)
         let views = try group("Views", path: "path = Views;", in: project)
-        for name in ["SnapshotExport.swift", "SnapshotExportFile.swift"] {
+        for name in ["SnapshotExport.swift", "SnapshotExport+Redaction.swift", "SnapshotExportFile.swift"] {
             XCTAssertTrue(build.contains(name), name)
             XCTAssertTrue(refs.contains(name), name)
             XCTAssertTrue(sources.contains(name), name)
@@ -124,6 +125,41 @@ final class SnapshotExportWiringSourceTests: XCTestCase {
         XCTAssertFalse(failed.contains("已保存"))
         let saved = try between("case .saved:", "\n    }", in: model)
         XCTAssertTrue(saved.contains("已保存"))
+    }
+
+    func testPreviewTogglesEachCategoryAndCopiesTheSharedMarkdown() throws {
+        let preview = try repoText("Pulse/Views/SnapshotExportPreview.swift")
+        for title in ["隐藏进程名", "隐去带用户名的路径", "隐去主机名", "隐去 IP", "复制为 Markdown"] {
+            XCTAssertTrue(preview.contains(title), title)
+        }
+        XCTAssertTrue(preview.contains("document.markdown"))
+        XCTAssertTrue(preview.contains("NSPasteboard.general"))
+        XCTAssertTrue(preview.contains("\"开\""))
+        XCTAssertTrue(preview.contains("\"关\""))
+        XCTAssertFalse(preview.contains("NSWorkspace"))
+        XCTAssertFalse(preview.contains("已保存"))
+        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM+SnapshotExport.swift")
+        XCTAssertTrue(vm.contains("setSnapshotExportHidesUsernamePath"))
+        XCTAssertTrue(vm.contains("setSnapshotExportHidesHostname"))
+        XCTAssertTrue(vm.contains("setSnapshotExportHidesIPAddress"))
+        XCTAssertFalse(vm.contains("@Published"))
+        XCTAssertFalse(vm.contains("PublicIP"))
+        let start = try functionBody(named: "start", in: try WiringSourceText.text(for: "MemoryDashboardVM"))
+        XCTAssertTrue(start.contains("core.noteSnapshotHostname(ProcessInfo.processInfo.hostName)"))
+        XCTAssertTrue(start.contains("core.noteMachineLabel(MachineInfo.toolbarLabel())"))
+        let core = try repoText("Pulse/Models/DashboardCore.swift")
+        XCTAssertFalse(core.contains("ProcessInfo.processInfo"))
+        let noted = try functionBody(named: "noteSnapshotHostname", in: core)
+        XCTAssertFalse(noted.contains("ProcessInfo"))
+        let freeze = try repoText("Pulse/Models/DashboardCore+Snapshot.swift")
+        XCTAssertTrue(freeze.contains("hostname: snapshotHostname"))
+        XCTAssertTrue(freeze.contains("ipAddress: heldAddress"))
+        XCTAssertFalse(freeze.contains("ProcessInfo"))
+        XCTAssertFalse(freeze.contains("PublicIP"))
+        let model = try repoText("Pulse/Models/SnapshotExport.swift")
+        XCTAssertFalse(model.contains("PublicIP"))
+        let redaction = try repoText("Pulse/Models/SnapshotExport+Redaction.swift")
+        XCTAssertFalse(redaction.contains("PublicIP"))
     }
 
     private func repoText(_ relative: String) throws -> String {

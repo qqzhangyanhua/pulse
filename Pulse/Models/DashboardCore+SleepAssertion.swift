@@ -4,6 +4,7 @@ extension DashboardCore {
     /// Replaces the card rows. A failed read never calls this, so the previous rows stay.
     mutating func apply(sleepAssertions rows: [SleepAssertionRow]) -> [DashboardEffect] {
         sleepAssertions = rows
+        sleepAssertionsKnown = true
         return []
     }
 

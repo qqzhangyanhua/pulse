@@ -11,11 +11,13 @@ final class MemoryDashboardVM: ObservableObject {
     var systemCpuPercent: Double? { core.systemCpuPercent }
     /// Busiest core for the latest accepted frame. Nil is missing, not zero. Failure does not clear it.
     var busiestCorePercent: Double? { core.busiestCorePercent }
+    /// Energy Model for the visible CPU, GPU, or energy page. Nil is missing, not zero.
+    var cpuEnergy: EnergyModelReading? { core.cpuEnergy }
     var hostNetworkRates: HostNetworkRates { core.hostNetworkRates }
     var hostConnection: HostConnection? { core.hostConnection }
     var ssidPermission: WiFiSSIDPermission { core.ssidPermission }
     var hostWiFi: HostWiFiReading? { core.hostWiFi }
-    /// Idle until the user clicks. Not sampled and not saved.
+    /// Idle until the user clicks. Not sampled. Save does not query.
     var publicIPRequest: PublicIPRequestState { core.publicIPRequest }
     var hostDiskRates: HostDiskRates { core.hostDiskRates }
     /// Host 换入 / 换出. Nil rates are 「—」, not zero. Not a disk rate.
@@ -47,6 +49,8 @@ final class MemoryDashboardVM: ObservableObject {
     var energyBatteryReading: EnergyBatteryReading? { core.energyBatteryReading }
     /// Sleep assertions for the energy-page card. Stored on the core, not here.
     var sleepAssertions: [SleepAssertionRow] { core.sleepAssertions }
+    /// Launch items for the machine page. Stored on the core, not here.
+    var launchItems: [LaunchItemRow] { core.launchItems }
     /// The only session quit store. Phase and message are projections of this.
     var quitOutcome: ProcessQuitOutcome { core.quitOutcome }
     var sidebarSubjectPid: Int32? { core.sidebarSubjectPid }
@@ -107,6 +111,8 @@ final class MemoryDashboardVM: ObservableObject {
     var machineRefreshTask: Task<Void, Never>?
     var energyBatteryRefreshTask: Task<Void, Never>?
     var sleepAssertionRefreshTask: Task<Void, Never>?
+    var launchItemRefreshTask: Task<Void, Never>?
+    var nettopReader: NettopReader?
     var hostConnectionMonitor: HostConnectionMonitor?
     init() {
         beginThermalWatch()
@@ -119,6 +125,8 @@ final class MemoryDashboardVM: ObservableObject {
             machineRefreshTask?.cancel()
             energyBatteryRefreshTask?.cancel()
             sleepAssertionRefreshTask?.cancel()
+            launchItemRefreshTask?.cancel()
+            stopProcessNetworkWatch()
             endThermalWatch()
             endConnectionWatch()
         }
@@ -221,6 +229,7 @@ final class MemoryDashboardVM: ObservableObject {
         started = true
         updateCore { core in
             core.noteMachineLabel(MachineInfo.toolbarLabel())
+            core.noteSnapshotHostname(ProcessInfo.processInfo.hostName)
             return core.publishMemoryPageSort()
         }
         loopTask = Task { [weak self] in
@@ -299,7 +308,7 @@ final class MemoryDashboardVM: ObservableObject {
 
     private func tick(_ flight: SamplingFlight) async {
         await sampler.setReadsGPUShare(readsGPUShare)
-        let result = await sampler.sample(readChipTemperature: selectedPage == .machine)
+        let result = await sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu, readGPUEnergy: selectedPage == .gpu, readMachineRails: selectedPage == .energy)
         if Task.isCancelled {
             samplingGate.invalidate()
             recordGateRetrying()
@@ -314,6 +323,7 @@ final class MemoryDashboardVM: ObservableObject {
     /// reaches one presence observation. Model writes stay on the accepted paths.
     private func applySample(_ result: Result<SampledFrame, HostMemoryError>, accepted: Bool) {
         var next = core
+        next.historyRetention = HistoryRetentionPreference.retention()
         let effects = next.apply(
             result: result,
             accepted: accepted,
@@ -321,6 +331,9 @@ final class MemoryDashboardVM: ObservableObject {
         )
         if accepted {
             next.noteWindowedPids(WindowedAppLookup.pids(in: next.rows))
+        }
+        if let draft = next.consumeHistoryDraft() {
+            HistoryStore.shared.write(draft)
         }
         core = next
         perform(effects)
@@ -428,6 +441,10 @@ final class MemoryDashboardVM: ObservableObject {
                 syncEnergyBatteryWatch()
             case .startSleepAssertionWatch, .stopSleepAssertionWatch:
                 syncSleepAssertionWatch()
+            case .startLaunchItemWatch, .stopLaunchItemWatch:
+                syncLaunchItemWatch()
+            case .startProcessNetworkWatch, .stopProcessNetworkWatch:
+                syncProcessNetworkWatch()
             case .lookupPublicIP(let queriedAt):
                 let transport = PublicIPURLSessionTransport()
                 Task { [weak self] in

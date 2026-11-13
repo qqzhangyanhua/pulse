@@ -64,8 +64,10 @@ enum NetworkPageCopy {
     static let inboundTitle = "下行"
     static let outboundTitle = "上行"
     static let columnTitle = "网络"
+    static let downloadTitle = "下载"
+    static let uploadTitle = "上传"
     static let processNetworkUnavailable = ProcessNetworkAvailability.unavailable.label
-    /// Tooltip only. The cells stay 「暂不可用」 / the detail sentence.
+    /// Sidebar tooltip. The table cells use download and upload rates.
     static let processRateHelp = "没有进程速率。主机下行和上行在总览。"
     static let chartCollecting = "曲线采集中"
     static let connectionTitle = "连接"

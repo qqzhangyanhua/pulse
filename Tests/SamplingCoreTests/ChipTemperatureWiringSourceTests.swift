@@ -43,8 +43,8 @@ final class ChipTemperatureWiringSourceTests: XCTestCase {
         XCTAssertEqual(occurrenceCount(of: "chipTemperatureSensors: chipTemperatureSensors", in: sampler), 2)
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
-        XCTAssertFalse(vm.contains("selectedPage == .gpu"))
-        XCTAssertTrue(vm.contains("sampler.sample(readChipTemperature: selectedPage == .machine)"))
+        XCTAssertEqual(occurrenceCount(of: "selectedPage == .gpu", in: vm), 1)
+        XCTAssertTrue(vm.contains("sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu, readGPUEnergy: selectedPage == .gpu, readMachineRails: selectedPage == .energy)"))
 
         let extensionVM = try repoText("Pulse/ViewModels/MemoryDashboardVM+ChipTemperature.swift")
         XCTAssertFalse(extensionVM.contains("@Published"))

@@ -56,19 +56,22 @@ struct DiskOverviewSection: View {
     private var readyBody: some View {
         VStack(spacing: 12) {
             ThermalAdviceCard()
+            HistoryRangeControl(range: vm.historyCurveRange, select: vm.selectHistoryCurveRange)
             HStack(spacing: 12) {
                 DiskRateCard(
                     title: DiskPageCopy.readTitle,
                     symbol: "arrow.down",
                     rate: vm.hostDiskRates.readBytesPerSecond,
                     samples: vm.diskHistory.read.samples,
-                    thermalNotice: vm.thermalAdvice == nil ? vm.thermalNotice : nil
+                    thermalNotice: vm.thermalAdvice == nil ? vm.thermalNotice : nil,
+                    history: vm.historyCurvePlot(\.diskReadBytesPerSecond)
                 )
                 DiskRateCard(
                     title: DiskPageCopy.writeTitle,
                     symbol: "arrow.up",
                     rate: vm.hostDiskRates.writeBytesPerSecond,
-                    samples: vm.diskHistory.write.samples
+                    samples: vm.diskHistory.write.samples,
+                    history: vm.historyCurvePlot(\.diskWriteBytesPerSecond)
                 )
             }
             .frame(height: 150)
@@ -145,6 +148,7 @@ private struct DiskRateCard: View {
     let rate: Double?
     let samples: [ChartSample]
     var thermalNotice: String? = nil
+    var history: HistoryCurvePlot? = nil
 
     var body: some View {
         PulseCard {
@@ -188,26 +192,21 @@ private struct DiskRateCard: View {
         }
     }
 
-    @ViewBuilder
     private var chart: some View {
-        if samples.count < 2 {
-            ChartPlaceholder(text: DiskPageCopy.chartCollecting)
-        } else {
-            HistoryAnnotatedChart(
-                annotation: HistoryCurvePresentation.annotation(current: rate, sampleCount: samples.count)
-            ) {
-                SparklineChart(
-                    samples: samples,
-                    tint: PulsePalette.chartDisk,
-                    domain: domain,
-                    formatY: { DiskRateText.string($0) }
-                )
-            }
-        }
+        HistoryRateChart(
+            history: history,
+            samples: samples,
+            rate: rate,
+            tint: PulsePalette.chartDisk,
+            domain: domain,
+            placeholder: DiskPageCopy.chartCollecting,
+            formatY: { DiskRateText.string($0) }
+        )
     }
 
     private var domain: ClosedRange<Double> {
-        let peak = samples.map(\.value).max() ?? 0
-        return 0...max(peak * 1.2, 1_024)
+        let live = samples.map(\.value).max() ?? 0
+        let stored = history?.points.compactMap(\.value).max() ?? 0
+        return 0...max(max(live, stored) * 1.2, 1_024)
     }
 }

@@ -210,55 +210,6 @@ final class SnapshotExportTests: XCTestCase {
         XCTAssertTrue(doc.html.contains(SnapshotExportCopy.rankExplanation))
     }
 
-    func testHiddenNamesStayOutOfPreviewHTMLAndFilename() throws {
-        let sentinel = "Name<script>alert(\"x\")'https://pulse.example/\u{0}Z\u{2028}\u{2029}"
-        let frozen = try XCTUnwrap(freeze(rows: [row(pid: 11, name: sentinel, memory: 12, path: nil, bundle: nil)]))
-        XCTAssertEqual(frozen.processes.first?.name, sentinel)
-        var session = SnapshotExportSession(frozen: frozen, calendar: gregorian, timeZone: zone)
-        session.setHideNames(true)
-        let hidden = session.document
-        XCTAssertFalse(hidden.previewText.contains(sentinel))
-        XCTAssertFalse(hidden.previewText.contains("Name<script"))
-        XCTAssertFalse(hidden.previewText.contains("pulse.example"))
-        XCTAssertFalse(hidden.html.contains(sentinel))
-        XCTAssertFalse(hidden.html.contains("Name"))
-        XCTAssertFalse(hidden.html.contains("pulse.example"))
-        XCTAssertFalse(hidden.html.contains("<script"))
-        XCTAssertFalse(hidden.suggestedFilename.contains("Name"))
-        XCTAssertFalse(hidden.suggestedFilename.contains("pulse.example"))
-        XCTAssertTrue(hidden.previewText.contains("已隐藏"))
-        XCTAssertTrue(hidden.html.contains("已隐藏"))
-        XCTAssertEqual(session.frozen.processes.first?.name, sentinel)
-        XCTAssertEqual(hidden.suggestedFilename, "Pulse-快照-20010203-040506.html")
-
-        session.setHideNames(false)
-        let shown = session.document
-        XCTAssertTrue(shown.previewText.contains(sentinel))
-        XCTAssertEqual(shown.suggestedFilename, hidden.suggestedFilename)
-        XCTAssertTrue(shown.previewText.contains("采样时间：1999-08-07 06:05:04"))
-        XCTAssertTrue(shown.previewText.contains("快照生成时间：2001-02-03 04:05:06"))
-        XCTAssertEqual(session.frozen.savedAt, savedAt)
-    }
-
-    func testVisibleSentinelIsEscapedInHTML() throws {
-        let sentinel = "Name<script>alert(\"x\")'https://pulse.example/\u{0}Z\u{2028}\u{2029}"
-        let frozen = try XCTUnwrap(freeze(rows: [row(pid: 11, name: sentinel, memory: 12, path: nil, bundle: nil)]))
-        let doc = document(frozen, hideNames: false)
-        let escaped = "Name&lt;script&gt;alert(&quot;x&quot;)&#39;https://pulse.example/&#0;Z&#8232;&#8233;"
-        XCTAssertTrue(doc.previewText.contains(sentinel))
-        XCTAssertTrue(doc.html.contains(escaped))
-        XCTAssertFalse(doc.html.contains("<script"))
-        XCTAssertFalse(doc.html.contains("alert(\"x\")"))
-        XCTAssertFalse(doc.html.contains("href"))
-        XCTAssertFalse(doc.html.contains("src="))
-        XCTAssertFalse(doc.html.contains("javascript:"))
-        XCTAssertFalse(doc.html.contains("data:"))
-        XCTAssertNil(doc.html.range(of: #"\son[a-zA-Z]+="#, options: .regularExpression))
-        XCTAssertFalse(doc.html.unicodeScalars.contains { $0.value == 0 || $0.value == 0x2028 || $0.value == 0x2029 })
-        XCTAssertTrue(doc.html.contains("<title>Pulse 采样</title>"))
-        XCTAssertFalse(doc.html.contains(sentinel))
-    }
-
     func testHTMLOmitsPathsBundlesCurvesDiskEnergyAndWakeups() throws {
         let frozen = try XCTUnwrap(freeze(rows: [
             row(pid: 15, name: "Plain", memory: 20),
@@ -342,6 +293,32 @@ final class SnapshotExportTests: XCTestCase {
         XCTAssertEqual(session.frozen.capturedAt, capturedAt)
     }
 
+    func assertSharedRender(
+        _ doc: SnapshotDocument,
+        line: String,
+        disclosure: String,
+        file: StaticString = #filePath,
+        lineNumber: UInt = #line
+    ) {
+        XCTAssertTrue(doc.previewText.contains(line), line, file: file, line: lineNumber)
+        XCTAssertTrue(doc.markdown.contains(line), line, file: file, line: lineNumber)
+        XCTAssertTrue(doc.previewText.contains(disclosure), disclosure, file: file, line: lineNumber)
+        XCTAssertTrue(doc.html.contains(disclosure), disclosure, file: file, line: lineNumber)
+        XCTAssertTrue(doc.markdown.contains(disclosure), disclosure, file: file, line: lineNumber)
+        XCTAssertTrue(doc.markdown.hasPrefix("# Pulse 采样\n\n\(disclosure)"), file: file, line: lineNumber)
+    }
+
+    func assertAbsent(
+        _ secret: String,
+        from doc: SnapshotDocument,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertFalse(doc.previewText.contains(secret), secret, file: file, line: line)
+        XCTAssertFalse(doc.html.contains(secret), secret, file: file, line: line)
+        XCTAssertFalse(doc.markdown.contains(secret), secret, file: file, line: line)
+    }
+
     private func assertShared(
         _ label: String,
         _ value: String,
@@ -365,16 +342,25 @@ final class SnapshotExportTests: XCTestCase {
         }
     }
 
-    private func document(_ frozen: SnapshotExport, hideNames: Bool = false) -> SnapshotDocument {
+    func document(
+        _ frozen: SnapshotExport,
+        hideNames: Bool = false,
+        redaction: SnapshotRedaction? = nil
+    ) -> SnapshotDocument {
         SnapshotDocument.make(
             frozen: frozen,
-            hideNames: hideNames,
+            redaction: redaction ?? SnapshotRedaction(
+                hidesProcessName: hideNames,
+                hidesUsernamePath: true,
+                hidesHostname: true,
+                hidesIPAddress: true
+            ),
             calendar: gregorian,
             timeZone: zone
         )
     }
 
-    private func freeze(
+    func freeze(
         used: UInt64 = 2_000,
         total: UInt64 = 8_000,
         app: UInt64 = 100,
@@ -391,7 +377,9 @@ final class SnapshotExportTests: XCTestCase {
         pressure: PressureLevel = .elevated,
         rows: [ProcessRow] = [],
         samplingFailed: Bool = false,
-        processListFailed: Bool = false
+        processListFailed: Bool = false,
+        hostname: String? = nil,
+        ipAddress: String? = nil
     ) -> SnapshotExport? {
         SnapshotExport.freeze(
             snapshot: hostSnapshot(
@@ -417,7 +405,9 @@ final class SnapshotExportTests: XCTestCase {
             ),
             samplingFailed: samplingFailed,
             processListFailed: processListFailed,
-            savedAt: savedAt
+            savedAt: savedAt,
+            hostname: hostname,
+            ipAddress: ipAddress
         )
     }
 
@@ -448,7 +438,7 @@ final class SnapshotExportTests: XCTestCase {
         )
     }
 
-    private func row(
+    func row(
         pid: Int32,
         name: String,
         memory: UInt64,
@@ -474,9 +464,9 @@ final class SnapshotExportTests: XCTestCase {
         )
     }
 
-    private var zone: TimeZone { TimeZone(secondsFromGMT: 8 * 3600)! }
+    var zone: TimeZone { TimeZone(secondsFromGMT: 8 * 3600)! }
 
-    private var gregorian: Calendar {
+    var gregorian: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = zone
         calendar.locale = Locale(identifier: "en_US_POSIX")
@@ -484,7 +474,7 @@ final class SnapshotExportTests: XCTestCase {
     }
 
     private var capturedAt: Date { date("1999-08-07 06:05:04") }
-    private var savedAt: Date { date("2001-02-03 04:05:06") }
+    var savedAt: Date { date("2001-02-03 04:05:06") }
 
     private func date(_ text: String) -> Date {
         let formatter = DateFormatter()

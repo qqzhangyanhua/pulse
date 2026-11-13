@@ -42,6 +42,9 @@ extension DashboardCore {
             )
         }
         let projected = AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
+        if selectedPage == .network {
+            return ProcessNetworkTable.ordered(projected, rates: processNetworkRates, sort: tableSort)
+        }
         return tableSort.ordered(projected)
     }
 
@@ -213,6 +216,10 @@ extension DashboardCore {
     }
 
     private mutating func finishPageChange(from previous: DashboardPage) -> [DashboardEffect] {
+        historyCurveRange = .live
+        historyCurveSamples = []
+        historyCurveEvents = []
+        historyCurveEnd = nil
         publishGPUPageTransition(from: previous, to: selectedPage)
         publishChipTemperaturePageTransition(from: previous, to: selectedPage)
         var effects = publishMemoryPageSort()
@@ -221,8 +228,10 @@ extension DashboardCore {
         effects += applyWindowedOnlySelection()
         if selectedPage == .machine {
             effects.append(.startMachineWatch)
+            effects.append(.startLaunchItemWatch)
         } else {
             effects.append(.stopMachineWatch)
+            effects.append(.stopLaunchItemWatch)
         }
         if selectedPage == .energy {
             effects.append(.startEnergyBatteryWatch)
@@ -230,6 +239,12 @@ extension DashboardCore {
         } else {
             effects.append(.stopEnergyBatteryWatch)
             effects.append(.stopSleepAssertionWatch)
+        }
+        if selectedPage == .network {
+            effects.append(.startProcessNetworkWatch)
+        } else {
+            processNetworkRates = [:]
+            effects.append(.stopProcessNetworkWatch)
         }
         return effects
     }

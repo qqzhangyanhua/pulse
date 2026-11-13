@@ -5,7 +5,8 @@ enum ProcessRowCopy {
     static func line(
         page: DashboardPage,
         row: ProcessRow,
-        energyWindow: ProcessEnergyRates? = nil
+        energyWindow: ProcessEnergyRates? = nil,
+        networkRate: ProcessNetworkRate? = nil
     ) -> String {
         switch page {
         case .memory:
@@ -31,7 +32,12 @@ enum ProcessRowCopy {
                 threads(row),
             ])
         case .network:
-            return joined(prefix(row) + [row.networkAvailability.label, threads(row)])
+            let rate = networkRate
+            return joined(prefix(row) + [
+                NetworkRateText.string(rate?.downloadBytesPerSecond),
+                NetworkRateText.string(rate?.uploadBytesPerSecond),
+                threads(row),
+            ])
         case .machine, .gpu:
             return ""
         }

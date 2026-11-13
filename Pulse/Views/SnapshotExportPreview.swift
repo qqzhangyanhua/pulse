@@ -23,6 +23,21 @@ final class SnapshotExportStore: ObservableObject {
         publish()
     }
 
+    func setHidesUsernamePath(_ hide: Bool) {
+        gate.setHidesUsernamePath(hide)
+        publish()
+    }
+
+    func setHidesHostname(_ hide: Bool) {
+        gate.setHidesHostname(hide)
+        publish()
+    }
+
+    func setHidesIPAddress(_ hide: Bool) {
+        gate.setHidesIPAddress(hide)
+        publish()
+    }
+
     func cancelSavePanel() {
         publish()
     }
@@ -105,19 +120,34 @@ struct SnapshotExportPreview: View {
                 Text(banner)
                     .font(.callout)
             }
-            Toggle(
-                isOn: Binding(
-                    get: { session.hideNames },
-                    set: { vm.setSnapshotExportHidesNames($0) }
-                )
-            ) {
-                Text("隐藏进程名")
-            }
-            .accessibilityLabel("隐藏进程名")
-            .accessibilityValue(session.hideNames ? "开" : "关")
+            redactionToggle(
+                "隐藏进程名",
+                isOn: session.hideNames,
+                set: { vm.setSnapshotExportHidesNames($0) }
+            )
+            redactionToggle(
+                "隐去带用户名的路径",
+                isOn: session.redaction.hidesUsernamePath,
+                set: { vm.setSnapshotExportHidesUsernamePath($0) }
+            )
+            redactionToggle(
+                "隐去主机名",
+                isOn: session.redaction.hidesHostname,
+                set: { vm.setSnapshotExportHidesHostname($0) }
+            )
+            redactionToggle(
+                "隐去 IP",
+                isOn: session.redaction.hidesIPAddress,
+                set: { vm.setSnapshotExportHidesIPAddress($0) }
+            )
             HStack {
                 Button("取消") {
                     vm.cancelSnapshotExportPreview()
+                }
+                Button("复制为 Markdown") {
+                    let board = NSPasteboard.general
+                    board.clearContents()
+                    board.setString(document.markdown, forType: .string)
                 }
                 Spacer()
                 Button("保存到本机") {
@@ -127,6 +157,18 @@ struct SnapshotExportPreview: View {
         }
         .padding(16)
         .frame(minWidth: 560, minHeight: 460)
+    }
+
+    private func redactionToggle(
+        _ title: String,
+        isOn: Bool,
+        set: @escaping (Bool) -> Void
+    ) -> some View {
+        Toggle(isOn: Binding(get: { isOn }, set: set)) {
+            Text(title)
+        }
+        .accessibilityLabel(title)
+        .accessibilityValue(isOn ? "开" : "关")
     }
 
     private func presentSavePanel() {

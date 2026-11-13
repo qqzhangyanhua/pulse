@@ -114,11 +114,13 @@ struct OverviewSection: View {
 
         return VStack(spacing: 12) {
             ThermalAdviceCard()
+            HistoryRangeControl(range: vm.historyCurveRange, select: vm.selectHistoryCurveRange)
             HStack(spacing: 12) {
                 MemoryHeroCard(
                     snapshot: snapshot,
                     usedSeries: vm.usageHistory.samples,
-                    thermalNotice: vm.thermalAdvice == nil ? vm.thermalNotice : nil
+                    thermalNotice: vm.thermalAdvice == nil ? vm.thermalNotice : nil,
+                    history: vm.historyCurvePlot { sample in sample.usedBytes.map { Double($0) } }
                 )
                 CompositionCard(breakdown: snapshot.breakdown, totalBytes: snapshot.totalBytes)
                     .frame(width: 310)

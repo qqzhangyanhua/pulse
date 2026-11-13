@@ -3,7 +3,7 @@ import Foundation
 /// Display text for a CPU percent. Missing samples stay an em dash and are never shown as 0%.
 enum CPUPercentText {
     static let missing = "—"
-    private static let posix = Locale(identifier: "en_US_POSIX")
+    static let posix = Locale(identifier: "en_US_POSIX")
 
     static func string(_ value: Double?) -> String {
         guard let value else { return missing }
@@ -34,6 +34,17 @@ enum CPUPageCopy {
 
     static func busiestCoreLine(percent: Double?) -> String {
         "最忙的一核 · \(CPUPercentText.string(percent))"
+    }
+
+    static func powerLine(watts: Double?) -> String {
+        guard let watts, watts.isFinite else { return "CPU 功耗 · —" }
+        return "CPU 功耗 · \(String(format: "%.1f", locale: CPUPercentText.posix, watts)) W"
+    }
+
+    static func frequencyLine(title: String, hertz: Double?) -> String {
+        guard let hertz, hertz.isFinite, hertz >= 0 else { return "\(title) · —" }
+        let ghz = hertz / 1_000_000_000
+        return "\(title) · \(String(format: "%.2f", locale: CPUPercentText.posix, ghz)) GHz"
     }
 }
 
@@ -84,8 +95,11 @@ enum ProcessColumnTitle {
     /// CPU page keeps the memory column. Energy is watts, not an Activity Monitor score.
     static let cpuPage = [name, cpu, memory, energy, wakeups, threads]
 
-    /// Network page adds an unavailable marker column. It is not a sortable byte count.
-    static let networkPage = [name, cpu, memory, network, threads]
+    static let networkDownload = NetworkPageCopy.downloadTitle
+    static let networkUpload = NetworkPageCopy.uploadTitle
+
+    /// Network page download / upload. Missing cells are 「—」, not the old 「暂不可用」 marker.
+    static let networkPage = [name, cpu, memory, networkDownload, networkUpload, threads]
 
     /// Disk page adds read / write rate columns. Missing cells are 「—」, not 「暂不可用」.
     static let diskPage = [name, cpu, memory, diskRead, diskWrite, threads]
@@ -99,6 +113,8 @@ enum ProcessSortColumn: Equatable, Sendable {
     case disk
     case diskRead
     case diskWrite
+    case networkDownload
+    case networkUpload
     case energy
     case wakeups
 }
@@ -159,6 +175,8 @@ struct ProcessTableSort: Equatable, Sendable {
             return compareDoubles(lhs.diskReadBytesPerSecond ?? -1, rhs.diskReadBytesPerSecond ?? -1)
         case .diskWrite:
             return compareDoubles(lhs.diskWriteBytesPerSecond ?? -1, rhs.diskWriteBytesPerSecond ?? -1)
+        case .networkDownload, .networkUpload:
+            return .orderedSame
         case .energy:
             return compareDoubles(lhs.energyWatts ?? -1, rhs.energyWatts ?? -1)
         case .wakeups:

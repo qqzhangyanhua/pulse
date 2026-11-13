@@ -31,8 +31,9 @@ final class MemoryDashboardVMSortWiringSourceTests: XCTestCase {
         let columnHeader = try functionBody(named: "columnHeader", in: pane)
         XCTAssertTrue(columnHeader.contains(readHeader))
         XCTAssertTrue(columnHeader.contains(writeHeader))
-        XCTAssertTrue(columnHeader.contains("staticHeader(ProcessColumnTitle.network)"))
-        XCTAssertFalse(columnHeader.contains("sortHeader(ProcessColumnTitle.network"))
+        XCTAssertFalse(columnHeader.contains("staticHeader(ProcessColumnTitle.network)"))
+        XCTAssertTrue(columnHeader.contains("sortHeader(ProcessColumnTitle.networkDownload, column: .networkDownload, trailing: true)"))
+        XCTAssertTrue(columnHeader.contains("sortHeader(ProcessColumnTitle.networkUpload, column: .networkUpload, trailing: true)"))
 
         let sortHeader = try functionBody(named: "sortHeader", in: pane)
         XCTAssertTrue(sortHeader.contains("let active = vm.tableSort.column == column"))

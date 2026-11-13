@@ -44,7 +44,12 @@ actor MemorySampler {
         topMemoryStore.retain(only: MemoryGrowthTopSeries.pids(from: lastRows, sort: sort))
     }
 
-    func sample(readChipTemperature: Bool = false) -> Result<SampledFrame, HostMemoryError> {
+    func sample(
+        readChipTemperature: Bool = false,
+        readEnergyModel: Bool = false,
+        readGPUEnergy: Bool = false,
+        readMachineRails: Bool = false
+    ) -> Result<SampledFrame, HostMemoryError> {
         let host: RawHostMemory
         do {
             host = try HostMemoryReader.read()
@@ -85,6 +90,14 @@ actor MemorySampler {
         let gpuNodes = HostGPUReader.read()
         let gpuShareClients = readsGPUShare ? HostGPUShareReader.read() : nil
         let chipTemperatureSensors = readChipTemperature ? HostChipTemperatureReader.read() : nil
+        let cpuEnergy = (readEnergyModel || readGPUEnergy || readMachineRails)
+            ? HostEnergyModelReader.read(
+                at: capturedAt,
+                cpu: readEnergyModel,
+                gpu: readGPUEnergy,
+                rails: readMachineRails
+            )
+            : nil
         let hostWiFi = HostWiFiReader.read()
 
         guard let listed = ProcessEnumerator.list() else {
@@ -109,7 +122,8 @@ actor MemorySampler {
                     gpuShareClients: gpuShareClients,
                     hostWiFi: hostWiFi,
                     chipTemperatureSensors: chipTemperatureSensors,
-                    hostPageCounters: hostPageCounters
+                    hostPageCounters: hostPageCounters,
+                    cpuEnergy: cpuEnergy
                 )
             )
         }
@@ -261,7 +275,8 @@ actor MemorySampler {
                 gpuShareClients: gpuShareClients,
                 hostWiFi: hostWiFi,
                 chipTemperatureSensors: chipTemperatureSensors,
-                hostPageCounters: hostPageCounters
+                hostPageCounters: hostPageCounters,
+                cpuEnergy: cpuEnergy
             )
         )
     }

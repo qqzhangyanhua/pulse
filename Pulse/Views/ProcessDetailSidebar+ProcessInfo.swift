@@ -7,7 +7,9 @@ extension ProcessDetailSidebar {
         ProcessInfoSection(
             pid: detail.row.pid,
             startTimeSeconds: detail.row.startTimeSeconds,
-            userID: detail.row.userID
+            userID: detail.row.userID,
+            executablePath: detail.row.executablePath,
+            launchItems: vm.launchItems
         )
         .id(detail.row.pid)
     }
@@ -18,6 +20,8 @@ private struct ProcessInfoSection: View {
     let pid: Int32
     let startTimeSeconds: UInt64?
     let userID: UInt32?
+    let executablePath: String?
+    let launchItems: [LaunchItemRow]
 
     @State private var signatureText = "—"
     @State private var rosettaLine: String?
@@ -32,9 +36,17 @@ private struct ProcessInfoSection: View {
             selfUid: selfUid,
             facts: isOwnUser(rowUid: userID, selfUid: selfUid) ? loadedSockets : nil
         )
+        let launchLine = launchItem(forExecutablePath: executablePath, items: launchItems)
+            .map { LaunchItemCopy.startedLine(label: $0.label) }
         VStack(alignment: .leading, spacing: 8) {
             Text("进程信息")
                 .font(.subheadline.weight(.semibold))
+            if let launchLine {
+                Text(launchLine)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             fact(title: "启动时间", value: start)
             fact(title: "签名", value: signatureText)
             if let rosettaLine {
@@ -60,7 +72,7 @@ private struct ProcessInfoSection: View {
                 .strokeBorder(PulsePalette.hairline, lineWidth: 1)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spokenLabel(start: start, sockets: sockets))
+        .accessibilityLabel(spokenLabel(start: start, sockets: sockets, launchLine: launchLine))
         .task(id: pid) {
             let reading = ProcessCodeSignatureReader.read(pid: pid)
             guard !Task.isCancelled else { return }
@@ -88,8 +100,13 @@ private struct ProcessInfoSection: View {
         }
     }
 
-    private func spokenLabel(start: String, sockets: ProcessSocketSectionText) -> String {
-        var parts = ["进程信息", "启动时间 \(start)", "签名 \(signatureText)"]
+    private func spokenLabel(start: String, sockets: ProcessSocketSectionText, launchLine: String?) -> String {
+        var parts = ["进程信息"]
+        if let launchLine {
+            parts.append(launchLine)
+        }
+        parts.append("启动时间 \(start)")
+        parts.append("签名 \(signatureText)")
         if let rosettaLine {
             parts.append(rosettaLine)
         }

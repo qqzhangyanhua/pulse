@@ -65,6 +65,7 @@ struct CPUOverviewSection: View {
     private var readyBody: some View {
         VStack(spacing: 12) {
             ThermalAdviceCard()
+            HistoryRangeControl(range: vm.historyCurveRange, select: vm.selectHistoryCurveRange)
             PulseCard {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -79,6 +80,19 @@ struct CPUOverviewSection: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                         Text(CPUPageCopy.busiestCoreLine(percent: vm.busiestCorePercent))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        Text(CPUPageCopy.powerLine(watts: vm.cpuEnergy?.cpuWatts))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .accessibilityLabel(CPUPageCopy.powerLine(watts: vm.cpuEnergy?.cpuWatts))
+                        Text(CPUPageCopy.frequencyLine(title: "性能核", hertz: vm.cpuEnergy?.performanceHertz))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        Text(CPUPageCopy.frequencyLine(title: "能效核", hertz: vm.cpuEnergy?.efficiencyHertz))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -101,10 +115,14 @@ struct CPUOverviewSection: View {
 
     private var readyAccessibilityLabel: String {
         let core = CPUPageCopy.busiestCoreLine(percent: vm.busiestCorePercent)
+        let power = CPUPageCopy.powerLine(watts: vm.cpuEnergy?.cpuWatts)
+        let performance = CPUPageCopy.frequencyLine(title: "性能核", hertz: vm.cpuEnergy?.performanceHertz)
+        let efficiency = CPUPageCopy.frequencyLine(title: "能效核", hertz: vm.cpuEnergy?.efficiencyHertz)
+        let readings = "\(core)，\(power)，\(performance)，\(efficiency)"
         if let note = HistoryCurvePresentation.annotation(current: vm.systemCpuPercent, sampleCount: vm.cpuHistory.samples.count) {
-            return "\(overviewLine)，\(note)" + "，\(core)"
+            return "\(overviewLine)，\(note)" + "，\(readings)"
         }
-        return overviewLine + "，\(core)"
+        return overviewLine + "，\(readings)"
     }
 
     private var cpuLabel: some View {
@@ -124,7 +142,14 @@ struct CPUOverviewSection: View {
 
     @ViewBuilder
     private var chart: some View {
-        if vm.cpuHistory.samples.count < 2 {
+        if let plot = vm.historyCurvePlot(\.cpuPercent) {
+            HistoryRangeChart(
+                plot: plot,
+                tint: PulsePalette.chartCPU,
+                domain: domain,
+                formatY: { CPUPercentText.string($0) }
+            )
+        } else if vm.cpuHistory.samples.count < 2 {
             ChartPlaceholder(text: "曲线采集中")
         } else {
             HistoryAnnotatedChart(
@@ -141,7 +166,8 @@ struct CPUOverviewSection: View {
     }
 
     private var domain: ClosedRange<Double> {
-        let peak = vm.cpuHistory.samples.map(\.value).max() ?? 0
-        return 0...max(peak * 1.2, 5)
+        let live = vm.cpuHistory.samples.map(\.value).max() ?? 0
+        let history = vm.historyCurvePlot(\.cpuPercent)?.points.compactMap(\.value).max() ?? 0
+        return 0...max(max(live, history) * 1.2, 5)
     }
 }

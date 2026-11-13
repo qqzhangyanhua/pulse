@@ -42,7 +42,7 @@ final class ProcessRowCopyWiringSourceTests: XCTestCase {
         XCTAssertEqual(occurrenceCount(of: "Button(\"复制\")", in: pane), 1)
         let menu = try braceBody(after: ".contextMenu", in: pane)
         XCTAssertTrue(menu.contains("Button(\"复制\")"))
-        XCTAssertTrue(menu.contains("ProcessRowCopy.line(page: vm.selectedPage, row: row)"))
+        XCTAssertTrue(menu.contains("ProcessRowCopy.line(page: vm.selectedPage, row: row, networkRate: vm.processNetworkRates[row.pid])"))
         XCTAssertTrue(menu.contains("NSPasteboard"))
 
         let vm = try repoText("Pulse/Models/DashboardCore+Selection.swift")

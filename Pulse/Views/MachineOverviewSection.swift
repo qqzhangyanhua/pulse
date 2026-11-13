@@ -35,6 +35,8 @@ struct MachineOverviewSection: View {
                 batteryBlock(battery)
             }
 
+            launchItemsSection
+
             HStack(spacing: 12) {
                 ioThroughputCard
                 topWorkloadCard

@@ -32,6 +32,11 @@ enum DashboardEffect: Equatable {
     case stopEnergyBatteryWatch
     case startSleepAssertionWatch
     case stopSleepAssertionWatch
+    case startLaunchItemWatch
+    case stopLaunchItemWatch
+    /// `nettop` while the network page is selected. Not a sampler task.
+    case startProcessNetworkWatch
+    case stopProcessNetworkWatch
     /// Outbound public-IP lookup. Returned only from the query click.
     case lookupPublicIP(queriedAt: Date)
     /// System location prompt for the Wi-Fi name. Returned only from the allow click.
@@ -48,12 +53,15 @@ struct DashboardCore {
     private(set) var systemCpuPercent: Double?
     /// Nil is missing, not zero. A failed sample does not clear it.
     private(set) var busiestCorePercent: Double?
+    /// Energy Model for the page that asked. Nil off those pages, or when unknown. Not zero.
+    private(set) var cpuEnergy: EnergyModelReading?
     private(set) var hostNetworkRates = HostNetworkRates.missing
     private(set) var hostWiFi: HostWiFiReading?
     /// Nil until the first path push. Not a byte rate.
     var hostConnection: HostConnection?
     var ssidPermission = WiFiSSIDPermission.notDetermined
-    /// Idle until the user clicks. Not sampled and not saved.
+    /// Idle until the user clicks. Not sampled. Save does not query.
+    /// A report includes the address only when that report turns IP redaction off.
     var publicIPRequest = PublicIPRequestState.idle
     private(set) var hostDiskRates = HostDiskRates.missing
     /// Host 换入 / 换出. Previous counters stay here. Not disk throughput.
@@ -91,6 +99,28 @@ struct DashboardCore {
     var energyBatteryReading: EnergyBatteryReading?
     /// Held sleep assertions from the energy page. Empty until a successful read.
     var sleepAssertions: [SleepAssertionRow] = []
+    /// False until a sleep-assertion read returns, including a read that found nobody.
+    var sleepAssertionsKnown = false
+    /// Toolbar diagnosis panel. Not a second sampling path.
+    var symptomPanelOpen = false
+    /// Launch items from the machine page. Empty until that read. Not cleared on leave.
+    var launchItems: [LaunchItemRow] = []
+    /// Latest per-process download / upload. Empty off the network page. Nil rates are 「—」.
+    var processNetworkRates: [Int32: ProcessNetworkRate] = [:]
+    /// Last successful sample waiting for the adapter to write. Not a second curve.
+    var historyDraft: HistoryDraft?
+    /// Saved retention. The adapter sets this before each sample. Absent choice is 90 days.
+    var historyRetention: HistoryRetention = .days(90)
+    /// Curve window for the five resource pages. Page changes return this to live.
+    var historyCurveRange: HistoryCurveRange = .live
+    /// Samples loaded for the current non-live window. Empty while 「实时」.
+    var historyCurveSamples: [HistorySample] = []
+    var historyCurveEvents: [HistoryStoredEvent] = []
+    var historyCurveEnd: Date?
+    /// Thermal and pressure changes not yet copied into `historyDraft`.
+    var pendingHistoryEvents: [HistoryEvent] = []
+    var lastHistoryPressure: PressureLevel?
+    var lastHistoryThermalName: String?
     /// Nil unless the system is serious or critical.
     var thermalNotice: String?
     /// Top CPU processes while `thermalNotice` is showing. Nil hides the card.
@@ -114,6 +144,8 @@ struct DashboardCore {
     var energyRankingSpan = EnergyRankingSpan.oneMinute
     /// Toolbar label recorded from `MachineInfo`. Nil until the adapter notes it.
     private(set) var machineLabel: String?
+    /// Host name recorded at start. Blank is nil. The adapter supplies it.
+    private(set) var snapshotHostname: String?
     /// Projection of the sampling gate's retrying bit. Not a second retry flag.
     private(set) var isRetrying = false
 
@@ -133,6 +165,7 @@ struct DashboardCore {
             processListFailed: processListFailed,
             hasSnapshot: snapshot != nil
         )
+        historyDraft = nil
         let observation: ProcessQuitSession.Observation
         var applyFilters = false
         var thermalNow: Double?
@@ -196,6 +229,12 @@ struct DashboardCore {
         machineLabel = label
     }
 
+    /// Records the host name for snapshot redaction. The adapter reads it once at start.
+    mutating func noteSnapshotHostname(_ hostname: String) {
+        let trimmed = hostname.trimmingCharacters(in: .whitespacesAndNewlines)
+        snapshotHostname = trimmed.isEmpty ? nil : trimmed
+    }
+
     /// Records the sampling gate's retrying bit. Not a second retry flag.
     mutating func noteRetrying(_ retrying: Bool) {
         isRetrying = retrying
@@ -225,6 +264,7 @@ struct DashboardCore {
         snapshot = frame.snapshot
         systemCpuPercent = frame.systemCpuPercent
         busiestCorePercent = frame.busiestCorePercent
+        cpuEnergy = frame.cpuEnergy
         hostNetworkRates = frame.hostNetworkRates
         hostDiskRates = frame.hostDiskRates
         hostWiFi = frame.hostWiFi
@@ -241,6 +281,7 @@ struct DashboardCore {
         nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
         diskHistory = nextDisk
         recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
+        noteHistory(frame)
         recordGPUShare(clients: frame.gpuShareClients, rows: frame.rows, at: frame.snapshot.capturedAt, page: page)
         recordChip(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt, page: page)
         memoryPage = MemoryPageProjection.apply(

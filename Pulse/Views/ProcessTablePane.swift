@@ -5,6 +5,7 @@ enum ProcessColumn {
     static let cpu: CGFloat = 96
     static let memory: CGFloat = 124
     static let network: CGFloat = 80
+    static let networkRate: CGFloat = 108
     static let disk: CGFloat = 108
     static let energy: CGFloat = 88
     static let wakeups: CGFloat = 96
@@ -78,8 +79,10 @@ struct ProcessTablePane: View {
                     .frame(width: ProcessColumn.wakeups, alignment: .trailing)
             }
             if showsNetworkColumn {
-                staticHeader(ProcessColumnTitle.network)
-                    .frame(width: ProcessColumn.network, alignment: .trailing)
+                sortHeader(ProcessColumnTitle.networkDownload, column: .networkDownload, trailing: true)
+                    .frame(width: ProcessColumn.networkRate, alignment: .trailing)
+                sortHeader(ProcessColumnTitle.networkUpload, column: .networkUpload, trailing: true)
+                    .frame(width: ProcessColumn.networkRate, alignment: .trailing)
             }
             if showsDiskColumns {
                 sortHeader(ProcessColumnTitle.diskRead, column: .diskRead, trailing: true)
@@ -296,6 +299,8 @@ struct ProcessTablePane: View {
                     row: row,
                     selected: groupHighlighted,
                     showsNetwork: showsNetworkColumn,
+                    downloadBytesPerSecond: vm.processNetworkRates[row.pid]?.downloadBytesPerSecond,
+                    uploadBytesPerSecond: vm.processNetworkRates[row.pid]?.uploadBytesPerSecond,
                     showsDisk: showsDiskColumns,
                     showsEnergy: showsEnergyColumns,
                     growthBadge: MemoryGrowthList.presented(
@@ -310,7 +315,7 @@ struct ProcessTablePane: View {
                 )
                     .contextMenu {
                         Button("复制") {
-                            let line = ProcessRowCopy.line(page: vm.selectedPage, row: row)
+                            let line = ProcessRowCopy.line(page: vm.selectedPage, row: row, networkRate: vm.processNetworkRates[row.pid])
                             let board = NSPasteboard.general
                             board.clearContents()
                             board.setString(line, forType: .string)
@@ -378,15 +383,6 @@ struct ProcessTablePane: View {
         RoundedRectangle(cornerRadius: 8, style: .continuous)
             .fill(selected ? PulsePalette.selection : Color.clear)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: selected)
-    }
-
-    private func staticHeader(_ title: String) -> some View {
-        HStack(spacing: 3) {
-            Spacer(minLength: 0)
-            Text(title)
-        }
-        .font(.caption)
-        .foregroundStyle(Color.secondary)
     }
 
     private func sortHeader(

@@ -26,6 +26,36 @@ final class CPUPageTests: XCTestCase {
         )
     }
 
+    func testPowerAndFrequencyKeepMissingAndRealZeroApart() {
+        XCTAssertEqual(CPUPageCopy.powerLine(watts: nil), "CPU 功耗 · —")
+        XCTAssertFalse(CPUPageCopy.powerLine(watts: nil).contains("0"))
+        XCTAssertFalse(CPUPageCopy.powerLine(watts: 1.5).contains("最忙的一核"))
+        XCTAssertEqual(CPUPageCopy.powerLine(watts: 0), "CPU 功耗 · 0.0 W")
+        XCTAssertEqual(CPUPageCopy.powerLine(watts: 1.5), "CPU 功耗 · 1.5 W")
+        XCTAssertEqual(CPUPageCopy.powerLine(watts: .infinity), "CPU 功耗 · —")
+        XCTAssertEqual(CPUPageCopy.frequencyLine(title: "性能核", hertz: nil), "性能核 · —")
+        XCTAssertEqual(CPUPageCopy.frequencyLine(title: "能效核", hertz: 0), "能效核 · 0.00 GHz")
+        XCTAssertEqual(CPUPageCopy.frequencyLine(title: "性能核", hertz: 3_200_000_000), "性能核 · 3.20 GHz")
+        XCTAssertEqual(CPUPageCopy.frequencyLine(title: "能效核", hertz: -1), "能效核 · —")
+    }
+
+    func testEnergyModelIsReadOnlyOnTheCPUPage() throws {
+        let reader = try repoText("Pulse/Sampling/HostEnergyModelReader.swift")
+        XCTAssertFalse(reader.contains("IOServiceOpen"))
+        let gpu = try repoText("Pulse/Sampling/HostGPUReader.swift")
+        XCTAssertFalse(gpu.contains("Energy Model"))
+        XCTAssertFalse(gpu.contains("IOServiceOpen"))
+        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        XCTAssertTrue(
+            vm.contains(
+                "sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu, readGPUEnergy: selectedPage == .gpu, readMachineRails: selectedPage == .energy)"
+            )
+        )
+        let core = try repoText("Pulse/Models/DashboardCore.swift")
+        XCTAssertTrue(core.contains("cpuEnergy = frame.cpuEnergy"))
+        XCTAssertFalse(core.contains("cpuHistory.record"))
+    }
+
     func testBusiestCoreLineIsReadyOnlyAndDoesNotFeedCPUHistory() throws {
         let sentence = "最忙的一核 · "
         let model = try repoText("Pulse/Models/CPUPage.swift")

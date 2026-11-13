@@ -21,7 +21,7 @@ final class MemoryGroupRowHighlightWiringSourceTests: XCTestCase {
         let copy = try functionBody(named: "copySelectedProcessRow", in: app)
         XCTAssertFalse(copy.contains("selectedPid ="))
         XCTAssertTrue(copy.contains("MemoryGroupRowCopy.row("))
-        XCTAssertTrue(pane.contains("ProcessRowCopy.line(page: vm.selectedPage, row: row)"))
+        XCTAssertTrue(pane.contains("ProcessRowCopy.line(page: vm.selectedPage, row: row, networkRate: vm.processNetworkRates[row.pid])"))
 
         let scroll = try functionBody(named: "processListScrollTarget", in: try repoText("Pulse/Models/DashboardCore+Selection.swift"))
         XCTAssertTrue(scroll.contains("ProcessSelection.scrollTarget(selectedPid: selectedPid, rows: rows)"))

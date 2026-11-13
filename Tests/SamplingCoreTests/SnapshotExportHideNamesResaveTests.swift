@@ -6,11 +6,11 @@ import XCTest
 /// 预览可以变，磁盘上一次成功的文件保持不动，直到下一次写入成功。
 /// 相同开关值不撤销。正反两个方向的实际变化都撤销。
 final class SnapshotExportHideNamesResaveTests: XCTestCase {
-    private let resavePrompt = "隐藏进程名已改变。当前预览还没写入文件，请重新保存。"
+    private let resavePrompt = "隐去项已改变。当前预览还没写入文件，请重新保存。"
 
     func testSuccessfulSaveThenHideNamesRevokesSavedAcrossCancelFailureAndResave() throws {
         let frozen = try XCTUnwrap(freeze(name: "VisibleName"))
-        var session = SnapshotExportSession(frozen: frozen, calendar: gregorian, timeZone: zone)
+        var session = SnapshotExportSession(frozen: frozen, hideNames: false, calendar: gregorian, timeZone: zone)
         let visibleHTML = session.document.html
         let filename = session.document.suggestedFilename
         session.noteWriteSucceeded()
@@ -73,13 +73,13 @@ final class SnapshotExportHideNamesResaveTests: XCTestCase {
 
     func testSameHideNamesValueDoesNotRevokeSaved() throws {
         let frozen = try XCTUnwrap(freeze(name: "VisibleName"))
-        var shown = SnapshotExportSession(frozen: frozen, calendar: gregorian, timeZone: zone)
+        var shown = SnapshotExportSession(frozen: frozen, hideNames: false, calendar: gregorian, timeZone: zone)
         shown.noteWriteSucceeded()
         shown.setHideNames(false)
         XCTAssertEqual(shown.banner, "已保存")
         XCTAssertFalse(shown.hideNames)
 
-        var hidden = SnapshotExportSession(frozen: frozen, hideNames: true, calendar: gregorian, timeZone: zone)
+        var hidden = SnapshotExportSession(frozen: frozen, calendar: gregorian, timeZone: zone)
         hidden.noteWriteSucceeded()
         hidden.setHideNames(true)
         XCTAssertEqual(hidden.banner, "已保存")
@@ -90,7 +90,7 @@ final class SnapshotExportHideNamesResaveTests: XCTestCase {
 
     func testHidingAndShowingBothRevokeASuccessfulSave() throws {
         let frozen = try XCTUnwrap(freeze(name: "VisibleName"))
-        var shown = SnapshotExportSession(frozen: frozen, calendar: gregorian, timeZone: zone)
+        var shown = SnapshotExportSession(frozen: frozen, hideNames: false, calendar: gregorian, timeZone: zone)
         shown.noteWriteSucceeded()
         shown.setHideNames(true)
         XCTAssertEqual(shown.banner, resavePrompt)
@@ -102,9 +102,10 @@ final class SnapshotExportHideNamesResaveTests: XCTestCase {
         XCTAssertEqual(shown.frozen.savedAt, savedAt)
         XCTAssertEqual(shown.document.suggestedFilename, "Pulse-快照-20010203-040506.html")
 
-        var hidden = SnapshotExportSession(frozen: frozen, hideNames: true, calendar: gregorian, timeZone: zone)
+        var hidden = SnapshotExportSession(frozen: frozen, calendar: gregorian, timeZone: zone)
         hidden.noteWriteSucceeded()
         XCTAssertEqual(hidden.banner, "已保存")
+        XCTAssertTrue(hidden.hideNames)
         hidden.setHideNames(false)
         XCTAssertEqual(hidden.banner, resavePrompt)
         XCTAssertTrue(hidden.document.previewText.contains("VisibleName"))
@@ -115,13 +116,40 @@ final class SnapshotExportHideNamesResaveTests: XCTestCase {
     func testHideNamesBeforeAnySaveDoesNotClaimAResave() throws {
         let frozen = try XCTUnwrap(freeze(name: "VisibleName"))
         var session = SnapshotExportSession(frozen: frozen, calendar: gregorian, timeZone: zone)
-        session.setHideNames(true)
+        XCTAssertTrue(session.hideNames)
+        XCTAssertFalse(session.document.previewText.contains("VisibleName"))
+        session.setHideNames(false)
         XCTAssertNil(session.banner)
         XCTAssertNotEqual(session.banner, resavePrompt)
         XCTAssertNotEqual(session.banner, "已保存")
+        XCTAssertTrue(session.document.previewText.contains("VisibleName"))
+        session.setHidesIPAddress(false)
+        XCTAssertNil(session.banner)
     }
 
-    private func freeze(name: String) -> SnapshotExport? {
+    func testTurningOffAddressRedactionAfterSaveNeedsAnotherWrite() throws {
+        let frozen = try XCTUnwrap(freeze(name: "VisibleName", ipAddress: "203.0.113.9"))
+        var session = SnapshotExportSession(frozen: frozen, calendar: gregorian, timeZone: zone)
+        XCTAssertFalse(session.document.previewText.contains("203.0.113.9"))
+        XCTAssertTrue(session.document.previewText.contains("已隐去：进程名、IP"))
+        XCTAssertTrue(session.document.markdown.contains("已隐去：进程名、IP"))
+        let hiddenHTML = session.document.html
+        XCTAssertFalse(hiddenHTML.contains("203.0.113.9"))
+        session.noteWriteSucceeded()
+        session.setHidesIPAddress(false)
+        XCTAssertEqual(session.banner, resavePrompt)
+        XCTAssertFalse(session.banner?.contains("已保存") ?? false)
+        XCTAssertTrue(session.document.previewText.contains("IP：203.0.113.9"))
+        XCTAssertTrue(session.document.html.contains("IP：203.0.113.9"))
+        XCTAssertTrue(session.document.markdown.contains("IP：203.0.113.9"))
+        XCTAssertFalse(session.document.previewText.contains("VisibleName"))
+        XCTAssertNotEqual(session.document.html, hiddenHTML)
+        XCTAssertEqual(session.frozen.ipAddress, "203.0.113.9")
+        session.setHidesIPAddress(false)
+        XCTAssertEqual(session.banner, resavePrompt)
+    }
+
+    private func freeze(name: String, ipAddress: String? = nil) -> SnapshotExport? {
         SnapshotExport.freeze(
             snapshot: MemorySnapshot(
                 usedBytes: 50,
@@ -150,7 +178,8 @@ final class SnapshotExportHideNamesResaveTests: XCTestCase {
             hostDiskRates: HostDiskRates(readBytesPerSecond: 0, writeBytesPerSecond: 0),
             samplingFailed: false,
             processListFailed: false,
-            savedAt: savedAt
+            savedAt: savedAt,
+            ipAddress: ipAddress
         )
     }
 

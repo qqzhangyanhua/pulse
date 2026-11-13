@@ -51,6 +51,7 @@ struct MemoryHeroCard: View {
     let snapshot: MemorySnapshot
     let usedSeries: [ChartSample]
     var thermalNotice: String? = nil
+    var history: HistoryCurvePlot? = nil
 
     var body: some View {
         PulseCard {
@@ -92,7 +93,14 @@ struct MemoryHeroCard: View {
 
     @ViewBuilder
     private var chart: some View {
-        if usedSeries.count < 2 {
+        if let history {
+            HistoryRangeChart(
+                plot: history,
+                tint: PulsePalette.accent,
+                domain: domain,
+                formatY: { ByteFormat.memory(UInt64(max(0, $0))) }
+            )
+        } else if usedSeries.count < 2 {
             ChartPlaceholder(text: "用量曲线采集中")
         } else {
             SparklineChart(
@@ -105,7 +113,7 @@ struct MemoryHeroCard: View {
     }
 
     private var domain: ClosedRange<Double> {
-        let peak = usedSeries.map(\.value).max() ?? 0
+        let peak = history?.points.compactMap(\.value).max() ?? usedSeries.map(\.value).max() ?? 0
         let upper = max(Double(snapshot.totalBytes), peak, 1)
         return 0...upper
     }
