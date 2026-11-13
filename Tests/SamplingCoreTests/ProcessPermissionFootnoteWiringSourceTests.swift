@@ -133,7 +133,7 @@ final class ProcessPermissionFootnoteWiringSourceTests: XCTestCase {
     }
 
     func testTableDrawsTheSentenceUnderTheListAndKeepsMissingCells() throws {
-        let pane = try repoText("Pulse/Views/ProcessTablePane.swift")
+        let pane = try WiringSourceText.text(for: "ProcessTablePane")
         let body = try slice(from: "var body: some View", until: "private var showsColumnHeader", in: pane)
         XCTAssertTrue(body.contains("tableBody"))
         XCTAssertTrue(body.contains("ProcessPermissionFootnoteLabel("))

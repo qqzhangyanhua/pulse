@@ -167,7 +167,11 @@ struct EnergyProcessTable: View {
                     bundleIdentifier: entry.bundleIdentifier,
                     exited: entry.exited,
                     rates: entry.rates,
-                    selected: showsSelection(entry)
+                    selected: showsSelection(entry),
+                    paused: vm.isPaused(pid: entry.pid),
+                    loweredPriority: vm.isLoweredPriority(pid: entry.pid),
+                    onResume: { Task { await vm.resumePausedProcess(pid: entry.pid) } },
+                    onRestorePriority: { Task { await vm.restoreLoweredPriority(pid: entry.pid) } }
                 )
                 .contextMenu {
                     Button("复制") {
@@ -258,6 +262,10 @@ private struct EnergyProcessLine: View {
     let exited: Bool
     let rates: ProcessEnergyRates?
     let selected: Bool
+    var paused = false
+    var loweredPriority = false
+    var onResume: () -> Void = {}
+    var onRestorePriority: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 0) {
@@ -265,6 +273,12 @@ private struct EnergyProcessLine: View {
                 ProcessIconView(pid: pid, bundleIdentifier: bundleIdentifier, size: 16)
                 Text(name)
                     .lineLimit(1)
+                if paused {
+                    PausedProcessMark { onResume() }
+                }
+                if loweredPriority {
+                    LoweredPriorityMark { onRestorePriority() }
+                }
                 if exited {
                     Text(EnergyPage.exitedStatus)
                         .font(.caption)
@@ -284,10 +298,18 @@ private struct EnergyProcessLine: View {
         .foregroundStyle(selected ? Color.white : Color.primary)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
+        .modifier(PauseResumeAction(enabled: paused, resume: onResume))
+        .modifier(PriorityRestoreAction(enabled: loweredPriority, restore: onRestorePriority))
     }
 
     private var accessibilityLabel: String {
         var parts = [name]
+        if paused {
+            parts.append("已暂停")
+        }
+        if loweredPriority {
+            parts.append("已降低优先级")
+        }
         if exited {
             parts.append(EnergyPage.exitedStatus)
         }

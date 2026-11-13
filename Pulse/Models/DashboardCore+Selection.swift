@@ -216,7 +216,7 @@ extension DashboardCore {
         publishGPUPageTransition(from: previous, to: selectedPage)
         publishChipTemperaturePageTransition(from: previous, to: selectedPage)
         var effects = publishMemoryPageSort()
-        effects.append(.setGPUSampling(on: selectedPage == .gpu))
+        effects.append(.setGPUSampling(on: true))
         effects += applyRisingOnlySelection()
         effects += applyWindowedOnlySelection()
         if selectedPage == .machine {
@@ -226,8 +226,10 @@ extension DashboardCore {
         }
         if selectedPage == .energy {
             effects.append(.startEnergyBatteryWatch)
+            effects.append(.startSleepAssertionWatch)
         } else {
             effects.append(.stopEnergyBatteryWatch)
+            effects.append(.stopSleepAssertionWatch)
         }
         return effects
     }

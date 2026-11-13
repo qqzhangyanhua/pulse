@@ -12,6 +12,16 @@ enum DashboardEffect: Equatable {
     case terminate(pid: Int32, force: Bool, token: UInt64?)
     /// `ProcessActions.confirmForceQuit`. The Bool comes back through `resolveForceQuit`.
     case confirmForceQuit(displayName: String, generation: UInt64)
+    /// SIGSTOP for a process this core just recorded as paused.
+    case pauseProcess(pid: Int32)
+    /// SIGCONT. The ledger record is already gone.
+    case resumeProcess(pid: Int32)
+    /// `setpriority(PRIO_PROCESS, pid, nice)`. Record the pid only when that call returns 0.
+    case lowerPriority(pid: Int32)
+    /// Restores the nice saved before the lower. The pid is already removed from the in-memory set.
+    case restorePriority(pid: Int32)
+    /// Quitting a paused process. The Bool comes back through `resolveResumeBeforeQuit`.
+    case confirmResumeBeforeQuit(pid: Int32, displayName: String)
     /// Sampler `setMemoryPageSort` for the sort just written into the memory-page publication.
     case forwardMemoryPageSort(ProcessTableSort)
     /// Next tick reads the GPU page. Not a second sampler task.
@@ -20,6 +30,8 @@ enum DashboardEffect: Equatable {
     case stopMachineWatch
     case startEnergyBatteryWatch
     case stopEnergyBatteryWatch
+    case startSleepAssertionWatch
+    case stopSleepAssertionWatch
     /// Outbound public-IP lookup. Returned only from the query click.
     case lookupPublicIP(queriedAt: Date)
     /// System location prompt for the Wi-Fi name. Returned only from the allow click.
@@ -44,6 +56,8 @@ struct DashboardCore {
     /// Idle until the user clicks. Not sampled and not saved.
     var publicIPRequest = PublicIPRequestState.idle
     private(set) var hostDiskRates = HostDiskRates.missing
+    /// Host 换入 / 换出. Previous counters stay here. Not disk throughput.
+    private(set) var memoryPage = MemoryPageState.initial
     private(set) var rows: [ProcessRow] = []
     private(set) var energyWindowRates: [Int32: ProcessEnergyRates] = [:]
     private(set) var energyHourRates: [Int32: ProcessEnergyRates] = [:]
@@ -54,6 +68,10 @@ struct DashboardCore {
     var detail: ProcessDetail?
     private(set) var topMemorySeries: [Int32: [ChartSample]] = [:]
     var quitOutcome = ProcessQuitOutcome()
+    /// Processes this session paused. Pid plus start time. Not a signal sender.
+    var pausedLedger = PausedProcessLedger()
+    /// Pids this session lowered successfully. Not stored. Nice dies with the process.
+    var loweredPriorityPids: Set<Int32> = []
     var sidebarSubjectPid: Int32?
     private(set) var samplingFailed = false
     private(set) var usageHistory = UsageHistory()
@@ -61,12 +79,18 @@ struct DashboardCore {
     private(set) var networkHistory = SystemNetworkHistory()
     private(set) var diskHistory = SystemDiskHistory()
     var gpuPage = GPUPageState.initial
+    /// Top GPU-share rows. Nil until a GPU-page read. Not the machine-wide curve.
+    private(set) var gpuShare: GPUSharePresentation?
+    /// Last on-page AGX sample. Off-page frames do not move it.
+    private var gpuShareBaseline: GPUShareBaseline?
     var chipTemperature = ChipTemperaturePageState.initial
     /// Nil until the machine page's reader returns. Not cleared on leave.
     var machineFacts: MachineFacts?
     /// Nil hides the energy-page card, including a Mac with no internal battery.
     var energyBatteryCard: EnergyBatteryCard?
     var energyBatteryReading: EnergyBatteryReading?
+    /// Held sleep assertions from the energy page. Empty until a successful read.
+    var sleepAssertions: [SleepAssertionRow] = []
     /// Nil unless the system is serious or critical.
     var thermalNotice: String?
     /// Top CPU processes while `thermalNotice` is showing. Nil hides the card.
@@ -137,7 +161,7 @@ struct DashboardCore {
                 if let applied = SamplingRetryApply.apply(held, accepted: true, sampleSucceeded: false) {
                     samplingFailed = applied.samplingFailed
                     loadState = applied.loadState
-                    recordGPU(nodes: nil, failed: true, at: nil, page: page)
+                    recordGPU(nodes: nil, failed: true, at: nil)
                     recordChip(sensors: nil, failed: true, at: nil, page: page)
                     observation = ProcessQuitSession.Observation(samplingFailed: true)
                 } else {
@@ -216,8 +240,14 @@ struct DashboardCore {
         var nextDisk = diskHistory
         nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
         diskHistory = nextDisk
-        recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt, page: page)
+        recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
+        recordGPUShare(clients: frame.gpuShareClients, rows: frame.rows, at: frame.snapshot.capturedAt, page: page)
         recordChip(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt, page: page)
+        memoryPage = MemoryPageProjection.apply(
+            counters: frame.hostPageCounters,
+            sampledAt: frame.snapshot.capturedAt,
+            current: memoryPage
+        )
         rows = frame.rows
         energyWindowRates = frame.energyWindowRates
         energyHourRates = frame.energyHourRates
@@ -259,13 +289,12 @@ struct DashboardCore {
         return effects
     }
 
+    /// Nil nodes means this tick did not read GPU. A missing percent is not stored as 0.
     private mutating func recordGPU(
         nodes: [GPUAcceleratorNode]?,
         failed: Bool,
-        at date: Date?,
-        page: DashboardPage
+        at date: Date?
     ) {
-        guard page == .gpu else { return }
         let frame: GPUFrameOutcome
         if failed {
             frame = .failed
@@ -281,6 +310,26 @@ struct DashboardCore {
             current: gpuPage,
             transition: .stayed
         )
+    }
+
+    /// Host utilization above is every page. This rank runs only while the GPU page is visible.
+    private mutating func recordGPUShare(
+        clients: [GPUShareClientSample]?,
+        rows: [ProcessRow],
+        at date: Date,
+        page: DashboardPage
+    ) {
+        guard page == .gpu, let clients else { return }
+        let step = GPUShareProjection.step(
+            clients: clients,
+            rows: rows,
+            ownPid: ownPid,
+            sampledAt: date,
+            baseline: gpuShareBaseline
+        )
+        guard step.publish else { return }
+        gpuShare = step.card
+        gpuShareBaseline = step.baseline
     }
 
     private mutating func recordChip(

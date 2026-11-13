@@ -207,7 +207,7 @@ final class GPUPageTests: XCTestCase {
         XCTAssertEqual(page.memoryText, "32 字节")
     }
 
-    func testJustEnteredDropsThePreviousVisitBeforeThisFrame() {
+    func testJustEnteredKeepsTheCurveAlreadyRecorded() {
         let previous = succeed([
             node([
                 "In use system memory": .bytes(400),
@@ -220,7 +220,7 @@ final class GPUPageTests: XCTestCase {
                 "Device Utilization %": .number(16),
             ]),
         ], at: 2, current: previous)
-        XCTAssertEqual(held.history.samples.count, 2)
+        XCTAssertEqual(held.history.samples.map(\.value), [15, 16])
 
         let waiting = GPUPageProjection.apply(
             nodes: [node(["Device Utilization %": .number(70)])],
@@ -229,12 +229,12 @@ final class GPUPageTests: XCTestCase {
             current: held,
             transition: .justEntered
         )
-        XCTAssertEqual(waiting.chrome, .skeleton)
-        XCTAssertNil(waiting.utilizationPercent)
-        XCTAssertNil(waiting.inUseMemoryBytes)
-        XCTAssertFalse(waiting.visitSucceeded)
-        XCTAssertTrue(waiting.history.samples.isEmpty)
-        XCTAssertFalse(waiting.showsCurve)
+        XCTAssertEqual(waiting.chrome, .readings)
+        XCTAssertEqual(waiting.utilizationPercent, 16)
+        XCTAssertEqual(waiting.inUseMemoryBytes, 400)
+        XCTAssertTrue(waiting.visitSucceeded)
+        XCTAssertEqual(waiting.history.samples.map(\.value), [15, 16])
+        XCTAssertTrue(waiting.showsCurve)
 
         let failed = GPUPageProjection.apply(
             frame: .failed,
@@ -242,11 +242,11 @@ final class GPUPageTests: XCTestCase {
             current: held,
             transition: .justEntered
         )
-        XCTAssertEqual(failed.chrome, .samplingFailure)
-        XCTAssertNil(failed.utilizationPercent)
-        XCTAssertNil(failed.inUseMemoryBytes)
-        XCTAssertFalse(failed.visitSucceeded)
-        XCTAssertTrue(failed.history.samples.isEmpty)
+        XCTAssertEqual(failed.chrome, .readings)
+        XCTAssertEqual(failed.utilizationPercent, 16)
+        XCTAssertEqual(failed.inUseMemoryBytes, 400)
+        XCTAssertTrue(failed.visitSucceeded)
+        XCTAssertEqual(failed.history.samples.map(\.value), [15, 16])
 
         let entered = succeed([
             node([
@@ -256,12 +256,12 @@ final class GPUPageTests: XCTestCase {
         ], at: 4, current: held, transition: .justEntered)
         XCTAssertEqual(entered.utilizationPercent, 2)
         XCTAssertEqual(entered.inUseMemoryBytes, 8)
-        XCTAssertEqual(entered.history.samples.map(\.value), [2])
+        XCTAssertEqual(entered.history.samples.map(\.value), [15, 16, 2])
         XCTAssertEqual(entered.chrome, .readings)
         XCTAssertTrue(entered.visitSucceeded)
     }
 
-    func testJustLeftClearsTheCurveAndDoesNotPublishThisFrame() {
+    func testJustLeftKeepsTheCurveAndDoesNotPublishThisFrame() {
         let current = succeed([
             node([
                 "In use system memory": .bytes(100),
@@ -281,8 +281,10 @@ final class GPUPageTests: XCTestCase {
 
         XCTAssertEqual(left.utilizationPercent, 10)
         XCTAssertEqual(left.inUseMemoryBytes, 100)
-        XCTAssertTrue(left.history.samples.isEmpty)
+        XCTAssertEqual(left.history.samples.map(\.value), [10])
         XCTAssertNotEqual(left.utilizationPercent, 80)
+        XCTAssertFalse(left.history.samples.map(\.value).contains(80))
+        XCTAssertFalse(left.history.samples.map(\.value).contains(0))
     }
 
     func testStayedFailureKeepsASuccessfulVisitAndDoesNotAppend() {

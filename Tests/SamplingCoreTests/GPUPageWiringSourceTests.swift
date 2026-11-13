@@ -34,6 +34,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(overview.contains("GPUPageCopy.utilization"))
         XCTAssertTrue(overview.contains("GPUPageCopy.memory"))
         XCTAssertTrue(overview.contains("vm.gpuPage.showsCurve"))
+        XCTAssertTrue(overview.contains("vm.gpuPage.coreCountText"))
         XCTAssertEqual(occurrenceCount(of: "HistoryAnnotatedChart", in: overview), 1)
         XCTAssertFalse(overview.contains("ProcessTablePane"))
         XCTAssertFalse(overview.contains("ProcessDetailSidebar"))
@@ -63,6 +64,8 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(reader.contains("IORegistryEntryCreateCFProperties"))
         XCTAssertTrue(reader.contains("\"IOAccelerator\""))
         XCTAssertTrue(reader.contains("\"PerformanceStatistics\""))
+        XCTAssertTrue(reader.contains("GPUCoreCount.registryKey"))
+        XCTAssertTrue(reader.contains("GPUCoreCount.parse"))
         XCTAssertFalse(reader.contains("IOServiceOpen"))
         XCTAssertFalse(reader.contains("powermetrics"))
         XCTAssertTrue(reader.contains("/System/Library/PrivateFrameworks/IOReport.framework/IOReport"))
@@ -87,15 +90,23 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertLessThan(skipChannel, readChannel)
     }
 
-    func testSamplingHangsOffTheMainTickAndStaysOffOtherSurfaces() throws {
+    func testGPUReadSwitchIsNotTheSelectedGPUPage() throws {
         let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
-        XCTAssertTrue(sampler.contains("readGPU ? HostGPUReader.read() : nil"))
+        XCTAssertTrue(sampler.contains("let gpuNodes = HostGPUReader.read()"))
+        XCTAssertFalse(sampler.contains("readGPU ?"))
+        XCTAssertFalse(sampler.contains("readGPU:"))
+        XCTAssertFalse(sampler.contains("selectedPage == .gpu"))
         XCTAssertFalse(sampler.contains("Timer"))
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
-        XCTAssertTrue(vm.contains("sample(readGPU: selectedPage == .gpu"))
+        XCTAssertFalse(vm.contains("selectedPage == .gpu"))
+        XCTAssertTrue(vm.contains("sampler.sample(readChipTemperature: selectedPage == .machine)"))
         XCTAssertTrue(vm.contains("func selectPage("))
         XCTAssertTrue(vm.contains("func focusMemoryPage("))
+
+        let selection = try repoText("Pulse/Models/DashboardCore+Selection.swift")
+        XCTAssertFalse(selection.contains("selectedPage == .gpu"))
+        XCTAssertTrue(selection.contains(".setGPUSampling(on: true)"))
 
         let gpuVM = try repoText("Pulse/ViewModels/MemoryDashboardVM+GPU.swift")
         XCTAssertFalse(gpuVM.contains("Task.sleep"))
@@ -108,6 +119,8 @@ final class GPUPageWiringSourceTests: XCTestCase {
             "Pulse/Models/MenuBarReading.swift",
             "Pulse/Models/SnapshotExport.swift",
             "Pulse/Views/MachineOverviewSection.swift",
+            "Pulse/Views/MachineOverviewSection+ChipTemperature.swift",
+            "Pulse/Views/MachineOverviewSection+Throughput.swift",
             "Pulse/Views/OverviewSection.swift",
             "Pulse/Views/ProcessTablePane.swift",
         ] {
@@ -115,6 +128,9 @@ final class GPUPageWiringSourceTests: XCTestCase {
             XCTAssertFalse(text.contains("GPU 使用率"), relative)
             XCTAssertFalse(text.contains("gpuPage"), relative)
             XCTAssertFalse(text.contains("Device Utilization"), relative)
+            XCTAssertFalse(text.contains("coreCountText"), relative)
+            XCTAssertFalse(text.contains("核 GPU"), relative)
+            XCTAssertFalse(text.contains("gpu-core-count"), relative)
         }
     }
 

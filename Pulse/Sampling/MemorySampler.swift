@@ -23,6 +23,12 @@ actor MemorySampler {
     private var memoryPageSort = ProcessTableSort.defaultSort(for: .memory)
     private var lastRows: [ProcessRow] = []
     private var topMemoryStore = MemoryGrowthTopStore()
+    /// AGX clients only. Host GPU utilization stays on every sample.
+    private var readsGPUShare = false
+
+    func setReadsGPUShare(_ enabled: Bool) {
+        readsGPUShare = enabled
+    }
 
     func setSelectedPid(_ pid: Int32?) {
         guard selectedPid != pid else { return }
@@ -38,7 +44,7 @@ actor MemorySampler {
         topMemoryStore.retain(only: MemoryGrowthTopSeries.pids(from: lastRows, sort: sort))
     }
 
-    func sample(readGPU: Bool, readChipTemperature: Bool = false) -> Result<SampledFrame, HostMemoryError> {
+    func sample(readChipTemperature: Bool = false) -> Result<SampledFrame, HostMemoryError> {
         let host: RawHostMemory
         do {
             host = try HostMemoryReader.read()
@@ -67,11 +73,17 @@ actor MemorySampler {
             capturedAt: capturedAt,
             swapUsedBytes: swapUsedBytes
         )
+        let hostPageCounters = HostPageCounters(
+            pageins: host.pageins,
+            pageouts: host.pageouts,
+            pageSize: host.pageSize
+        )
         let systemCpuPercent = consumeSystemCPU()
         let busiestCorePercent = consumeBusiestCore()
         let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
         let hostDiskRates = consumeSystemDisk(at: capturedAt)
-        let gpuNodes = readGPU ? HostGPUReader.read() : nil
+        let gpuNodes = HostGPUReader.read()
+        let gpuShareClients = readsGPUShare ? HostGPUShareReader.read() : nil
         let chipTemperatureSensors = readChipTemperature ? HostChipTemperatureReader.read() : nil
         let hostWiFi = HostWiFiReader.read()
 
@@ -94,8 +106,10 @@ actor MemorySampler {
                         processListFailed: true
                     ),
                     gpuNodes: gpuNodes,
+                    gpuShareClients: gpuShareClients,
                     hostWiFi: hostWiFi,
-                    chipTemperatureSensors: chipTemperatureSensors
+                    chipTemperatureSensors: chipTemperatureSensors,
+                    hostPageCounters: hostPageCounters
                 )
             )
         }
@@ -179,7 +193,10 @@ actor MemorySampler {
                     diskWriteBytesPerSecond: disk.rates.writeBytesPerSecond,
                     energyWatts: energy.rates.watts,
                     wakeupsPerSecond: energy.rates.wakeupsPerSecond,
-                    parentPid: raw.parentPid
+                    parentPid: raw.parentPid,
+                    userID: raw.userID,
+                    startTimeSeconds: raw.startTimeSeconds,
+                    lifetimeMaxFootprintBytes: raw.lifetimeMaxFootprintBytes
                 )
             )
         }
@@ -241,8 +258,10 @@ actor MemorySampler {
                 exitedEnergyProcesses: energyMinuteLedger.exitedProcesses,
                 energyLiveGenerations: energyMinuteLedger.liveGenerations,
                 gpuNodes: gpuNodes,
+                gpuShareClients: gpuShareClients,
                 hostWiFi: hostWiFi,
-                chipTemperatureSensors: chipTemperatureSensors
+                chipTemperatureSensors: chipTemperatureSensors,
+                hostPageCounters: hostPageCounters
             )
         )
     }

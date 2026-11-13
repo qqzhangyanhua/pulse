@@ -22,6 +22,13 @@ struct RawProcessSample: Sendable, Equatable {
     let interruptWakeups: UInt64?
     /// `pbi_ppid` from `PROC_PIDTBSDINFO`. Nil when the read byte count is not the struct size.
     let parentPid: Int32?
+    /// uid from the same BSD info read. Nil when that read fails.
+    let userID: UInt32?
+    /// Start seconds since 1970 from the same read. Nil when that read fails.
+    let startTimeSeconds: UInt64?
+    /// `ri_lifetime_max_phys_footprint` from the same rusage read. Nil when that call fails.
+    /// A real 0 stays 0. There is no resident fallback.
+    let lifetimeMaxFootprintBytes: UInt64?
 }
 
 /// One `list()` walk. Denied pids are a count, not rows.
@@ -114,7 +121,8 @@ enum ProcessEnumerator {
         }
         let path = pathLen > 0 ? String(cString: pathBuffer) : nil
         let rusage = readRusage(pid: pid)
-        let parentPid = readParentPid(pid: pid)
+        let bsd = readParentPid(pid: pid)
+        let parentPid = bsd?.parentPid
         let cpu = convertedCPU(
             user: info.pti_total_user,
             system: info.pti_total_system,
@@ -135,7 +143,10 @@ enum ProcessEnumerator {
                 diskBytesWritten: rusage?.bytesWritten,
                 energyNanojoules: rusage?.energyNanojoules,
                 interruptWakeups: rusage?.interruptWakeups,
-                parentPid: parentPid
+                parentPid: parentPid,
+                userID: bsd?.userID,
+                startTimeSeconds: bsd?.startTimeSeconds,
+                lifetimeMaxFootprintBytes: rusage?.lifetimeMaxFootprintBytes
             ),
             permissionDenied: false
         )
@@ -164,7 +175,8 @@ enum ProcessEnumerator {
     }
 
     /// A short read is a missing parent, not ppid 0. Same rule as rusage: the row still returns.
-    private static func readParentPid(pid: pid_t) -> Int32? {
+    /// uid and start seconds come from this same buffer, not a second `proc_pidinfo`.
+    private static func readParentPid(pid: pid_t) -> ProcessBSDIdentity? {
         var buffer = [UInt8](repeating: 0, count: Int(procBsdInfoSize))
         let written = buffer.withUnsafeMutableBytes { raw -> Int32 in
             pulse_proc_pidinfo(pid, procPidTbsdInfo, 0, raw.baseAddress, procBsdInfoSize)
@@ -173,12 +185,23 @@ enum ProcessEnumerator {
         let ppid = buffer.withUnsafeBytes { raw in
             raw.loadUnaligned(fromByteOffset: procBsdPpidOffset, as: UInt32.self)
         }
-        return Int32(bitPattern: ppid)
+        guard let decoded = ProcessBSDInfo.identity(from: buffer) else { return nil }
+        return ProcessBSDIdentity(
+            parentPid: Int32(bitPattern: ppid),
+            userID: decoded.userID,
+            startTimeSeconds: decoded.startTimeSeconds
+        )
+    }
+
+    /// Start seconds for a paused-process check. Same BSD read as the parent pid.
+    static func startTimeSeconds(pid: pid_t) -> UInt64? {
+        readParentPid(pid: pid)?.startTimeSeconds
     }
 
     /// rusage failure must not drop the row. SIP / kernel tasks often return EPERM.
-    /// One v6 call supplies disk counters, footprint, energy, and wakeups. No v4 retry.
-    /// A zero footprint is a real reading. Energy has no fallback: failure leaves both nil.
+    /// One v6 call supplies disk counters, footprint, the lifetime max footprint, energy, and wakeups.
+    /// No v4 retry. A zero footprint and a zero lifetime max are real readings.
+    /// Energy has no fallback: failure leaves both nil. The lifetime max has no resident fallback.
     private static func readRusage(pid: pid_t) -> ProcessRusageSample? {
         var info = PulseRusageInfoV6()
         let status = withUnsafeMutablePointer(to: &info) { pointer in
@@ -190,7 +213,8 @@ enum ProcessEnumerator {
             bytesWritten: info.ri_diskio_byteswritten,
             footprintBytes: info.ri_phys_footprint,
             energyNanojoules: info.ri_energy_nj,
-            interruptWakeups: info.ri_interrupt_wkups
+            interruptWakeups: info.ri_interrupt_wkups,
+            lifetimeMaxFootprintBytes: info.ri_lifetime_max_phys_footprint
         )
     }
 }
@@ -206,6 +230,7 @@ private struct ProcessRusageSample {
     let footprintBytes: UInt64
     let energyNanojoules: UInt64
     let interruptWakeups: UInt64
+    let lifetimeMaxFootprintBytes: UInt64
 }
 
 struct ProcessIdentity: Sendable, Equatable {

@@ -44,7 +44,7 @@ final class NetworkPageTests: XCTestCase {
         XCTAssertEqual(occurrenceCount(of: sentence, in: model), 1)
 
         let call = ".help(NetworkPageCopy.processRateHelp)"
-        let table = try repoText("Pulse/Views/ProcessTablePane.swift")
+        let table = try WiringSourceText.text(for: "ProcessTablePane")
         let sidebar = try repoText("Pulse/Views/ProcessDetailSidebar.swift")
         XCTAssertEqual(occurrenceCount(of: call, in: table), 1)
         XCTAssertEqual(occurrenceCount(of: call, in: sidebar), 1)

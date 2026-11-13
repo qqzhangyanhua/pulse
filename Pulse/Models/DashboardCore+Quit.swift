@@ -24,9 +24,13 @@ extension DashboardCore {
     }
 
     /// Ordinary quit. Empty when the page disallows it, the energy selection is exited-only, or no attempt is issued.
+    /// A paused process asks to continue first, and does not start the quit attempt yet.
     mutating func quitSelected() -> [DashboardEffect] {
         guard selectedPage.allowsProcessQuit else { return [] }
         guard !selectedEnergyExitedOnly else { return [] }
+        if let prompt = resumeBeforeQuitPrompt() {
+            return [prompt]
+        }
         var store = quitOutcome
         let issued = ProcessQuitSession.ordinaryTerminate(
             store: &store,
@@ -107,8 +111,12 @@ extension DashboardCore {
         commitQuitSelection(ProcessQuitSession.dismissSidebar())
     }
 
-    /// Every click terminates `pid`, with no confirm. The store changes only when this pid is the selected process-page pid and `ordinaryTerminate` issues one.
+    /// Terminates `pid`. A paused pid asks to continue first and does not terminate yet.
+    /// The store changes only when this pid is the selected process-page pid and `ordinaryTerminate` issues one.
     mutating func beginThermalTerminate(pid: Int32) -> [DashboardEffect] {
+        if let prompt = resumeBeforeQuitEffect(pid: pid) {
+            return [prompt]
+        }
         let issued: ProcessQuitIssued?
         if pid == selectedPid, selectedPage.allowsProcessQuit {
             var store = quitOutcome

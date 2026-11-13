@@ -178,15 +178,16 @@ struct ProcessDetailSidebar: View {
         .accessibilityLabel("关闭详情")
         .help("关闭详情")
     }
-
     private func detailBody(_ detail: ProcessDetail) -> some View {
         let projection = displayedProjection(detail)
         return ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 header(detail)
+                processInfo(detail)
                 switch projection {
                 case .memoryExisting:
                     metrics(detail)
+                    memoryPeak(detail)
                     if let slot = vm.memoryGrowthSlot {
                         memoryTrend(slot, curveRow: detail.row)
                     }
@@ -356,6 +357,7 @@ struct ProcessDetailSidebar: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                quitSafetyJudgment(for: detail.row.name)
             }
             Spacer(minLength: 8)
             if AppGroupChrome.showsProcessTreeButton(groupedByApp: vm.groupedByApp, page: vm.selectedPage) {
@@ -377,7 +379,6 @@ struct ProcessDetailSidebar: View {
         let kind = row.bundleIdentifier == nil ? "进程" : "App"
         return "\(kind) · PID \(row.pid)"
     }
-
     private func metrics(_ detail: ProcessDetail) -> some View {
         let row = memoryMagnitudeRow(fallback: displayedMemoryRow(detail.row))
         let memory = memoryField(row)

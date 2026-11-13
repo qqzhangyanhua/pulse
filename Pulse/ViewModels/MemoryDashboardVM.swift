@@ -18,6 +18,8 @@ final class MemoryDashboardVM: ObservableObject {
     /// Idle until the user clicks. Not sampled and not saved.
     var publicIPRequest: PublicIPRequestState { core.publicIPRequest }
     var hostDiskRates: HostDiskRates { core.hostDiskRates }
+    /// Host 换入 / 换出. Nil rates are 「—」, not zero. Not a disk rate.
+    var memoryPage: MemoryPageState { core.memoryPage }
     var rows: [ProcessRow] { core.rows }
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
     var energyWindowRates: [Int32: ProcessEnergyRates] { core.energyWindowRates }
@@ -43,6 +45,8 @@ final class MemoryDashboardVM: ObservableObject {
     var energyBatteryCard: EnergyBatteryCard? { core.energyBatteryCard }
     /// Latest energy-page battery reading. Nil until that read; not a second poll.
     var energyBatteryReading: EnergyBatteryReading? { core.energyBatteryReading }
+    /// Sleep assertions for the energy-page card. Stored on the core, not here.
+    var sleepAssertions: [SleepAssertionRow] { core.sleepAssertions }
     /// The only session quit store. Phase and message are projections of this.
     var quitOutcome: ProcessQuitOutcome { core.quitOutcome }
     var sidebarSubjectPid: Int32? { core.sidebarSubjectPid }
@@ -55,6 +59,8 @@ final class MemoryDashboardVM: ObservableObject {
     var diskHistory: SystemDiskHistory { core.diskHistory }
     /// GPU page readings. Samples taken off that page do not write this.
     var gpuPage: GPUPageState { core.gpuPage }
+    /// Top GPU-share rows. Ranked only while the GPU page is visible.
+    var gpuShare: GPUSharePresentation? { core.gpuShare }
     /// Machine-page chip temperature. Other pages do not write this.
     var chipTemperature: ChipTemperaturePageState { core.chipTemperature }
     var energyMachineHistory: EnergyMachineHistory { core.energyMachineHistory }
@@ -100,6 +106,7 @@ final class MemoryDashboardVM: ObservableObject {
     var thermalObserver: NSObjectProtocol?
     var machineRefreshTask: Task<Void, Never>?
     var energyBatteryRefreshTask: Task<Void, Never>?
+    var sleepAssertionRefreshTask: Task<Void, Never>?
     var hostConnectionMonitor: HostConnectionMonitor?
     init() {
         beginThermalWatch()
@@ -111,6 +118,7 @@ final class MemoryDashboardVM: ObservableObject {
         MainActor.assumeIsolated {
             machineRefreshTask?.cancel()
             energyBatteryRefreshTask?.cancel()
+            sleepAssertionRefreshTask?.cancel()
             endThermalWatch()
             endConnectionWatch()
         }
@@ -178,6 +186,11 @@ final class MemoryDashboardVM: ObservableObject {
 
     func select(pid: Int32?) {
         updateCore { $0.select(pid: pid) }
+    }
+
+    /// Energy-card tap. A pid outside the table clears the selection.
+    func selectSleepAssertion(pid: Int32) {
+        updateCore { $0.selectSleepAssertion(pid: pid) }
     }
 
     func setFilter(_ text: String) {
@@ -285,7 +298,8 @@ final class MemoryDashboardVM: ObservableObject {
     }
 
     private func tick(_ flight: SamplingFlight) async {
-        let result = await sampler.sample(readGPU: selectedPage == .gpu, readChipTemperature: selectedPage == .machine)
+        await sampler.setReadsGPUShare(readsGPUShare)
+        let result = await sampler.sample(readChipTemperature: selectedPage == .machine)
         if Task.isCancelled {
             samplingGate.invalidate()
             recordGateRetrying()
@@ -364,6 +378,12 @@ final class MemoryDashboardVM: ObservableObject {
                 let follow = next.resolveForceQuit(generation: generation, confirmed: confirmed)
                 core = next
                 await performExternal(follow)
+            case .confirmResumeBeforeQuit(let pid, let displayName):
+                let confirmed = ProcessActions.confirmResumeBeforeQuit(displayName: displayName)
+                var next = core
+                let follow = next.resolveResumeBeforeQuit(pid: pid, confirmed: confirmed)
+                core = next
+                await performExternal(follow)
             default:
                 perform([effect])
             }
@@ -385,14 +405,29 @@ final class MemoryDashboardVM: ObservableObject {
                 Task { await sampler.setSelectedPid(pid) }
             case .forwardMemoryPageSort(let sort):
                 Task { await sampler.setMemoryPageSort(sort) }
-            case .terminate, .confirmForceQuit:
+            case .terminate, .confirmForceQuit, .confirmResumeBeforeQuit:
                 break
+            case .pauseProcess(let pid):
+                ProcessPause.stop(pid)
+                ProcessPause.store(core.pausedLedger)
+            case .resumeProcess(let pid):
+                ProcessPause.resume(pid)
+                ProcessPause.store(core.pausedLedger)
+            case .lowerPriority(let pid):
+                let succeeded = ProcessPriority.lower(pid)
+                var next = core
+                next.finishLowerPriority(pid: pid, succeeded: succeeded)
+                core = next
+            case .restorePriority(let pid):
+                ProcessPriority.restore(pid)
             case .setGPUSampling:
                 break
             case .startMachineWatch, .stopMachineWatch:
                 syncMachineWatch()
             case .startEnergyBatteryWatch, .stopEnergyBatteryWatch:
                 syncEnergyBatteryWatch()
+            case .startSleepAssertionWatch, .stopSleepAssertionWatch:
+                syncSleepAssertionWatch()
             case .lookupPublicIP(let queriedAt):
                 let transport = PublicIPURLSessionTransport()
                 Task { [weak self] in
