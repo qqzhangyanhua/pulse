@@ -338,7 +338,9 @@ enum EnergyPage {
             energyReadingIsPartial: lead.energyReadingIsPartial,
             wakeupReadingIsPartial: lead.wakeupReadingIsPartial,
             groupedMemberCount: memberCount,
-            parentPid: lead.parentPid
+            parentPid: lead.parentPid,
+            userID: lead.userID,
+            startTimeSeconds: lead.startTimeSeconds
         )
     }
 

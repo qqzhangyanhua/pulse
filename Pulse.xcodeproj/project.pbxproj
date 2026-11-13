@@ -139,6 +139,13 @@
 		B00000000000000000000105 /* DashboardCore+GPU.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000105 /* DashboardCore+GPU.swift */; };
 		B00000000000000000000106 /* DashboardCore+Machine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000106 /* DashboardCore+Machine.swift */; };
 		B00000000000000000000107 /* DashboardCore+Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000107 /* DashboardCore+Snapshot.swift */; };
+		B00000000000000000000108 /* ProcessOwnership.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000108 /* ProcessOwnership.swift */; };
+		B00000000000000000000109 /* ProcessSignature.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000109 /* ProcessSignature.swift */; };
+		B00000000000000000000110 /* ProcessRosetta.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000110 /* ProcessRosetta.swift */; };
+		B00000000000000000000111 /* ProcessStartTimeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000111 /* ProcessStartTimeText.swift */; };
+		B00000000000000000000112 /* ProcessBSDInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000112 /* ProcessBSDInfo.swift */; };
+		B00000000000000000000113 /* ProcessCodeSignatureReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000113 /* ProcessCodeSignatureReader.swift */; };
+		B00000000000000000000114 /* ProcessDetailSidebar+ProcessInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000114 /* ProcessDetailSidebar+ProcessInfo.swift */; };
 		B00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift */; };
 		B00000000000000000000148 /* MemoryPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000148 /* MemoryPage.swift */; };
 		B00000000000000000000138 /* SleepAssertion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000138 /* SleepAssertion.swift */; };
@@ -169,6 +176,13 @@
 		A00000000000000000000105 /* DashboardCore+GPU.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+GPU.swift"; sourceTree = "<group>"; };
 		A00000000000000000000106 /* DashboardCore+Machine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Machine.swift"; sourceTree = "<group>"; };
 		A00000000000000000000107 /* DashboardCore+Snapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Snapshot.swift"; sourceTree = "<group>"; };
+		A00000000000000000000108 /* ProcessOwnership.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessOwnership.swift; sourceTree = "<group>"; };
+		A00000000000000000000109 /* ProcessSignature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessSignature.swift; sourceTree = "<group>"; };
+		A00000000000000000000110 /* ProcessRosetta.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRosetta.swift; sourceTree = "<group>"; };
+		A00000000000000000000111 /* ProcessStartTimeText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessStartTimeText.swift; sourceTree = "<group>"; };
+		A00000000000000000000112 /* ProcessBSDInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessBSDInfo.swift; sourceTree = "<group>"; };
+		A00000000000000000000113 /* ProcessCodeSignatureReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessCodeSignatureReader.swift; sourceTree = "<group>"; };
+		A00000000000000000000114 /* ProcessDetailSidebar+ProcessInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessDetailSidebar+ProcessInfo.swift"; sourceTree = "<group>"; };
 		A00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessDetailSidebar+QuitSafety.swift"; sourceTree = "<group>"; };
 		A00000000000000000000148 /* MemoryPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPage.swift; sourceTree = "<group>"; };
 		A00000000000000000000138 /* SleepAssertion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepAssertion.swift; sourceTree = "<group>"; };
@@ -401,6 +415,11 @@
 				A0000000000000000000003E /* WindowedAppFilter.swift */,
 				A00000000000000000000040 /* AppGroupProjection.swift */,
 				A00000000000000000000041 /* ProcessGlossary.swift */,
+				A00000000000000000000108 /* ProcessOwnership.swift */,
+				A00000000000000000000109 /* ProcessSignature.swift */,
+				A00000000000000000000110 /* ProcessRosetta.swift */,
+				A00000000000000000000111 /* ProcessStartTimeText.swift */,
+				A00000000000000000000112 /* ProcessBSDInfo.swift */,
 				A00000000000000000000047 /* MenuBarReading.swift */,
 				A0000000000000000000004A /* PressureNotice.swift */,
 				A0000000000000000000004C /* LoginItem.swift */,
@@ -426,6 +445,7 @@
 				A00000000000000000000023 /* HostDiskReader.swift */,
 				A0000000000000000000007C /* HostGPUReader.swift */,
 				A00000000000000000000095 /* HostChipTemperatureReader.swift */,
+				A00000000000000000000113 /* ProcessCodeSignatureReader.swift */,
 				A00000000000000000000014 /* CPULoad.swift */,
 				A0000000000000000000001E /* HostNetwork.swift */,
 				A00000000000000000000022 /* HostDisk.swift */,
@@ -516,6 +536,7 @@
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
 				A00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift */,
 				A00000000000000000000068 /* ProcessDetailSidebar+Energy.swift */,
+				A00000000000000000000114 /* ProcessDetailSidebar+ProcessInfo.swift */,
 				A00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift */,
 				A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */,
 				A00000000000000000000064 /* ProcessTreeView.swift */,
@@ -633,6 +654,13 @@
 				B00000000000000000000105 /* DashboardCore+GPU.swift in Sources */,
 				B00000000000000000000106 /* DashboardCore+Machine.swift in Sources */,
 				B00000000000000000000107 /* DashboardCore+Snapshot.swift in Sources */,
+				B00000000000000000000108 /* ProcessOwnership.swift in Sources */,
+				B00000000000000000000109 /* ProcessSignature.swift in Sources */,
+				B00000000000000000000110 /* ProcessRosetta.swift in Sources */,
+				B00000000000000000000111 /* ProcessStartTimeText.swift in Sources */,
+				B00000000000000000000112 /* ProcessBSDInfo.swift in Sources */,
+				B00000000000000000000113 /* ProcessCodeSignatureReader.swift in Sources */,
+				B00000000000000000000114 /* ProcessDetailSidebar+ProcessInfo.swift in Sources */,
 				B00000000000000000000138 /* SleepAssertion.swift in Sources */,
 				B00000000000000000000139 /* DashboardCore+SleepAssertion.swift in Sources */,
 				B00000000000000000000140 /* SleepAssertionReader.swift in Sources */,

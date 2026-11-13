@@ -22,6 +22,10 @@ struct RawProcessSample: Sendable, Equatable {
     let interruptWakeups: UInt64?
     /// `pbi_ppid` from `PROC_PIDTBSDINFO`. Nil when the read byte count is not the struct size.
     let parentPid: Int32?
+    /// uid from the same BSD info read. Nil when that read fails.
+    let userID: UInt32?
+    /// Start seconds since 1970 from the same read. Nil when that read fails.
+    let startTimeSeconds: UInt64?
 }
 
 /// One `list()` walk. Denied pids are a count, not rows.
@@ -114,7 +118,8 @@ enum ProcessEnumerator {
         }
         let path = pathLen > 0 ? String(cString: pathBuffer) : nil
         let rusage = readRusage(pid: pid)
-        let parentPid = readParentPid(pid: pid)
+        let bsd = readParentPid(pid: pid)
+        let parentPid = bsd?.parentPid
         let cpu = convertedCPU(
             user: info.pti_total_user,
             system: info.pti_total_system,
@@ -135,7 +140,9 @@ enum ProcessEnumerator {
                 diskBytesWritten: rusage?.bytesWritten,
                 energyNanojoules: rusage?.energyNanojoules,
                 interruptWakeups: rusage?.interruptWakeups,
-                parentPid: parentPid
+                parentPid: parentPid,
+                userID: bsd?.userID,
+                startTimeSeconds: bsd?.startTimeSeconds
             ),
             permissionDenied: false
         )
@@ -164,7 +171,8 @@ enum ProcessEnumerator {
     }
 
     /// A short read is a missing parent, not ppid 0. Same rule as rusage: the row still returns.
-    private static func readParentPid(pid: pid_t) -> Int32? {
+    /// uid and start seconds come from this same buffer, not a second `proc_pidinfo`.
+    private static func readParentPid(pid: pid_t) -> ProcessBSDIdentity? {
         var buffer = [UInt8](repeating: 0, count: Int(procBsdInfoSize))
         let written = buffer.withUnsafeMutableBytes { raw -> Int32 in
             pulse_proc_pidinfo(pid, procPidTbsdInfo, 0, raw.baseAddress, procBsdInfoSize)
@@ -173,7 +181,12 @@ enum ProcessEnumerator {
         let ppid = buffer.withUnsafeBytes { raw in
             raw.loadUnaligned(fromByteOffset: procBsdPpidOffset, as: UInt32.self)
         }
-        return Int32(bitPattern: ppid)
+        guard let decoded = ProcessBSDInfo.identity(from: buffer) else { return nil }
+        return ProcessBSDIdentity(
+            parentPid: Int32(bitPattern: ppid),
+            userID: decoded.userID,
+            startTimeSeconds: decoded.startTimeSeconds
+        )
     }
 
     /// rusage failure must not drop the row. SIP / kernel tasks often return EPERM.

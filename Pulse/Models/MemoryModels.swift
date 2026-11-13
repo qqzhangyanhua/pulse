@@ -127,6 +127,10 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     let groupedMemberCount: Int?
     /// `PROC_PIDTBSDINFO` parent. Nil when that read fails. Zero is a real ppid, not a failure.
     let parentPid: Int32?
+    /// uid from the same BSD info read. Nil when that read fails.
+    let userID: UInt32?
+    /// Start time in seconds since 1970 from the same read. Nil when that read fails. Zero is a real time.
+    let startTimeSeconds: UInt64?
 
     init(
         pid: Int32,
@@ -145,7 +149,9 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         energyReadingIsPartial: Bool = false,
         wakeupReadingIsPartial: Bool = false,
         groupedMemberCount: Int? = nil,
-        parentPid: Int32? = nil
+        parentPid: Int32? = nil,
+        userID: UInt32? = nil,
+        startTimeSeconds: UInt64? = nil
     ) {
         self.pid = pid
         self.name = name
@@ -164,6 +170,8 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         self.wakeupReadingIsPartial = wakeupReadingIsPartial
         self.groupedMemberCount = groupedMemberCount
         self.parentPid = parentPid
+        self.userID = userID
+        self.startTimeSeconds = startTimeSeconds
     }
 
     /// Missing first-sample CPU sorts below real values without pretending it is 0%.

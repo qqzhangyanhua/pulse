@@ -178,12 +178,12 @@ struct ProcessDetailSidebar: View {
         .accessibilityLabel("关闭详情")
         .help("关闭详情")
     }
-
     private func detailBody(_ detail: ProcessDetail) -> some View {
         let projection = displayedProjection(detail)
         return ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 header(detail)
+                processInfo(detail)
                 switch projection {
                 case .memoryExisting:
                     metrics(detail)
