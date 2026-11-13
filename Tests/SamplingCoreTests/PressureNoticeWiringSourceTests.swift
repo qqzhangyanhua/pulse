@@ -28,7 +28,7 @@ final class PressureNoticeWiringSourceTests: XCTestCase {
 
         let ingest = try functionBody(named: "ingest", in: center)
         let reading = try index(of: "PressureNoticeReading.pressure", in: ingest)
-        let advance = try index(of: "PressureNotice.advance", in: ingest)
+        let advance = try index(of: "AlertRule.memoryPressure.advance", in: ingest)
         let send = try index(of: "guard decision.send else { return }", in: ingest)
         let post = try index(of: "post(", in: ingest)
         XCTAssertLessThan(reading, advance)
@@ -40,6 +40,7 @@ final class PressureNoticeWiringSourceTests: XCTestCase {
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         XCTAssertFalse(vm.contains("PressureNotice"))
+        XCTAssertFalse(vm.contains("AlertRule"))
         XCTAssertFalse(vm.contains("UNUserNotification"))
         XCTAssertFalse(vm.contains("UserDefaults"))
     }
@@ -104,10 +105,11 @@ final class PressureNoticeWiringSourceTests: XCTestCase {
         let excluded = try slice(from: "exclude: [", until: "sources: [", in: package)
         XCTAssertTrue(excluded.contains("\"MenuBar/PressureNoticeCenter.swift\""))
         let sources = try slice(from: "sources: [", until: ".testTarget(", in: package)
-        XCTAssertTrue(sources.contains("\"Models/PressureNotice.swift\""))
+        XCTAssertTrue(sources.contains("\"Models/AlertRule.swift\""))
+        XCTAssertFalse(sources.contains("\"Models/PressureNotice.swift\""))
         XCTAssertFalse(sources.contains("PressureNoticeCenter"))
 
-        let model = try repoText("Pulse/Models/PressureNotice.swift")
+        let model = try repoText("Pulse/Models/AlertRule.swift")
         XCTAssertFalse(model.contains("import AppKit"))
         XCTAssertFalse(model.contains("import SwiftUI"))
         XCTAssertFalse(model.contains("import UserNotifications"))
