@@ -48,7 +48,7 @@ final class CPUPageTests: XCTestCase {
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         XCTAssertTrue(
             vm.contains(
-                "sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu)"
+                "sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu, readGPUEnergy: selectedPage == .gpu, readMachineRails: selectedPage == .energy)"
             )
         )
         let core = try repoText("Pulse/Models/DashboardCore.swift")

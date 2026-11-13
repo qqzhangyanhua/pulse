@@ -46,3 +46,26 @@ struct EnergyBatteryCardView: View {
         }
     }
 }
+
+/// ANE and DRAM are machine rails. They stay up when the battery card is nil.
+struct EnergyModelRailsView: View {
+    @EnvironmentObject private var vm: MemoryDashboardVM
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 16) {
+            Text(EnergyModelCopy.aneLine(watts: vm.cpuEnergy?.aneWatts))
+            Text(EnergyModelCopy.dramLine(watts: vm.cpuEnergy?.dramWatts))
+            Spacer(minLength: 12)
+        }
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(.primary)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(PulsePalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(PulsePalette.hairline, lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}

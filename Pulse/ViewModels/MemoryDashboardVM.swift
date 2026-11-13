@@ -11,7 +11,7 @@ final class MemoryDashboardVM: ObservableObject {
     var systemCpuPercent: Double? { core.systemCpuPercent }
     /// Busiest core for the latest accepted frame. Nil is missing, not zero. Failure does not clear it.
     var busiestCorePercent: Double? { core.busiestCorePercent }
-    /// CPU page watts and cluster frequency. Nil is missing, not zero.
+    /// Energy Model for the visible CPU, GPU, or energy page. Nil is missing, not zero.
     var cpuEnergy: EnergyModelReading? { core.cpuEnergy }
     var hostNetworkRates: HostNetworkRates { core.hostNetworkRates }
     var hostConnection: HostConnection? { core.hostConnection }
@@ -308,7 +308,7 @@ final class MemoryDashboardVM: ObservableObject {
 
     private func tick(_ flight: SamplingFlight) async {
         await sampler.setReadsGPUShare(readsGPUShare)
-        let result = await sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu)
+        let result = await sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu, readGPUEnergy: selectedPage == .gpu, readMachineRails: selectedPage == .energy)
         if Task.isCancelled {
             samplingGate.invalidate()
             recordGateRetrying()

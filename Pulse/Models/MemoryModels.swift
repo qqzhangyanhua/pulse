@@ -264,7 +264,7 @@ struct SampledFrame: Sendable {
     let gpuShareClients: [GPUShareClientSample]?
     /// HID temperature services for this tick. Nil when the machine page did not ask.
     let chipTemperatureSensors: [ChipTemperatureSensor]?
-    /// CPU page energy model. Nil when that page did not ask, or the first sample has no delta.
+    /// Energy Model for the page that asked. Nil when that page did not ask, or the first sample has no delta.
     let cpuEnergy: EnergyModelReading?
     /// Wi-Fi signal for this tick. Nil when there is no interface. RSSI 0 stays a nil rssi.
     let hostWiFi: HostWiFiReading?

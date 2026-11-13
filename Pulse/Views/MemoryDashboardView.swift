@@ -127,8 +127,11 @@ struct MemoryDashboardView: View {
     private var energyResourceColumn: some View {
         HSplitView {
             VStack(spacing: 12) {
-                if vm.energyBatteryCard != nil {
-                    EnergyBatteryCardView()
+                HStack(alignment: .top, spacing: 12) {
+                    if vm.energyBatteryCard != nil {
+                        EnergyBatteryCardView()
+                    }
+                    EnergyModelRailsView()
                 }
                 EnergyHistoryChart()
                     .frame(height: 150)
