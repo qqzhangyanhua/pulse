@@ -53,6 +53,7 @@ final class DashboardCoreSelectionTests: XCTestCase {
             .setGPUSampling(on: false),
             .stopMachineWatch,
             .stopEnergyBatteryWatch,
+            .stopSleepAssertionWatch,
         ])
         XCTAssertEqual(core.tableSort, nameSort)
 
@@ -60,22 +61,26 @@ final class DashboardCoreSelectionTests: XCTestCase {
             .setGPUSampling(on: false),
             .stopMachineWatch,
             .startEnergyBatteryWatch,
+            .startSleepAssertionWatch,
         ])
         XCTAssertEqual(core.selectPage(.gpu), [
             .setGPUSampling(on: true),
             .stopMachineWatch,
             .stopEnergyBatteryWatch,
+            .stopSleepAssertionWatch,
         ])
         XCTAssertEqual(core.selectPage(.machine), [
             .setGPUSampling(on: false),
             .startMachineWatch,
             .stopEnergyBatteryWatch,
+            .stopSleepAssertionWatch,
         ])
         XCTAssertEqual(core.focusMemoryPage(), [
             .forwardMemoryPageSort(ProcessTableSort.defaultSort(for: .memory)),
             .setGPUSampling(on: false),
             .stopMachineWatch,
             .stopEnergyBatteryWatch,
+            .stopSleepAssertionWatch,
         ])
     }
 

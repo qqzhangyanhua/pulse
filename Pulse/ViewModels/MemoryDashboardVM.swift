@@ -43,6 +43,8 @@ final class MemoryDashboardVM: ObservableObject {
     var energyBatteryCard: EnergyBatteryCard? { core.energyBatteryCard }
     /// Latest energy-page battery reading. Nil until that read; not a second poll.
     var energyBatteryReading: EnergyBatteryReading? { core.energyBatteryReading }
+    /// Sleep assertions for the energy-page card. Stored on the core, not here.
+    var sleepAssertions: [SleepAssertionRow] { core.sleepAssertions }
     /// The only session quit store. Phase and message are projections of this.
     var quitOutcome: ProcessQuitOutcome { core.quitOutcome }
     var sidebarSubjectPid: Int32? { core.sidebarSubjectPid }
@@ -100,6 +102,7 @@ final class MemoryDashboardVM: ObservableObject {
     var thermalObserver: NSObjectProtocol?
     var machineRefreshTask: Task<Void, Never>?
     var energyBatteryRefreshTask: Task<Void, Never>?
+    var sleepAssertionRefreshTask: Task<Void, Never>?
     var hostConnectionMonitor: HostConnectionMonitor?
     init() {
         beginThermalWatch()
@@ -111,6 +114,7 @@ final class MemoryDashboardVM: ObservableObject {
         MainActor.assumeIsolated {
             machineRefreshTask?.cancel()
             energyBatteryRefreshTask?.cancel()
+            sleepAssertionRefreshTask?.cancel()
             endThermalWatch()
             endConnectionWatch()
         }
@@ -178,6 +182,11 @@ final class MemoryDashboardVM: ObservableObject {
 
     func select(pid: Int32?) {
         updateCore { $0.select(pid: pid) }
+    }
+
+    /// Energy-card tap. A pid outside the table clears the selection.
+    func selectSleepAssertion(pid: Int32) {
+        updateCore { $0.selectSleepAssertion(pid: pid) }
     }
 
     func setFilter(_ text: String) {
@@ -393,6 +402,8 @@ final class MemoryDashboardVM: ObservableObject {
                 syncMachineWatch()
             case .startEnergyBatteryWatch, .stopEnergyBatteryWatch:
                 syncEnergyBatteryWatch()
+            case .startSleepAssertionWatch, .stopSleepAssertionWatch:
+                syncSleepAssertionWatch()
             case .lookupPublicIP(let queriedAt):
                 let transport = PublicIPURLSessionTransport()
                 Task { [weak self] in

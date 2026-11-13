@@ -226,8 +226,10 @@ extension DashboardCore {
         }
         if selectedPage == .energy {
             effects.append(.startEnergyBatteryWatch)
+            effects.append(.startSleepAssertionWatch)
         } else {
             effects.append(.stopEnergyBatteryWatch)
+            effects.append(.stopSleepAssertionWatch)
         }
         return effects
     }
