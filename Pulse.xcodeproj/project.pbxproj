@@ -123,6 +123,8 @@
 		B00000000000000000000083 /* NetworkConnectionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000083 /* NetworkConnectionCardView.swift */; };
 		B00000000000000000000084 /* HostWiFi.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000084 /* HostWiFi.swift */; };
 		B00000000000000000000085 /* HostWiFiReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000085 /* HostWiFiReader.swift */; };
+		B00000000000000000000090 /* PublicIPLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000090 /* PublicIPLookup.swift */; };
+		B00000000000000000000091 /* PublicIPURLSessionTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000091 /* PublicIPURLSessionTransport.swift */; };
 		B00000000000000000000013 /* OverviewCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* OverviewCards.swift */; };
 		B0000000000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000F /* Assets.xcassets */; };
 		B00000000000000000000012 /* Charts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000000012 /* Charts.framework */; };
@@ -253,6 +255,8 @@
 		A00000000000000000000083 /* NetworkConnectionCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkConnectionCardView.swift; sourceTree = "<group>"; };
 		A00000000000000000000084 /* HostWiFi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostWiFi.swift; sourceTree = "<group>"; };
 		A00000000000000000000085 /* HostWiFiReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostWiFiReader.swift; sourceTree = "<group>"; };
+		A00000000000000000000090 /* PublicIPLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicIPLookup.swift; sourceTree = "<group>"; };
+		A00000000000000000000091 /* PublicIPURLSessionTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicIPURLSessionTransport.swift; sourceTree = "<group>"; };
 		A00000000000000000000013 /* OverviewCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewCards.swift; sourceTree = "<group>"; };
 		A0000000000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A00000000000000000000010 /* Pulse.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Pulse.entitlements; sourceTree = "<group>"; };
@@ -328,6 +332,7 @@
 				A0000000000000000000002E /* MemoryPageSortPublication.swift */,
 				A00000000000000000000020 /* NetworkPage.swift */,
 				A00000000000000000000081 /* NetworkConnectionCard.swift */,
+				A00000000000000000000090 /* PublicIPLookup.swift */,
 				A00000000000000000000024 /* DiskPage.swift */,
 				A0000000000000000000003A /* MachinePage.swift */,
 				A00000000000000000000045 /* BatteryMath.swift */,
@@ -357,6 +362,7 @@
 				A00000000000000000000080 /* HostConnectionMonitor.swift */,
 				A00000000000000000000084 /* HostWiFi.swift */,
 				A00000000000000000000085 /* HostWiFiReader.swift */,
+				A00000000000000000000091 /* PublicIPURLSessionTransport.swift */,
 				A00000000000000000000023 /* HostDiskReader.swift */,
 				A0000000000000000000007C /* HostGPUReader.swift */,
 				A00000000000000000000014 /* CPULoad.swift */,
@@ -632,6 +638,8 @@
 				B00000000000000000000083 /* NetworkConnectionCardView.swift in Sources */,
 				B00000000000000000000084 /* HostWiFi.swift in Sources */,
 				B00000000000000000000085 /* HostWiFiReader.swift in Sources */,
+				B00000000000000000000090 /* PublicIPLookup.swift in Sources */,
+				B00000000000000000000091 /* PublicIPURLSessionTransport.swift in Sources */,
 				B00000000000000000000077 /* MemoryDashboardVM+ThermalAdvice.swift in Sources */,
 				B00000000000000000000071 /* MemoryDashboardVM+EnergyRanking.swift in Sources */,
 				B00000000000000000000070 /* EnergyMachineHistory.swift in Sources */,

@@ -1,6 +1,8 @@
 extension MemoryDashboardVM {
     var selectedPage: DashboardPage { navigation.selectedPage }
     var tableSort: ProcessTableSort { navigation.sort }
+    var quitPhase: QuitPhase { sidebar.quitPhase }
+    var quitMessage: String? { sidebar.quitMessage }
 
     /// Baseline for a quit estimate. A failed or missing frame never estimates.
     var quitReleaseBaseline: UInt64? {
