@@ -106,6 +106,7 @@ let package = Package(
                 "Models/AppGroupProjection.swift",
                 "Models/ProcessGlossary.swift",
                 "Models/ProcessOwnership.swift",
+                "Models/MemoryPeak.swift",
                 "Models/ProcessSignature.swift",
                 "Models/ProcessRosetta.swift",
                 "Models/ProcessStartTimeText.swift",
