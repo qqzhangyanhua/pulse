@@ -411,7 +411,7 @@ enum EnergyPage {
             return row.rates.watts
         case .wakeups:
             return row.rates.wakeupsPerSecond
-        case .name, .cpu, .memory, .threads, .disk, .diskRead, .diskWrite:
+        case .name, .cpu, .memory, .threads, .disk, .diskRead, .diskWrite, .networkDownload, .networkUpload:
             return nil
         }
     }
@@ -426,7 +426,7 @@ enum EnergyPage {
             return rates[pid]?.watts
         case .wakeups:
             return rates[pid]?.wakeupsPerSecond
-        case .name, .cpu, .memory, .threads, .disk, .diskRead, .diskWrite:
+        case .name, .cpu, .memory, .threads, .disk, .diskRead, .diskWrite, .networkDownload, .networkUpload:
             return nil
         }
     }

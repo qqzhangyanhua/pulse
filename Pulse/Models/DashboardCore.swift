@@ -32,6 +32,9 @@ enum DashboardEffect: Equatable {
     case stopEnergyBatteryWatch
     case startSleepAssertionWatch
     case stopSleepAssertionWatch
+    /// `nettop` while the network page is selected. Not a sampler task.
+    case startProcessNetworkWatch
+    case stopProcessNetworkWatch
     /// Outbound public-IP lookup. Returned only from the query click.
     case lookupPublicIP(queriedAt: Date)
     /// System location prompt for the Wi-Fi name. Returned only from the allow click.
@@ -91,6 +94,8 @@ struct DashboardCore {
     var energyBatteryReading: EnergyBatteryReading?
     /// Held sleep assertions from the energy page. Empty until a successful read.
     var sleepAssertions: [SleepAssertionRow] = []
+    /// Latest per-process download / upload. Empty off the network page. Nil rates are 「—」.
+    var processNetworkRates: [Int32: ProcessNetworkRate] = [:]
     /// Nil unless the system is serious or critical.
     var thermalNotice: String?
     /// Top CPU processes while `thermalNotice` is showing. Nil hides the card.

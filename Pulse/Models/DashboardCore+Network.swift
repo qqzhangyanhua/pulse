@@ -35,4 +35,10 @@ extension DashboardCore {
     mutating func allowWiFiSSID() -> [DashboardEffect] {
         [.requestLocationAuthorization]
     }
+
+    /// Replaces the network-page rates. An empty map clears them. Does not start `nettop`.
+    mutating func apply(processNetworkRates rates: [Int32: ProcessNetworkRate]) -> [DashboardEffect] {
+        processNetworkRates = rates
+        return []
+    }
 }

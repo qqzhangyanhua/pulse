@@ -54,6 +54,7 @@ final class DashboardCoreSelectionTests: XCTestCase {
             .stopMachineWatch,
             .stopEnergyBatteryWatch,
             .stopSleepAssertionWatch,
+            .stopProcessNetworkWatch,
         ])
         XCTAssertEqual(core.tableSort, nameSort)
 
@@ -62,18 +63,21 @@ final class DashboardCoreSelectionTests: XCTestCase {
             .stopMachineWatch,
             .startEnergyBatteryWatch,
             .startSleepAssertionWatch,
+            .stopProcessNetworkWatch,
         ])
         XCTAssertEqual(core.selectPage(.gpu), [
             .setGPUSampling(on: true),
             .stopMachineWatch,
             .stopEnergyBatteryWatch,
             .stopSleepAssertionWatch,
+            .stopProcessNetworkWatch,
         ])
         XCTAssertEqual(core.selectPage(.machine), [
             .setGPUSampling(on: true),
             .startMachineWatch,
             .stopEnergyBatteryWatch,
             .stopSleepAssertionWatch,
+            .stopProcessNetworkWatch,
         ])
         XCTAssertEqual(core.focusMemoryPage(), [
             .forwardMemoryPageSort(ProcessTableSort.defaultSort(for: .memory)),
@@ -81,7 +85,48 @@ final class DashboardCoreSelectionTests: XCTestCase {
             .stopMachineWatch,
             .stopEnergyBatteryWatch,
             .stopSleepAssertionWatch,
+            .stopProcessNetworkWatch,
         ])
+    }
+
+    func testNetworkPageWatchesNettopAndLeavingClearsRates() {
+        var core = DashboardCore(ownPid: 1)
+        let entered = core.selectPage(.network)
+        XCTAssertTrue(entered.contains(.startProcessNetworkWatch))
+        XCTAssertFalse(entered.contains(.stopProcessNetworkWatch))
+        accept(&core, rows: [
+            row(1, "Missing", memory: 1, cpu: 1),
+            row(2, "Idle", memory: 1, cpu: 1),
+            row(3, "Busy", memory: 1, cpu: 1),
+        ])
+        XCTAssertEqual(
+            core.apply(processNetworkRates: [
+                2: ProcessNetworkRate(downloadBytesPerSecond: 0, uploadBytesPerSecond: 5),
+                3: ProcessNetworkRate(downloadBytesPerSecond: 1500, uploadBytesPerSecond: 0),
+            ]),
+            []
+        )
+        XCTAssertEqual(
+            core.setTableSort(ProcessTableSort(column: .networkDownload, descending: false)),
+            []
+        )
+        XCTAssertEqual(core.sortedRows.map(\.pid), [2, 3, 1])
+        XCTAssertEqual(
+            core.setTableSort(ProcessTableSort(column: .networkDownload, descending: true)),
+            []
+        )
+        XCTAssertEqual(core.sortedRows.map(\.pid), [3, 2, 1])
+        XCTAssertEqual(
+            core.setTableSort(ProcessTableSort(column: .networkUpload, descending: true)),
+            []
+        )
+        XCTAssertEqual(core.sortedRows.map(\.pid), [2, 3, 1])
+
+        let left = core.selectPage(.cpu)
+        XCTAssertTrue(left.contains(.stopProcessNetworkWatch))
+        XCTAssertFalse(left.contains(.startProcessNetworkWatch))
+        XCTAssertTrue(core.processNetworkRates.isEmpty)
+        XCTAssertEqual(core.sortedRows.map(\.pid), [1, 2, 3])
     }
 
     func testAFilterThatHidesTheSelectedProcessKeepsANameMissAndClearsRisingOrWindowed() {

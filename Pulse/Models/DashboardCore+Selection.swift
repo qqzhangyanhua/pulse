@@ -42,6 +42,9 @@ extension DashboardCore {
             )
         }
         let projected = AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
+        if selectedPage == .network {
+            return ProcessNetworkTable.ordered(projected, rates: processNetworkRates, sort: tableSort)
+        }
         return tableSort.ordered(projected)
     }
 
@@ -230,6 +233,12 @@ extension DashboardCore {
         } else {
             effects.append(.stopEnergyBatteryWatch)
             effects.append(.stopSleepAssertionWatch)
+        }
+        if selectedPage == .network {
+            effects.append(.startProcessNetworkWatch)
+        } else {
+            processNetworkRates = [:]
+            effects.append(.stopProcessNetworkWatch)
         }
         return effects
     }

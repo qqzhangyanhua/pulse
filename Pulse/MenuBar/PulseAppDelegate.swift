@@ -37,6 +37,7 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate, ObservableObject 
         MainActor.assumeIsolated {
             ProcessPause.resumeAll(self.dashboard.pausedLedger)
             self.dashboard.restoreLoweredPrioritiesForQuit()
+            self.dashboard.stopProcessNetworkWatch()
             self.menuBar.uninstall()
         }
     }
