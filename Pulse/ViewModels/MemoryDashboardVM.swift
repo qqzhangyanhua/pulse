@@ -47,6 +47,8 @@ final class MemoryDashboardVM: ObservableObject {
     var energyBatteryReading: EnergyBatteryReading? { core.energyBatteryReading }
     /// Sleep assertions for the energy-page card. Stored on the core, not here.
     var sleepAssertions: [SleepAssertionRow] { core.sleepAssertions }
+    /// Launch items for the machine page. Stored on the core, not here.
+    var launchItems: [LaunchItemRow] { core.launchItems }
     /// The only session quit store. Phase and message are projections of this.
     var quitOutcome: ProcessQuitOutcome { core.quitOutcome }
     var sidebarSubjectPid: Int32? { core.sidebarSubjectPid }
@@ -107,6 +109,7 @@ final class MemoryDashboardVM: ObservableObject {
     var machineRefreshTask: Task<Void, Never>?
     var energyBatteryRefreshTask: Task<Void, Never>?
     var sleepAssertionRefreshTask: Task<Void, Never>?
+    var launchItemRefreshTask: Task<Void, Never>?
     var hostConnectionMonitor: HostConnectionMonitor?
     init() {
         beginThermalWatch()
@@ -119,6 +122,7 @@ final class MemoryDashboardVM: ObservableObject {
             machineRefreshTask?.cancel()
             energyBatteryRefreshTask?.cancel()
             sleepAssertionRefreshTask?.cancel()
+            launchItemRefreshTask?.cancel()
             endThermalWatch()
             endConnectionWatch()
         }
@@ -428,6 +432,8 @@ final class MemoryDashboardVM: ObservableObject {
                 syncEnergyBatteryWatch()
             case .startSleepAssertionWatch, .stopSleepAssertionWatch:
                 syncSleepAssertionWatch()
+            case .startLaunchItemWatch, .stopLaunchItemWatch:
+                syncLaunchItemWatch()
             case .lookupPublicIP(let queriedAt):
                 let transport = PublicIPURLSessionTransport()
                 Task { [weak self] in
