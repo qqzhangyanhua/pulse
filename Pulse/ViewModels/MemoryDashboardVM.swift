@@ -331,6 +331,9 @@ final class MemoryDashboardVM: ObservableObject {
         if accepted {
             next.noteWindowedPids(WindowedAppLookup.pids(in: next.rows))
         }
+        if let draft = next.consumeHistoryDraft() {
+            HistoryStore.shared.write(draft)
+        }
         core = next
         perform(effects)
     }

@@ -103,6 +103,12 @@ struct DashboardCore {
     var launchItems: [LaunchItemRow] = []
     /// Latest per-process download / upload. Empty off the network page. Nil rates are 「—」.
     var processNetworkRates: [Int32: ProcessNetworkRate] = [:]
+    /// Last successful sample waiting for the adapter to write. Not a second curve.
+    var historyDraft: HistoryDraft?
+    /// Thermal and pressure changes not yet copied into `historyDraft`.
+    var pendingHistoryEvents: [HistoryEvent] = []
+    var lastHistoryPressure: PressureLevel?
+    var lastHistoryThermalName: String?
     /// Nil unless the system is serious or critical.
     var thermalNotice: String?
     /// Top CPU processes while `thermalNotice` is showing. Nil hides the card.
@@ -147,6 +153,7 @@ struct DashboardCore {
             processListFailed: processListFailed,
             hasSnapshot: snapshot != nil
         )
+        historyDraft = nil
         let observation: ProcessQuitSession.Observation
         var applyFilters = false
         var thermalNow: Double?
@@ -262,6 +269,7 @@ struct DashboardCore {
         nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
         diskHistory = nextDisk
         recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
+        noteHistory(frame)
         recordGPUShare(clients: frame.gpuShareClients, rows: frame.rows, at: frame.snapshot.capturedAt, page: page)
         recordChip(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt, page: page)
         memoryPage = MemoryPageProjection.apply(

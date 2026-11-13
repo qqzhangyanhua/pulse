@@ -164,6 +164,9 @@
 		B00000000000000000000260 /* EnergyModelSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000260 /* EnergyModelSample.swift */; };
 		B00000000000000000000261 /* HostEnergyModelReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000261 /* HostEnergyModelReader.swift */; };
 		B00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift */; };
+		B00000000000000000000280 /* HistoryPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000280 /* HistoryPolicy.swift */; };
+		B00000000000000000000281 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000281 /* HistoryStore.swift */; };
+		B00000000000000000000282 /* DashboardCore+History.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000282 /* DashboardCore+History.swift */; };
 		B00000000000000000000201 /* PausedProcessLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000201 /* PausedProcessLedger.swift */; };
 		B00000000000000000000202 /* PausedProcessStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000202 /* PausedProcessStore.swift */; };
 		B00000000000000000000203 /* DashboardCore+Pause.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000203 /* DashboardCore+Pause.swift */; };
@@ -228,6 +231,9 @@
 		A00000000000000000000260 /* EnergyModelSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyModelSample.swift; sourceTree = "<group>"; };
 		A00000000000000000000261 /* HostEnergyModelReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostEnergyModelReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+NetworkRates.swift"; sourceTree = "<group>"; };
+		A00000000000000000000280 /* HistoryPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryPolicy.swift; sourceTree = "<group>"; };
+		A00000000000000000000281 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
+		A00000000000000000000282 /* DashboardCore+History.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+History.swift"; sourceTree = "<group>"; };
 		A00000000000000000000201 /* PausedProcessLedger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PausedProcessLedger.swift; sourceTree = "<group>"; };
 		A00000000000000000000202 /* PausedProcessStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PausedProcessStore.swift; sourceTree = "<group>"; };
 		A00000000000000000000203 /* DashboardCore+Pause.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Pause.swift"; sourceTree = "<group>"; };
@@ -429,6 +435,8 @@
 				A00000000000000000000139 /* DashboardCore+SleepAssertion.swift */,
 				A00000000000000000000350 /* LaunchItem.swift */,
 				A00000000000000000000351 /* DashboardCore+LaunchItems.swift */,
+				A00000000000000000000280 /* HistoryPolicy.swift */,
+				A00000000000000000000282 /* DashboardCore+History.swift */,
 				A00000000000000000000250 /* NettopDecoder.swift */,
 				A00000000000000000000260 /* EnergyModelSample.swift */,
 				A00000000000000000000201 /* PausedProcessLedger.swift */,
@@ -536,6 +544,7 @@
 				A0000000000000000000006B /* EnergyBatteryReader.swift */,
 				A00000000000000000000140 /* SleepAssertionReader.swift */,
 				A00000000000000000000352 /* LaunchItemReader.swift */,
+				A00000000000000000000281 /* HistoryStore.swift */,
 				A00000000000000000000251 /* NettopReader.swift */,
 				A00000000000000000000261 /* HostEnergyModelReader.swift */,
 			);
@@ -764,6 +773,9 @@
 				B00000000000000000000251 /* NettopReader.swift in Sources */,
 				B00000000000000000000260 /* EnergyModelSample.swift in Sources */,
 				B00000000000000000000261 /* HostEnergyModelReader.swift in Sources */,
+				B00000000000000000000280 /* HistoryPolicy.swift in Sources */,
+				B00000000000000000000282 /* DashboardCore+History.swift in Sources */,
+				B00000000000000000000281 /* HistoryStore.swift in Sources */,
 				B00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift in Sources */,
 				B00000000000000000000201 /* PausedProcessLedger.swift in Sources */,
 				B00000000000000000000202 /* PausedProcessStore.swift in Sources */,
