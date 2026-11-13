@@ -114,9 +114,11 @@ final class PressureNoticeCenter: NSObject, UNUserNotificationCenterDelegate {
 
     private func post(
         _ body: String,
-        identifier: String = Self.requestIdentifier,
+        identifier supplied: String? = nil,
         route: AlertNoticeRoute? = nil
     ) {
+        // Default arguments cannot name Self, and this static is MainActor-isolated.
+        let identifier = supplied ?? PressureNoticeCenter.requestIdentifier
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
             let status = settings.authorizationStatus
