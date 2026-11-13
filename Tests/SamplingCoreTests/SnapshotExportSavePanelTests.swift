@@ -188,7 +188,7 @@ final class SnapshotExportSavePanelTests: XCTestCase {
             processListFailed: false,
             savedAt: savedAt
         )
-        return SnapshotExportSession(frozen: frozen!, calendar: gregorian, timeZone: zone)
+        return SnapshotExportSession(frozen: frozen!, hideNames: false, calendar: gregorian, timeZone: zone)
     }
 
     private var zone: TimeZone { TimeZone(secondsFromGMT: 8 * 3600)! }
