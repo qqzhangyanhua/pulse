@@ -9,6 +9,7 @@ final class PausedProcessWiringSourceTests: XCTestCase {
         let terminate = try functionBody(named: "applicationWillTerminate", in: delegate)
         XCTAssertTrue(terminate.contains("ProcessPause.resumeAll"))
         XCTAssertTrue(terminate.contains("pausedLedger"))
+        XCTAssertTrue(terminate.contains("restoreLoweredPrioritiesForQuit"))
         XCTAssertTrue(terminate.contains("menuBar.uninstall()"))
 
         let launch = try functionBody(named: "didLaunch", in: delegate)
@@ -30,8 +31,11 @@ final class PausedProcessWiringSourceTests: XCTestCase {
         XCTAssertFalse(sidebar.contains("NSAlert"))
         XCTAssertFalse(sidebar.contains("UserDefaults"))
         XCTAssertTrue(sidebar.contains("更多"))
+        XCTAssertTrue(sidebar.contains("priorityMenuOffer"))
         XCTAssertFalse(sidebar.contains("挂起"))
         XCTAssertFalse(sidebar.contains("冻结"))
+        XCTAssertFalse(sidebar.contains("限速"))
+        XCTAssertFalse(sidebar.contains("节流"))
     }
 
     private func repoText(_ relative: String) throws -> String {

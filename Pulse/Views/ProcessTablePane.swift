@@ -304,7 +304,9 @@ struct ProcessTablePane: View {
                         rowPid: row.pid
                     ),
                     paused: vm.isPaused(pid: row.pid),
-                    onResume: { Task { await vm.resumePausedProcess(pid: row.pid) } }
+                    loweredPriority: vm.isLoweredPriority(pid: row.pid),
+                    onResume: { Task { await vm.resumePausedProcess(pid: row.pid) } },
+                    onRestorePriority: { Task { await vm.restoreLoweredPriority(pid: row.pid) } }
                 )
                     .contextMenu {
                         Button("复制") {
@@ -429,7 +431,9 @@ private struct ProcessLine: View {
     /// Phase-6 chip. Per-row Top5 ∩ `.rising`; selection is not a gate. Nil paints nothing.
     var growthBadge: MemoryGrowthListBadge?
     var paused = false
+    var loweredPriority = false
     var onResume: () -> Void = {}
+    var onRestorePriority: () -> Void = {}
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -440,6 +444,9 @@ private struct ProcessLine: View {
                     .lineLimit(1)
                 if paused {
                     PausedProcessMark { onResume() }
+                }
+                if loweredPriority {
+                    LoweredPriorityMark { onRestorePriority() }
                 }
                 if let growthBadge {
                     MemoryGrowthRisingBadge(badge: growthBadge)
@@ -480,12 +487,16 @@ private struct ProcessLine: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .modifier(PauseResumeAction(enabled: paused, resume: onResume))
+        .modifier(PriorityRestoreAction(enabled: loweredPriority, restore: onRestorePriority))
     }
 
     private var accessibilityLabel: String {
         var parts = [row.name]
         if paused {
             parts.append("已暂停")
+        }
+        if loweredPriority {
+            parts.append("已降低优先级")
         }
         parts.append("CPU \(ByteFormat.cpu(row.cpuPercent))")
         parts.append("内存 \(ByteFormat.memory(row.memoryBytes))")

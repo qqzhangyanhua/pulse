@@ -412,6 +412,10 @@ final class MemoryDashboardVM: ObservableObject {
             case .resumeProcess(let pid):
                 ProcessPause.resume(pid)
                 ProcessPause.store(core.pausedLedger)
+            case .lowerPriority(let pid):
+                ProcessPriority.lower(pid)
+            case .restorePriority(let pid):
+                ProcessPriority.restore(pid)
             case .setGPUSampling:
                 break
             case .startMachineWatch, .stopMachineWatch:
