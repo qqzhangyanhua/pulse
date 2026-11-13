@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 
 struct HistoryRangeControl: View {
