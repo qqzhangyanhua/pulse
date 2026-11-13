@@ -7,7 +7,7 @@
 ## 总体约束
 
 - macOS 14+，SwiftUI 原生，单 Target、单进程。不拆 Helper / XPC，不装内核扩展。
-- 非沙盒，`Pulse.entitlements` 不再是空 dict，只包含定位权限 `com.apple.security.personal-information.location`（用来显示 Wi-Fi 名称）。Hardened Runtime 打开，公证直装（见 [RELEASE.md](RELEASE.md)）。
+- 非沙盒，`Pulse.entitlements` 不再是空 dict，只包含定位权限 `com.apple.security.personal-information.location`（用来显示 Wi-Fi 名称）。见 [ADR-0006](adr/0006-location-for-wifi-name.md)。Hardened Runtime 打开，公证直装（见 [RELEASE.md](RELEASE.md)）。
 - 读不到就显示「—」「暂时读不到」「未采样」，**不写假 0**。真实 0 照常显示。
 - 文案冷静：压力只有「正常 / 偏高」，不出现「危险 / 危急 / 泄漏」。菜单栏和界面都不用警报红。
 - 可移植逻辑（Darwin / AppKit 无关）放进 `Package.swift` 的 `SamplingCore` 源列表，由 `swift test` 覆盖。
@@ -289,7 +289,7 @@ Tab 选中胶囊、总览高度和工具栏里的页专属开关用同一段动�
 - [ ] 网络页：主机上 / 下行；进程列「暂不可用」；累计超过 4 GiB 后总览和历史曲线不周期性缺失
 - [ ] 断网或关闭 Wi-Fi 时卡片显示「未连接」
 - [ ] Wi-Fi 上，信号档和 dBm 随采样更新
-- [ ] 只有以太网时，不显示 Wi-Fi 信号行
+- [ ] 只有以太网时，Wi-Fi 信号行和名称行都保持隐藏
 - [ ] SSID 在点击「允许」之前是「—」；允许后显示名称；拒绝后显示「定位未授权」
 - [ ] 名称被截断时，悬停可以看到完整 SSID
 - [ ] 公网 IP 只在点击后查询；主站失败会走备用；失败显示「—」并可重试

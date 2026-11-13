@@ -270,7 +270,8 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
         XCTAssertTrue(location.contains("MainActor.assumeIsolated"))
         XCTAssertTrue(location.contains("case .notDetermined"))
         XCTAssertTrue(location.contains("case .denied, .restricted"))
-        XCTAssertTrue(location.contains("case .authorized, .authorizedAlways, .authorizedWhenInUse"))
+        XCTAssertTrue(location.contains("case .authorizedAlways, .authorizedWhenInUse"))
+        XCTAssertFalse(location.contains("case .authorized,"))
         XCTAssertFalse(location.contains("requestAlwaysAuthorization"))
 
         let card = try repoText("Pulse/Views/NetworkConnectionCardView.swift")

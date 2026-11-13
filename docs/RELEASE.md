@@ -1,6 +1,6 @@
 # Pulse 发布（公证直装）
 
-macOS 14+、单 Target、bundle id `com.qqzhangyanhua.pulse`、版本 `0.0.1`（`CFBundleVersion` `1`）。分发是 **Developer ID + notarytool + stapler**，不是 Mac App Store。沙盒保持关闭，`Pulse/Pulse.entitlements` 保持空 dict。Hardened Runtime 已在工程打开。
+macOS 14+、单 Target、bundle id `com.qqzhangyanhua.pulse`、版本 `0.0.1`（`CFBundleVersion` `1`）。分发是 **Developer ID + notarytool + stapler**，不是 Mac App Store。沙盒保持关闭。`Pulse/Pulse.entitlements` 不是空 dict，只有 `com.apple.security.personal-information.location`，用来在用户点「允许」后读取 Wi-Fi 名称。Hardened Runtime 已在工程打开。
 
 本仓库不存放证书、Team ID、Apple ID 或 app 专用密码。没有 Developer ID Application 证书时，`scripts/notarize.sh` 会在 archive 之前退出。
 
@@ -78,7 +78,7 @@ Team、钥匙串身份或公证凭据缺任何一项，这里就会失败，并�
 1. 确认本机是 macOS，且 `DEVELOPMENT_TEAM`、Developer ID Application 身份、公证凭据都在。
 2. `xcodebuild archive`（scheme `Pulse`，configuration `Release`）。这次构建覆盖为手动签名：指定的 Developer ID、`ENABLE_HARDENED_RUNTIME=YES`、`ENABLE_APP_SANDBOX=NO`、`CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO`，entitlements 仍是 `Pulse/Pulse.entitlements`。
 3. 写一份临时的 export options（`method` = `developer-id`，`signingStyle` = `manual`）到 `build/export/exportOptions.plist`，再 `xcodebuild -exportArchive`。
-4. 若 export 因描述文件失败，脚本会把失败打出来，并用同一身份对 archive 里的 `Pulse.app` 执行 `codesign --options runtime --timestamp`。App 不开沙盒、entitlements 为空，不需要 Mac App Store 描述文件。
+4. 若 export 因描述文件失败，脚本会把失败打出来，并用同一身份对 archive 里的 `Pulse.app` 执行 `codesign --options runtime --timestamp`。App 不开沙盒。entitlements 只有定位这一项 `com.apple.security.personal-information.location`，不是空 dict，也不需要 Mac App Store 描述文件。
 5. `ditto` 打 zip，`xcrun notarytool submit --wait`。
 6. `xcrun stapler staple` / `stapler validate`，再用 `spctl --assess --type execute` 看 Gatekeeper。
 

@@ -48,7 +48,7 @@ final class HostWiFiLocation: NSObject, CLLocationManagerDelegate {
             return .notDetermined
         case .denied, .restricted:
             return .denied
-        case .authorized, .authorizedAlways, .authorizedWhenInUse:
+        case .authorizedAlways, .authorizedWhenInUse:
             return .authorized
         @unknown default:
             return .denied
