@@ -109,6 +109,8 @@ struct DashboardCore {
     var processNetworkRates: [Int32: ProcessNetworkRate] = [:]
     /// Last successful sample waiting for the adapter to write. Not a second curve.
     var historyDraft: HistoryDraft?
+    /// Saved retention. The adapter sets this before each sample. Absent choice is 90 days.
+    var historyRetention: HistoryRetention = .days(90)
     /// Thermal and pressure changes not yet copied into `historyDraft`.
     var pendingHistoryEvents: [HistoryEvent] = []
     var lastHistoryPressure: PressureLevel?

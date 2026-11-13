@@ -48,6 +48,7 @@ struct PulseSettingsView: View {
                 }
                 .accessibilityLabel(AlertRuleCopy.addButton)
             }
+            HistorySettingsSection()
             Section("登录时打开 Pulse") {
                 Toggle("登录时打开 Pulse", isOn: loginItemOn)
                 if let caption = loginControl.caption {

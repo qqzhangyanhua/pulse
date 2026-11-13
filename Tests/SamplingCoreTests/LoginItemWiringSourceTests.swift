@@ -16,7 +16,7 @@ final class LoginItemWiringSourceTests: XCTestCase {
         XCTAssertTrue(view.contains(".requiresApproval"))
         XCTAssertTrue(view.contains("registrationError"))
         XCTAssertTrue(view.contains("NSApplication.didBecomeActiveNotification"))
-        XCTAssertEqual(occurrenceCount(of: "@AppStorage", in: view), 3)
+        XCTAssertEqual(occurrenceCount(of: "@AppStorage", in: view), 4)
         XCTAssertFalse(view.contains("UserDefaults"))
         XCTAssertFalse(view.contains("pulse.login"))
         XCTAssertFalse(view.contains("loginItem("))

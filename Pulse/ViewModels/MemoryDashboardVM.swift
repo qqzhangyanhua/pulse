@@ -323,6 +323,7 @@ final class MemoryDashboardVM: ObservableObject {
     /// reaches one presence observation. Model writes stay on the accepted paths.
     private func applySample(_ result: Result<SampledFrame, HostMemoryError>, accepted: Bool) {
         var next = core
+        next.historyRetention = HistoryRetentionPreference.retention()
         let effects = next.apply(
             result: result,
             accepted: accepted,
