@@ -4,7 +4,7 @@ import XCTest
 /// Linux reads text. A pass is not a painted row, not List retention, and not VoiceOver.
 final class MemoryGroupRowHighlightWiringSourceTests: XCTestCase {
     func testBackgroundAndInkShareTheVisibleGroupDecision() throws {
-        let pane = try repoText("Pulse/Views/ProcessTablePane.swift")
+        let pane = try WiringSourceText.text(for: "ProcessTablePane")
         let list = try functionBody(named: "processList", in: pane)
         XCTAssertEqual(occurrenceCount(of: "MemoryGroupRowHighlight.highlighted(", in: list), 1)
         XCTAssertTrue(list.contains("selected: groupHighlighted"))

@@ -114,6 +114,45 @@ final class DashboardCorePauseTests: XCTestCase {
         XCTAssertEqual(core.quitOutcome.record(for: 42)?.phase, .quitting)
     }
 
+    func testPausedThermalOrGPUQuitAsksToContinueFirst() {
+        var core = ready(pausable(42, "Mail", start: 100))
+        XCTAssertEqual(core.pauseSelected(selfUid: 501), [.pauseProcess(pid: 42)])
+        XCTAssertEqual(
+            core.beginThermalTerminate(pid: 42),
+            [.confirmResumeBeforeQuit(pid: 42, displayName: "Mail")]
+        )
+        XCTAssertEqual(core.resolveResumeBeforeQuit(pid: 42, confirmed: false), [])
+        XCTAssertTrue(core.isPaused(pid: 42))
+        XCTAssertNil(core.quitOutcome.record(for: 42))
+
+        _ = core.selectPage(.gpu)
+        XCTAssertEqual(
+            core.beginThermalTerminate(pid: 42),
+            [.confirmResumeBeforeQuit(pid: 42, displayName: "Mail")]
+        )
+        let confirmed = core.resolveResumeBeforeQuit(pid: 42, confirmed: true)
+        XCTAssertEqual(confirmed.count, 2)
+        XCTAssertEqual(confirmed.first, .resumeProcess(pid: 42))
+        guard case .terminate(let pid, false, let token) = confirmed[1] else {
+            return XCTFail("expected resume then terminate, got \(confirmed)")
+        }
+        XCTAssertEqual(pid, 42)
+        XCTAssertNil(token)
+        XCTAssertFalse(core.isPaused(pid: 42))
+        XCTAssertTrue(core.pausedLedger.records.isEmpty)
+    }
+
+    func testUnpausedThermalRowTerminatesWithoutResumePrompt() {
+        var core = ready(pausable(42, "Mail"))
+        _ = core.selectPage(.gpu)
+        let effects = core.beginThermalTerminate(pid: 42)
+        XCTAssertEqual(effects.count, 1)
+        guard case .terminate(let pid, false, nil) = effects[0] else {
+            return XCTFail("expected terminate, got \(effects)")
+        }
+        XCTAssertEqual(pid, 42)
+    }
+
     private func ready(_ row: ProcessRow) -> DashboardCore {
         var core = DashboardCore(ownPid: 1)
         accept(&core, rows: [row])
