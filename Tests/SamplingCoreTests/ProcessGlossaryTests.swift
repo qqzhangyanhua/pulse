@@ -65,8 +65,7 @@ final class ProcessGlossaryTests: XCTestCase {
             "searchpartyd": (restarts, "参与查找设备。"),
         ]
         XCTAssertEqual(expected.count, 32)
-        XCTAssertEqual(ProcessGlossary.entries.count, 32)
-        XCTAssertEqual(Set(ProcessGlossary.entries.keys), Set(expected.keys))
+        XCTAssertTrue(Set(expected.keys).isSubset(of: Set(ProcessGlossary.entries.keys)))
         XCTAssertEqual(ProcessQuitSafety.canQuit.rawValue, "可以退出")
         XCTAssertEqual(ProcessQuitSafety.restarts.rawValue, "退出后会自动重启")
         XCTAssertEqual(ProcessQuitSafety.systemProcess.rawValue, "不建议退出（系统进程）")
@@ -92,6 +91,52 @@ final class ProcessGlossaryTests: XCTestCase {
         }
         XCTAssertNil(ProcessGlossary.entry(for: "Kernel_task"))
         XCTAssertNil(ProcessGlossary.note(for: "Kernel_task"))
+    }
+
+    func testAboutOneHundredEntriesEachHaveAJudgmentAndReason() {
+        let names = Array(ProcessGlossary.entries.keys)
+        XCTAssertGreaterThanOrEqual(names.count, 90)
+        XCTAssertLessThanOrEqual(names.count, 120)
+        XCTAssertEqual(Set(names).count, names.count)
+        XCTAssertEqual(ProcessGlossary.notes.count, names.count)
+
+        let allowed: Set<String> = [
+            "可以退出",
+            "退出后会自动重启",
+            "不建议退出（系统进程）",
+        ]
+        let banned = ["泄漏", "泄露", "leak", "危险", "告警", "异常", "独占", "可释放", "活动监视器", "真实占用", "footprint"]
+        var seen: Set<ProcessQuitSafety> = []
+        for name in names {
+            XCTAssertFalse(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, name)
+            let entry = ProcessGlossary.entry(for: name)
+            XCTAssertNotNil(entry, name)
+            let note = entry?.note ?? ""
+            let reason = entry?.reason ?? ""
+            XCTAssertFalse(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, name)
+            XCTAssertFalse(reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, name)
+            XCTAssertNotEqual(note, reason, name)
+            XCTAssertEqual(ProcessGlossary.note(for: " \(name) "), note, name)
+            XCTAssertEqual(ProcessGlossary.notes[name], note, name)
+            let judgment = entry?.quitSafety.rawValue ?? ""
+            XCTAssertTrue(allowed.contains(judgment), name)
+            if let entry {
+                seen.insert(entry.quitSafety)
+            }
+            let line = entry?.quitSafetyText ?? ""
+            XCTAssertTrue(line.hasPrefix(judgment + "。"), name)
+            XCTAssertTrue(line.contains(reason), name)
+            let flipped = name == name.lowercased() ? name.uppercased() : name.lowercased()
+            if ProcessGlossary.entries[flipped] == nil {
+                XCTAssertNil(ProcessGlossary.entry(for: flipped), name)
+            }
+            let blob = "\(note)\n\(reason)\n\(line)"
+            for word in banned {
+                XCTAssertFalse(blob.localizedCaseInsensitiveContains(word), "\(name) \(word)")
+            }
+            XCTAssertFalse(blob.contains("未知"), name)
+        }
+        XCTAssertEqual(seen, Set([.canQuit, .restarts, .systemProcess]))
     }
 
     func testNotesOmitBannedWords() {
