@@ -17,9 +17,11 @@
 ```
 PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
           └─ PulseAppDelegate ── MenuBarController（NSStatusItem + NSPopover）
-                 └─ MemoryDashboardVM（@MainActor，唯一 VM，活过窗口）
-                 │ 采样循环：SamplingRequestGate + SamplingClock + SamplingSession
-                 ▼
+                 └─ MemoryDashboardVM（适配器，@MainActor，唯一 VM，活过窗口）
+                    │ 只发布一份 DashboardCore。采样循环、perform、观察者注册留在适配器
+                    │ SamplingRequestGate + SamplingClock + SamplingSession
+                    ├─ DashboardCore（同步状态；变更返回 DashboardEffect）
+                    ▼
              MemorySampler（actor，唯一采样器）
                  ├─ HostMemoryReader / SwapUsageReader / PressureProvider / KernelPressure
                  ├─ HostCPUReader（整机 + 每核）
@@ -30,16 +32,18 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 
 - `MemorySampler.sample()` 每次产出一帧不可变的 `SampledFrame`：主机内存快照、进程行、选中进程详情、整机 CPU、最忙一核、主机网络 / 磁盘速率、Top5 内存序列、权限脚注。主线程只读这帧。
 - 主窗、菜单栏、各资源页都读同一个 VM 的同一帧。没有第二个采样器，也没有第二条轮询。这个 VM 归 `PulseAppDelegate`，启动完成就 `start()`，关窗不释放。
-- `Models/` 里的类型是纯投影：输入现有字段，输出文案和状态，不采样、不存历史。
+- 仪表盘的同步状态在 `DashboardCore`（`MemoryDashboardVM` 只发布这一份 `core`）。采样应用、选中、页面、排序、过滤、结束进程、能耗页选中代次、定位 Top App 和 Top3 点击、网络连接与公网 IP、定位授权效果、GPU 与芯片温度的页面切换、降频提示与散热建议、电池卡片、本机信息、工具栏机型名，以及重试投影 `isRetrying` 和快照冻结的状态步骤都在这里，并返回 `DashboardEffect`。`isRetrying` 是采样门闩 `retrying` 的投影，不是第二套重试标志。公网 IP 查询和定位授权只在用户点击时返回。
+- 适配器只保留同名只读转发、意图方法、`perform` / `performExternal`、采样循环，以及热状态、连接、Wi-Fi、电池和本机观察者的注册与注销。副作用从核心交到适配器，由适配器对宿主执行：采样器、`ProcessActions`、本机页和电池观察、公网 IP 传输、定位授权、`ProcessInfo` 热状态通知、读数和快照文件 IO。有窗口 App 的 pid 仍由适配器查询后传入。结束进程的结果、读数、门闩重试位、机型名和查询结果再作为输入交回 `DashboardCore`（例如 `noteMachineLabel`、`noteRetrying`、`finishQuit`、`finishPublicIPLookup`）。
+- `DashboardCore` 放在 `Models/`，但是仪表盘状态，不是纯投影。同目录里其余类型仍是纯投影：输入现有字段，输出文案和状态，不采样、不存历史。
 - 「保存当前快照」不新增采样器。它在主线程抄下已经发布的那一帧，做成预览和本机 HTML。
 
 ## 采样节奏与失败
 
 - 前台（主窗可见且 App 激活）每 1.5 秒采一帧；主窗在后台或已关、只剩菜单栏时每 3 秒一帧（`SamplingPace`）。循环每 400ms 醒一次，只为及时察觉前后台切换，到期才采。
-- 采样在 `applicationDidFinishLaunching` 开始，不等主窗出现。没有主窗时采样门保持窗口不可见，走后台 3 秒。带着主窗启动时，窗口锚点把采样门改回前台，第一段间隔仍是 1.5 秒。`start()` 幂等，窗口再次绑定不会开第二条循环。
+- 采样在 `applicationDidFinishLaunching` 开始，不等主窗出现。没有主窗时采样门保持窗口不可见，走后台 3 秒。带着主窗启动时，窗口锚点把采样门改回前台，第一段间隔仍是 1.5 秒。`start()` 幂等，窗口再次绑定不会开第二条循环。循环在适配器上（`start`、`tick`、`sleepInterruptible`，以及 `SamplingRequestGate`、`SamplingClock`、`SamplingSession`）。`DashboardCore` 不睡眠，也不读门闩。
 - 关掉主窗不退出 App（`terminateAfterLastWindowClosed = false`），菜单栏继续用同一个采样器。`⌘Q` 才真正退出。
 - 采样失败进入失败空态，保留上一帧的数据和曲线，不清零。七处失败空态共用 `SamplingRetryChrome`：按钮「重试」，等待中显示「正在重试…」。
-- 手动重试和定时到期共享同一个在途请求（`SamplingRequestGate`）。在途时再点重试会并入当前请求，不会再排一帧。重试期间不会把「失败」退回「采样中」。
+- 手动重试和定时到期共享同一个在途请求（`SamplingRequestGate`）。在途时再点重试会并入当前请求，不会再排一帧。重试期间不会把「失败」退回「采样中」。失败相位由 `DashboardCore.retry()` 保持；适配器只执行 `requestRetryWake`（请求门闩并取消当前睡眠），再把门闩的 `retrying` 记成 `isRetrying`。
 
 ## 主机读数
 
@@ -86,7 +90,7 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 - 进程表：名称、CPU、内存、线程，默认内存降序。表头可点排序，同值按 pid 升序。选中行可用 ⌘C 或右键「复制」，写成一行制表符分隔文本：名称、PID（按 App 合并时写成员数，含只有一个成员的组）、这一页表格里的读数。缺数是「—」；网络列仍是「暂不可用」。CPU 页带上能耗影响和唤醒，磁盘、网络页同一规则，列跟各页表格走。内存页且「按 App」生效时，底色和 `ProcessLine` 的文字颜色用同一次判断：选中 pid 还在这一帧未合并的可见行里，就涂包含它的当前同名合并行，N 为 1 时就是它自己。选中 pid 不可见、没有选中、合并关闭，或当前不是内存页时，仍是 `selectedPid == row.pid`。这只表示这一行包含原来的选中进程。列表的 `selection` 绑定仍是原来的 pid，不写成代表 pid，也不加读屏选中特征。滚动、`⌘C` 和右键复制不跟着这行高亮走。
 - 工具栏胶囊开关，默认都关，只在本次会话内有效：
   - 「仅上涨」：只留下有「上涨」徽标的行。只在内存页。
-  - 「仅窗口 App」：只留下 `activationPolicy == .regular` 的进程。只在内存页。开关关闭或不在内存页时不查询哪些进程有窗口；打开且在内存页时，可见行和选中回落各查一次。
+  - 「仅窗口 App」：只留下 `activationPolicy == .regular` 的进程。只在内存页。列表用缓存在 `DashboardCore` 上的 pid 集：适配器在每次接受的采样之后查一次，并在「只看有窗口的 App」打开时再查一次，把得到的 pid 集交给过滤。开关关闭或不在内存页时不用这套 pid 过滤可见行。新开的窗口要到下一次接受的采样才出现在列表里。Top3 点击和进程树跳转是否关掉这个开关，用当时重新查到的 pid 集决定，这次查找不写进那份缓存。
   - 「按 App」：内存页、CPU 页和能耗页都有。内存页和 CPU 页把当前可见行按名称合成一行，内存、线程、CPU、磁盘相加，任何成员缺数则合计缺数。这两页的能耗和唤醒按有读数的成员相加，有成员缺失则保留部分和并在详情注明「部分读数」，全部缺失仍是「—」。选中落到该组内存最多的 pid。能耗页的求和用 1 分钟窗口，见「能耗页」。磁盘页和网络页不合并。这项在内存页、CPU 页或能耗页生效时，详情头不显示进程树按钮，已经打开的树会关掉；磁盘页和网络页不因此隐藏。
 - 过滤顺序：名称过滤 → 仅上涨 → 仅窗口 App → 按 App 合并 → 表头排序。菜单栏 Top3、上涨 Top5 和「占用最多的 App」都读未过滤、未合并的完整列表。
 - 过滤后无结果：「清空过滤」一次清掉名称、仅上涨和仅窗口 App，「按 App」保持不变（`clearMemoryPageFilters`）。只开「仅窗口 App」导致的空态也走「没有匹配的 App」，副句仍是「清空名称和仅上涨过滤。」，没有提到仅窗口 App。采样中、列表失败、无进程这几种空态优先。
@@ -201,7 +205,7 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 - 「仅窗口 App」：开关开着且该 PID 不在现有窗口集里时才关掉。窗口集仍是 `WindowedAppLookup` 交给 `WindowedAppFilter` 的那一次，不另定义哪些进程有窗口。已在集里则保持开。
 - 「按 App」不改。准备不写排序。
 
-准备之后仍是现成的 `selectPidIfPresent`，然后只调用一次未改动的 `MemoryDashboardVM.focusMemoryPage`。这一次就是全部状态切页：`DashboardNavigation.focusMemoryPage`、`publishMemoryPageSort`、两道清选中、`syncMachineWatch`。清选中看到的是调整后的开关，所以被点 PID 留下来。详情仍绑定这个 `selectedPid`。`groupedByApp` 保持时，现有 `processListScrollTarget` 再经 `MemoryRevealGroupRow` 滚到可见组代表；代表可以不是被点 PID。选中、侧栏和退出仍是被点 PID，不换成代表。这里的 `focusMemoryPage` 是 VM 上的那个，不是 `PulseAppDelegate.focusMemoryPage`。
+准备之后仍是现成的 `selectPidIfPresent`，然后只调用一次未改动的 `MemoryDashboardVM.focusMemoryPage`。这一次就是全部状态切页：适配器调用 `DashboardCore.focusMemoryPage`，核心做 `DashboardNavigation.focusMemoryPage`、`publishMemoryPageSort` 和两道清选中，并返回本机观察效果；适配器再执行 `syncMachineWatch`。清选中看到的是调整后的开关，所以被点 PID 留下来。详情仍绑定这个 `selectedPid`。`groupedByApp` 保持时，现有 `processListScrollTarget` 再经 `MemoryRevealGroupRow` 滚到可见组代表；代表可以不是被点 PID。选中、侧栏和退出仍是被点 PID，不换成代表。这里的 `focusMemoryPage` 是 VM 上的那个，不是 `PulseAppDelegate.focusMemoryPage`。
 
 点击时 PID 已经不在 `rows`：不做这次准备，不写这个消失的 PID，也不选同名的另一行。然后仍是一次 `MemoryDashboardVM.focusMemoryPage`。不保证原来的选中还在，因为这一次共享清选中仍可能按现有开关清掉它。控制器接着只做一次窗口激活，不再切页。
 
@@ -249,7 +253,7 @@ Tab 选中胶囊、总览高度和工具栏里的页专属开关用同一段动�
 ## 测试
 
 - `swift test` 编译 `SamplingCore` 并跑 `Tests/SamplingCoreTests/`，覆盖纯投影、采样节奏、请求门闩、退出会话、退出路由，以及保存当前快照的文档、转义和文件替换。
-- 部分 `*WiringSourceTests` 直接读 App 源码文本，校验视图接线。保存快照的接线测试只证明源码约束，不代替 SwiftUI、系统保存面板或 VoiceOver。
+- 部分 `*WiringSourceTests` 直接读 App 源码文本，校验视图接线。保存快照的接线测试只证明源码约束，不代替 SwiftUI、系统保存面板或 VoiceOver。`MemoryDashboardVM` 不参与 `swift test`。`MemoryDashboardVMAdapterWiringSourceTests` 读适配器源码，确认只有一个 `@Published`（`core`），并且不直接给已经迁到 `DashboardCore` 的状态字段赋值。适配器行为靠下面的本机冒烟，不另写单元测试。
 - CI（`.github/workflows/ci.yml`，`macos-15`）跑 `swift test`，再以 `CODE_SIGNING_ALLOWED=NO` 构建 App。
 - 能耗页的 1 分钟窗口、短窗、有效时长、缺读数 / 真实 0 / 计数回退、失败帧不清窗口、nil 双向排在最后、名称搜索排序、按 App 的窗口求和与部分读数，以及 CPU 页两帧排序回归，在 `EnergyPageTests` 和 `EnergyWindowTests`。分钟桶的滚动、刚好 3600 秒留下、超过 60 桶丢掉最老的、缺分钟不补 0、失败帧不改桶，在 `EnergyMinuteLedgerTests`。1 小时排行保留已退出进程、pid 复用不合并、计数回退切开世代，在 `EnergyExitedRankingTests`。电池卡片的显隐、电量、电源和时间状态在 `EnergyBatteryTests`。4 小时进程合计的分钟平均、240 点上限和缺分钟留空在 `EnergyHistoryTests`。`swift test` 覆盖这些纯逻辑。它不能代替本机冒烟。
 - 读取系统的代码和视图不在 `swift test` 里，需要按下面的清单在本机冒烟。
@@ -264,6 +268,7 @@ Tab 选中胶囊、总览高度和工具栏里的页专属开关用同一段动�
 - [ ] 用量大数、分类条、压力档与曲线、四格（交换读不到时显示「— / 未采样」）
 - [ ] 空闲且 `sysctl kern.memorystatus_vm_pressure_level` 为 1 时，总览压力档、菜单栏圆点、弹出条压力行都是正常；警告压力时三处变为偏高
 - [ ] 名称过滤、仅上涨、仅窗口 App、按 App 都能切换；过滤无结果有空态，「清空过滤」一次清干净
+- [ ] 「只看有窗口的 App」打开后，新变成有窗口的 App 要到下一次接受的采样才出现在列表里
 - [ ] 「占用最多的 App」可点，定位并选中该行
 - [ ] 详情：内存主曲线 + CPU 辅曲线；切进程后重采；大数下写「当前可见的 N 个同名进程合计」或「当前进程（PID …）」；主曲线标题按该进程口径，不少于 2 点时摘要带 PID，0 或 1 点仍是「正在采集内存曲线」；上涨槽有「这条趋势属于 PID …」，现有样本不足槽显示「当前采样对象：PID …」，PID 来自本次 `curveRow`（`detail.row`），沿原合并读屏；CPU 辅曲线不写 PID；系统进程有一句说明
 - [ ] 详情「内存趋势」三态：样本不足 / 上涨 / 不显示；列表「上涨」徽标只出现在前 5 里

@@ -42,13 +42,13 @@ struct EnergyProcessTable: View {
             },
             set: { newValue in
                 guard let newValue else {
-                    vm.selectedPid = nil
+                    vm.select(pid: nil)
                     return
                 }
                 guard let entry = rankRows.first(where: { $0.id == newValue }), entry.isQuitTarget else {
                     return
                 }
-                vm.selectedPid = entry.pid
+                vm.select(pid: entry.pid)
             }
         )
     }
@@ -83,7 +83,7 @@ struct EnergyProcessTable: View {
     }
 
     private var rankingSpanControl: some View {
-        Picker("排行", selection: $vm.energyRankingSpan) {
+        Picker("排行", selection: Binding(get: { vm.energyRankingSpan }, set: { vm.setEnergyRankingSpan($0) })) {
             Text("1 分钟").tag(EnergyRankingSpan.oneMinute)
             Text("1 小时").tag(EnergyRankingSpan.oneHour)
         }
@@ -152,7 +152,7 @@ struct EnergyProcessTable: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Button(EnergyPageCopy.filteredEmptyButton) {
-                    vm.filter = ""
+                    vm.setFilter("")
                 }
                 .buttonStyle(.bordered)
                 .padding(.top, 4)

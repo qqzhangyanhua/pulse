@@ -176,14 +176,13 @@ final class AppGroupProjectionTests: XCTestCase {
         XCTAssertTrue(overview.contains("TopConsumer.leading(in: vm.rows)"))
         XCTAssertFalse(overview.contains("AppGroupProjection"))
 
-        let vm = try source("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let vm = try source("Pulse/Models/DashboardCore+Selection.swift")
         let sorted = try functionBody(named: "sortedRows", in: vm)
         let groupedCall = "grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage)"
         XCTAssertTrue(sorted.contains("AppGroupProjection.apply(rows: visibleRows"))
         XCTAssertTrue(sorted.contains(groupedCall))
         XCTAssertFalse(sorted.contains("selectedPage == .memory"))
-        let quit = try source("Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift")
-        let selection = try functionBody(named: "applyGroupedByAppSelection", in: quit)
+        let selection = try functionBody(named: "applyGroupedByAppSelection", in: vm)
         XCTAssertTrue(selection.contains(groupedCall))
         XCTAssertFalse(selection.contains("selectedPage == .memory"))
         let menu = try functionBody(named: "menuBarPopover", in: vm)

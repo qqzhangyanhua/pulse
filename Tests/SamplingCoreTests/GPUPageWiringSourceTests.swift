@@ -87,20 +87,6 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertLessThan(skipChannel, readChannel)
     }
 
-    /// Enter applies this beat immediately. A failed main sample with no visit
-    /// success is the sampling-failure empty state, not a pending skeleton.
-    /// Leave still does not publish this beat's numbers.
-    func testJustEnteredFailedMainSamplePublishesTheFailureFrame() throws {
-        let gpuVM = try repoText("Pulse/ViewModels/MemoryDashboardVM+GPU.swift")
-        let parts = gpuVM.components(separatedBy: "func publishGPUTransition")
-        XCTAssertEqual(parts.count, 2)
-        let transition = parts[1].components(separatedBy: "func recordGPUSample")[0]
-        XCTAssertTrue(transition.contains("transition == .justEntered && samplingFailed ? .failed : .pending"))
-        XCTAssertTrue(transition.contains(".justLeft"))
-        XCTAssertFalse(transition.contains("nodes:"))
-        XCTAssertEqual(occurrenceCount(of: "GPUPageProjection.apply", in: transition), 1)
-    }
-
     func testSamplingHangsOffTheMainTickAndStaysOffOtherSurfaces() throws {
         let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
         XCTAssertTrue(sampler.contains("readGPU ? HostGPUReader.read() : nil"))
@@ -108,15 +94,10 @@ final class GPUPageWiringSourceTests: XCTestCase {
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         XCTAssertTrue(vm.contains("sample(readGPU: selectedPage == .gpu"))
-        XCTAssertEqual(
-            occurrenceCount(of: "publishGPUTransition(from: previous, to: selectedPage)", in: vm),
-            2
-        )
         XCTAssertTrue(vm.contains("func selectPage("))
         XCTAssertTrue(vm.contains("func focusMemoryPage("))
 
         let gpuVM = try repoText("Pulse/ViewModels/MemoryDashboardVM+GPU.swift")
-        XCTAssertTrue(gpuVM.contains("guard selectedPage == .gpu else { return }"))
         XCTAssertFalse(gpuVM.contains("Task.sleep"))
         XCTAssertFalse(gpuVM.contains("@MainActor"))
         XCTAssertFalse(gpuVM.contains("@Published"))

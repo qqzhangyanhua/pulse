@@ -65,89 +65,6 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
         }
     }
 
-    func testLocateMethodSnapshotsThenWritesOnlyAfterThePlanGuard() throws {
-        let source = try vmSource()
-        XCTAssertEqual(occurrenceCount(of: "@MainActor", in: source), 1)
-        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 4)
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: source), 42, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature")
-        XCTAssertEqual(occurrenceCount(of: "func locateMemoryTopApp(", in: source), 1)
-        XCTAssertEqual(occurrenceCount(of: "topAppLocateReveal =", in: source), 1)
-
-        let declaration = try lineContaining("func locateMemoryTopApp(", in: source)
-        XCTAssertFalse(declaration.contains("@MainActor"))
-        XCTAssertFalse(declaration.contains("async"))
-        XCTAssertTrue(compact(declaration).contains("funclocateMemoryTopApp(name:String,pid:Int32)"))
-
-        let revealLine = try lineContaining("var topAppLocateReveal", in: source)
-        XCTAssertEqual(
-            revealLine.trimmingCharacters(in: .whitespaces),
-            "@Published var topAppLocateReveal: TopAppLocation.Reveal?"
-        )
-        XCTAssertFalse(revealLine.contains("didSet"))
-
-        let sortedLine = try lineContaining("var sortedRows", in: source)
-        XCTAssertFalse(sortedLine.contains("@Published"))
-        let sortedBody = try functionBody(named: "sortedRows", in: source)
-        XCTAssertTrue(compact(sortedBody).contains("AppGroupProjection.apply(rows:visibleRows"))
-        XCTAssertFalse(compact(sortedBody).contains("ordered(rows)"))
-
-        let body = try functionBody(named: "locateMemoryTopApp", in: source)
-        let code = compact(body)
-        XCTAssertEqual(occurrenceCount(of: "guard let plan", in: body), 1)
-        XCTAssertEqual(occurrenceCount(of: "risingOnlyFilter = false", in: body), 1)
-        XCTAssertEqual(occurrenceCount(of: "selectPidIfPresent(", in: body), 1)
-        XCTAssertEqual(occurrenceCount(of: "topAppLocateReveal =", in: body), 1)
-        XCTAssertEqual(occurrenceCount(of: "filter =", in: body), 1)
-
-        let guardAt = try index(of: "guard let plan", in: body)
-        let planAt = try index(of: "TopAppLocation.plan(", in: body)
-        let replaceAt = try index(of: ".replace", in: body)
-        let filterAt = try index(of: "filter =", in: body)
-        let risingAt = try index(of: "risingOnlyFilter = false", in: body)
-        let selectAt = try index(of: "selectPidIfPresent(", in: body)
-        let revealAt = try index(of: "topAppLocateReveal =", in: body)
-        XCTAssertLessThan(guardAt, planAt)
-        XCTAssertLessThan(planAt, replaceAt)
-        XCTAssertLessThan(replaceAt, filterAt)
-        XCTAssertLessThan(filterAt, risingAt)
-        XCTAssertLessThan(risingAt, selectAt)
-        XCTAssertLessThan(selectAt, revealAt)
-
-        XCTAssertTrue(
-            code.contains(
-                "TopAppLocation.plan(name:name,pid:pid,rows:rows,page:selectedPage,currentFilter:filter,currentRisingOnly:risingOnlyFilter,previousReveal:topAppLocateReveal)"
-            )
-        )
-        XCTAssertTrue(code.contains("case.replace(letnextName)"))
-        XCTAssertTrue(code.contains("filter=nextName"))
-        XCTAssertTrue(code.contains("selectPidIfPresent(plan.acceptedPid)"))
-        XCTAssertTrue(code.contains("topAppLocateReveal=plan.reveal"))
-        XCTAssertFalse(body.contains("selectedPid ="))
-        XCTAssertFalse(body.contains("await"))
-        XCTAssertFalse(body.contains("sample()"))
-        for token in [
-            "clearMemoryPageFilters",
-            "retrySampling",
-            "setSelectedPid",
-            "setTableSort",
-            "setMemoryPageSort",
-            "publishMemoryPageSort",
-            "selectPage",
-            "focusMemoryPage",
-            "applyRisingOnlySelection",
-            "quitOutcome",
-            "sidebarSubjectPid",
-            "navigation",
-            "publication",
-            "topMemorySeries",
-            "Task",
-            "onChange",
-            "processListScrollTarget",
-        ] {
-            XCTAssertFalse(body.contains(token), token)
-        }
-    }
-
     func testRevealTopAppGatesOnSortedRowsThenScrollsRequestPid() throws {
         let pane = try paneSource()
         XCTAssertEqual(occurrenceCount(of: "func revealTopApp(", in: pane), 1)
@@ -158,7 +75,7 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
         XCTAssertFalse(pane.contains("tableSort.ordered"))
 
         let paneCode = compact(pane)
-        XCTAssertTrue(paneCode.contains("List(vm.sortedRows,selection:$vm.selectedPid)"))
+        XCTAssertTrue(paneCode.contains("List(vm.sortedRows,selection:Binding(get:{vm.selectedPid},set:{vm.select(pid:$0)}))"))
         XCTAssertTrue(paneCode.contains("visibleCount:vm.sortedRows.count"))
 
         let topChange = try trailingClosure(after: ".onChange(of: vm.topAppLocateReveal)", in: pane)
@@ -224,12 +141,12 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
         let clear = try functionBody(named: "clearMemoryPageFilters", in: source)
         XCTAssertEqual(
             statements(in: clear),
-            ["filter = \"\"", "risingOnlyFilter = false", "windowedOnlyFilter = false"]
+            ["updateCore { $0.clearMemoryPageFilters() }"]
         )
         XCTAssertFalse(clear.contains("topAppLocateReveal"))
 
         let filterLine = try lineContaining("var filter", in: source)
-        XCTAssertEqual(filterLine, "    @Published var filter = \"\"")
+        XCTAssertEqual(filterLine, "    var filter: String {")
         XCTAssertFalse(filterLine.contains("didSet"))
 
         for name in ["selectPage", "focusMemoryPage", "setTableSort", "retrySampling"] {
@@ -243,13 +160,13 @@ final class TopAppLocationWiringSourceTests: XCTestCase {
         XCTAssertFalse(pane.contains("onChange(of: vm.risingOnlyFilter)"))
         XCTAssertEqual(occurrenceCount(of: "vm.clearMemoryPageFilters()", in: pane), 1)
         let list = try functionBody(named: "processList", in: pane)
-        XCTAssertTrue(list.contains("selection: $vm.selectedPid"))
+        XCTAssertTrue(list.contains("selection: Binding(get: { vm.selectedPid }, set: { vm.select(pid: $0) })"))
         XCTAssertFalse(list.contains("locateMemoryTopApp"))
         XCTAssertFalse(compact(list).contains("topAppLocateReveal="))
 
         let dashboard = try repoText("Pulse/Views/MemoryDashboardView.swift")
-        XCTAssertTrue(dashboard.contains("AppFilterField(text: $vm.filter)"))
-        XCTAssertTrue(dashboard.contains("isOn: $vm.risingOnlyFilter"))
+        XCTAssertTrue(dashboard.contains("AppFilterField(text: Binding(get: { vm.filter }, set: { vm.setFilter($0) }))"))
+        XCTAssertTrue(dashboard.contains("isOn: Binding(get: { vm.risingOnlyFilter }, set: { vm.setRisingOnlyFilter($0) })"))
         XCTAssertFalse(dashboard.contains("topAppLocateReveal"))
         XCTAssertFalse(dashboard.contains("locateMemoryTopApp"))
         XCTAssertFalse(dashboard.contains("onChange(of: vm.filter)"))

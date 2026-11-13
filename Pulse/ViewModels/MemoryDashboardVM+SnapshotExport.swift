@@ -11,25 +11,7 @@ extension MemoryDashboardVM {
         if snapshotExportStore.session != nil {
             return nil
         }
-        let snapshot = snapshot
-        let rows = rows
-        let systemCpuPercent = systemCpuPercent
-        let busiestCorePercent = busiestCorePercent
-        let hostNetworkRates = hostNetworkRates
-        let hostDiskRates = hostDiskRates
-        let samplingFailed = samplingFailed
-        let processListFailed = processListFailed
-        guard let frozen = SnapshotExport.freeze(
-            snapshot: snapshot,
-            rows: rows,
-            systemCpuPercent: systemCpuPercent,
-            busiestCorePercent: busiestCorePercent,
-            hostNetworkRates: hostNetworkRates,
-            hostDiskRates: hostDiskRates,
-            samplingFailed: samplingFailed,
-            processListFailed: processListFailed,
-            savedAt: savedAt
-        ) else {
+        guard let frozen = core.frozenSnapshot(savedAt: savedAt) else {
             return SnapshotExportCopy.noSampleMessage
         }
         snapshotExportStore.present(

@@ -154,19 +154,22 @@ final class ResourceDetailPageSourceTests: XCTestCase {
         XCTAssertTrue(project.contains("path = LastLiveTotalReducer.swift;"))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 42, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature")
-        for name in ["selectPage", "applySample", "applyRisingOnlySelection"] {
-            let source = try functionBody(named: name, in: vm)
+        let selectPage = try functionBody(named: "selectPage", in: vm)
+        let rising = try functionBody(
+            named: "applyRisingOnlySelection",
+            in: try repoText("Pulse/Models/DashboardCore+Selection.swift")
+        )
+        for (name, source) in [("selectPage", selectPage), ("applyRisingOnlySelection", rising)] {
             XCTAssertFalse(source.contains("ResourceDetailPageProjection"), name)
             XCTAssertFalse(source.contains("LastLiveTotal"), name)
             XCTAssertFalse(source.contains("FrozenMemoryFieldSemantics"), name)
         }
-        let didSet = try braceBody(after: "var selectedPid", in: vm)
-        XCTAssertTrue(didSet.contains("detail = nil"))
-        XCTAssertFalse(didSet.contains("ResourceDetailPageProjection"))
-        XCTAssertFalse(didSet.contains("LastLiveTotal"))
-        XCTAssertFalse(didSet.contains("FrozenMemoryFieldSemantics"))
-        XCTAssertFalse(didSet.contains("lastLiveTotal"))
+        let select = try functionBody(named: "select", in: try repoText("Pulse/Models/DashboardCore+Selection.swift"))
+        XCTAssertTrue(select.contains("detail = nil"))
+        XCTAssertFalse(select.contains("ResourceDetailPageProjection"))
+        XCTAssertFalse(select.contains("LastLiveTotal"))
+        XCTAssertFalse(select.contains("FrozenMemoryFieldSemantics"))
+        XCTAssertFalse(select.contains("lastLiveTotal"))
 
         let session = try repoText("Pulse/Models/ProcessQuitSession.swift")
         XCTAssertFalse(session.contains("totalBytes"))
@@ -202,13 +205,6 @@ final class ResourceDetailPageSourceTests: XCTestCase {
             return try balancedSlice(from: brace, in: source, label: name)
         }
         throw SourceReadError.missing(name)
-    }
-
-    private func braceBody(after needle: String, in source: String) throws -> String {
-        guard let start = source.range(of: needle)?.upperBound,
-              let brace = source[start...].firstIndex(of: "{")
-        else { throw SourceReadError.missing(needle) }
-        return try balancedSlice(from: brace, in: source, label: needle)
     }
 
     private func index(of needle: String, in source: String) throws -> String.Index {

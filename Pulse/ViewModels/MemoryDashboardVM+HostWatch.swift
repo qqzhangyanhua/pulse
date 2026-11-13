@@ -22,11 +22,7 @@ extension MemoryDashboardVM {
     }
 
     func applyThermalState(_ state: ProcessInfo.ThermalState) {
-        thermalNotice = ThermalNotice.message(for: ThermalCondition(state))
-        if thermalNotice == nil {
-            thermalAdvice = nil
-            thermalAdviceLastUpdate = nil
-        }
+        mutateCore { $0.apply(thermalCondition: ThermalCondition(state)) }
     }
 
     /// Read on entry, then every 30 seconds while the machine page stays selected.
@@ -53,9 +49,8 @@ extension MemoryDashboardVM {
 
     func refreshMachineFacts() {
         let next = HostMachineReader.read()
-        if next != machineFacts {
-            machineFacts = next
-        }
+        guard next != machineFacts else { return }
+        mutateCore { $0.apply(machineFacts: next) }
     }
 }
 

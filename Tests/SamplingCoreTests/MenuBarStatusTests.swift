@@ -191,9 +191,9 @@ final class MenuBarStatusTests: XCTestCase {
         XCTAssertFalse(host.contains("最忙的一核 ·"))
         XCTAssertEqual(MenuBarPopoverShell.sections.count, 3)
 
-        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
-        XCTAssertEqual(occurrenceCount(of: "busiestCorePercent: busiestCorePercent", in: vm), 1)
-        XCTAssertTrue(vm.contains("samplingFailed: samplingFailed"))
+        let popover = try repoText("Pulse/Models/DashboardCore+Selection.swift")
+        XCTAssertEqual(occurrenceCount(of: "busiestCorePercent: busiestCorePercent", in: popover), 1)
+        XCTAssertTrue(popover.contains("samplingFailed: samplingFailed"))
         XCTAssertTrue(view.contains("strip.processesEmptyCopy"))
         let noteAt = try index(of: "MenuBarCopy.topProcessesNote", in: view)
         let emptyAt = try index(of: "strip.processesEmptyCopy", in: view)

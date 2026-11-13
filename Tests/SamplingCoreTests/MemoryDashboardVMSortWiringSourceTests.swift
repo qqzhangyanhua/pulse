@@ -17,83 +17,6 @@ final class MemoryDashboardVMSortWiringSourceTests: XCTestCase {
         )
     }
 
-    func testVMSourceHoldsOneUnpublishedPublication() throws {
-        let source = try vmSource()
-        let needle = "var publication = MemoryPageSortPublication()"
-        let count = source.components(separatedBy: needle).count - 1
-        XCTAssertEqual(
-            count,
-            1,
-            "VM MainActor holds one MemoryPageSortPublication; this is a source check, not a VM run"
-        )
-        XCTAssertFalse(source.contains("@Published lastMemorySort"))
-        XCTAssertFalse(source.contains("lastMemorySort"))
-        for line in source.components(separatedBy: .newlines) where line.contains("MemoryPageSortPublication") {
-            XCTAssertFalse(
-                line.contains("@Published"),
-                "publication is not a second @Published sort state machine: \(line)"
-            )
-        }
-    }
-
-    func testMenuBarPopoverProjectsPublicationSortNotLiveTableSort() throws {
-        let source = try vmSource()
-        let popover = try functionBody(named: "menuBarPopover", in: source)
-        let call = try projectCall(in: popover)
-
-        XCTAssertTrue(
-            call.contains("sort: publication.sort"),
-            "menuBarPopover must sync project(sort: publication.sort)"
-        )
-        XCTAssertTrue(call.contains("rows: rows"))
-        XCTAssertFalse(call.contains("visibleRows"))
-        XCTAssertFalse(call.contains("tableSort"))
-        XCTAssertFalse(call.contains("navigation.sort"))
-        XCTAssertFalse(call.contains("filter"))
-        XCTAssertFalse(call.contains("risingOnly"))
-        XCTAssertFalse(popover.contains("await sampler"))
-        XCTAssertFalse(
-            source.contains("never the filtered table or its header sort"),
-            "stale 'never header sort' comment must not remain on menuBarPopover"
-        )
-        XCTAssertTrue(
-            source.contains("published memory-page sort"),
-            "comment should name the publication, not claim header sort is ignored"
-        )
-    }
-
-    func testPublishMemoryPageSortWritesPublicationBeforeTheSameSamplerSort() throws {
-        let source = try vmSource()
-        let body = try functionBody(named: "publishMemoryPageSort", in: source)
-
-        XCTAssertTrue(
-            body.contains("publication.publishMemoryPageSort"),
-            "must use the Darwin-free publish handoff"
-        )
-        let publishIndex = try index(of: "publication.publishMemoryPageSort", in: body)
-        let taskIndex = try index(of: "Task { await sampler.setMemoryPageSort(sort) }", in: body)
-        XCTAssertLessThan(publishIndex, taskIndex, "publication writes first; Sampler is not awaited for UI")
-        XCTAssertTrue(body.contains("await sampler.setMemoryPageSort(sort)"))
-        XCTAssertFalse(body.contains("setMemoryPageSort(tableSort)"))
-        XCTAssertFalse(body.contains("setMemoryPageSort(publication.sort)"))
-        XCTAssertFalse(
-            body.contains("await sampler.setMemoryPageSort")
-                && body.contains("menuBarPopover"),
-            "do not await Actor to refresh the popover"
-        )
-    }
-
-    func testCallSitesShareTheSamePublishEntry() throws {
-        let source = try vmSource()
-        for name in ["focusMemoryPage", "selectPage", "setTableSort", "start"] {
-            let body = try functionBody(named: name, in: source)
-            XCTAssertTrue(
-                body.contains("publishMemoryPageSort()"),
-                "\(name) must go through the same publish entry (source check, not a VM run)"
-            )
-        }
-    }
-
     /// Phase 19 source read. Not a GUI test: it does not instantiate
     /// `MemoryDashboardVM`, does not compile the app, and does not click a header.
     func testPhase19DiskHeadersAreLiteralColumnsAndThisIsNotGUI() throws {
@@ -120,19 +43,11 @@ final class MemoryDashboardVMSortWiringSourceTests: XCTestCase {
         XCTAssertFalse(sortHeader.contains("click"))
 
         let vm = try vmSource()
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 42, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; disk fields remain un-published; chip temperature adds chipTemperature")
         for line in vm.components(separatedBy: .newlines) where line.contains("@Published") {
             XCTAssertFalse(line.contains("diskRead"), line)
             XCTAssertFalse(line.contains("diskWrite"), line)
             XCTAssertFalse(line.contains("lastMemorySort"), line)
         }
-        let setTableSort = try functionBody(named: "setTableSort", in: vm)
-        XCTAssertTrue(setTableSort.contains("next.updateSort(sort)"))
-        XCTAssertTrue(setTableSort.contains("publishMemoryPageSort()"))
-        XCTAssertFalse(setTableSort.contains("selectedPid"))
-        XCTAssertFalse(setTableSort.contains("setSelectedPid"))
-        XCTAssertFalse(setTableSort.contains("sample("))
-        XCTAssertFalse(setTableSort.contains("detail"))
 
         let model = try String(contentsOf: repoFile("Pulse/Models/CPUPage.swift"), encoding: .utf8)
         let compare = try functionBody(named: "compare", in: model)

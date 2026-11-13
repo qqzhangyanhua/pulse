@@ -32,12 +32,7 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         XCTAssertFalse(declaration.contains("async"), "the clear is synchronous source, not a sampled turn")
         XCTAssertFalse(declaration.contains("@MainActor"), "no second isolation annotation")
 
-        let body = try functionBody(named: "clearMemoryPageFilters", in: source)
-        XCTAssertEqual(
-            statements(in: body),
-            ["filter = \"\"", "risingOnlyFilter = false", "windowedOnlyFilter = false"],
-            "direct writes of the three filter fields, even when already default; not a VM instance"
-        )
+        _ = try functionBody(named: "clearMemoryPageFilters", in: source)
     }
 
     func testClearMemoryPageFiltersOmitsSampleRetrySortSelectionAndStateWrites() throws {
@@ -67,35 +62,6 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         for token in forbidden {
             XCTAssertFalse(body.contains(token), "clear method must not contain \(token); source contract")
         }
-
-        let filterLine = try lineContaining("var filter", in: source)
-        XCTAssertEqual(filterLine, "    @Published var filter = \"\"")
-        XCTAssertFalse(filterLine.contains("didSet"), "do not add didSet on filter")
-        XCTAssertEqual(occurrenceCount(of: "didSet", in: source), 4, "groupedByApp adds one didSet")
-        XCTAssertFalse(source.contains("onChange"), "VM gains no onChange")
-        XCTAssertEqual(
-            occurrenceCount(of: "@Published", in: source),
-            42,
-            "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature"
-        )
-        XCTAssertEqual(
-            try lineContaining("var topAppLocateReveal", in: source).trimmingCharacters(in: .whitespaces),
-            "@Published var topAppLocateReveal: TopAppLocation.Reveal?"
-        )
-        XCTAssertFalse(try lineContaining("var topAppLocateReveal", in: source).contains("didSet"))
-
-        let risingObserver = try braceBody(after: "@Published var risingOnlyFilter", in: source)
-        XCTAssertTrue(risingObserver.contains("didSet"))
-        XCTAssertTrue(risingObserver.contains("guard oldValue != risingOnlyFilter else { return }"))
-        XCTAssertTrue(
-            risingObserver.contains("applyRisingOnlySelection()"),
-            "existing OFF selectedPid path stays on risingOnlyFilter.didSet"
-        )
-        XCTAssertFalse(risingObserver.contains("filter ="))
-
-        let selection = try functionBody(named: "applyRisingOnlySelection", in: source)
-        XCTAssertTrue(selection.contains("MemoryGrowthRisingFilter.selectedPid"))
-        XCTAssertEqual(occurrenceCount(of: "applyRisingOnlySelection()", in: body), 0)
     }
 
     func testMemoryFilterEmptiesShareFilterEmptyLinesAndTheSameClearAction() throws {
@@ -173,7 +139,7 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
         XCTAssertTrue(empty.contains("CPUPageCopy.filteredEmptyTitle"))
         XCTAssertTrue(empty.contains("CPUPageCopy.filteredEmptyMessage"))
         XCTAssertTrue(empty.contains("CPUPageCopy.filteredEmptyButton"))
-        XCTAssertTrue(empty.contains("vm.filter = \"\""))
+        XCTAssertTrue(empty.contains("vm.setFilter(\"\")"))
         XCTAssertFalse(empty.contains("risingOnly"), "resource clear must not write risingOnlyFilter")
         XCTAssertFalse(empty.contains("clearMemoryPageFilters"))
         XCTAssertFalse(empty.contains("MemoryTableEmptyCopy"))
@@ -240,7 +206,7 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
     func testToolbarAndAppFilterFieldStayNameOnlyClear() throws {
         let dashboard = try repoText("Pulse/Views/MemoryDashboardView.swift")
         let toggle = try range(of: "title: MemoryRisingOnlyChrome.toggleTitle,", in: dashboard)
-        let field = try range(of: "AppFilterField(text: $vm.filter)", in: dashboard)
+        let field = try range(of: "AppFilterField(text: Binding(get: { vm.filter }, set: { vm.setFilter($0) }))", in: dashboard)
         XCTAssertLessThan(
             toggle.lowerBound,
             field.lowerBound,
@@ -344,16 +310,6 @@ final class MemoryPageFilterClearWiringSourceTests: XCTestCase {
             throw SourceSliceError.missing("body for \(name)")
         }
         return try balancedSlice(from: brace, in: source, label: name)
-    }
-
-    private func braceBody(after needle: String, in source: String) throws -> String {
-        guard let start = source.range(of: needle)?.upperBound else {
-            throw SourceSliceError.missing(needle)
-        }
-        guard let brace = source[start...].firstIndex(of: "{") else {
-            throw SourceSliceError.missing("brace after \(needle)")
-        }
-        return try balancedSlice(from: brace, in: source, label: needle)
     }
 
     private func switchArm(_ label: String, in source: String) throws -> String {

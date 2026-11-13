@@ -48,15 +48,30 @@ final class ProcessTreeWiringSourceTests: XCTestCase {
         XCTAssertFalse(sidebar.contains("selectPidIfPresent"))
         XCTAssertFalse(sidebar.contains("selectedPid ="))
 
-        let focus = try functionBody(named: "focusProcessFromTree", in: try WiringSourceText.text(for: "MemoryDashboardVM"))
-        XCTAssertTrue(focus.contains("selectPidIfPresent"))
+        let focus = try functionBody(
+            named: "focusProcessFromTree",
+            in: try repoText("Pulse/Models/DashboardCore+TopAppLocation.swift")
+        )
+        XCTAssertTrue(focus.contains("select(pid:"))
         XCTAssertFalse(focus.contains("selectedPid ="))
         XCTAssertFalse(focus.contains("filter ="))
         XCTAssertFalse(focus.contains("groupedByApp"))
         XCTAssertLessThan(
             try index(of: "filtersAfterFocus", in: focus),
-            try index(of: "selectPidIfPresent", in: focus)
+            try index(of: "select(pid:", in: focus)
         )
+    }
+
+    func testClickPathsLookUpWindowedPidsWithoutWritingTheCache() throws {
+        let top3 = try repoText("Pulse/ViewModels/MemoryDashboardVM+Top3Tap.swift")
+        XCTAssertTrue(top3.contains("WindowedAppLookup.pids"))
+
+        let focus = try functionBody(
+            named: "focusProcessFromTree",
+            in: try repoText("Pulse/ViewModels/MemoryDashboardVM+TopAppLocation.swift")
+        )
+        XCTAssertTrue(focus.contains("WindowedAppLookup.pids"))
+        XCTAssertFalse(focus.contains("noteWindowedPids"))
     }
 
     private func repoText(_ relative: String) throws -> String {

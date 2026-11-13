@@ -58,9 +58,6 @@ final class MemoryMagnitudeVisibleGroupWiringSourceTests: XCTestCase {
         let force = try functionBody(named: "requestForce", in: quit)
         XCTAssertTrue(force.contains("rows.first(where: { $0.pid == pid })?.name"))
 
-        let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        let apply = try functionBody(named: "applySample", in: vm)
-        XCTAssertFalse(apply.contains("setSelectedPid"))
     }
 
     private func repoText(_ relative: String) throws -> String {

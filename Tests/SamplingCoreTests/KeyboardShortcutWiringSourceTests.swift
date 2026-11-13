@@ -49,8 +49,8 @@ final class KeyboardShortcutWiringSourceTests: XCTestCase {
         XCTAssertFalse(app.contains("\"GPU\""))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        let selectPage = try functionBody(named: "selectPage", in: vm)
-        XCTAssertTrue(selectPage.contains("next.select(page)"))
+        let selectPage = try functionBody(named: "selectPage", in: try repoText("Pulse/Models/DashboardCore+Selection.swift"))
+        XCTAssertTrue(selectPage.contains("navigation.select(page)"))
         XCTAssertFalse(app.contains("MenuBarNavigation"))
         XCTAssertFalse(vm.contains("keyboardShortcut"))
 
@@ -91,7 +91,7 @@ final class KeyboardShortcutWiringSourceTests: XCTestCase {
         XCTAssertEqual(occurrenceCount(of: "text = \"\"", in: field), 1)
 
         let dashboard = try WiringSourceText.text(for: "MemoryDashboardView")
-        XCTAssertTrue(dashboard.contains("AppFilterField(text: $vm.filter)"))
+        XCTAssertTrue(dashboard.contains("AppFilterField(text: Binding(get: { vm.filter }, set: { vm.setFilter($0) }))"))
         XCTAssertFalse(dashboard.contains("@FocusState"))
         XCTAssertFalse(dashboard.contains("focusedSceneValue"))
         XCTAssertFalse(dashboard.contains("UserDefaults"))
@@ -139,8 +139,9 @@ final class KeyboardShortcutWiringSourceTests: XCTestCase {
         XCTAssertFalse(app.contains(".disabled(nameFilterFocused"))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        let quit = try functionBody(named: "quitSelected", in: vm)
+        let quit = try functionBody(named: "quitSelected", in: try repoText("Pulse/Models/DashboardCore+Quit.swift"))
         XCTAssertTrue(quit.contains("ProcessQuitSession.ordinaryTerminate"))
+        XCTAssertTrue(vm.contains("func quitSelected("))
         XCTAssertTrue(vm.contains("func forceQuitSelected("))
         XCTAssertFalse(vm.contains("keyboardShortcut"))
 
@@ -170,7 +171,7 @@ final class KeyboardShortcutWiringSourceTests: XCTestCase {
         XCTAssertFalse(app.contains("selectedPage ="))
 
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        XCTAssertTrue(vm.contains("@Published private(set) var navigation = DashboardNavigation()"))
+        XCTAssertTrue(vm.contains("var navigation: DashboardNavigation { core.navigation }"))
         XCTAssertFalse(vm.contains("UserDefaults"))
         XCTAssertFalse(vm.contains("AppStorage"))
         XCTAssertFalse(vm.contains("SceneStorage"))

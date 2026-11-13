@@ -3,113 +3,92 @@ import Foundation
 
 @MainActor
 final class MemoryDashboardVM: ObservableObject {
-    @Published private(set) var loadState: LoadState = .sampling
-    @Published private(set) var snapshot: MemorySnapshot?
-    @Published private(set) var systemCpuPercent: Double?
+    @Published private(set) var core = DashboardCore(
+        ownPid: ProcessInfo.processInfo.processIdentifier
+    )
+    var loadState: LoadState { core.loadState }
+    var snapshot: MemorySnapshot? { core.snapshot }
+    var systemCpuPercent: Double? { core.systemCpuPercent }
     /// Busiest core for the latest accepted frame. Nil is missing, not zero. Failure does not clear it.
-    @Published private(set) var busiestCorePercent: Double?
-    @Published private(set) var hostNetworkRates = HostNetworkRates.missing
-    @Published var hostConnection: HostConnection?
-    @Published var ssidPermission = WiFiSSIDPermission.notDetermined
-    @Published var hostWiFi: HostWiFiReading?
+    var busiestCorePercent: Double? { core.busiestCorePercent }
+    var hostNetworkRates: HostNetworkRates { core.hostNetworkRates }
+    var hostConnection: HostConnection? { core.hostConnection }
+    var ssidPermission: WiFiSSIDPermission { core.ssidPermission }
+    var hostWiFi: HostWiFiReading? { core.hostWiFi }
     /// Idle until the user clicks. Not sampled and not saved.
-    @Published var publicIPRequest = PublicIPRequestState.idle
-    @Published private(set) var hostDiskRates = HostDiskRates.missing
-    @Published private(set) var rows: [ProcessRow] = []
+    var publicIPRequest: PublicIPRequestState { core.publicIPRequest }
+    var hostDiskRates: HostDiskRates { core.hostDiskRates }
+    var rows: [ProcessRow] { core.rows }
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
-    @Published private(set) var energyWindowRates: [Int32: ProcessEnergyRates] = [:]
+    var energyWindowRates: [Int32: ProcessEnergyRates] { core.energyWindowRates }
     /// 1 分钟 or 1 小时. Views read `activeEnergyRates`, not either table directly.
-    @Published var energyRankingSpan = EnergyRankingSpan.oneMinute
+    var energyRankingSpan: EnergyRankingSpan {
+        get { core.energyRankingSpan }
+        set { setEnergyRankingSpan(newValue) }
+    }
     /// Minute-ledger rates for the latest accepted process list. Empty when that list failed.
-    @Published private(set) var energyHourRates: [Int32: ProcessEnergyRates] = [:]
+    var energyHourRates: [Int32: ProcessEnergyRates] { core.energyHourRates }
     /// Sealed 1-hour generations. Empty when that list failed. Not part of `energyHourRates`.
-    @Published private(set) var exitedEnergyProcesses: [ExitedEnergyProcess] = []
-    @Published private(set) var processListFailed = false
+    var exitedEnergyProcesses: [ExitedEnergyProcess] { core.exitedEnergyProcesses }
+    var processListFailed: Bool { core.processListFailed }
     /// This frame's permission footnote. Empty when the process list failed.
-    @Published private(set) var processPermissionFootnote: String?
-    @Published private(set) var detail: ProcessDetail?
+    var processPermissionFootnote: String? { core.processPermissionFootnote }
+    var detail: ProcessDetail? { core.detail }
     /// Bounded Top N=5 memory series. List rows look up `memoryGrowthListBadge(for:)`.
-    @Published private(set) var topMemorySeries: [Int32: [ChartSample]] = [:]
-    @Published private(set) var machineLabel: String?
+    var topMemorySeries: [Int32: [ChartSample]] { core.topMemorySeries }
+    var machineLabel: String? { core.machineLabel }
     /// Host facts for the machine page. Nil until that page is opened. Not a sample frame.
-    @Published var machineFacts: MachineFacts?
+    var machineFacts: MachineFacts? { core.machineFacts }
     /// Energy-page battery card. Nil hides it, including a Mac with no internal battery.
-    @Published var energyBatteryCard: EnergyBatteryCard?
+    var energyBatteryCard: EnergyBatteryCard? { core.energyBatteryCard }
     /// Latest energy-page battery reading. Nil until that read; not a second poll.
-    var energyBatteryReading: EnergyBatteryReading?
+    var energyBatteryReading: EnergyBatteryReading? { core.energyBatteryReading }
     /// The only session quit store. Phase and message are projections of this.
-    @Published var quitOutcome = ProcessQuitOutcome()
-    @Published var sidebarSubjectPid: Int32?
-    @Published private(set) var samplingFailed = false
+    var quitOutcome: ProcessQuitOutcome { core.quitOutcome }
+    var sidebarSubjectPid: Int32? { core.sidebarSubjectPid }
+    var samplingFailed: Bool { core.samplingFailed }
     /// Gate projection. Not a second retry flag.
-    @Published private(set) var isRetrying = false
-    @Published private(set) var usageHistory = UsageHistory()
-    @Published private(set) var cpuHistory = SystemCPUHistory()
-    @Published private(set) var networkHistory = SystemNetworkHistory()
-    @Published private(set) var diskHistory = SystemDiskHistory()
+    var isRetrying: Bool { core.isRetrying }
+    var usageHistory: UsageHistory { core.usageHistory }
+    var cpuHistory: SystemCPUHistory { core.cpuHistory }
+    var networkHistory: SystemNetworkHistory { core.networkHistory }
+    var diskHistory: SystemDiskHistory { core.diskHistory }
     /// GPU page readings. Samples taken off that page do not write this.
-    @Published var gpuPage = GPUPageState.initial
+    var gpuPage: GPUPageState { core.gpuPage }
     /// Machine-page chip temperature. Other pages do not write this.
-    /// Writable from the page extension. Xcode 27 rejects `private(set)` across files.
-    @Published var chipTemperature = ChipTemperaturePageState.initial
-    @Published private(set) var energyMachineHistory = EnergyMachineHistory()
+    var chipTemperature: ChipTemperaturePageState { core.chipTemperature }
+    var energyMachineHistory: EnergyMachineHistory { core.energyMachineHistory }
     /// Nil unless the system is serious or critical. Overviews read this; the menu bar does not.
-    @Published var thermalNotice: String?
+    var thermalNotice: String? { core.thermalNotice }
     /// Top CPU processes while `thermalNotice` is showing. Nil hides the card; the menu bar does not read this.
-    @Published var thermalAdvice: ThermalAdvice?
+    var thermalAdvice: ThermalAdvice? { core.thermalAdvice }
     /// Seconds of the last published advice. Nil publishes on the next sample.
-    var thermalAdviceLastUpdate: Double?
-    @Published var filter = ""
+    var thermalAdviceLastUpdate: Double? { core.thermalAdviceLastUpdate }
+    var filter: String {
+        get { core.filter }
+        set { setFilter(newValue) }
+    }
     /// Memory-tab only. Default OFF. Session-scoped; not a Sampler or preference write.
-    @Published var risingOnlyFilter = false {
-        didSet {
-            guard oldValue != risingOnlyFilter else { return }
-            applyRisingOnlySelection()
-        }
+    var risingOnlyFilter: Bool {
+        get { core.risingOnlyFilter }
+        set { setRisingOnlyFilter(newValue) }
     }
     /// Memory-tab only. Default OFF. Keeps apps that can open a window.
-    @Published var windowedOnlyFilter = false {
-        didSet {
-            guard oldValue != windowedOnlyFilter else { return }
-            applyWindowedOnlySelection()
-        }
+    var windowedOnlyFilter: Bool {
+        get { core.windowedOnlyFilter }
+        set { setWindowedOnlyFilter(newValue) }
     }
-    /// Memory and CPU display. Default OFF. Groups the current visible rows by name.
-    @Published var groupedByApp = false {
-        didSet {
-            guard oldValue != groupedByApp else { return }
-            applyGroupedByAppSelection()
-        }
+    /// Memory, CPU, and energy display. Default OFF. Groups the current visible rows by name.
+    var groupedByApp: Bool {
+        get { core.groupedByApp }
+        set { setGroupedByApp(newValue) }
     }
-    /// One-shot memory Top card reveal. The next locate replaces it.
-    @Published var topAppLocateReveal: TopAppLocation.Reveal?
-    @Published private(set) var navigation = DashboardNavigation()
+    var navigation: DashboardNavigation { core.navigation }
     let snapshotExportStore = SnapshotExportStore()
-    /// Last memory-page sort, readable on the MainActor. Not a second published sort field.
-    private var publication = MemoryPageSortPublication()
-    private var selectedEnergyGeneration: Int?
-    private var energyLiveGenerations: [Int32: Int] = [:]
 
-    @Published var selectedPid: Int32? {
-        didSet {
-            guard oldValue != selectedPid else { return }
-            let effect = ProcessQuitSession.followListSelection(
-                listSelectedPid: selectedPid,
-                sidebarSubjectPid: sidebarSubjectPid,
-                rows: rows
-            )
-            if selectedPid != effect.listSelectedPid {
-                selectedPid = effect.listSelectedPid
-                return
-            }
-            if sidebarSubjectPid != effect.sidebarSubjectPid {
-                sidebarSubjectPid = effect.sidebarSubjectPid
-            }
-            captureEnergySelectionGeneration()
-            detail = nil
-            let pid = selectedPid
-            Task { await sampler.setSelectedPid(pid) }
-        }
+    var selectedPid: Int32? {
+        get { core.selectedPid }
+        set { select(pid: newValue) }
     }
     private let sampler = MemorySampler()
     private var loopTask: Task<Void, Never>?
@@ -137,50 +116,15 @@ final class MemoryDashboardVM: ObservableObject {
         }
     }
 
-    var visibleRows: [ProcessRow] {
-        let named = MemoryGrowthRisingFilter.apply(
-            rows: rows,
-            nameQuery: filter,
-            page: selectedPage,
-            risingOnly: risingOnlyFilter,
-            seriesByPid: topMemorySeries
-        )
-        return WindowedAppFilter.apply(
-            rows: named,
-            page: selectedPage,
-            windowedOnly: windowedOnlyFilter,
-            windowedPids: { WindowedAppLookup.pids(in: rows) }
-        )
-    }
+    var visibleRows: [ProcessRow] { core.visibleRows }
 
     /// Visible rows in the current table sort. Not stored and not published.
-    var sortedRows: [ProcessRow] {
-        if selectedPage == .energy {
-            return EnergyPage.sorted(visibleRows, windowRates: activeEnergyRates, grouped: groupedByApp, sort: tableSort)
-        }
-        let projected = AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
-        return tableSort.ordered(projected)
-    }
+    var sortedRows: [ProcessRow] { core.sortedRows }
 
-    /// Strip B. Unfiltered `rows` ordered by the published memory-page sort.
-    /// Does not read the name query, rising-only keep, or a resource-tab live `tableSort`.
-    /// Passes the latest busiest core through; a failed sample still hides that sentence.
-    var menuBarPopover: MenuBarPopoverSnapshot {
-        MenuBarPopoverSnapshot.project(
-            pressure: snapshot?.pressure,
-            usedBytes: snapshot?.usedBytes,
-            samplingFailed: samplingFailed,
-            rows: rows,
-            processListFailed: processListFailed,
-            sort: publication.sort,
-            busiestCorePercent: busiestCorePercent
-        )
-    }
+    /// Unfiltered `rows` ordered by the published memory-page sort.
+    var menuBarPopover: MenuBarPopoverSnapshot { core.menuBarPopover }
 
-    var selectedRow: ProcessRow? {
-        guard let selectedPid else { return nil }
-        return sortedRows.first { $0.pid == selectedPid } ?? rows.first { $0.pid == selectedPid }
-    }
+    var selectedRow: ProcessRow? { core.selectedRow }
 
     var hasActiveFilter: Bool {
         !filter.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -211,57 +155,61 @@ final class MemoryDashboardVM: ObservableObject {
     /// 「打开 Pulse」 and dock reopen. Always memory; does not follow the last tab.
     /// Page-only: does not write `selectedPid`. Pair with `selectPidIfPresent` when a pid is known.
     func focusMemoryPage() {
-        let previous = selectedPage
-        var next = navigation
-        next.focusMemoryPage()
-        navigation = next
-        publishGPUTransition(from: previous, to: selectedPage)
-        publishChipTemperatureTransition(from: previous, to: selectedPage)
-        publishMemoryPageSort()
-        applyRisingOnlySelection()
-        applyWindowedOnlySelection()
-        syncMachineWatch()
-        syncEnergyBatteryWatch()
+        changePage { $0.focusMemoryPage() }
     }
 
     /// Select-if-present against the live `rows`. Missing / vanished pids are not written.
     func selectPidIfPresent(_ pid: Int32) {
         guard let accepted = ProcessSelection.acceptedPid(pid, in: rows) else { return }
-        selectedPid = accepted
+        select(pid: accepted)
     }
 
     /// Process-list identity to reveal. Nil when nothing is selected or the pid left `rows`.
-    var processListScrollTarget: Int32? {
-        ProcessSelection.scrollTarget(selectedPid: selectedPid, rows: rows)
-    }
+    var processListScrollTarget: Int32? { core.processListScrollTarget }
 
     /// Memory, CPU, energy, network, disk, machine, and GPU.
     func selectPage(_ page: DashboardPage) {
-        let previous = selectedPage
-        var next = navigation
-        next.select(page)
-        navigation = next
-        publishGPUTransition(from: previous, to: selectedPage)
-        publishChipTemperatureTransition(from: previous, to: selectedPage)
-        publishMemoryPageSort()
-        applyRisingOnlySelection()
-        applyWindowedOnlySelection()
-        syncMachineWatch()
-        syncEnergyBatteryWatch()
+        changePage { $0.selectPage(page) }
     }
 
     func setTableSort(_ sort: ProcessTableSort) {
-        var next = navigation
-        next.updateSort(sort)
-        navigation = next
-        publishMemoryPageSort()
+        updateCore { $0.setTableSort(sort) }
+    }
+
+    func select(pid: Int32?) {
+        updateCore { $0.select(pid: pid) }
+    }
+
+    func setFilter(_ text: String) {
+        updateCore { $0.setFilter(text) }
+    }
+
+    func setRisingOnlyFilter(_ on: Bool) {
+        updateCore { $0.setRisingOnly(on) }
+    }
+
+    /// Looks up windowed apps only when the switch turns on.
+    func setWindowedOnlyFilter(_ on: Bool) {
+        guard on != windowedOnlyFilter else { return }
+        let pids = on ? WindowedAppLookup.pids(in: rows) : windowedPids
+        updateCore { $0.setWindowedOnly(on, windowedPids: pids) }
+    }
+
+    func setGroupedByApp(_ on: Bool) {
+        updateCore { $0.setGroupedByApp(on) }
+    }
+
+    func setEnergyRankingSpan(_ span: EnergyRankingSpan) {
+        updateCore { $0.setEnergyRankingSpan(span) }
     }
 
     func start() {
         guard !started else { return }
         started = true
-        machineLabel = MachineInfo.toolbarLabel()
-        publishMemoryPageSort()
+        updateCore { core in
+            core.noteMachineLabel(MachineInfo.toolbarLabel())
+            return core.publishMemoryPageSort()
+        }
         loopTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { break }
@@ -284,45 +232,21 @@ final class MemoryDashboardVM: ObservableObject {
         samplingSession.setForeground(active)
     }
 
-    /// Memory-page filter empties. Both existing fields are written on this turn,
-    /// including when one of them is already the default.
+    /// Memory-page filter empties. Name, then rising, then windowed.
     func clearMemoryPageFilters() {
-        filter = ""
-        risingOnlyFilter = false
-        windowedOnlyFilter = false
+        updateCore { $0.clearMemoryPageFilters() }
     }
 
     func retrySampling() {
-        let held = SamplingRetryApply.Held(
-            loadState: loadState,
-            samplingFailed: samplingFailed,
-            processListFailed: processListFailed,
-            hasSnapshot: snapshot != nil
-        )
-        let next = SamplingRetryApply.afterManualRetry(held)
-        loadState = next.loadState
-        samplingFailed = next.samplingFailed
-        processListFailed = next.processListFailed
-        samplingGate.requestManualRetry()
-        isRetrying = samplingGate.retrying
-        sleepTask?.cancel()
-    }
-
-    /// Only the memory-page sort drives Top 5 and the menu bar. Other tabs keep
-    /// the last memory sort. Writes publication first, then forwards the same
-    /// sort to Sampler without awaiting it for UI.
-    private func publishMemoryPageSort() {
-        switch publication.publishMemoryPageSort(tableSort, selectedPage: selectedPage) {
-        case .notifySampler(let sort):
-            Task { await sampler.setMemoryPageSort(sort) }
-        case .skip:
-            break
-        }
+        var next = core
+        let effects = next.retry()
+        core = next
+        perform(effects)
     }
 
     private func finishSamplingLoop() {
         samplingGate.invalidate()
-        isRetrying = samplingGate.retrying
+        recordGateRetrying()
         sleepTask?.cancel()
     }
 
@@ -364,135 +288,128 @@ final class MemoryDashboardVM: ObservableObject {
         let result = await sampler.sample(readGPU: selectedPage == .gpu, readChipTemperature: selectedPage == .machine)
         if Task.isCancelled {
             samplingGate.invalidate()
-            isRetrying = samplingGate.retrying
+            recordGateRetrying()
             return
         }
         let accepted = samplingGate.accept(flight)
-        isRetrying = samplingGate.retrying
+        recordGateRetrying()
         applySample(result, accepted: accepted)
     }
 
     /// Every accepted frame, list failure, sampling failure, and stale flight
     /// reaches one presence observation. Model writes stay on the accepted paths.
     private func applySample(_ result: Result<SampledFrame, HostMemoryError>, accepted: Bool) {
-        let held = SamplingRetryApply.Held(
-            loadState: loadState,
-            samplingFailed: samplingFailed,
-            processListFailed: processListFailed,
-            hasSnapshot: snapshot != nil
+        var next = core
+        let effects = next.apply(
+            result: result,
+            accepted: accepted,
+            page: next.selectedPage
         )
-        let observation: ProcessQuitSession.Observation
-        var applyRisingOnly = false
-        if !accepted {
-            observation = ProcessQuitSession.Observation(freshnessInsufficient: true)
-        } else {
-            switch result {
-            case .success(let frame):
-                if let applied = SamplingRetryApply.apply(
-                    held,
-                    accepted: true,
-                    sampleSucceeded: true
-                ) {
-                    samplingFailed = applied.samplingFailed
-                    snapshot = frame.snapshot
-                    systemCpuPercent = frame.systemCpuPercent
-                    busiestCorePercent = frame.busiestCorePercent
-                    hostNetworkRates = frame.hostNetworkRates
-                    hostDiskRates = frame.hostDiskRates
-                    publishSampledWiFi(frame.hostWiFi)
-                    var nextUsage = usageHistory
-                    nextUsage.record(frame.snapshot)
-                    usageHistory = nextUsage
-                    var nextCPU = cpuHistory
-                    nextCPU.record(percent: frame.systemCpuPercent, at: frame.snapshot.capturedAt)
-                    cpuHistory = nextCPU
-                    var nextNetwork = networkHistory
-                    nextNetwork.record(rates: frame.hostNetworkRates, at: frame.snapshot.capturedAt)
-                    networkHistory = nextNetwork
-                    var nextDisk = diskHistory
-                    nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
-                    diskHistory = nextDisk
-                    recordGPUSample(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
-                    recordChipTemperatureSample(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt)
-                    rows = frame.rows
-                    refreshThermalAdvice(now: frame.snapshot.capturedAt.timeIntervalSince1970)
-                    energyWindowRates = frame.energyWindowRates
-                    energyHourRates = frame.energyHourRates
-                    exitedEnergyProcesses = frame.exitedEnergyProcesses
-                    energyLiveGenerations = frame.energyLiveGenerations
-                    energyMachineHistory = recordedEnergyHistory(rows: frame.rows, at: frame.snapshot.capturedAt)
-                    processListFailed = frame.processListFailed
-                    processPermissionFootnote = frame.permissionFootnote
-                    topMemorySeries = frame.topMemorySeries
-                    loadState = applied.loadState
-                    observation = ProcessQuitSession.Observation(
-                        rows: frame.rows,
-                        liveDetail: frame.detail,
-                        detailToFreeze: detail,
-                        processListFailed: frame.processListFailed,
-                        samplingFailed: false,
-                        freshnessInsufficient: false,
-                        usedBytes: frame.snapshot.usedBytes
+        if accepted {
+            next.noteWindowedPids(WindowedAppLookup.pids(in: next.rows))
+        }
+        core = next
+        perform(effects)
+    }
+
+    private func changePage(_ mutate: (inout DashboardCore) -> [DashboardEffect]) {
+        updateCore(mutate)
+    }
+
+    func mutateCore(_ mutate: (inout DashboardCore) -> [DashboardEffect]) {
+        updateCore(mutate)
+    }
+
+    func runCore(_ mutate: (inout DashboardCore) -> [DashboardEffect]) async {
+        var next = core
+        let effects = mutate(&next)
+        core = next
+        await performExternal(effects)
+    }
+
+    /// Writes the gate bit onto `core`. The gate remains the only retry decision.
+    private func recordGateRetrying() {
+        var next = core
+        next.noteRetrying(samplingGate.retrying)
+        core = next
+    }
+
+    private func updateCore(_ mutate: (inout DashboardCore) -> [DashboardEffect]) {
+        var next = core
+        let effects = mutate(&next)
+        core = next
+        perform(effects)
+    }
+
+    private func performExternal(_ effects: [DashboardEffect]) async {
+        for effect in effects {
+            switch effect {
+            case .terminate(let pid, let force, let token):
+                let result = force
+                    ? await ProcessActions.forceTerminate(pid: pid)
+                    : await ProcessActions.terminate(pid: pid)
+                if let token {
+                    var next = core
+                    next.finishQuit(
+                        pid: pid,
+                        token: token,
+                        result: result,
+                        taskCancelled: Task.isCancelled
                     )
-                    applyRisingOnly = true
-                } else {
-                    observation = ProcessQuitSession.Observation(freshnessInsufficient: true)
+                    core = next
                 }
-            case .failure:
-                if let applied = SamplingRetryApply.apply(
-                    held,
-                    accepted: true,
-                    sampleSucceeded: false
-                ) {
-                    samplingFailed = applied.samplingFailed
-                    loadState = applied.loadState
-                    recordGPUSample(nodes: nil, failed: true, at: nil)
-                    recordChipTemperatureSample(sensors: nil, failed: true, at: nil)
-                    observation = ProcessQuitSession.Observation(samplingFailed: true)
-                } else {
-                    observation = ProcessQuitSession.Observation(freshnessInsufficient: true)
-                }
+            case .confirmForceQuit(let displayName, let generation):
+                let confirmed = ProcessActions.confirmForceQuit(displayName: displayName)
+                var next = core
+                let follow = next.resolveForceQuit(generation: generation, confirmed: confirmed)
+                core = next
+                await performExternal(follow)
+            default:
+                perform([effect])
             }
         }
-        var store = quitOutcome
-        let effect = ProcessQuitSession.applySample(
-            store: &store,
-            listSelectedPid: selectedPid,
-            sidebarSubjectPid: sidebarSubjectPid,
-            currentLiveDetail: detail,
-            observation: observation
-        )
-        quitOutcome = store
-        if selectedPid != effect.listSelectedPid, !keepsExitedEnergySelection(replacingWith: effect.listSelectedPid) {
-            selectedPid = effect.listSelectedPid
-        }
-        reconcileEnergySelectionGeneration()
-        if sidebarSubjectPid != effect.sidebarSubjectPid {
-            sidebarSubjectPid = effect.sidebarSubjectPid
-        }
-        if detail != effect.liveDetail {
-            detail = effect.liveDetail
-        }
-        if applyRisingOnly {
-            applyRisingOnlySelection()
-            applyWindowedOnlySelection()
+    }
+
+    private func perform(_ effects: [DashboardEffect]) {
+        for effect in effects {
+            switch effect {
+            case .requestRetryWake:
+                samplingGate.requestManualRetry()
+                recordGateRetrying()
+                sleepTask?.cancel()
+            case .applyRisingAndWindowedSelection:
+                updateCore { core in
+                    core.applyRisingOnlySelection() + core.applyWindowedOnlySelection()
+                }
+            case .forwardSelectedPid(let pid):
+                Task { await sampler.setSelectedPid(pid) }
+            case .forwardMemoryPageSort(let sort):
+                Task { await sampler.setMemoryPageSort(sort) }
+            case .terminate, .confirmForceQuit:
+                break
+            case .setGPUSampling:
+                break
+            case .startMachineWatch, .stopMachineWatch:
+                syncMachineWatch()
+            case .startEnergyBatteryWatch, .stopEnergyBatteryWatch:
+                syncEnergyBatteryWatch()
+            case .lookupPublicIP(let queriedAt):
+                let transport = PublicIPURLSessionTransport()
+                Task { [weak self] in
+                    let result = await PublicIPLookup.lookup(using: transport)
+                    guard let self else { return }
+                    let address: String?
+                    if case .success(let found) = result {
+                        address = found
+                    } else {
+                        address = nil
+                    }
+                    self.updateCore { $0.finishPublicIPLookup(address: address, queriedAt: queriedAt) }
+                }
+            case .requestLocationAuthorization:
+                HostWiFiLocation.request()
+            }
         }
     }
-    var selectedEnergyExitedOnly: Bool {
-        EnergyPage.blocksQuit(selectedPid: selectedPid, rememberedGeneration: selectedEnergyGeneration, liveRows: rows, liveGenerations: energyLiveGenerations, exited: exitedEnergyProcesses)
-    }
-    private func captureEnergySelectionGeneration() {
-        selectedEnergyGeneration = selectedPage == .energy ? selectedPid.flatMap { energyLiveGenerations[$0] } : nil
-    }
-    private func reconcileEnergySelectionGeneration() {
-        let decision = EnergyPage.resolvedSelection(
-            onEnergyPage: selectedPage == .energy,
-            selectedPid: selectedPid,
-            rememberedGeneration: selectedEnergyGeneration,
-            liveRows: rows,
-            liveGenerations: energyLiveGenerations
-        )
-        if selectedPid != decision.pid { selectedPid = decision.pid }
-        selectedEnergyGeneration = decision.generation
-    }
+    var selectedEnergyExitedOnly: Bool { core.selectedEnergyExitedOnly }
 }

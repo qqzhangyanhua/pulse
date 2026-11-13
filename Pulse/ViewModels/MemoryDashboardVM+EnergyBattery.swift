@@ -25,10 +25,7 @@ extension MemoryDashboardVM {
 
     func refreshEnergyBattery() {
         let reading = EnergyBatteryReader.read()
-        energyBatteryReading = reading
-        let next = EnergyBattery.card(reading)
-        if next != energyBatteryCard {
-            energyBatteryCard = next
-        }
+        guard reading != energyBatteryReading else { return }
+        mutateCore { $0.apply(energyBatteryReading: reading) }
     }
 }

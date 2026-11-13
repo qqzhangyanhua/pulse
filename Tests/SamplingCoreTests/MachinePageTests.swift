@@ -299,8 +299,8 @@ final class MachinePageTests: XCTestCase {
         XCTAssertFalse(app.contains("selectedPage ="))
         XCTAssertFalse(app.contains("selectPage(.gpu)"))
 
-        let quit = try repoText("Pulse/ViewModels/MemoryDashboardVM+QuitSession.swift")
-        XCTAssertEqual(occurrenceCount(of: "guard selectedPage.allowsProcessQuit else { return }", in: quit), 2)
+        let quit = try repoText("Pulse/Models/DashboardCore+Quit.swift")
+        XCTAssertEqual(occurrenceCount(of: "guard selectedPage.allowsProcessQuit else { return [] }", in: quit), 2)
 
         let reader = try repoText("Pulse/Sampling/HostMachineReader.swift")
         XCTAssertTrue(reader.contains("hardwareModel()"))

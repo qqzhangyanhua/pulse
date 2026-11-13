@@ -33,13 +33,9 @@ final class MemoryRevealGroupRowWiringSourceTests: XCTestCase {
         let background = try functionBody(named: "rowBackground", in: pane)
         XCTAssertTrue(background.contains("duration: 0.16"))
 
-        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
-        let scrollTarget = try functionBody(named: "processListScrollTarget", in: vm)
+        let scrollTarget = try functionBody(named: "processListScrollTarget", in: try repoText("Pulse/Models/DashboardCore+Selection.swift"))
         XCTAssertTrue(scrollTarget.contains("ProcessSelection.scrollTarget(selectedPid: selectedPid, rows: rows)"))
         XCTAssertFalse(scrollTarget.contains("MemoryRevealGroupRow"))
-        let apply = try functionBody(named: "applySample", in: vm)
-        XCTAssertFalse(apply.contains("setSelectedPid"))
-
         let model = try repoText("Pulse/Models/MemoryRevealGroupRow.swift")
         XCTAssertTrue(model.contains("MemoryMagnitudeVisibleGroup.row("))
         XCTAssertFalse(model.contains("setSelectedPid"))

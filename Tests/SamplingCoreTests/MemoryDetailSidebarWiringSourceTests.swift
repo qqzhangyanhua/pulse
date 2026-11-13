@@ -103,26 +103,20 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
         XCTAssertFalse(vm.contains("samplingWindowExpanded"))
         XCTAssertFalse(vm.contains("MemoryDetailSamplingWindow"))
         XCTAssertFalse(vm.contains("MemoryDetailPresentation"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 42, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature")
 
-        let didSet = try braceBody(after: "var selectedPid", in: vm)
-        XCTAssertTrue(didSet.contains("detail = nil"))
-        XCTAssertTrue(didSet.contains("let pid = selectedPid"))
+        let select = try functionBody(named: "select", in: try repoText("Pulse/Models/DashboardCore+Selection.swift"))
+        XCTAssertTrue(select.contains("detail = nil"))
+        XCTAssertFalse(select.contains("samplingWindow"))
+        XCTAssertFalse(select.contains("MemoryDetail"))
+        let perform = try functionBody(named: "perform", in: vm)
         XCTAssertEqual(
-            try lineContaining("sampler.setSelectedPid", in: didSet).trimmingCharacters(in: .whitespaces),
+            try lineContaining("sampler.setSelectedPid", in: perform).trimmingCharacters(in: .whitespaces),
             "Task { await sampler.setSelectedPid(pid) }"
         )
-        XCTAssertFalse(didSet.contains("samplingWindow"))
-        XCTAssertFalse(didSet.contains("MemoryDetail"))
 
         let selectPage = try functionBody(named: "selectPage", in: vm)
         XCTAssertFalse(selectPage.contains("setSelectedPid"))
         XCTAssertFalse(selectPage.contains("selectedMemorySeries"))
-
-        let apply = try functionBody(named: "applySample", in: vm)
-        XCTAssertFalse(apply.contains("MemoryDetailPresentation"))
-        XCTAssertFalse(apply.contains("DisclosureGroup"))
-        XCTAssertTrue(apply.contains("rows = frame.rows"))
 
         let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
         let setter = try functionBody(named: "setSelectedPid", in: sampler)
@@ -180,13 +174,6 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
             return try balancedSlice(from: brace, in: source, label: name)
         }
         throw SourceContractError.missing(name)
-    }
-
-    private func braceBody(after needle: String, in source: String) throws -> String {
-        guard let start = source.range(of: needle)?.upperBound,
-              let brace = source[start...].firstIndex(of: "{")
-        else { throw SourceContractError.missing(needle) }
-        return try balancedSlice(from: brace, in: source, label: needle)
     }
 
     private func lineContaining(_ needle: String, in source: String) throws -> String {

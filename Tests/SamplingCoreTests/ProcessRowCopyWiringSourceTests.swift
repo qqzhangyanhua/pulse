@@ -45,14 +45,11 @@ final class ProcessRowCopyWiringSourceTests: XCTestCase {
         XCTAssertTrue(menu.contains("ProcessRowCopy.line(page: vm.selectedPage, row: row)"))
         XCTAssertTrue(menu.contains("NSPasteboard"))
 
-        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
+        let vm = try repoText("Pulse/Models/DashboardCore+Selection.swift")
         let selected = try functionBody(named: "selectedRow", in: vm)
         let shown = try index(of: "sortedRows.first", in: selected)
         let raw = try index(of: "rows.first", in: selected)
         XCTAssertLessThan(shown, raw)
-        let apply = try functionBody(named: "applySample", in: vm)
-        XCTAssertFalse(apply.contains("setSelectedPid"))
-        XCTAssertFalse(apply.contains("applyGroupedByAppSelection"))
     }
 
     private func repoText(_ relative: String) throws -> String {

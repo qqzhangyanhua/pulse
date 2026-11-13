@@ -43,11 +43,14 @@ final class CPUPageTests: XCTestCase {
         XCTAssertTrue(view.contains("let core = CPUPageCopy.busiestCoreLine(percent: vm.busiestCorePercent)"))
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
-        XCTAssertTrue(vm.contains("busiestCorePercent = frame.busiestCorePercent"))
-        XCTAssertTrue(vm.contains("nextCPU.record(percent: frame.systemCpuPercent, at: frame.snapshot.capturedAt)"))
         XCTAssertFalse(vm.contains("record(percent: frame.busiestCorePercent"))
         XCTAssertFalse(vm.contains("record(percent: vm.busiestCorePercent"))
         XCTAssertFalse(vm.contains("cpuHistory.record"))
+        let core = try repoText("Pulse/Models/DashboardCore.swift")
+        XCTAssertTrue(core.contains("busiestCorePercent = frame.busiestCorePercent"))
+        XCTAssertTrue(core.contains("nextCPU.record(percent: frame.systemCpuPercent, at: frame.snapshot.capturedAt)"))
+        XCTAssertFalse(core.contains("record(percent: frame.busiestCorePercent"))
+        XCTAssertFalse(core.contains("cpuHistory.record"))
 
         let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
         XCTAssertTrue(sampler.contains("HostCPUReader.readCores()"))

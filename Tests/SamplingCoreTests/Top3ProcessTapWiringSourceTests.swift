@@ -75,12 +75,17 @@ final class Top3ProcessTapWiringSourceTests: XCTestCase {
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         let vmFocus = try functionBody(named: "focusMemoryPage", in: vm)
-        XCTAssertTrue(vmFocus.contains("next.focusMemoryPage()"))
-        XCTAssertTrue(vmFocus.contains("publishMemoryPageSort()"))
-        XCTAssertTrue(vmFocus.contains("applyRisingOnlySelection()"))
-        XCTAssertTrue(vmFocus.contains("applyWindowedOnlySelection()"))
-        XCTAssertTrue(vmFocus.contains("syncMachineWatch()"))
+        XCTAssertTrue(vmFocus.contains("changePage"))
+        XCTAssertTrue(vm.contains("syncMachineWatch()"))
         XCTAssertFalse(vmFocus.contains("Top3ProcessTap"))
+        let selection = try repoText("Pulse/Models/DashboardCore+Selection.swift")
+        let tail = try functionBody(named: "finishPageChange", in: selection)
+        XCTAssertFalse(tail.contains("navigation.focusMemoryPage()"))
+        XCTAssertTrue(tail.contains("publishMemoryPageSort()"))
+        XCTAssertTrue(tail.contains("applyRisingOnlySelection()"))
+        XCTAssertTrue(tail.contains("applyWindowedOnlySelection()"))
+        let coreFocus = try functionBody(named: "focusMemoryPage", in: selection)
+        XCTAssertTrue(coreFocus.contains("navigation.focusMemoryPage()"))
 
         let rising = try functionBody(
             named: "selectedPid",

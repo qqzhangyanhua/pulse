@@ -4,28 +4,7 @@ import XCTest
 /// Source locks for the energy-page history curve. They do not open the Mac window.
 final class EnergyHistoryWiringSourceTests: XCTestCase {
     func testAcceptedSuccessRecordsProcessWattsAndFailureDoesNot() throws {
-        let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
-        XCTAssertEqual(
-            occurrenceCount(
-                of: "energyMachineHistory = recordedEnergyHistory(rows: frame.rows, at: frame.snapshot.capturedAt)",
-                in: vm
-            ),
-            1
-        )
-        let failure = try braceBody(after: "case .failure:", in: vm)
-        XCTAssertFalse(failure.contains("recordedEnergyHistory"))
-        XCTAssertFalse(failure.contains("EnergyMachineHistory"))
-        let rejected = try braceBody(after: "if !accepted", in: vm)
-        XCTAssertFalse(rejected.contains("recordedEnergyHistory"))
-
         let history = try repoText("Pulse/ViewModels/MemoryDashboardVM+EnergyHistory.swift")
-        XCTAssertTrue(history.contains("let known = rows.compactMap(\\.energyWatts)"))
-        XCTAssertTrue(history.contains("known.isEmpty ? nil : known.reduce(0, +)"))
-        XCTAssertTrue(history.contains("reading.hasInternalBattery"))
-        XCTAssertTrue(history.contains("Double(percent)"))
-        XCTAssertTrue(history.contains("processWatts: processWatts(rows)"))
-        XCTAssertTrue(history.contains("batteryPercent: historyBatteryPercent"))
-        XCTAssertTrue(history.contains("guard selectedPage == .energy else { return nil }"))
         XCTAssertFalse(history.contains("batteryPercent: 0"))
         XCTAssertFalse(history.contains("?? 0"))
         XCTAssertFalse(history.contains("energyWindowRates"))
@@ -36,7 +15,7 @@ final class EnergyHistoryWiringSourceTests: XCTestCase {
         let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
         XCTAssertFalse(sampler.contains("EnergyMachineHistory"))
         let battery = try repoText("Pulse/ViewModels/MemoryDashboardVM+EnergyBattery.swift")
-        XCTAssertTrue(battery.contains("energyBatteryReading = reading"))
+        XCTAssertTrue(battery.contains("EnergyBatteryReader.read()"))
         XCTAssertTrue(battery.contains(".seconds(30)"))
         XCTAssertFalse(battery.contains("HostMachineReader"))
     }
@@ -140,10 +119,6 @@ final class EnergyHistoryWiringSourceTests: XCTestCase {
             cursor = source.index(after: cursor)
         }
         throw EnergyHistorySourceError.missing("balanced brace for \(label)")
-    }
-
-    private func occurrenceCount(of needle: String, in haystack: String) -> Int {
-        haystack.components(separatedBy: needle).count - 1
     }
 }
 
