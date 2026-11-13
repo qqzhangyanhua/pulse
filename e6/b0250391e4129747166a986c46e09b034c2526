@@ -1,0 +1,30 @@
+GLOSSARY.md
+  s_1f7bb1a8cd00d6::t_9743817f578245 16
+  s_9efc483727e1cf::t_a75e1cfdff6932 18-57
+docs/research/2026-11-expansion-survey.md
+  s_9efc483727e1cf::t_556d5c231bbc3f 1-224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "e6b0250391e4129747166a986c46e09b034c2526",
+  "prompts": {},
+  "sessions": {
+    "s_1f7bb1a8cd00d6": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1d382-56ca-7712-a5f0-d8780304f6df",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    },
+    "s_9efc483727e1cf": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "805470d1-7764-454a-bb60-3cb9d7f48726",
+        "model": "unknown"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
