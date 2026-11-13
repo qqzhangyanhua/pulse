@@ -45,6 +45,58 @@ final class DashboardCoreGPUShareTests: XCTestCase {
         XCTAssertEqual(named(core), ["Safari"])
     }
 
+    func testCounterRewindPublishesOneDashRowNotAMissingCard() {
+        var core = DashboardCore(ownPid: 1)
+        _ = core.apply(result: success(frame(at: 1_000, samples: [(1, 8, 2_000_000_000, "Preview")])), accepted: true, page: .gpu)
+        _ = core.apply(result: success(frame(at: 1_001, samples: [(1, 8, 1_000_000_000, "Preview")])), accepted: true, page: .gpu)
+
+        guard case .rows(let rows) = core.gpuShare else {
+            return XCTFail("expected one dash row, got \(String(describing: core.gpuShare))")
+        }
+        XCTAssertNotEqual(core.gpuShare, .missing)
+        XCTAssertEqual(rows.map(\.pid), [8])
+        XCTAssertEqual(rows.map(\.shareText), ["—"])
+        XCTAssertNil(rows[0].percent)
+    }
+
+    func testNilSharesSortAfterNumbersAndStayInsideFive() {
+        var core = DashboardCore(ownPid: 1)
+        let baseline: [(UInt64, Int32, UInt64, String)] = [
+            (1, 1, 0, "High"),
+            (2, 2, 0, "Mid"),
+            (3, 4, 0, "Low"),
+            (4, 6, 0, "Lower"),
+            (5, 8, 2_000_000_000, "Rewind"),
+            (6, 9, 0, "Gone"),
+            (7, 9, 0, "Gone"),
+        ]
+        let current: [(UInt64, Int32, UInt64, String)] = [
+            (1, 1, 900_000_000, "High"),
+            (2, 2, 700_000_000, "Mid"),
+            (3, 4, 600_000_000, "Low"),
+            (4, 6, 400_000_000, "Lower"),
+            (5, 8, 1_000_000_000, "Rewind"),
+            (6, 9, 500_000_000, "Gone"),
+        ]
+        _ = core.apply(result: success(frame(at: 1_000, samples: baseline)), accepted: true, page: .gpu)
+        _ = core.apply(result: success(frame(at: 1_001, samples: current)), accepted: true, page: .gpu)
+
+        guard case .rows(let rows) = core.gpuShare else {
+            return XCTFail("expected ranked rows, got \(String(describing: core.gpuShare))")
+        }
+        XCTAssertEqual(rows.map(\.pid), [1, 2, 4, 6, 8])
+        XCTAssertEqual(rows.map(\.shareText), ["90.0%", "70.0%", "60.0%", "40.0%", "—"])
+        XCTAssertFalse(rows.contains { $0.pid == 9 })
+    }
+
+    func testShareOverOneHundredStaysRanked() {
+        var core = DashboardCore(ownPid: 1)
+        _ = core.apply(result: success(frame(at: 1_000, samples: [(1, 4, 0, "FinalCut")])), accepted: true, page: .gpu)
+        _ = core.apply(result: success(frame(at: 1_001, samples: [(1, 4, 2_500_000_000, "FinalCut")])), accepted: true, page: .gpu)
+        XCTAssertEqual(shareTexts(core), ["250.0%"])
+        XCTAssertNotEqual(core.gpuShare, .missing)
+    }
+
     func testNoAGXClientsAreAMissingCardNotZeros() {
         var core = DashboardCore(ownPid: 1)
         _ = core.apply(result: success(frame(at: 1_000, samples: [])), accepted: true, page: .gpu)

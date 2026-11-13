@@ -23,6 +23,12 @@ actor MemorySampler {
     private var memoryPageSort = ProcessTableSort.defaultSort(for: .memory)
     private var lastRows: [ProcessRow] = []
     private var topMemoryStore = MemoryGrowthTopStore()
+    /// AGX clients only. Host GPU utilization stays on every sample.
+    private var readsGPUShare = false
+
+    func setReadsGPUShare(_ enabled: Bool) {
+        readsGPUShare = enabled
+    }
 
     func setSelectedPid(_ pid: Int32?) {
         guard selectedPid != pid else { return }
@@ -77,7 +83,7 @@ actor MemorySampler {
         let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
         let hostDiskRates = consumeSystemDisk(at: capturedAt)
         let gpuNodes = HostGPUReader.read()
-        let gpuShareClients = HostGPUShareReader.read()
+        let gpuShareClients = readsGPUShare ? HostGPUShareReader.read() : nil
         let chipTemperatureSensors = readChipTemperature ? HostChipTemperatureReader.read() : nil
         let hostWiFi = HostWiFiReader.read()
 

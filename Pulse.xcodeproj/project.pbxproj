@@ -105,6 +105,7 @@
 		B0000000000000000000000A /* MemoryDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000A /* MemoryDashboardView.swift */; };
 		B0000000000000000000000B /* OverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000B /* OverviewSection.swift */; };
 		B0000000000000000000000C /* ProcessTablePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000C /* ProcessTablePane.swift */; };
+		B00000000000000000000231 /* ProcessTablePane+Pause.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000231 /* ProcessTablePane+Pause.swift */; };
 		B0000000000000000000000D /* ProcessDetailSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000D /* ProcessDetailSidebar.swift */; };
 		B00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift */; };
 		B00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */; };
@@ -321,6 +322,7 @@
 		A0000000000000000000000A /* MemoryDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryDashboardView.swift; sourceTree = "<group>"; };
 		A0000000000000000000000B /* OverviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewSection.swift; sourceTree = "<group>"; };
 		A0000000000000000000000C /* ProcessTablePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessTablePane.swift; sourceTree = "<group>"; };
+		A00000000000000000000231 /* ProcessTablePane+Pause.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessTablePane+Pause.swift"; sourceTree = "<group>"; };
 		A0000000000000000000000D /* ProcessDetailSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessDetailSidebar.swift; sourceTree = "<group>"; };
 		A00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessDetailSidebar+MemoryAttribution.swift"; sourceTree = "<group>"; };
 		A00000000000000000000036 /* ProcessDetailSidebarQuitControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessDetailSidebarQuitControls.swift; sourceTree = "<group>"; };
@@ -576,6 +578,7 @@
 				A00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift */,
 				A00000000000000000000013 /* OverviewCards.swift */,
 				A0000000000000000000000C /* ProcessTablePane.swift */,
+				A00000000000000000000231 /* ProcessTablePane+Pause.swift */,
 				A00000000000000000000067 /* EnergyProcessTable.swift */,
 				A0000000000000000000006C /* EnergyBatteryCardView.swift */,
 				A00000000000000000000141 /* SleepAssertionCardView.swift */,
@@ -845,6 +848,7 @@
 				B0000000000000000000000B /* OverviewSection.swift in Sources */,
 				B00000000000000000000013 /* OverviewCards.swift in Sources */,
 				B0000000000000000000000C /* ProcessTablePane.swift in Sources */,
+				B00000000000000000000231 /* ProcessTablePane+Pause.swift in Sources */,
 				B0000000000000000000004F /* ProcessPermissionFootnoteLabel.swift in Sources */,
 				B0000000000000000000000D /* ProcessDetailSidebar.swift in Sources */,
 				B00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift in Sources */,

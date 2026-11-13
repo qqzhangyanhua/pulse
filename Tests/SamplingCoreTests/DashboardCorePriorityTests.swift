@@ -14,7 +14,9 @@ final class DashboardCorePriorityTests: XCTestCase {
         let eligibleRow = eligible(42, "Mail")
         XCTAssertNil(ready(eligible(42, "Mail", userID: 0)).priorityMenuOffer(selfUid: 501))
         XCTAssertNil(ready(eligible(42, "Mail", userID: nil)).priorityMenuOffer(selfUid: 501))
-        XCTAssertNil(ready(eligible(42, "Mail", start: nil)).priorityMenuOffer(selfUid: 501))
+        let missingStart = ready(eligible(42, "Mail", start: nil))
+        XCTAssertEqual(missingStart.priorityMenuOffer(selfUid: 501), .lower)
+        XCTAssertNil(missingStart.pauseMenuOffer(selfUid: 501))
         XCTAssertNil(ready(eligible(42, "Mail", path: nil)).priorityMenuOffer(selfUid: 501))
         XCTAssertNil(ready(eligible(42, "Mail", path: "")).priorityMenuOffer(selfUid: 501))
         for path in [
@@ -56,6 +58,7 @@ final class DashboardCorePriorityTests: XCTestCase {
         XCTAssertEqual(core.pauseSelected(selfUid: 501), [.pauseProcess(pid: 42)])
         XCTAssertEqual(core.priorityMenuOffer(selfUid: 501), .lower)
         XCTAssertEqual(core.lowerSelectedPriority(selfUid: 501), [.lowerPriority(pid: 42)])
+        core.finishLowerPriority(pid: 42, succeeded: true)
         XCTAssertTrue(core.isPaused(pid: 42))
         XCTAssertTrue(core.isLoweredPriority(pid: 42))
         XCTAssertEqual(core.pauseMenuOffer(selfUid: 501), .resume)
@@ -67,8 +70,10 @@ final class DashboardCorePriorityTests: XCTestCase {
         accept(&core, rows: [eligible(42, "Mail"), eligible(7, "Notes")])
         _ = core.select(pid: 42)
         XCTAssertEqual(core.lowerSelectedPriority(selfUid: 501), [.lowerPriority(pid: 42)])
+        core.finishLowerPriority(pid: 42, succeeded: true)
         _ = core.select(pid: 7)
         XCTAssertEqual(core.lowerSelectedPriority(selfUid: 501), [.lowerPriority(pid: 7)])
+        core.finishLowerPriority(pid: 7, succeeded: true)
         let restored = core.restoreLoweredPrioritiesForQuit()
         XCTAssertEqual(restored, [.restorePriority(pid: 7), .restorePriority(pid: 42)])
         XCTAssertFalse(core.isLoweredPriority(pid: 7))
@@ -77,7 +82,7 @@ final class DashboardCorePriorityTests: XCTestCase {
     }
 
     func testTablesAndQuitRestoreUseTheGlossaryMark() throws {
-        let pane = try repoText("Pulse/Views/ProcessTablePane.swift")
+        let pane = try WiringSourceText.text(for: "ProcessTablePane")
         let energy = try repoText("Pulse/Views/EnergyProcessTable.swift")
         let mark = try repoText("Pulse/Views/LoweredPriorityMark.swift")
         let package = try repoText("Package.swift")
@@ -107,11 +112,29 @@ final class DashboardCorePriorityTests: XCTestCase {
             .deletingLastPathComponent()
     }
 
+    func testFailedLowerDoesNotMarkAndSuccessfulLowerDoes() {
+        var core = ready(eligible(42, "Mail", start: nil))
+        XCTAssertFalse(core.isLoweredPriority(pid: 42))
+        XCTAssertEqual(core.lowerSelectedPriority(selfUid: 501), [.lowerPriority(pid: 42)])
+        core.finishLowerPriority(pid: 42, succeeded: false)
+        XCTAssertFalse(core.isLoweredPriority(pid: 42))
+        XCTAssertEqual(core.priorityMenuOffer(selfUid: 501), .lower)
+        XCTAssertEqual(core.restoreLoweredPrioritiesForQuit(), [])
+
+        core.finishLowerPriority(pid: 42, succeeded: true)
+        XCTAssertTrue(core.isLoweredPriority(pid: 42))
+        XCTAssertEqual(core.priorityMenuOffer(selfUid: 501), .restore)
+        XCTAssertEqual(core.restoreLoweredPrioritiesForQuit(), [.restorePriority(pid: 42)])
+        XCTAssertFalse(core.isLoweredPriority(pid: 42))
+    }
+
     func testLoweringMarksTheProcessAndRestoreClearsIt() {
         var core = ready(eligible(42, "Mail", start: 100))
         XCTAssertFalse(core.isLoweredPriority(pid: 42))
         let lowered = core.lowerSelectedPriority(selfUid: 501)
         XCTAssertEqual(lowered, [.lowerPriority(pid: 42)])
+        XCTAssertFalse(core.isLoweredPriority(pid: 42))
+        core.finishLowerPriority(pid: 42, succeeded: true)
         XCTAssertTrue(core.isLoweredPriority(pid: 42))
         XCTAssertEqual(core.priorityMenuOffer(selfUid: 501), .restore)
 

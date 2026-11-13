@@ -16,9 +16,9 @@ enum PriorityMenuOffer: Equatable, Sendable {
 }
 
 extension DashboardCore {
-    /// Reuses `pauseMenuOffer`, so system paths stay on `ProcessQuitRoute` with `hasApplication: false`.
+    /// Same path, user, and group check as pause. A missing start time can still lower.
     func priorityMenuOffer(selfUid: UInt32) -> PriorityMenuOffer? {
-        guard pauseMenuOffer(selfUid: selfUid) != nil, let row = selectedRow else { return nil }
+        guard let row = selectedRow, canControlProcess(row, selfUid: selfUid) else { return nil }
         return loweredPriorityPids.contains(row.pid) ? .restore : .lower
     }
 
@@ -26,10 +26,16 @@ extension DashboardCore {
         loweredPriorityPids.contains(pid)
     }
 
+    /// Does not mark. The mark is `finishLowerPriority` after `setpriority` returns 0.
     mutating func lowerSelectedPriority(selfUid: UInt32) -> [DashboardEffect] {
         guard priorityMenuOffer(selfUid: selfUid) == .lower, let row = selectedRow else { return [] }
-        loweredPriorityPids.insert(row.pid)
         return [.lowerPriority(pid: row.pid)]
+    }
+
+    /// A failed lower does not mark. A successful lower does.
+    mutating func finishLowerPriority(pid: Int32, succeeded: Bool) {
+        guard succeeded else { return }
+        loweredPriorityPids.insert(pid)
     }
 
     mutating func restoreLoweredPriority(pid: Int32) -> [DashboardEffect] {

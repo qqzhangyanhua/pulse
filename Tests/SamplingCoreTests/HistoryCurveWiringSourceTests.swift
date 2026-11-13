@@ -202,7 +202,7 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         XCTAssertTrue(locate.contains("select(pid:"))
         XCTAssertTrue(locate.contains("topAppLocateReveal"))
 
-        let pane = try repoText("Pulse/Views/ProcessTablePane.swift")
+        let pane = try WiringSourceText.text(for: "ProcessTablePane")
         let phase = try functionBody(named: "cpuPhase", in: pane)
         XCTAssertTrue(phase.contains("CPUPagePhaseResolver.resolve"))
         let table = try functionBody(named: "resourceTableBody", in: pane)

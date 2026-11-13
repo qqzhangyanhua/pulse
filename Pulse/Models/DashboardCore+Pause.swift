@@ -53,27 +53,44 @@ extension DashboardCore {
     }
 
     func resumeBeforeQuitPrompt() -> DashboardEffect? {
-        guard let row = selectedRow, isPaused(pid: row.pid) else { return nil }
-        return .confirmResumeBeforeQuit(pid: row.pid, displayName: row.name)
+        guard let pid = selectedRow?.pid else { return nil }
+        return resumeBeforeQuitEffect(pid: pid)
     }
 
-    /// Cancel leaves the process paused. Confirm continues it, then issues the ordinary quit.
+    /// Cancel leaves the process paused. Confirm continues it, then quits.
+    /// The sidebar quit runs only when this pid is the selection on a page that allows it.
+    /// GPU 占比 and thermal rows continue, then terminate that pid.
     mutating func resolveResumeBeforeQuit(pid: Int32, confirmed: Bool) -> [DashboardEffect] {
-        guard confirmed, selectedPid == pid, pausedLedger.contains(pid: pid) else { return [] }
+        guard confirmed, pausedLedger.contains(pid: pid) else { return [] }
         pausedLedger.resume(pid: pid)
-        return [.resumeProcess(pid: pid)] + quitSelected()
+        let continued: [DashboardEffect] = [.resumeProcess(pid: pid)]
+        if selectedPid == pid, selectedPage.allowsProcessQuit {
+            return continued + quitSelected()
+        }
+        return continued + beginThermalTerminate(pid: pid)
     }
 
-    /// `hasApplication` stays false so a system path is not offered just because it is an app.
-    private func canPause(_ row: ProcessRow, selfUid: UInt32) -> Bool {
+    /// Same pause check as the sidebar. A reused pid is not this process.
+    func resumeBeforeQuitEffect(pid: Int32) -> DashboardEffect? {
+        guard isPaused(pid: pid), let row = rows.first(where: { $0.pid == pid }) else { return nil }
+        return .confirmResumeBeforeQuit(pid: pid, displayName: row.name)
+    }
+
+    /// One pid, this user, not a system path, not a grouped row. Start time is not required.
+    func canControlProcess(_ row: ProcessRow, selfUid: UInt32) -> Bool {
         guard row.groupedMemberCount == nil else { return false }
         guard isOwnUser(rowUid: row.userID, selfUid: selfUid) else { return false }
-        guard row.startTimeSeconds != nil else { return false }
         guard case .signal = ProcessQuitRoute.decide(
             hasApplication: false,
             executablePath: row.executablePath,
             force: false
         ) else { return false }
         return true
+    }
+
+    /// `hasApplication` stays false so a system path is not offered just because it is an app.
+    private func canPause(_ row: ProcessRow, selfUid: UInt32) -> Bool {
+        guard canControlProcess(row, selfUid: selfUid) else { return false }
+        return row.startTimeSeconds != nil
     }
 }

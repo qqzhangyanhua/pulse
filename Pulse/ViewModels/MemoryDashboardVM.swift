@@ -298,6 +298,7 @@ final class MemoryDashboardVM: ObservableObject {
     }
 
     private func tick(_ flight: SamplingFlight) async {
+        await sampler.setReadsGPUShare(readsGPUShare)
         let result = await sampler.sample(readChipTemperature: selectedPage == .machine)
         if Task.isCancelled {
             samplingGate.invalidate()
@@ -413,7 +414,10 @@ final class MemoryDashboardVM: ObservableObject {
                 ProcessPause.resume(pid)
                 ProcessPause.store(core.pausedLedger)
             case .lowerPriority(let pid):
-                ProcessPriority.lower(pid)
+                let succeeded = ProcessPriority.lower(pid)
+                var next = core
+                next.finishLowerPriority(pid: pid, succeeded: succeeded)
+                core = next
             case .restorePriority(let pid):
                 ProcessPriority.restore(pid)
             case .setGPUSampling:

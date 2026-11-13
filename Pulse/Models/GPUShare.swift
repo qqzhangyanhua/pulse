@@ -262,24 +262,25 @@ enum GPUShareProjection {
         )
     }
 
-    /// Numeric shares only. Pulse stays in the list and is labeled here, not by dropping its pid.
+    /// Numeric percents descending, then nils. Pulse stays in the list and is labeled here.
     private static func rank(
         _ readings: [GPUShareReading],
         rows: [ProcessRow],
         ownPid: Int32
     ) -> [GPUShareRow] {
-        let ordered = readings
-            .compactMap { reading -> (GPUShareReading, Double)? in
-                guard let percent = reading.percent else { return nil }
-                return (reading, percent)
+        let ordered = readings.sorted { lhs, rhs in
+            switch (lhs.percent, rhs.percent) {
+            case let (left?, right?) where left != right:
+                return left > right
+            case (.some, .some), (.none, .none):
+                return lhs.pid < rhs.pid
+            case (.some, .none):
+                return true
+            case (.none, .some):
+                return false
             }
-            .sorted { lhs, rhs in
-                if lhs.1 != rhs.1 { return lhs.1 > rhs.1 }
-                return lhs.0.pid < rhs.0.pid
-            }
-            .prefix(GPUShareCopy.limit)
-        return ordered.map { item in
-            let reading = item.0
+        }
+        return ordered.prefix(GPUShareCopy.limit).map { reading in
             let row = rows.first { $0.pid == reading.pid }
             return GPUShareRow(
                 pid: reading.pid,
