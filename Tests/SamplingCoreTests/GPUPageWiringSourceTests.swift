@@ -96,7 +96,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(vm.contains("sample(readGPU: selectedPage == .gpu"))
         XCTAssertEqual(
             occurrenceCount(of: "publishGPUTransition(from: previous, to: selectedPage)", in: vm),
-            2
+            1
         )
         XCTAssertTrue(vm.contains("func selectPage("))
         XCTAssertTrue(vm.contains("func focusMemoryPage("))

@@ -103,17 +103,17 @@ final class MemoryDetailSidebarWiringSourceTests: XCTestCase {
         XCTAssertFalse(vm.contains("samplingWindowExpanded"))
         XCTAssertFalse(vm.contains("MemoryDetailSamplingWindow"))
         XCTAssertFalse(vm.contains("MemoryDetailPresentation"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 18, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature")
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 11, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; app grouping adds groupedByApp; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature; selection state moved onto DashboardCore")
 
-        let didSet = try braceBody(after: "var selectedPid", in: vm)
-        XCTAssertTrue(didSet.contains("detail = nil"))
-        XCTAssertTrue(didSet.contains("let pid = selectedPid"))
+        let select = try functionBody(named: "select", in: try repoText("Pulse/Models/DashboardCore+Selection.swift"))
+        XCTAssertTrue(select.contains("detail = nil"))
+        XCTAssertFalse(select.contains("samplingWindow"))
+        XCTAssertFalse(select.contains("MemoryDetail"))
+        let perform = try functionBody(named: "perform", in: vm)
         XCTAssertEqual(
-            try lineContaining("sampler.setSelectedPid", in: didSet).trimmingCharacters(in: .whitespaces),
+            try lineContaining("sampler.setSelectedPid", in: perform).trimmingCharacters(in: .whitespaces),
             "Task { await sampler.setSelectedPid(pid) }"
         )
-        XCTAssertFalse(didSet.contains("samplingWindow"))
-        XCTAssertFalse(didSet.contains("MemoryDetail"))
 
         let selectPage = try functionBody(named: "selectPage", in: vm)
         XCTAssertFalse(selectPage.contains("setSelectedPid"))

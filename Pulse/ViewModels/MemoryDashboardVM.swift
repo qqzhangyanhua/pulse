@@ -25,7 +25,10 @@ final class MemoryDashboardVM: ObservableObject {
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
     var energyWindowRates: [Int32: ProcessEnergyRates] { core.energyWindowRates }
     /// 1 分钟 or 1 小时. Views read `activeEnergyRates`, not either table directly.
-    @Published var energyRankingSpan = EnergyRankingSpan.oneMinute
+    var energyRankingSpan: EnergyRankingSpan {
+        get { core.energyRankingSpan }
+        set { setEnergyRankingSpan(newValue) }
+    }
     /// Minute-ledger rates for the latest accepted process list. Empty when that list failed.
     var energyHourRates: [Int32: ProcessEnergyRates] { core.energyHourRates }
     /// Sealed 1-hour generations. Empty when that list failed. Not part of `energyHourRates`.
@@ -79,57 +82,38 @@ final class MemoryDashboardVM: ObservableObject {
     @Published var thermalAdvice: ThermalAdvice?
     /// Seconds of the last published advice. Nil publishes on the next sample.
     var thermalAdviceLastUpdate: Double?
-    @Published var filter = ""
+    var filter: String {
+        get { core.filter }
+        set { setFilter(newValue) }
+    }
     /// Memory-tab only. Default OFF. Session-scoped; not a Sampler or preference write.
-    @Published var risingOnlyFilter = false {
-        didSet {
-            guard oldValue != risingOnlyFilter else { return }
-            applyRisingOnlySelection()
-        }
+    var risingOnlyFilter: Bool {
+        get { core.risingOnlyFilter }
+        set { setRisingOnlyFilter(newValue) }
     }
     /// Memory-tab only. Default OFF. Keeps apps that can open a window.
-    @Published var windowedOnlyFilter = false {
-        didSet {
-            guard oldValue != windowedOnlyFilter else { return }
-            applyWindowedOnlySelection()
-        }
+    var windowedOnlyFilter: Bool {
+        get { core.windowedOnlyFilter }
+        set { setWindowedOnlyFilter(newValue) }
     }
-    /// Memory and CPU display. Default OFF. Groups the current visible rows by name.
-    @Published var groupedByApp = false {
-        didSet {
-            guard oldValue != groupedByApp else { return }
-            applyGroupedByAppSelection()
-        }
+    /// Memory, CPU, and energy display. Default OFF. Groups the current visible rows by name.
+    var groupedByApp: Bool {
+        get { core.groupedByApp }
+        set { setGroupedByApp(newValue) }
     }
     /// One-shot memory Top card reveal. The next locate replaces it.
     @Published var topAppLocateReveal: TopAppLocation.Reveal?
-    @Published private(set) var navigation = DashboardNavigation()
+    var navigation: DashboardNavigation { core.navigation }
     let snapshotExportStore = SnapshotExportStore()
-    /// Last memory-page sort, readable on the MainActor. Not a second published sort field.
-    private var publication = MemoryPageSortPublication()
-    private var selectedEnergyGeneration: Int?
+    private var selectedEnergyGeneration: Int? {
+        get { core.selectedEnergyGeneration }
+        set { core.selectedEnergyGeneration = newValue }
+    }
     private var energyLiveGenerations: [Int32: Int] { core.energyLiveGenerations }
 
-    @Published var selectedPid: Int32? {
-        didSet {
-            guard oldValue != selectedPid else { return }
-            let effect = ProcessQuitSession.followListSelection(
-                listSelectedPid: selectedPid,
-                sidebarSubjectPid: sidebarSubjectPid,
-                rows: rows
-            )
-            if selectedPid != effect.listSelectedPid {
-                selectedPid = effect.listSelectedPid
-                return
-            }
-            if sidebarSubjectPid != effect.sidebarSubjectPid {
-                sidebarSubjectPid = effect.sidebarSubjectPid
-            }
-            captureEnergySelectionGeneration()
-            detail = nil
-            let pid = selectedPid
-            Task { await sampler.setSelectedPid(pid) }
-        }
+    var selectedPid: Int32? {
+        get { core.selectedPid }
+        set { select(pid: newValue) }
     }
     private let sampler = MemorySampler()
     private var loopTask: Task<Void, Never>?
@@ -157,50 +141,15 @@ final class MemoryDashboardVM: ObservableObject {
         }
     }
 
-    var visibleRows: [ProcessRow] {
-        let named = MemoryGrowthRisingFilter.apply(
-            rows: rows,
-            nameQuery: filter,
-            page: selectedPage,
-            risingOnly: risingOnlyFilter,
-            seriesByPid: topMemorySeries
-        )
-        return WindowedAppFilter.apply(
-            rows: named,
-            page: selectedPage,
-            windowedOnly: windowedOnlyFilter,
-            windowedPids: { WindowedAppLookup.pids(in: rows) }
-        )
-    }
+    var visibleRows: [ProcessRow] { core.visibleRows }
 
     /// Visible rows in the current table sort. Not stored and not published.
-    var sortedRows: [ProcessRow] {
-        if selectedPage == .energy {
-            return EnergyPage.sorted(visibleRows, windowRates: activeEnergyRates, grouped: groupedByApp, sort: tableSort)
-        }
-        let projected = AppGroupProjection.apply(rows: visibleRows, grouped: groupedByApp && AppGroupChrome.applies(on: selectedPage))
-        return tableSort.ordered(projected)
-    }
+    var sortedRows: [ProcessRow] { core.sortedRows }
 
-    /// Strip B. Unfiltered `rows` ordered by the published memory-page sort.
-    /// Does not read the name query, rising-only keep, or a resource-tab live `tableSort`.
-    /// Passes the latest busiest core through; a failed sample still hides that sentence.
-    var menuBarPopover: MenuBarPopoverSnapshot {
-        MenuBarPopoverSnapshot.project(
-            pressure: snapshot?.pressure,
-            usedBytes: snapshot?.usedBytes,
-            samplingFailed: samplingFailed,
-            rows: rows,
-            processListFailed: processListFailed,
-            sort: publication.sort,
-            busiestCorePercent: busiestCorePercent
-        )
-    }
+    /// Unfiltered `rows` ordered by the published memory-page sort.
+    var menuBarPopover: MenuBarPopoverSnapshot { core.menuBarPopover }
 
-    var selectedRow: ProcessRow? {
-        guard let selectedPid else { return nil }
-        return sortedRows.first { $0.pid == selectedPid } ?? rows.first { $0.pid == selectedPid }
-    }
+    var selectedRow: ProcessRow? { core.selectedRow }
 
     var hasActiveFilter: Bool {
         !filter.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -231,17 +180,7 @@ final class MemoryDashboardVM: ObservableObject {
     /// 「打开 Pulse」 and dock reopen. Always memory; does not follow the last tab.
     /// Page-only: does not write `selectedPid`. Pair with `selectPidIfPresent` when a pid is known.
     func focusMemoryPage() {
-        let previous = selectedPage
-        var next = navigation
-        next.focusMemoryPage()
-        navigation = next
-        publishGPUTransition(from: previous, to: selectedPage)
-        publishChipTemperatureTransition(from: previous, to: selectedPage)
-        publishMemoryPageSort()
-        applyRisingOnlySelection()
-        applyWindowedOnlySelection()
-        syncMachineWatch()
-        syncEnergyBatteryWatch()
+        changePage { $0.focusMemoryPage() }
     }
 
     /// Select-if-present against the live `rows`. Missing / vanished pids are not written.
@@ -251,37 +190,49 @@ final class MemoryDashboardVM: ObservableObject {
     }
 
     /// Process-list identity to reveal. Nil when nothing is selected or the pid left `rows`.
-    var processListScrollTarget: Int32? {
-        ProcessSelection.scrollTarget(selectedPid: selectedPid, rows: rows)
-    }
+    var processListScrollTarget: Int32? { core.processListScrollTarget }
 
     /// Memory, CPU, energy, network, disk, machine, and GPU.
     func selectPage(_ page: DashboardPage) {
-        let previous = selectedPage
-        var next = navigation
-        next.select(page)
-        navigation = next
-        publishGPUTransition(from: previous, to: selectedPage)
-        publishChipTemperatureTransition(from: previous, to: selectedPage)
-        publishMemoryPageSort()
-        applyRisingOnlySelection()
-        applyWindowedOnlySelection()
-        syncMachineWatch()
-        syncEnergyBatteryWatch()
+        changePage { $0.selectPage(page) }
     }
 
     func setTableSort(_ sort: ProcessTableSort) {
-        var next = navigation
-        next.updateSort(sort)
-        navigation = next
-        publishMemoryPageSort()
+        updateCore { $0.setTableSort(sort) }
+    }
+
+    func select(pid: Int32?) {
+        updateCore { $0.select(pid: pid) }
+    }
+
+    func setFilter(_ text: String) {
+        updateCore { $0.setFilter(text) }
+    }
+
+    func setRisingOnlyFilter(_ on: Bool) {
+        updateCore { $0.setRisingOnly(on) }
+    }
+
+    /// Looks up windowed apps only when the switch turns on.
+    func setWindowedOnlyFilter(_ on: Bool) {
+        guard on != windowedOnlyFilter else { return }
+        let pids = on ? WindowedAppLookup.pids(in: rows) : windowedPids
+        updateCore { $0.setWindowedOnly(on, windowedPids: pids) }
+    }
+
+    func setGroupedByApp(_ on: Bool) {
+        updateCore { $0.setGroupedByApp(on) }
+    }
+
+    func setEnergyRankingSpan(_ span: EnergyRankingSpan) {
+        updateCore { $0.setEnergyRankingSpan(span) }
     }
 
     func start() {
         guard !started else { return }
         started = true
         machineLabel = MachineInfo.toolbarLabel()
-        publishMemoryPageSort()
+        updateCore { $0.publishMemoryPageSort() }
         loopTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { break }
@@ -304,12 +255,9 @@ final class MemoryDashboardVM: ObservableObject {
         samplingSession.setForeground(active)
     }
 
-    /// Memory-page filter empties. Both existing fields are written on this turn,
-    /// including when one of them is already the default.
+    /// Memory-page filter empties. Name, then rising, then windowed.
     func clearMemoryPageFilters() {
-        filter = ""
-        risingOnlyFilter = false
-        windowedOnlyFilter = false
+        updateCore { $0.clearMemoryPageFilters() }
     }
 
     func retrySampling() {
@@ -317,18 +265,6 @@ final class MemoryDashboardVM: ObservableObject {
         let effects = next.retry()
         core = next
         perform(effects)
-    }
-
-    /// Only the memory-page sort drives Top 5 and the menu bar. Other tabs keep
-    /// the last memory sort. Writes publication first, then forwards the same
-    /// sort to Sampler without awaiting it for UI.
-    private func publishMemoryPageSort() {
-        switch publication.publishMemoryPageSort(tableSort, selectedPage: selectedPage) {
-        case .notifySampler(let sort):
-            Task { await sampler.setMemoryPageSort(sort) }
-        case .skip:
-            break
-        }
     }
 
     private func finishSamplingLoop() {
@@ -390,10 +326,30 @@ final class MemoryDashboardVM: ObservableObject {
         let effects = next.apply(
             result: result,
             accepted: accepted,
-            page: selectedPage,
+            page: next.selectedPage,
             batteryPercent: historyBatteryPercent,
-            selectedPid: selectedPid
+            selectedPid: next.selectedPid
         )
+        if accepted {
+            next.windowedPids = WindowedAppLookup.pids(in: next.rows)
+        }
+        core = next
+        perform(effects)
+    }
+
+    private func changePage(_ mutate: (inout DashboardCore) -> [DashboardEffect]) {
+        let previous = selectedPage
+        var next = core
+        let effects = mutate(&next)
+        core = next
+        publishGPUTransition(from: previous, to: selectedPage)
+        publishChipTemperatureTransition(from: previous, to: selectedPage)
+        perform(effects)
+    }
+
+    private func updateCore(_ mutate: (inout DashboardCore) -> [DashboardEffect]) {
+        var next = core
+        let effects = mutate(&next)
         core = next
         perform(effects)
     }
@@ -422,16 +378,24 @@ final class MemoryDashboardVM: ObservableObject {
                     detail = liveDetail
                 }
             case .applyRisingAndWindowedSelection:
-                applyRisingOnlySelection()
-                applyWindowedOnlySelection()
+                updateCore { core in
+                    core.applyRisingOnlySelection() + core.applyWindowedOnlySelection()
+                }
+            case .forwardSelectedPid(let pid):
+                Task { await sampler.setSelectedPid(pid) }
+            case .forwardMemoryPageSort(let sort):
+                Task { await sampler.setMemoryPageSort(sort) }
+            case .setGPUSampling:
+                break
+            case .startMachineWatch, .stopMachineWatch:
+                syncMachineWatch()
+            case .startEnergyBatteryWatch, .stopEnergyBatteryWatch:
+                syncEnergyBatteryWatch()
             }
         }
     }
     var selectedEnergyExitedOnly: Bool {
         EnergyPage.blocksQuit(selectedPid: selectedPid, rememberedGeneration: selectedEnergyGeneration, liveRows: rows, liveGenerations: energyLiveGenerations, exited: exitedEnergyProcesses)
-    }
-    private func captureEnergySelectionGeneration() {
-        selectedEnergyGeneration = selectedPage == .energy ? selectedPid.flatMap { energyLiveGenerations[$0] } : nil
     }
     private func reconcileEnergySelectionGeneration() {
         let decision = EnergyPage.resolvedSelection(

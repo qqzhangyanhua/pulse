@@ -9,7 +9,7 @@ final class MemoryGroupRowHighlightWiringSourceTests: XCTestCase {
         XCTAssertEqual(occurrenceCount(of: "MemoryGroupRowHighlight.highlighted(", in: list), 1)
         XCTAssertTrue(list.contains("selected: groupHighlighted"))
         XCTAssertTrue(list.contains("rowBackground(groupHighlighted)"))
-        XCTAssertTrue(list.contains("List(vm.sortedRows, selection: $vm.selectedPid)"))
+        XCTAssertTrue(list.contains("List(vm.sortedRows, selection: Binding(get: { vm.selectedPid }, set: { vm.select(pid: $0) }))"))
         XCTAssertFalse(list.contains("vm.selectedPid == row.pid"))
         XCTAssertFalse(list.contains("accessibilityAddTraits"))
 
@@ -23,8 +23,7 @@ final class MemoryGroupRowHighlightWiringSourceTests: XCTestCase {
         XCTAssertTrue(copy.contains("MemoryGroupRowCopy.row("))
         XCTAssertTrue(pane.contains("ProcessRowCopy.line(page: vm.selectedPage, row: row)"))
 
-        let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
-        let scroll = try functionBody(named: "processListScrollTarget", in: vm)
+        let scroll = try functionBody(named: "processListScrollTarget", in: try repoText("Pulse/Models/DashboardCore+Selection.swift"))
         XCTAssertTrue(scroll.contains("ProcessSelection.scrollTarget(selectedPid: selectedPid, rows: rows)"))
         let model = try repoText("Pulse/Models/MemoryGroupRowHighlight.swift")
         XCTAssertTrue(model.contains("MemoryMagnitudeVisibleGroup.row("))

@@ -42,7 +42,7 @@ struct MemoryDashboardView: View {
                             MemoryToolbarSwitch(
                                 title: WindowedAppChrome.toggleTitle,
                                 systemImage: "macwindow",
-                                isOn: $vm.windowedOnlyFilter
+                                isOn: Binding(get: { vm.windowedOnlyFilter }, set: { vm.setWindowedOnlyFilter($0) })
                             )
                             .help(WindowedAppChrome.help)
                         }
@@ -50,7 +50,7 @@ struct MemoryDashboardView: View {
                             MemoryToolbarSwitch(
                                 title: AppGroupChrome.toggleTitle,
                                 systemImage: "square.stack.3d.up",
-                                isOn: $vm.groupedByApp
+                                isOn: Binding(get: { vm.groupedByApp }, set: { vm.setGroupedByApp($0) })
                             )
                             .help(AppGroupChrome.help(on: vm.selectedPage))
                         }
@@ -58,11 +58,11 @@ struct MemoryDashboardView: View {
                             MemoryToolbarSwitch(
                                 title: MemoryRisingOnlyChrome.toggleTitle,
                                 systemImage: "chart.line.uptrend.xyaxis",
-                                isOn: $vm.risingOnlyFilter
+                                isOn: Binding(get: { vm.risingOnlyFilter }, set: { vm.setRisingOnlyFilter($0) })
                             )
                             .help(MemoryGrowthListCopy.help)
                         }
-                        AppFilterField(text: $vm.filter)
+                        AppFilterField(text: Binding(get: { vm.filter }, set: { vm.setFilter($0) }))
                     }
                     .animation(reduceMotion ? nil : PulseMotion.page, value: vm.selectedPage)
                 }

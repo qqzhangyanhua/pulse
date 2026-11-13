@@ -10,10 +10,20 @@ enum DashboardEffect: Equatable {
     case replaceSidebarSubject(Int32?)
     case replaceDetail(ProcessDetail?)
     case applyRisingAndWindowedSelection
+    /// Sampler `setSelectedPid` for the pid after list selection settles.
+    case forwardSelectedPid(Int32?)
+    /// Sampler `setMemoryPageSort` for the sort just written into the memory-page publication.
+    case forwardMemoryPageSort(ProcessTableSort)
+    /// Next tick reads the GPU page. Not a second sampler task.
+    case setGPUSampling(on: Bool)
+    case startMachineWatch
+    case stopMachineWatch
+    case startEnergyBatteryWatch
+    case stopEnergyBatteryWatch
 }
 
-/// Portable dashboard state for one sampling result or a manual retry.
-/// `selectedPid` stays on the adapter so its existing `didSet` still runs.
+/// Portable dashboard state. Mutations return effects the adapter performs.
+/// `windowedPids` is an input; this type does not look up running applications.
 struct DashboardCore {
     let ownPid: Int32
 
@@ -44,6 +54,18 @@ struct DashboardCore {
     var gpuPage = GPUPageState.initial
     var chipTemperature = ChipTemperaturePageState.initial
     private(set) var energyMachineHistory = EnergyMachineHistory()
+    var selectedPid: Int32?
+    var navigation = DashboardNavigation()
+    /// Last sort published while the memory page was selected. Not the live table sort.
+    private(set) var publication = MemoryPageSortPublication()
+    var filter = ""
+    var risingOnlyFilter = false
+    var windowedOnlyFilter = false
+    var groupedByApp = false
+    /// Windowed-app pids supplied by the adapter. Not a live lookup.
+    var windowedPids: Set<Int32> = []
+    var selectedEnergyGeneration: Int?
+    var energyRankingSpan = EnergyRankingSpan.oneMinute
 
     init(ownPid: Int32) {
         self.ownPid = ownPid
@@ -120,6 +142,16 @@ struct DashboardCore {
         samplingFailed = next.samplingFailed
         processListFailed = next.processListFailed
         return [.requestRetryWake]
+    }
+
+    /// Memory page notifies Sampler with the live sort. Any other page leaves the publication alone.
+    mutating func publishMemoryPageSort() -> [DashboardEffect] {
+        switch publication.publishMemoryPageSort(navigation.sort, selectedPage: navigation.selectedPage) {
+        case .notifySampler(let sort):
+            return [.forwardMemoryPageSort(sort)]
+        case .skip:
+            return []
+        }
     }
 
     private mutating func commitSuccess(

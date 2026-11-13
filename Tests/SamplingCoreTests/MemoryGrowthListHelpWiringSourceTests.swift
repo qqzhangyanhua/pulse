@@ -59,7 +59,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         XCTAssertFalse(code.contains(".toggleStyle(.switch)"))
 
         let toggleAt = try index(of: toggleCall, in: code)
-        let fieldAt = try index(of: "AppFilterField(text: $vm.filter)", in: code)
+        let fieldAt = try index(of: "AppFilterField(text: Binding(get: { vm.filter }, set: { vm.setFilter($0) }))", in: code)
         XCTAssertLessThan(toggleAt, fieldAt)
 
         let shows = try braceBody(after: "if MemoryRisingOnlyChrome.showsToggle(page: vm.selectedPage)", in: code)
@@ -69,7 +69,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
 
         XCTAssertEqual(
             compact(shows),
-            "{MemoryToolbarSwitch(title:MemoryRisingOnlyChrome.toggleTitle,systemImage:\"chart.line.uptrend.xyaxis\",isOn:$vm.risingOnlyFilter).help(MemoryGrowthListCopy.help)}"
+            "{MemoryToolbarSwitch(title:MemoryRisingOnlyChrome.toggleTitle,systemImage:\"chart.line.uptrend.xyaxis\",isOn:Binding(get:{vm.risingOnlyFilter},set:{vm.setRisingOnlyFilter($0)})).help(MemoryGrowthListCopy.help)}"
         )
         XCTAssertFalse(shows.contains(".disabled"))
         XCTAssertFalse(shows.contains(sentence))
@@ -109,12 +109,12 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         let vm = try WiringSourceText.text(for: "MemoryDashboardVM")
         XCTAssertFalse(vm.contains(sentence))
         XCTAssertFalse(vm.contains("MemoryGrowthListCopy"))
-        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 18, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature")
-        XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 4)
+        XCTAssertEqual(occurrenceCount(of: "@Published", in: vm), 11, "battery card adds energyBatteryCard; energy page adds energyWindowRates; hour ranking adds energyRankingSpan and energyHourRates; permission footnote adds processPermissionFootnote; energy history adds energyMachineHistory; exited hour ranking adds exitedEnergyProcesses; thermal advice adds thermalAdvice; GPU page adds gpuPage; connection card adds hostConnection; Wi-Fi signal adds hostWiFi; public IP adds publicIPRequest; SSID permission adds ssidPermission; chip temperature adds chipTemperature; selection state moved onto DashboardCore")
+        XCTAssertEqual(occurrenceCount(of: "didSet", in: vm), 0)
         XCTAssertEqual(occurrenceCount(of: "@MainActor", in: vm), 1)
         let badge = try functionBody(named: "memoryGrowthListBadge", in: vm)
         XCTAssertTrue(compact(badge).contains("seriesByPid:topMemorySeries"))
-        let sorted = try functionBody(named: "sortedRows", in: vm)
+        let sorted = try functionBody(named: "sortedRows", in: try repoText("Pulse/Models/DashboardCore+Selection.swift"))
         XCTAssertTrue(compact(sorted).contains("AppGroupProjection.apply(rows:visibleRows"))
         XCTAssertFalse(sorted.contains("@Published"))
     }
@@ -130,7 +130,7 @@ final class MemoryGrowthListHelpWiringSourceTests: XCTestCase {
         XCTAssertFalse(package.contains("MemoryDashboardVM.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
-        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 133, "adds MenuBarReading.swift, PulseSettingsView.swift, BatteryMath.swift, ProcessEnergy.swift, ProcessRowCopy.swift, PressureNotice.swift, PressureNoticeCenter.swift, LoginItem.swift, ProcessQuitRoute.swift, ProcessPermissionFootnote.swift, ProcessPermissionFootnoteLabel.swift, the four save-snapshot files, MemoryDetailAttribution.swift, ProcessDetailSidebar+MemoryAttribution.swift, MemoryMagnitudeVisibleGroup.swift, MemoryGroupRowHighlight.swift, MemoryGroupRowCopy.swift, MemoryRevealGroupRow.swift, TopCardRevealTarget.swift, Top3ProcessTap.swift, MemoryDashboardVM+Top3Tap.swift, ProcessTree.swift, ProcessTreeView.swift, ProcessEnergyWindow.swift, EnergyPage.swift, EnergyProcessTable.swift, EnergyBattery.swift, EnergyBatteryReader.swift, EnergyBatteryCardView.swift, MemoryDashboardVM+EnergyBattery.swift, ProcessDetailSidebar+Energy.swift, MemoryDashboardVM+HostWatch.swift, ProcessEnergyMinuteLedger.swift, MemoryDashboardVM+EnergyRanking.swift, EnergyMachineHistory.swift, EnergyHistoryChart.swift, MemoryDashboardVM+EnergyHistory.swift, ThermalAdvice.swift, ThermalAdviceThrottle.swift, MemoryDashboardVM+ThermalAdvice.swift, ThermalAdviceCard.swift, MachineOverviewSection+Throughput.swift, MemoryDashboardVM+SamplingClock.swift, GPUPage.swift, HostGPUReader.swift, GPUOverviewSection.swift, and MemoryDashboardVM+GPU.swift; connection card adds HostConnection.swift, HostConnectionMonitor.swift, NetworkConnectionCard.swift, NetworkConnectionCardView.swift, and MemoryDashboardVM+NetworkConnection.swift; Wi-Fi signal adds HostWiFi.swift and HostWiFiReader.swift; public IP adds PublicIPLookup.swift and PublicIPURLSessionTransport.swift; SSID permission adds HostWiFiLocation.swift; navigation accessors add MemoryDashboardVM+Navigation.swift; chip temperature adds ChipTemperature.swift, HostChipTemperatureReader.swift, MachineOverviewSection+ChipTemperature.swift, and MemoryDashboardVM+ChipTemperature.swift; memory list badge adds MemoryDashboardVM+MemoryGrowthList.swift")
+        XCTAssertEqual(occurrenceCount(of: "isa = PBXBuildFile;", in: project), 134, "selection adds DashboardCore+Selection.swift; adds MenuBarReading.swift, PulseSettingsView.swift, BatteryMath.swift, ProcessEnergy.swift, ProcessRowCopy.swift, PressureNotice.swift, PressureNoticeCenter.swift, LoginItem.swift, ProcessQuitRoute.swift, ProcessPermissionFootnote.swift, ProcessPermissionFootnoteLabel.swift, the four save-snapshot files, MemoryDetailAttribution.swift, ProcessDetailSidebar+MemoryAttribution.swift, MemoryMagnitudeVisibleGroup.swift, MemoryGroupRowHighlight.swift, MemoryGroupRowCopy.swift, MemoryRevealGroupRow.swift, TopCardRevealTarget.swift, Top3ProcessTap.swift, MemoryDashboardVM+Top3Tap.swift, ProcessTree.swift, ProcessTreeView.swift, ProcessEnergyWindow.swift, EnergyPage.swift, EnergyProcessTable.swift, EnergyBattery.swift, EnergyBatteryReader.swift, EnergyBatteryCardView.swift, MemoryDashboardVM+EnergyBattery.swift, ProcessDetailSidebar+Energy.swift, MemoryDashboardVM+HostWatch.swift, ProcessEnergyMinuteLedger.swift, MemoryDashboardVM+EnergyRanking.swift, EnergyMachineHistory.swift, EnergyHistoryChart.swift, MemoryDashboardVM+EnergyHistory.swift, ThermalAdvice.swift, ThermalAdviceThrottle.swift, MemoryDashboardVM+ThermalAdvice.swift, ThermalAdviceCard.swift, MachineOverviewSection+Throughput.swift, MemoryDashboardVM+SamplingClock.swift, GPUPage.swift, HostGPUReader.swift, GPUOverviewSection.swift, and MemoryDashboardVM+GPU.swift; connection card adds HostConnection.swift, HostConnectionMonitor.swift, NetworkConnectionCard.swift, NetworkConnectionCardView.swift, and MemoryDashboardVM+NetworkConnection.swift; Wi-Fi signal adds HostWiFi.swift and HostWiFiReader.swift; public IP adds PublicIPLookup.swift and PublicIPURLSessionTransport.swift; SSID permission adds HostWiFiLocation.swift; navigation accessors add MemoryDashboardVM+Navigation.swift; chip temperature adds ChipTemperature.swift, HostChipTemperatureReader.swift, MachineOverviewSection+ChipTemperature.swift, and MemoryDashboardVM+ChipTemperature.swift; memory list badge adds MemoryDashboardVM+MemoryGrowthList.swift")
         let build = try markedSection("PBXBuildFile", in: project)
         let refs = try markedSection("PBXFileReference", in: project)
         let models = try modelsGroup(in: project)

@@ -273,7 +273,7 @@ struct ProcessTablePane: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Button(CPUPageCopy.filteredEmptyButton) {
-                vm.filter = ""
+                vm.setFilter("")
             }
             .buttonStyle(.bordered)
             .padding(.top, 4)
@@ -284,7 +284,7 @@ struct ProcessTablePane: View {
 
     private var processList: some View {
         ScrollViewReader { proxy in
-            List(vm.sortedRows, selection: $vm.selectedPid) { row in
+            List(vm.sortedRows, selection: Binding(get: { vm.selectedPid }, set: { vm.select(pid: $0) })) { row in
                 let groupHighlighted = MemoryGroupRowHighlight.highlighted(
                     page: vm.selectedPage,
                     grouping: vm.groupedByApp && AppGroupChrome.applies(on: vm.selectedPage),

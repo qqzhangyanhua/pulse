@@ -29,7 +29,7 @@ extension MemoryDashboardVM {
             rows: rows,
             nameQuery: filter,
             seriesByPid: topMemorySeries,
-            windowedPids: { WindowedAppLookup.pids(in: rows) }
+            windowedPids: { windowedPids }
         )
         risingOnlyFilter = next.risingOnly
         windowedOnlyFilter = next.windowedOnly
