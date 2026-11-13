@@ -149,9 +149,9 @@
 		A00000000000000000000001 /* PulseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseApp.swift; sourceTree = "<group>"; };
 		A00000000000000000000002 /* MemoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryModels.swift; sourceTree = "<group>"; };
 		A00000000000000000000099 /* DashboardCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardCore.swift; sourceTree = "<group>"; };
-		A00000000000000000000100 /* DashboardCore+Selection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardCore+Selection.swift; sourceTree = "<group>"; };
-		A00000000000000000000101 /* DashboardCore+Quit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardCore+Quit.swift; sourceTree = "<group>"; };
-		A00000000000000000000102 /* DashboardCore+TopAppLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardCore+TopAppLocation.swift; sourceTree = "<group>"; };
+		A00000000000000000000100 /* DashboardCore+Selection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Selection.swift"; sourceTree = "<group>"; };
+		A00000000000000000000101 /* DashboardCore+Quit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Quit.swift"; sourceTree = "<group>"; };
+		A00000000000000000000102 /* DashboardCore+TopAppLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+TopAppLocation.swift"; sourceTree = "<group>"; };
 		A00000000000000000000049 /* ProcessRowCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRowCopy.swift; sourceTree = "<group>"; };
 		A00000000000000000000043 /* ProcessMemoryChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessMemoryChoice.swift; sourceTree = "<group>"; };
 		A00000000000000000000028 /* ByteFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteFormat.swift; sourceTree = "<group>"; };
