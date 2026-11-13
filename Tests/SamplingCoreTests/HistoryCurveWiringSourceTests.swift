@@ -96,6 +96,7 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         let chart = try functionBody(named: "chart", in: cpu)
         let branches = try chartBranches(chart)
         XCTAssertTrue(chart.contains("vm.cpuHistory.samples.count < 2"))
+        XCTAssertTrue(chart.contains("HistoryRangeChart("))
         XCTAssertTrue(branches.placeholder.contains("ChartPlaceholder(text: \"曲线采集中\")"))
         XCTAssertFalse(branches.placeholder.contains("HistoryAnnotatedChart"))
         XCTAssertFalse(branches.placeholder.contains("HistoryCurvePresentation"))
@@ -135,7 +136,9 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         try assertDirectionCard(
             file: "Pulse/Views/NetworkOverviewSection.swift",
             card: "NetworkRateCard",
-            placeholder: "ChartPlaceholder(text: NetworkPageCopy.chartCollecting)",
+            placeholder: "NetworkPageCopy.chartCollecting",
+            formatY: "NetworkRateText.string($0)",
+            tint: "PulsePalette.chartNetwork",
             firstRate: "vm.hostNetworkRates.inboundBytesPerSecond",
             firstSamples: "vm.networkHistory.inbound.samples",
             secondRate: "vm.hostNetworkRates.outboundBytesPerSecond",
@@ -150,7 +153,9 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         try assertDirectionCard(
             file: "Pulse/Views/DiskOverviewSection.swift",
             card: "DiskRateCard",
-            placeholder: "ChartPlaceholder(text: DiskPageCopy.chartCollecting)",
+            placeholder: "DiskPageCopy.chartCollecting",
+            formatY: "DiskRateText.string($0)",
+            tint: "PulsePalette.chartDisk",
             firstRate: "vm.hostDiskRates.readBytesPerSecond",
             firstSamples: "vm.diskHistory.read.samples",
             secondRate: "vm.hostDiskRates.writeBytesPerSecond",
@@ -159,6 +164,23 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
             secondTitle: "DiskPageCopy.writeTitle",
             forbiddenRateFields: ["hostDiskRates", "diskHistory"]
         )
+    }
+
+    func testDiskAndNetworkShareOneRateChartBranch() throws {
+        let control = try repoText("Pulse/Views/HistoryRangeControl.swift")
+        let chart = try typeBody(named: "HistoryRateChart", keyword: "struct", in: control)
+        XCTAssertTrue(chart.contains("samples.count < 2"))
+        XCTAssertEqual(occurrenceCount(of: "HistoryRangeChart(", in: chart), 1)
+        let branches = try chartBranches(chart)
+        XCTAssertTrue(branches.placeholder.contains("ChartPlaceholder(text: placeholder)"))
+        XCTAssertFalse(branches.placeholder.contains("HistoryAnnotatedChart"))
+        XCTAssertFalse(branches.placeholder.contains("HistoryCurvePresentation"))
+        XCTAssertEqual(occurrenceCount(of: "HistoryAnnotatedChart", in: branches.sparkline), 1)
+        XCTAssertEqual(occurrenceCount(of: rateAnnotation, in: branches.sparkline), 1)
+        XCTAssertTrue(branches.sparkline.contains("SparklineChart("))
+        XCTAssertTrue(branches.sparkline.contains("samples: samples"))
+        XCTAssertTrue(branches.sparkline.contains("domain: domain"))
+        XCTAssertTrue(branches.sparkline.contains("formatY: formatY"))
     }
 
     func testOutOfScopeSurfacesAndPhase20CountsStay() throws {
@@ -217,14 +239,18 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
             let text = try String(contentsOf: file, encoding: .utf8)
             let charts = occurrenceCount(of: "HistoryAnnotatedChart", in: text)
             switch file.lastPathComponent {
-            case "CPUOverviewSection.swift", "NetworkOverviewSection.swift", "DiskOverviewSection.swift", "GPUOverviewSection.swift":
+            case "CPUOverviewSection.swift", "GPUOverviewSection.swift":
                 XCTAssertEqual(charts, 1, file.lastPathComponent)
+            case "NetworkOverviewSection.swift", "DiskOverviewSection.swift":
+                XCTAssertEqual(charts, 0, file.lastPathComponent)
             case "MachineOverviewSection.swift":
                 XCTAssertEqual(charts, 1, "CPU and memory share one annotated chart")
             case "MachineOverviewSection+ChipTemperature.swift":
                 XCTAssertEqual(charts, 1, "chip temperature draws one annotated chart")
             case "SharedUI.swift":
                 XCTAssertEqual(charts, 1, "wrapper type lives in SharedUI")
+            case "HistoryRangeControl.swift":
+                XCTAssertEqual(charts, 1, "disk and network share one annotated chart")
             default:
                 XCTAssertEqual(charts, 0, file.lastPathComponent)
             }
@@ -235,6 +261,8 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         file: String,
         card cardName: String,
         placeholder: String,
+        formatY: String,
+        tint: String,
         firstRate: String,
         firstSamples: String,
         secondRate: String,
@@ -244,7 +272,8 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         forbiddenRateFields: [String]
     ) throws {
         let source = try repoText(file)
-        XCTAssertEqual(occurrenceCount(of: "HistoryAnnotatedChart", in: source), 1, file)
+        XCTAssertEqual(occurrenceCount(of: "HistoryAnnotatedChart", in: source), 0, file)
+        XCTAssertEqual(occurrenceCount(of: "HistoryRateChart(", in: source), 1, file)
         XCTAssertFalse(source.contains(sentence), file)
         XCTAssertEqual(occurrenceCount(of: "\"\\(title) · \\(note)\"", in: source), 1, file)
 
@@ -266,22 +295,24 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
         for field in forbiddenRateFields {
             XCTAssertFalse(card.contains(field), "\(file) \(field)")
         }
-        XCTAssertEqual(occurrenceCount(of: "HistoryAnnotatedChart", in: card), 1, file)
+        XCTAssertEqual(occurrenceCount(of: "HistoryAnnotatedChart", in: card), 0, file)
         let chart = try functionBody(named: "chart", in: card)
-        XCTAssertTrue(chart.contains("samples.count < 2"))
-        let branches = try chartBranches(chart)
-        XCTAssertTrue(branches.placeholder.contains(placeholder), file)
-        XCTAssertFalse(branches.placeholder.contains("HistoryAnnotatedChart"), file)
-        XCTAssertFalse(branches.placeholder.contains("HistoryCurvePresentation"), file)
-        XCTAssertEqual(occurrenceCount(of: "HistoryAnnotatedChart", in: branches.sparkline), 1, file)
-        XCTAssertEqual(occurrenceCount(of: rateAnnotation, in: branches.sparkline), 1, file)
-        XCTAssertTrue(branches.sparkline.contains("samples: samples"), file)
-        XCTAssertTrue(branches.sparkline.contains("domain: domain"), file)
-        XCTAssertFalse(branches.sparkline.contains("inboundTitle"), file)
-        XCTAssertFalse(branches.sparkline.contains("outboundTitle"), file)
-        XCTAssertFalse(branches.sparkline.contains("readTitle"), file)
-        XCTAssertFalse(branches.sparkline.contains("writeTitle"), file)
-        XCTAssertFalse(branches.sparkline.contains(sentence), file)
+        XCTAssertTrue(chart.contains("HistoryRateChart("), file)
+        XCTAssertTrue(chart.contains("history: history"), file)
+        XCTAssertTrue(chart.contains("samples: samples"), file)
+        XCTAssertTrue(chart.contains("rate: rate"), file)
+        XCTAssertTrue(chart.contains("domain: domain"), file)
+        XCTAssertTrue(chart.contains("tint: \(tint)"), file)
+        XCTAssertTrue(chart.contains("placeholder: \(placeholder)"), file)
+        XCTAssertTrue(chart.contains("formatY: { \(formatY) }"), file)
+        XCTAssertFalse(chart.contains("HistoryAnnotatedChart"), file)
+        XCTAssertFalse(chart.contains("HistoryRangeChart("), file)
+        XCTAssertFalse(chart.contains("HistoryCurvePresentation"), file)
+        XCTAssertFalse(chart.contains("inboundTitle"), file)
+        XCTAssertFalse(chart.contains("outboundTitle"), file)
+        XCTAssertFalse(chart.contains("readTitle"), file)
+        XCTAssertFalse(chart.contains("writeTitle"), file)
+        XCTAssertFalse(chart.contains(sentence), file)
 
         let label = try functionBody(named: "readyAccessibilityLabel", in: source)
         let labelCode = compact(label)
@@ -369,15 +400,15 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
     }
 
     private func chartBranches(_ chartBody: String) throws -> (placeholder: String, sparkline: String) {
-        guard let ifToken = chartBody.range(of: "if ") else {
-            throw SourceSliceError.missing("chart if")
+        guard let count = chartBody.range(of: "count < 2") else {
+            throw SourceSliceError.missing("chart sample count")
         }
-        guard let ifBrace = chartBody[ifToken.upperBound...].firstIndex(of: "{") else {
-            throw SourceSliceError.missing("chart if body")
+        guard let ifBrace = chartBody[count.upperBound...].firstIndex(of: "{") else {
+            throw SourceSliceError.missing("chart placeholder body")
         }
-        let placeholder = try balancedSlice(from: ifBrace, in: chartBody, label: "chart if")
+        let placeholder = try balancedSlice(from: ifBrace, in: chartBody, label: "chart placeholder")
         guard let placeholderRange = chartBody.range(of: placeholder, range: ifBrace..<chartBody.endIndex) else {
-            throw SourceSliceError.missing("chart if range")
+            throw SourceSliceError.missing("chart placeholder range")
         }
         guard let elseToken = chartBody[placeholderRange.upperBound...].range(of: "else") else {
             throw SourceSliceError.missing("chart else")

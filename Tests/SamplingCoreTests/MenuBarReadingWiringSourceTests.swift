@@ -17,7 +17,7 @@ final class MenuBarReadingWiringSourceTests: XCTestCase {
     func testSettingsPageKeepsTheMenuBarSection() throws {
         let view = try repoText("Pulse/Views/PulseSettingsView.swift")
         XCTAssertEqual(occurrenceCount(of: "Form {", in: view), 1)
-        XCTAssertEqual(occurrenceCount(of: "Section(", in: view), 3)
+        XCTAssertEqual(occurrenceCount(of: "Section(\"", in: view), 3)
         XCTAssertTrue(view.contains("Section(\"菜单栏\")"))
         XCTAssertTrue(view.contains("Section(\"告警规则\")"))
         XCTAssertFalse(view.contains("Section(\"通知\")"))

@@ -105,3 +105,38 @@ struct HistoryRangeChart: View {
         var points: [HistoryCurvePoint]
     }
 }
+
+/// Stored curve, or the live sparkline once two samples exist. The live path keeps the current-value note.
+struct HistoryRateChart: View {
+    var history: HistoryCurvePlot?
+    let samples: [ChartSample]
+    var rate: Double?
+    var tint: Color
+    var domain: ClosedRange<Double>
+    var placeholder: String
+    var formatY: (Double) -> String
+
+    var body: some View {
+        if let history {
+            HistoryRangeChart(
+                plot: history,
+                tint: tint,
+                domain: domain,
+                formatY: formatY
+            )
+        } else if samples.count < 2 {
+            ChartPlaceholder(text: placeholder)
+        } else {
+            HistoryAnnotatedChart(
+                annotation: HistoryCurvePresentation.annotation(current: rate, sampleCount: samples.count)
+            ) {
+                SparklineChart(
+                    samples: samples,
+                    tint: tint,
+                    domain: domain,
+                    formatY: formatY
+                )
+            }
+        }
+    }
+}

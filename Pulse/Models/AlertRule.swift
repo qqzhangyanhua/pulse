@@ -56,13 +56,7 @@ struct AlertRule: Equatable, Sendable {
             return Decision(send: false, state: state)
         }
         var next = state
-        if dailyLimit != nil {
-            let start = calendar.startOfDay(for: date)
-            if next.dayStart != start {
-                next.dayStart = start
-                next.sendsOnDay = 0
-            }
-        }
+        resetDayWindow(&next, at: date, calendar: calendar)
         switch (next.phase, pressure) {
         case (.pending, _):
             return Decision(send: false, state: state)
@@ -112,13 +106,7 @@ struct AlertRule: Equatable, Sendable {
             return Decision(send: false, state: state)
         }
         var next = state
-        if dailyLimit != nil {
-            let start = calendar.startOfDay(for: date)
-            if next.dayStart != start {
-                next.dayStart = start
-                next.sendsOnDay = 0
-            }
-        }
+        resetDayWindow(&next, at: date, calendar: calendar)
         switch next.phase {
         case .armed:
             guard breached else { return Decision(send: false, state: next) }
@@ -149,6 +137,14 @@ struct AlertRule: Equatable, Sendable {
             }
             return Decision(send: false, state: next)
         }
+    }
+
+    private func resetDayWindow(_ state: inout State, at date: Date, calendar: Calendar) {
+        guard dailyLimit != nil else { return }
+        let start = calendar.startOfDay(for: date)
+        guard state.dayStart != start else { return }
+        state.dayStart = start
+        state.sendsOnDay = 0
     }
 
     private func sendIfAllowed(_ state: State, at date: Date) -> Decision {

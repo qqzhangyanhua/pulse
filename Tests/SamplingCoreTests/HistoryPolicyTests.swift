@@ -12,43 +12,6 @@ final class HistoryPolicyTests: XCTestCase {
         XCTAssertEqual(kept, [fresh])
     }
 
-    func testOneMinuteBucketsCoverSevenDaysAndLeaveAGapNil() {
-        let now = t0
-        let start = now.addingTimeInterval(-120)
-        let rows = [
-            sample(at: start, cpu: 10),
-            sample(at: now, cpu: 30),
-        ]
-        let buckets = HistoryPolicy.minuteBuckets(from: rows, now: now, retention: .days(7))
-        XCTAssertEqual(buckets.count, 3)
-        XCTAssertEqual(buckets[0].cpuPercent, 10)
-        XCTAssertNil(buckets[1].cpuPercent)
-        XCTAssertEqual(buckets[2].cpuPercent, 30)
-        XCTAssertFalse(buckets.contains { $0.cpuPercent == 0 })
-    }
-
-    func testMinuteBucketsDropAnythingOlderThanSevenDays() {
-        let old = sample(at: t0.addingTimeInterval(-(8 * 24 * 3600)), cpu: 40)
-        let kept = HistoryPolicy.minuteBuckets(from: [old], now: t0, retention: .days(7))
-        XCTAssertTrue(kept.isEmpty)
-    }
-
-    func testFifteenMinuteBucketsCoverNinetyDaysAndLeaveAGapNil() {
-        let start = t0.addingTimeInterval(-30 * 60)
-        let rows = [
-            sample(at: start, cpu: 5),
-            sample(at: start.addingTimeInterval(30 * 60), cpu: 15),
-        ]
-        let buckets = HistoryPolicy.quarterHourBuckets(from: rows, now: t0, retention: .days(90))
-        XCTAssertEqual(buckets.map(\.cpuPercent), [5, nil, 15])
-    }
-
-    func testRetentionOfThirtyDaysDropsAnOlderQuarterHourPoint() {
-        let old = sample(at: t0.addingTimeInterval(-(31 * 24 * 3600)), cpu: 8)
-        let kept = HistoryPolicy.quarterHourBuckets(from: [old], now: t0, retention: .days(30))
-        XCTAssertTrue(kept.isEmpty)
-    }
-
     func testTopProcessesKeepsTenAndDoesNotRankANilPrimaryAsZero() {
         let ranked = (0..<12).map { HistoryProcessCandidate(pid: Int32($0), name: "p\($0)", primary: Double(100 - $0)) }
         let withNil = ranked + [HistoryProcessCandidate(pid: 99, name: "missing", primary: nil)]
@@ -58,18 +21,6 @@ final class HistoryPolicyTests: XCTestCase {
         XCTAssertEqual(top.last?.pid, 9)
         XCTAssertFalse(top.contains { $0.pid == 99 })
         XCTAssertFalse(top.contains { $0.pid == 10 || $0.pid == 11 })
-    }
-
-    func testAHoleWherePulseDidNotRunStaysNil() {
-        let only = sample(at: t0, cpu: 12)
-        let queried = HistoryPolicy.minuteBuckets(
-            from: [only],
-            now: t0.addingTimeInterval(180),
-            retention: .days(7)
-        )
-        let values = queried.map(\.cpuPercent)
-        XCTAssertEqual(values.filter { $0 != nil }, [12])
-        XCTAssertGreaterThanOrEqual(values.filter { $0 == nil }.count, 3)
     }
 
     func testPressureChangeAndSleepAreEventsNotZeroSamples() {
@@ -176,6 +127,20 @@ final class HistoryPolicyTests: XCTestCase {
         XCTAssertEqual(shorter.retentionCutoff, Date(timeIntervalSince1970: 1_699_395_200))
     }
 
+    /// Unix 90 floors to minute 60 and quarter 0. Nil CPU stays nil on the rolled minute.
+    func testDraftKeepsTheRawInstantAndCarriesRolledMinuteQuarterAndTopAt() throws {
+        var core = DashboardCore(ownPid: 1)
+        accept(&core, at: Date(timeIntervalSince1970: 90))
+        let draft = try XCTUnwrap(core.historyDraft)
+        XCTAssertEqual(draft.sample.at, Date(timeIntervalSince1970: 90))
+        XCTAssertEqual(draft.minute.at, Date(timeIntervalSince1970: 60))
+        XCTAssertNil(draft.minute.cpuPercent)
+        XCTAssertNotEqual(draft.minute.cpuPercent, 0)
+        XCTAssertEqual(draft.minute.usedBytes, 100)
+        XCTAssertEqual(draft.quarter.at, Date(timeIntervalSince1970: 0))
+        XCTAssertEqual(draft.topAt, Date(timeIntervalSince1970: 60))
+    }
+
     func testSettingsSectionStandsAloneAndTheStoreDoesNotKnowRetentionDays() throws {
         let history = try repoText("Pulse/Views/PulseSettingsView+History.swift")
         XCTAssertTrue(history.contains("Section(\"历史\")"))
@@ -205,9 +170,18 @@ final class HistoryPolicyTests: XCTestCase {
         XCTAssertTrue(store.contains("draft.dropRawBefore"))
         XCTAssertTrue(store.contains("draft.dropMinuteBefore"))
         XCTAssertTrue(store.contains("draft.retentionCutoff"))
+        XCTAssertTrue(store.contains("draft.minute"))
+        XCTAssertTrue(store.contains("draft.quarter"))
+        XCTAssertTrue(store.contains("draft.topAt"))
+        XCTAssertTrue(store.contains("DELETE FROM top_process WHERE at = ?"))
+        XCTAssertFalse(store.contains("HistoryPolicy.rolled"))
+        XCTAssertEqual(store.components(separatedBy: "HistoryPolicy").count - 1, 1)
         XCTAssertTrue(store.contains("CREATE TABLE IF NOT EXISTS minute"))
         XCTAssertTrue(store.contains("CREATE TABLE IF NOT EXISTS quarter"))
         XCTAssertFalse(store.contains("HistoryRetention"))
+
+        let noted = try repoText("Pulse/Models/DashboardCore+History.swift")
+        XCTAssertTrue(noted.contains("HistoryPolicy.rolled"))
 
         let vm = try repoText("Pulse/ViewModels/MemoryDashboardVM.swift")
         XCTAssertTrue(vm.contains("historyRetention = HistoryRetentionPreference.retention()"))

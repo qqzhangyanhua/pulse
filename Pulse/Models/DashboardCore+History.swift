@@ -17,25 +17,29 @@ extension DashboardCore {
         let gpuPercent = frame.gpuNodes == nil ? nil : gpuPage.utilizationPercent
         let capturedAt = frame.snapshot.capturedAt
         let retention = historyRetention
+        let sample = HistorySample(
+            at: capturedAt,
+            usedBytes: frame.snapshot.usedBytes,
+            pressure: pressure,
+            swapUsedBytes: frame.snapshot.swapUsedBytes,
+            cpuPercent: frame.systemCpuPercent,
+            networkInBytesPerSecond: frame.hostNetworkRates.inboundBytesPerSecond,
+            networkOutBytesPerSecond: frame.hostNetworkRates.outboundBytesPerSecond,
+            diskReadBytesPerSecond: frame.hostDiskRates.readBytesPerSecond,
+            diskWriteBytesPerSecond: frame.hostDiskRates.writeBytesPerSecond,
+            gpuPercent: gpuPercent
+        )
         historyDraft = HistoryDraft(
-            sample: HistorySample(
-                at: capturedAt,
-                usedBytes: frame.snapshot.usedBytes,
-                pressure: pressure,
-                swapUsedBytes: frame.snapshot.swapUsedBytes,
-                cpuPercent: frame.systemCpuPercent,
-                networkInBytesPerSecond: frame.hostNetworkRates.inboundBytesPerSecond,
-                networkOutBytesPerSecond: frame.hostNetworkRates.outboundBytesPerSecond,
-                diskReadBytesPerSecond: frame.hostDiskRates.readBytesPerSecond,
-                diskWriteBytesPerSecond: frame.hostDiskRates.writeBytesPerSecond,
-                gpuPercent: gpuPercent
-            ),
+            sample: sample,
+            minute: HistoryPolicy.rolled(sample, step: HistoryPolicy.minuteBucket),
+            quarter: HistoryPolicy.rolled(sample, step: HistoryPolicy.quarterBucket),
             top: HistoryPolicy.topProcesses(
                 frame.rows.map {
                     HistoryProcessCandidate(pid: $0.pid, name: $0.name, primary: $0.cpuPercent)
                 },
                 limit: 10
             ),
+            topAt: HistoryPolicy.minuteBucketStart(sample.at),
             events: events,
             dropRawBefore: HistoryPolicy.dropRaw(before: capturedAt),
             dropMinuteBefore: HistoryPolicy.minuteDrop(before: capturedAt, retention: retention),

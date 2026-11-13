@@ -194,29 +194,16 @@ private struct NetworkRateCard: View {
         }
     }
 
-    @ViewBuilder
     private var chart: some View {
-        if let history {
-            HistoryRangeChart(
-                plot: history,
-                tint: PulsePalette.chartNetwork,
-                domain: domain,
-                formatY: { NetworkRateText.string($0) }
-            )
-        } else if samples.count < 2 {
-            ChartPlaceholder(text: NetworkPageCopy.chartCollecting)
-        } else {
-            HistoryAnnotatedChart(
-                annotation: HistoryCurvePresentation.annotation(current: rate, sampleCount: samples.count)
-            ) {
-                SparklineChart(
-                    samples: samples,
-                    tint: PulsePalette.chartNetwork,
-                    domain: domain,
-                    formatY: { NetworkRateText.string($0) }
-                )
-            }
-        }
+        HistoryRateChart(
+            history: history,
+            samples: samples,
+            rate: rate,
+            tint: PulsePalette.chartNetwork,
+            domain: domain,
+            placeholder: NetworkPageCopy.chartCollecting,
+            formatY: { NetworkRateText.string($0) }
+        )
     }
 
     private var domain: ClosedRange<Double> {

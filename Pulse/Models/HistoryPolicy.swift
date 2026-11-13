@@ -59,10 +59,6 @@ struct HistorySample: Equatable {
     var gpuPercent: Double?
 }
 
-struct HistoryMinute: Equatable {
-    var cpuPercent: Double?
-}
-
 struct HistoryProcessCandidate {
     var pid: Int32
     var name: String
@@ -77,7 +73,13 @@ struct HistoryProcessRank: Equatable {
 
 struct HistoryDraft: Equatable {
     var sample: HistorySample
+    /// Last accepted tick in the minute bucket. Nil fields stay nil.
+    var minute: HistorySample
+    /// Last accepted tick in the quarter-hour bucket.
+    var quarter: HistorySample
     var top: [HistoryProcessRank]
+    /// Minute bucket of `sample.at`. The store replaces top rows at this instant.
+    var topAt: Date
     var events: [HistoryEvent]
     var dropRawBefore: Date
     /// Minute rows older than this go away. The shorter of 7 days and the retention cutoff.
@@ -130,7 +132,7 @@ enum HistoryPolicy {
         return copy
     }
 
-    private static func bucketStart(_ date: Date, step: TimeInterval) -> Date {
+    static func bucketStart(_ date: Date, step: TimeInterval) -> Date {
         guard step >= 1 else { return date }
         let whole = Int64(date.timeIntervalSince1970.rounded(.down))
         let width = Int64(step.rounded(.down))
@@ -145,22 +147,6 @@ enum HistoryPolicy {
             let age = now.timeIntervalSince(sample.at)
             return age >= 0 && age <= 3600
         }
-    }
-
-    static func minuteBuckets(
-        from samples: [HistorySample],
-        now: Date,
-        retention: HistoryRetention
-    ) -> [HistoryMinute] {
-        buckets(from: samples, now: now, retention: retention, step: 60)
-    }
-
-    static func quarterHourBuckets(
-        from samples: [HistorySample],
-        now: Date,
-        retention: HistoryRetention
-    ) -> [HistoryMinute] {
-        buckets(from: samples, now: now, retention: retention, step: 900)
     }
 
     static func topProcesses(_ rows: [HistoryProcessCandidate], limit: Int) -> [HistoryProcessRank] {
@@ -197,27 +183,5 @@ enum HistoryPolicy {
             break
         }
         return emitted
-    }
-
-    private static func buckets(
-        from samples: [HistorySample],
-        now: Date,
-        retention: HistoryRetention,
-        step: TimeInterval
-    ) -> [HistoryMinute] {
-        let kept = samples.filter { sample in
-            let age = now.timeIntervalSince(sample.at)
-            return age >= 0 && age <= retention.seconds
-        }
-        guard let origin = kept.map(\.at).min() else { return [] }
-        let count = Int(now.timeIntervalSince(origin) / step) + 1
-        guard count > 0 else { return [] }
-        var points = Array(repeating: HistoryMinute(cpuPercent: nil), count: count)
-        for sample in kept.sorted(by: { $0.at < $1.at }) {
-            let index = Int(sample.at.timeIntervalSince(origin) / step)
-            guard index >= 0, index < count else { continue }
-            points[index].cpuPercent = sample.cpuPercent
-        }
-        return points
     }
 }
