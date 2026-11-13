@@ -35,6 +35,7 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate, ObservableObject 
 
     nonisolated func applicationWillTerminate(_ notification: Notification) {
         MainActor.assumeIsolated {
+            ProcessPause.resumeAll(self.dashboard.pausedLedger)
             self.menuBar.uninstall()
         }
     }
@@ -65,6 +66,7 @@ final class PulseAppDelegate: NSObject, NSApplicationDelegate, ObservableObject 
             }
         )
         installPressureNotices()
+        dashboard.installPausedLedger(ProcessPause.reconcileStored())
         startSampling()
     }
 

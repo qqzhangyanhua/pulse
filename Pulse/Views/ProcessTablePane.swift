@@ -302,7 +302,9 @@ struct ProcessTablePane: View {
                         vm.memoryGrowthListBadge(for: row.pid),
                         groupedMemberCount: row.groupedMemberCount,
                         rowPid: row.pid
-                    )
+                    ),
+                    paused: vm.isPaused(pid: row.pid),
+                    onResume: { Task { await vm.resumePausedProcess(pid: row.pid) } }
                 )
                     .contextMenu {
                         Button("复制") {
@@ -426,6 +428,8 @@ private struct ProcessLine: View {
     var showsEnergy: Bool
     /// Phase-6 chip. Per-row Top5 ∩ `.rising`; selection is not a gate. Nil paints nothing.
     var growthBadge: MemoryGrowthListBadge?
+    var paused = false
+    var onResume: () -> Void = {}
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -434,6 +438,9 @@ private struct ProcessLine: View {
                 ProcessIconView(pid: row.pid, bundleIdentifier: row.bundleIdentifier, size: 16)
                 Text(row.name)
                     .lineLimit(1)
+                if paused {
+                    PausedProcessMark { onResume() }
+                }
                 if let growthBadge {
                     MemoryGrowthRisingBadge(badge: growthBadge)
                 }
@@ -472,14 +479,16 @@ private struct ProcessLine: View {
         .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: selected)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
+        .modifier(PauseResumeAction(enabled: paused, resume: onResume))
     }
 
     private var accessibilityLabel: String {
-        var parts = [
-            row.name,
-            "CPU \(ByteFormat.cpu(row.cpuPercent))",
-            "内存 \(ByteFormat.memory(row.memoryBytes))",
-        ]
+        var parts = [row.name]
+        if paused {
+            parts.append("已暂停")
+        }
+        parts.append("CPU \(ByteFormat.cpu(row.cpuPercent))")
+        parts.append("内存 \(ByteFormat.memory(row.memoryBytes))")
         if showsNetwork {
             parts.append("网络 \(row.networkAvailability.label)")
         }

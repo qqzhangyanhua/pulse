@@ -58,6 +58,19 @@ struct ProcessDetailSidebarQuitControls: View {
                     .tint(PulsePalette.action)
                     .controlSize(.large)
                     .disabled(!sidebar.buttonsEnabled)
+
+                    if let offer = vm.pauseMenuOffer() {
+                        Menu {
+                            Button(offer.title) {
+                                Task { await vm.performPauseOffer(offer) }
+                            }
+                        } label: {
+                            Text("更多")
+                        }
+                        .menuStyle(.borderlessButton)
+                        .fixedSize()
+                        .disabled(!sidebar.buttonsEnabled)
+                    }
                 }
             }
         }

@@ -193,6 +193,11 @@ enum ProcessEnumerator {
         )
     }
 
+    /// Start seconds for a paused-process check. Same BSD read as the parent pid.
+    static func startTimeSeconds(pid: pid_t) -> UInt64? {
+        readParentPid(pid: pid)?.startTimeSeconds
+    }
+
     /// rusage failure must not drop the row. SIP / kernel tasks often return EPERM.
     /// One v6 call supplies disk counters, footprint, the lifetime max footprint, energy, and wakeups.
     /// No v4 retry. A zero footprint and a zero lifetime max are real readings.

@@ -167,7 +167,9 @@ struct EnergyProcessTable: View {
                     bundleIdentifier: entry.bundleIdentifier,
                     exited: entry.exited,
                     rates: entry.rates,
-                    selected: showsSelection(entry)
+                    selected: showsSelection(entry),
+                    paused: vm.isPaused(pid: entry.pid),
+                    onResume: { Task { await vm.resumePausedProcess(pid: entry.pid) } }
                 )
                 .contextMenu {
                     Button("复制") {
@@ -258,6 +260,8 @@ private struct EnergyProcessLine: View {
     let exited: Bool
     let rates: ProcessEnergyRates?
     let selected: Bool
+    var paused = false
+    var onResume: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 0) {
@@ -265,6 +269,9 @@ private struct EnergyProcessLine: View {
                 ProcessIconView(pid: pid, bundleIdentifier: bundleIdentifier, size: 16)
                 Text(name)
                     .lineLimit(1)
+                if paused {
+                    PausedProcessMark { onResume() }
+                }
                 if exited {
                     Text(EnergyPage.exitedStatus)
                         .font(.caption)
@@ -284,10 +291,14 @@ private struct EnergyProcessLine: View {
         .foregroundStyle(selected ? Color.white : Color.primary)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
+        .modifier(PauseResumeAction(enabled: paused, resume: onResume))
     }
 
     private var accessibilityLabel: String {
         var parts = [name]
+        if paused {
+            parts.append("已暂停")
+        }
         if exited {
             parts.append(EnergyPage.exitedStatus)
         }
