@@ -18,7 +18,7 @@ struct NetworkConnectionCardView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi, ssidPermission: vm.ssidPermission)
+                    let card = connectionCard
                     valueRow(card.status)
                     valueRow(card.type)
                     if let signal = card.signal {
@@ -158,7 +158,7 @@ struct NetworkConnectionCardView: View {
         if placeholder {
             return "\(NetworkPageCopy.connectionTitle)，\(NetworkPageCopy.sampling)"
         }
-        let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi, ssidPermission: vm.ssidPermission)
+        let card = connectionCard
         var label = "\(NetworkPageCopy.connectionTitle)，\(card.status.title) \(card.status.value)，\(card.type.title) \(card.type.value)"
         if let signal = card.signal {
             label += "，\(signal.title) \(signal.value)"
@@ -180,10 +180,13 @@ struct NetworkConnectionCardView: View {
         return label
     }
 
+    private var connectionCard: NetworkConnectionCard {
+        NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi, ssidPermission: vm.ssidPermission)
+    }
+
     /// 148 fits title, status, type, and the public-IP row. Wi-Fi adds signal and the name: 206.
     private var cardHeight: CGFloat {
         if placeholder { return 148 }
-        let card = NetworkConnectionCard.project(vm.hostConnection, wifi: vm.hostWiFi, ssidPermission: vm.ssidPermission)
-        return card.ssid == nil ? 148 : 206
+        return connectionCard.ssid == nil ? 148 : 206
     }
 }

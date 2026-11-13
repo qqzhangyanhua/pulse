@@ -124,6 +124,7 @@
 		B00000000000000000000084 /* HostWiFi.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000084 /* HostWiFi.swift */; };
 		B00000000000000000000085 /* HostWiFiReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000085 /* HostWiFiReader.swift */; };
 		B00000000000000000000092 /* HostWiFiLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000092 /* HostWiFiLocation.swift */; };
+		B00000000000000000000093 /* MemoryDashboardVM+Navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000093 /* MemoryDashboardVM+Navigation.swift */; };
 		B00000000000000000000090 /* PublicIPLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000090 /* PublicIPLookup.swift */; };
 		B00000000000000000000091 /* PublicIPURLSessionTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000091 /* PublicIPURLSessionTransport.swift */; };
 		B00000000000000000000013 /* OverviewCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* OverviewCards.swift */; };
@@ -257,6 +258,7 @@
 		A00000000000000000000084 /* HostWiFi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostWiFi.swift; sourceTree = "<group>"; };
 		A00000000000000000000085 /* HostWiFiReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostWiFiReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000092 /* HostWiFiLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostWiFiLocation.swift; sourceTree = "<group>"; };
+		A00000000000000000000093 /* MemoryDashboardVM+Navigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+Navigation.swift"; sourceTree = "<group>"; };
 		A00000000000000000000090 /* PublicIPLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicIPLookup.swift; sourceTree = "<group>"; };
 		A00000000000000000000091 /* PublicIPURLSessionTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicIPURLSessionTransport.swift; sourceTree = "<group>"; };
 		A00000000000000000000013 /* OverviewCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewCards.swift; sourceTree = "<group>"; };
@@ -399,6 +401,7 @@
 			children = (
 				A00000000000000000000008 /* MemoryDashboardVM.swift */,
 				A00000000000000000000037 /* MemoryDashboardVM+QuitSession.swift */,
+				A00000000000000000000093 /* MemoryDashboardVM+Navigation.swift */,
 				A00000000000000000000038 /* MemoryDashboardVM+TopAppLocation.swift */,
 				A00000000000000000000052 /* MemoryDashboardVM+SnapshotExport.swift */,
 				A0000000000000000000003F /* WindowedAppLookup.swift */,
@@ -655,6 +658,7 @@
 				B00000000000000000000007 /* ProcessActions.swift in Sources */,
 				B00000000000000000000008 /* MemoryDashboardVM.swift in Sources */,
 				B00000000000000000000037 /* MemoryDashboardVM+QuitSession.swift in Sources */,
+				B00000000000000000000093 /* MemoryDashboardVM+Navigation.swift in Sources */,
 				B00000000000000000000038 /* MemoryDashboardVM+TopAppLocation.swift in Sources */,
 				B00000000000000000000009 /* ContentView.swift in Sources */,
 				B0000000000000000000000A /* MemoryDashboardView.swift in Sources */,
