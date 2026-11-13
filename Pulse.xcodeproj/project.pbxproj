@@ -153,6 +153,8 @@
 		B00000000000000000000140 /* SleepAssertionReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000140 /* SleepAssertionReader.swift */; };
 		B00000000000000000000141 /* SleepAssertionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000141 /* SleepAssertionCardView.swift */; };
 		B00000000000000000000142 /* MemoryDashboardVM+SleepAssertion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000142 /* MemoryDashboardVM+SleepAssertion.swift */; };
+		B00000000000000000000191 /* MemoryPeak.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000191 /* MemoryPeak.swift */; };
+		B00000000000000000000192 /* ProcessDetailSidebar+MemoryPeak.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000192 /* ProcessDetailSidebar+MemoryPeak.swift */; };
 		B00000000000000000000090 /* PublicIPLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000090 /* PublicIPLookup.swift */; };
 		B00000000000000000000091 /* PublicIPURLSessionTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000091 /* PublicIPURLSessionTransport.swift */; };
 		B00000000000000000000013 /* OverviewCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* OverviewCards.swift */; };
@@ -184,6 +186,8 @@
 		A00000000000000000000113 /* ProcessCodeSignatureReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessCodeSignatureReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000114 /* ProcessDetailSidebar+ProcessInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessDetailSidebar+ProcessInfo.swift"; sourceTree = "<group>"; };
 		A00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessDetailSidebar+QuitSafety.swift"; sourceTree = "<group>"; };
+		A00000000000000000000191 /* MemoryPeak.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPeak.swift; sourceTree = "<group>"; };
+		A00000000000000000000192 /* ProcessDetailSidebar+MemoryPeak.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessDetailSidebar+MemoryPeak.swift"; sourceTree = "<group>"; };
 		A00000000000000000000148 /* MemoryPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPage.swift; sourceTree = "<group>"; };
 		A00000000000000000000138 /* SleepAssertion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepAssertion.swift; sourceTree = "<group>"; };
 		A00000000000000000000139 /* DashboardCore+SleepAssertion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+SleepAssertion.swift"; sourceTree = "<group>"; };
@@ -420,6 +424,7 @@
 				A00000000000000000000110 /* ProcessRosetta.swift */,
 				A00000000000000000000111 /* ProcessStartTimeText.swift */,
 				A00000000000000000000112 /* ProcessBSDInfo.swift */,
+				A00000000000000000000191 /* MemoryPeak.swift */,
 				A00000000000000000000047 /* MenuBarReading.swift */,
 				A0000000000000000000004A /* PressureNotice.swift */,
 				A0000000000000000000004C /* LoginItem.swift */,
@@ -535,6 +540,7 @@
 				A0000000000000000000004F /* ProcessPermissionFootnoteLabel.swift */,
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
 				A00000000000000000000055 /* ProcessDetailSidebar+MemoryAttribution.swift */,
+				A00000000000000000000192 /* ProcessDetailSidebar+MemoryPeak.swift */,
 				A00000000000000000000068 /* ProcessDetailSidebar+Energy.swift */,
 				A00000000000000000000114 /* ProcessDetailSidebar+ProcessInfo.swift */,
 				A00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift */,
@@ -666,6 +672,8 @@
 				B00000000000000000000140 /* SleepAssertionReader.swift in Sources */,
 				B00000000000000000000141 /* SleepAssertionCardView.swift in Sources */,
 				B00000000000000000000142 /* MemoryDashboardVM+SleepAssertion.swift in Sources */,
+				B00000000000000000000191 /* MemoryPeak.swift in Sources */,
+				B00000000000000000000192 /* ProcessDetailSidebar+MemoryPeak.swift in Sources */,
 				B00000000000000000000049 /* ProcessRowCopy.swift in Sources */,
 				B00000000000000000000043 /* ProcessMemoryChoice.swift in Sources */,
 				B00000000000000000000028 /* ByteFormat.swift in Sources */,

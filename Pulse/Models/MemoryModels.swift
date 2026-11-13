@@ -131,6 +131,9 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     let userID: UInt32?
     /// Start time in seconds since 1970 from the same read. Nil when that read fails. Zero is a real time.
     let startTimeSeconds: UInt64?
+    /// `ri_lifetime_max_phys_footprint` from the same rusage read as 内存占用. Nil when that call fails.
+    /// A grouped row keeps the representative process's reading, not a sum.
+    let lifetimeMaxFootprintBytes: UInt64?
 
     init(
         pid: Int32,
@@ -151,7 +154,8 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         groupedMemberCount: Int? = nil,
         parentPid: Int32? = nil,
         userID: UInt32? = nil,
-        startTimeSeconds: UInt64? = nil
+        startTimeSeconds: UInt64? = nil,
+        lifetimeMaxFootprintBytes: UInt64? = nil
     ) {
         self.pid = pid
         self.name = name
@@ -172,6 +176,7 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         self.parentPid = parentPid
         self.userID = userID
         self.startTimeSeconds = startTimeSeconds
+        self.lifetimeMaxFootprintBytes = lifetimeMaxFootprintBytes
     }
 
     /// Missing first-sample CPU sorts below real values without pretending it is 0%.

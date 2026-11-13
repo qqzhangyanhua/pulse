@@ -187,7 +187,8 @@ actor MemorySampler {
                     wakeupsPerSecond: energy.rates.wakeupsPerSecond,
                     parentPid: raw.parentPid,
                     userID: raw.userID,
-                    startTimeSeconds: raw.startTimeSeconds
+                    startTimeSeconds: raw.startTimeSeconds,
+                    lifetimeMaxFootprintBytes: raw.lifetimeMaxFootprintBytes
                 )
             )
         }
