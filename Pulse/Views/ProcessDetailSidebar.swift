@@ -178,7 +178,6 @@ struct ProcessDetailSidebar: View {
         .accessibilityLabel("关闭详情")
         .help("关闭详情")
     }
-
     private func detailBody(_ detail: ProcessDetail) -> some View {
         let projection = displayedProjection(detail)
         return ScrollView {
@@ -357,6 +356,7 @@ struct ProcessDetailSidebar: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                quitSafetyJudgment(for: detail.row.name)
             }
             Spacer(minLength: 8)
             if AppGroupChrome.showsProcessTreeButton(groupedByApp: vm.groupedByApp, page: vm.selectedPage) {
