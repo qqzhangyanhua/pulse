@@ -285,7 +285,7 @@ final class MemoryDashboardVM: ObservableObject {
     }
 
     private func tick(_ flight: SamplingFlight) async {
-        let result = await sampler.sample(readGPU: selectedPage == .gpu, readChipTemperature: selectedPage == .machine)
+        let result = await sampler.sample(readChipTemperature: selectedPage == .machine)
         if Task.isCancelled {
             samplingGate.invalidate()
             recordGateRetrying()

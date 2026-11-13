@@ -60,13 +60,25 @@ enum HostGPUReader {
         guard status == KERN_SUCCESS, let properties = unmanaged?.takeRetainedValue() as NSDictionary? else {
             return nil
         }
-        guard let stats = properties[statisticsKey] as? NSDictionary else { return nil }
+        let coreCount = coreCount(in: properties)
+        guard let stats = properties[statisticsKey] as? NSDictionary else {
+            guard coreCount != nil else { return nil }
+            return GPUAcceleratorNode(coreCount: coreCount)
+        }
         var statistics: [String: GPUStatistic] = [:]
         for key in stats.allKeys {
             guard let name = key as? String else { continue }
             statistics[name] = statistic(name: name, value: stats[key] as Any)
         }
-        return GPUAcceleratorNode(statistics: statistics)
+        return GPUAcceleratorNode(statistics: statistics, coreCount: coreCount)
+    }
+
+    /// Sibling of PerformanceStatistics. A boolean or a non-whole number stays missing.
+    private static func coreCount(in properties: NSDictionary) -> Int? {
+        guard let number = properties[GPUCoreCount.registryKey] as? NSNumber, !isBoolean(number) else {
+            return nil
+        }
+        return GPUCoreCount.parse(number.doubleValue)
     }
 
     private static func statistic(name: String, value: Any) -> GPUStatistic {

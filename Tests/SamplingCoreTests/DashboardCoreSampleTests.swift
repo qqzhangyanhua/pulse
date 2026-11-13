@@ -49,12 +49,14 @@ final class DashboardCoreSampleTests: XCTestCase {
         let energyPoint = core.energyMachineHistory.points.last
         XCTAssertEqual(energyPoint?.watts, 6.5)
         XCTAssertEqual(energyPoint?.batteryPercent, 55)
-        XCTAssertEqual(core.gpuPage, .initial)
+        XCTAssertEqual(core.gpuPage.utilizationPercent, 41)
+        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41])
+        XCTAssertEqual(core.gpuPage.chrome, .readings)
         XCTAssertEqual(core.chipTemperature, .initial)
         XCTAssertEqual(effects, successEffects())
     }
 
-    func testAcceptedSuccessRecordsGPUOrChipOnlyForTheCurrentPage() {
+    func testAcceptedSuccessRecordsGPUOnAnyPageAndChipOnlyOnTheMachinePage() {
         let frame = makeFrame(processListFailed: false)
         var gpu = DashboardCore(ownPid: 42)
         _ = gpu.apply(
@@ -80,7 +82,9 @@ final class DashboardCoreSampleTests: XCTestCase {
         XCTAssertEqual(machine.chipTemperature.celsius, 62)
         XCTAssertTrue(machine.chipTemperature.visitSucceeded)
         XCTAssertEqual(machine.chipTemperature.history.samples.map(\.value), [62])
-        XCTAssertEqual(machine.gpuPage, .initial)
+        XCTAssertEqual(machine.gpuPage.utilizationPercent, 41)
+        XCTAssertEqual(machine.gpuPage.history.samples.map(\.value), [41])
+        XCTAssertEqual(machine.gpuPage.chrome, .readings)
     }
 
     func testAcceptedFailureKeepsReadingsAndMarksTheCurrentPageFailed() {
@@ -111,9 +115,10 @@ final class DashboardCoreSampleTests: XCTestCase {
         XCTAssertEqual(core.loadState, .ready)
         XCTAssertTrue(core.samplingFailed)
         XCTAssertFalse(core.processListFailed)
-        XCTAssertEqual(core.gpuPage.chrome, .samplingFailure)
-        XCTAssertNil(core.gpuPage.utilizationPercent)
-        XCTAssertNil(core.gpuPage.inUseMemoryBytes)
+        XCTAssertEqual(core.gpuPage.chrome, .readings)
+        XCTAssertEqual(core.gpuPage.utilizationPercent, 41)
+        XCTAssertEqual(core.gpuPage.inUseMemoryBytes, 8_192)
+        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41])
         XCTAssertEqual(effects, failureEffects())
 
         var machine = DashboardCore(ownPid: 7)
@@ -208,6 +213,85 @@ final class DashboardCoreSampleTests: XCTestCase {
         XCTAssertEqual(effects, successEffects())
     }
 
+    func testGPUCurveAccumulatesOnOtherPagesAndANewCoreStartsEmpty() {
+        var core = DashboardCore(ownPid: 42)
+        XCTAssertEqual(core.gpuPage, .initial)
+
+        _ = core.apply(
+            result: success(makeFrame(
+                processListFailed: false,
+                capturedAt: Date(timeIntervalSince1970: 1_700_000_000),
+                gpuNodes: [gpuNode(percent: 10, bytes: 100)]
+            )),
+            accepted: true,
+            page: .memory
+        )
+        _ = core.apply(
+            result: success(makeFrame(
+                processListFailed: false,
+                capturedAt: Date(timeIntervalSince1970: 1_700_000_001),
+                gpuNodes: [gpuNode(percent: nil, bytes: 120)]
+            )),
+            accepted: true,
+            page: .cpu
+        )
+        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [10])
+        XCTAssertFalse(core.gpuPage.history.samples.map(\.value).contains(0))
+        XCTAssertEqual(core.gpuPage.inUseMemoryBytes, 120)
+        XCTAssertEqual(core.gpuPage.utilizationText, "—")
+        XCTAssertEqual(core.gpuPage.chrome, .readings)
+        XCTAssertTrue(core.gpuPage.visitSucceeded)
+        XCTAssertEqual(core.chipTemperature, .initial)
+
+        _ = core.apply(
+            result: success(makeFrame(
+                processListFailed: false,
+                capturedAt: Date(timeIntervalSince1970: 1_700_000_000),
+                gpuNodes: [gpuNode(percent: 15, bytes: 120)]
+            )),
+            accepted: true,
+            page: .disk
+        )
+        XCTAssertEqual(core.gpuPage.utilizationPercent, 15)
+        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [10])
+
+        _ = core.apply(
+            result: success(makeFrame(
+                processListFailed: false,
+                capturedAt: Date(timeIntervalSince1970: 1_700_000_002),
+                gpuNodes: [gpuNode(percent: 20, bytes: 120)]
+            )),
+            accepted: true,
+            page: .energy
+        )
+        _ = core.apply(
+            result: success(makeFrame(
+                processListFailed: false,
+                capturedAt: Date(timeIntervalSince1970: 1_700_000_003),
+                includeDefaultGPU: false
+            )),
+            accepted: true,
+            page: .network
+        )
+        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [10, 20])
+        XCTAssertEqual(core.gpuPage.utilizationPercent, 20)
+
+        let entered = core.selectPage(.gpu)
+        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [10, 20])
+        XCTAssertEqual(core.gpuPage.utilizationPercent, 20)
+        XCTAssertEqual(core.gpuPage.chrome, .readings)
+        XCTAssertTrue(core.gpuPage.showsCurve)
+        XCTAssertTrue(entered.contains(.setGPUSampling(on: true)))
+
+        _ = core.selectPage(.machine)
+        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [10, 20])
+        XCTAssertEqual(core.chipTemperature, .initial)
+
+        let restarted = DashboardCore(ownPid: 42)
+        XCTAssertTrue(restarted.gpuPage.history.samples.isEmpty)
+        XCTAssertEqual(restarted.gpuPage, .initial)
+    }
+
     func testRetryKeepsTheFailurePhaseAndRequestsWake() {
         var cold = DashboardCore(ownPid: 11)
         _ = cold.apply(
@@ -258,7 +342,9 @@ final class DashboardCoreSampleTests: XCTestCase {
     private func makeFrame(
         processListFailed: Bool,
         capturedAt: Date = Date(timeIntervalSince1970: 1_700_000_000),
-        rowPid: Int32 = 4242
+        rowPid: Int32 = 4242,
+        gpuNodes: [GPUAcceleratorNode]? = nil,
+        includeDefaultGPU: Bool = true
     ) -> SampledFrame {
         let snapshot = MemorySnapshot(
             usedBytes: 12_345_678,
@@ -297,15 +383,28 @@ final class DashboardCoreSampleTests: XCTestCase {
                 ),
             ],
             energyLiveGenerations: [rowPid: 4],
-            gpuNodes: [
-                GPUAcceleratorNode(statistics: [
-                    GPUPageProjection.deviceUtilizationKey: .number(41),
-                    GPUPageProjection.inUseSystemMemoryKey: .bytes(8_192),
-                ]),
-            ],
+            gpuNodes: includeDefaultGPU
+                ? (gpuNodes ?? [
+                    GPUAcceleratorNode(statistics: [
+                        GPUPageProjection.deviceUtilizationKey: .number(41),
+                        GPUPageProjection.inUseSystemMemoryKey: .bytes(8_192),
+                    ]),
+                ])
+                : gpuNodes,
             hostWiFi: HostWiFiReading(rssi: -42, noise: -90, ssid: "Office"),
             chipTemperatureSensors: [ChipTemperatureSensor(productName: "PMU tdie", celsius: 62)]
         )
+    }
+
+    private func gpuNode(percent: Double?, bytes: UInt64?) -> GPUAcceleratorNode {
+        var statistics: [String: GPUStatistic] = [:]
+        if let percent {
+            statistics[GPUPageProjection.deviceUtilizationKey] = .number(percent)
+        }
+        if let bytes {
+            statistics[GPUPageProjection.inUseSystemMemoryKey] = .bytes(bytes)
+        }
+        return GPUAcceleratorNode(statistics: statistics)
     }
 
     private func row(pid: Int32, memory: UInt64, watts: Double?) -> ProcessRow {
