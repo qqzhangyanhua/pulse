@@ -140,6 +140,7 @@
 		B00000000000000000000106 /* DashboardCore+Machine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000106 /* DashboardCore+Machine.swift */; };
 		B00000000000000000000107 /* DashboardCore+Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000107 /* DashboardCore+Snapshot.swift */; };
 		B00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift */; };
+		B00000000000000000000148 /* MemoryPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000148 /* MemoryPage.swift */; };
 		B00000000000000000000090 /* PublicIPLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000090 /* PublicIPLookup.swift */; };
 		B00000000000000000000091 /* PublicIPURLSessionTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000091 /* PublicIPURLSessionTransport.swift */; };
 		B00000000000000000000013 /* OverviewCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* OverviewCards.swift */; };
@@ -164,6 +165,7 @@
 		A00000000000000000000106 /* DashboardCore+Machine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Machine.swift"; sourceTree = "<group>"; };
 		A00000000000000000000107 /* DashboardCore+Snapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Snapshot.swift"; sourceTree = "<group>"; };
 		A00000000000000000000118 /* ProcessDetailSidebar+QuitSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessDetailSidebar+QuitSafety.swift"; sourceTree = "<group>"; };
+		A00000000000000000000148 /* MemoryPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPage.swift; sourceTree = "<group>"; };
 		A00000000000000000000049 /* ProcessRowCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRowCopy.swift; sourceTree = "<group>"; };
 		A00000000000000000000043 /* ProcessMemoryChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessMemoryChoice.swift; sourceTree = "<group>"; };
 		A00000000000000000000028 /* ByteFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteFormat.swift; sourceTree = "<group>"; };
@@ -369,6 +371,7 @@
 				A0000000000000000000004E /* ProcessPermissionFootnote.swift */,
 				A0000000000000000000001B /* CPUPage.swift */,
 				A0000000000000000000007B /* GPUPage.swift */,
+				A00000000000000000000148 /* MemoryPage.swift */,
 				A00000000000000000000094 /* ChipTemperature.swift */,
 				A00000000000000000000066 /* EnergyPage.swift */,
 				A0000000000000000000006A /* EnergyBattery.swift */,
@@ -688,6 +691,7 @@
 				B0000000000000000000006E /* MemoryDashboardVM+HostWatch.swift in Sources */,
 				B0000000000000000000007A /* MemoryDashboardVM+SamplingClock.swift in Sources */,
 				B0000000000000000000007B /* GPUPage.swift in Sources */,
+				B00000000000000000000148 /* MemoryPage.swift in Sources */,
 				B00000000000000000000094 /* ChipTemperature.swift in Sources */,
 				B0000000000000000000007C /* HostGPUReader.swift in Sources */,
 				B00000000000000000000095 /* HostChipTemperatureReader.swift in Sources */,
