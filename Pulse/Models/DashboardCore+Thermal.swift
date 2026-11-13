@@ -3,6 +3,7 @@ import Foundation
 extension DashboardCore {
     /// A nil notice drops the advice card immediately, without waiting out the throttle.
     mutating func apply(thermalCondition: ThermalCondition) -> [DashboardEffect] {
+        noteHistoryThermal(thermalCondition)
         thermalNotice = ThermalNotice.message(for: thermalCondition)
         if thermalNotice == nil {
             thermalAdvice = nil
