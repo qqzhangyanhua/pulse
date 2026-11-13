@@ -1,4 +1,7 @@
 extension MemoryDashboardVM {
+    var selectedPage: DashboardPage { navigation.selectedPage }
+    var tableSort: ProcessTableSort { navigation.sort }
+
     /// Baseline for a quit estimate. A failed or missing frame never estimates.
     var quitReleaseBaseline: UInt64? {
         guard snapshot != nil, samplingFailed == false else { return nil }

@@ -72,6 +72,7 @@ actor MemorySampler {
         let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
         let hostDiskRates = consumeSystemDisk(at: capturedAt)
         let gpuNodes = readGPU ? HostGPUReader.read() : nil
+        let hostWiFi = HostWiFiReader.read()
 
         guard let listed = ProcessEnumerator.list() else {
             lastRows = []
@@ -91,7 +92,8 @@ actor MemorySampler {
                         deniedCount: 0,
                         processListFailed: true
                     ),
-                    gpuNodes: gpuNodes
+                    gpuNodes: gpuNodes,
+                    hostWiFi: hostWiFi
                 )
             )
         }
@@ -236,7 +238,8 @@ actor MemorySampler {
                 energyHourRates: energyHourRates,
                 exitedEnergyProcesses: energyMinuteLedger.exitedProcesses,
                 energyLiveGenerations: energyMinuteLedger.liveGenerations,
-                gpuNodes: gpuNodes
+                gpuNodes: gpuNodes,
+                hostWiFi: hostWiFi
             )
         )
     }

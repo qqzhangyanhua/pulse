@@ -77,6 +77,10 @@ enum NetworkPageCopy {
     static let connectionWiFi = "Wi-Fi"
     static let connectionEthernet = "以太网"
     static let connectionOther = "其它"
+    static let connectionSignalTitle = "信号"
+    static let signalStrong = "强"
+    static let signalMedium = "中"
+    static let signalWeak = "弱"
 
     /// Overview slot. Missing host rates stay 「—」, never 「0 字节/秒」.
     static func overviewLine(rates: HostNetworkRates) -> String {

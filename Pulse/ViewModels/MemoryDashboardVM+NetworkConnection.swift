@@ -13,4 +13,8 @@ extension MemoryDashboardVM {
         hostConnectionMonitor?.cancel()
         hostConnectionMonitor = nil
     }
+
+    func publishSampledWiFi(_ reading: HostWiFiReading?) {
+        hostWiFi = reading
+    }
 }

@@ -10,6 +10,8 @@ final class MemoryDashboardVM: ObservableObject {
     @Published private(set) var busiestCorePercent: Double?
     @Published private(set) var hostNetworkRates = HostNetworkRates.missing
     @Published private(set) var hostConnection: HostConnection?
+    /// Latest accepted sample's Wi-Fi reading. The path monitor does not write this.
+    @Published var hostWiFi: HostWiFiReading?
     @Published private(set) var hostDiskRates = HostDiskRates.missing
     @Published private(set) var rows: [ProcessRow] = []
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
@@ -179,9 +181,6 @@ final class MemoryDashboardVM: ObservableObject {
     var hasActiveFilter: Bool {
         !filter.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
-
-    var selectedPage: DashboardPage { navigation.selectedPage }
-    var tableSort: ProcessTableSort { navigation.sort }
 
     /// Live memory-page trend for the joint sidebar. A frozen absent card does not use it.
     var memoryGrowthSlot: MemoryGrowthSlot? {
@@ -403,6 +402,7 @@ final class MemoryDashboardVM: ObservableObject {
                     busiestCorePercent = frame.busiestCorePercent
                     hostNetworkRates = frame.hostNetworkRates
                     hostDiskRates = frame.hostDiskRates
+                    publishSampledWiFi(frame.hostWiFi)
                     var nextUsage = usageHistory
                     nextUsage.record(frame.snapshot)
                     usageHistory = nextUsage
