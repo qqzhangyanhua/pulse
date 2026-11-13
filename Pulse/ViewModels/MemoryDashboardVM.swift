@@ -18,6 +18,8 @@ final class MemoryDashboardVM: ObservableObject {
     /// Idle until the user clicks. Not sampled and not saved.
     var publicIPRequest: PublicIPRequestState { core.publicIPRequest }
     var hostDiskRates: HostDiskRates { core.hostDiskRates }
+    /// Host 换入 / 换出. Nil rates are 「—」, not zero. Not a disk rate.
+    var memoryPage: MemoryPageState { core.memoryPage }
     var rows: [ProcessRow] { core.rows }
     /// Energy-page window rates for the latest accepted process list. Not written into `ProcessRow`.
     var energyWindowRates: [Int32: ProcessEnergyRates] { core.energyWindowRates }
