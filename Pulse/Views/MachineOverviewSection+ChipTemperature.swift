@@ -39,7 +39,7 @@ extension MachineOverviewSection {
                 )
             }
         } else {
-            ChartPlaceholder(text: GPUPageCopy.chartCollecting)
+            ChartPlaceholder(text: ChipTemperatureCopy.chartCollecting)
         }
     }
 }
