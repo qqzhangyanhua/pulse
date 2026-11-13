@@ -293,6 +293,6 @@ private enum IOReportDeviceChannel {
 
     private static func release(_ ref: OpaquePointer?) {
         guard let ref else { return }
-        CFRelease(Unmanaged<CFTypeRef>.fromOpaque(UnsafeRawPointer(ref)).takeUnretainedValue())
+        Unmanaged<CFTypeRef>.fromOpaque(UnsafeRawPointer(ref)).release()
     }
 }
