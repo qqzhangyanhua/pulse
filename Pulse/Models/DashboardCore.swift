@@ -16,6 +16,10 @@ enum DashboardEffect: Equatable {
     case pauseProcess(pid: Int32)
     /// SIGCONT. The ledger record is already gone.
     case resumeProcess(pid: Int32)
+    /// `setpriority(PRIO_DARWIN_PROCESS, pid, PRIO_DARWIN_BG)`. The pid is already recorded.
+    case lowerPriority(pid: Int32)
+    /// Clears that task policy. The pid is already removed from the in-memory set.
+    case restorePriority(pid: Int32)
     /// Quitting a paused process. The Bool comes back through `resolveResumeBeforeQuit`.
     case confirmResumeBeforeQuit(pid: Int32, displayName: String)
     /// Sampler `setMemoryPageSort` for the sort just written into the memory-page publication.
@@ -66,6 +70,8 @@ struct DashboardCore {
     var quitOutcome = ProcessQuitOutcome()
     /// Processes this session paused. Pid plus start time. Not a signal sender.
     var pausedLedger = PausedProcessLedger()
+    /// Pids this session lowered. Not stored. The task policy dies with the process.
+    var loweredPriorityPids: Set<Int32> = []
     var sidebarSubjectPid: Int32?
     private(set) var samplingFailed = false
     private(set) var usageHistory = UsageHistory()

@@ -64,6 +64,11 @@ struct ProcessDetailSidebarQuitControls: View {
                             Button(offer.title) {
                                 Task { await vm.performPauseOffer(offer) }
                             }
+                            if let priority = vm.priorityMenuOffer() {
+                                Button(priority.title) {
+                                    Task { await vm.performPriorityOffer(priority) }
+                                }
+                            }
                         } label: {
                             Text("更多")
                         }
