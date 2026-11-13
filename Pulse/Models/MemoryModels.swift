@@ -131,6 +131,9 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
     let userID: UInt32?
     /// Start time in seconds since 1970 from the same read. Nil when that read fails. Zero is a real time.
     let startTimeSeconds: UInt64?
+    /// `ri_lifetime_max_phys_footprint` from the same rusage read as 内存占用. Nil when that call fails.
+    /// A grouped row keeps the representative process's reading, not a sum.
+    let lifetimeMaxFootprintBytes: UInt64?
 
     init(
         pid: Int32,
@@ -151,7 +154,8 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         groupedMemberCount: Int? = nil,
         parentPid: Int32? = nil,
         userID: UInt32? = nil,
-        startTimeSeconds: UInt64? = nil
+        startTimeSeconds: UInt64? = nil,
+        lifetimeMaxFootprintBytes: UInt64? = nil
     ) {
         self.pid = pid
         self.name = name
@@ -172,6 +176,7 @@ struct ProcessRow: Identifiable, Sendable, Hashable {
         self.parentPid = parentPid
         self.userID = userID
         self.startTimeSeconds = startTimeSeconds
+        self.lifetimeMaxFootprintBytes = lifetimeMaxFootprintBytes
     }
 
     /// Missing first-sample CPU sorts below real values without pretending it is 0%.
@@ -254,6 +259,9 @@ struct SampledFrame: Sendable {
     let energyLiveGenerations: [Int32: Int]
     /// Accelerator nodes for this tick. Nil when this tick did not read GPU.
     let gpuNodes: [GPUAcceleratorNode]?
+    /// AGX user clients for this tick. Nil means this tick did not read them.
+    /// An empty array was read and had no client.
+    let gpuShareClients: [GPUShareClientSample]?
     /// HID temperature services for this tick. Nil when the machine page did not ask.
     let chipTemperatureSensors: [ChipTemperatureSensor]?
     /// Wi-Fi signal for this tick. Nil when there is no interface. RSSI 0 stays a nil rssi.
@@ -275,6 +283,7 @@ struct SampledFrame: Sendable {
         exitedEnergyProcesses: [ExitedEnergyProcess] = [],
         energyLiveGenerations: [Int32: Int] = [:],
         gpuNodes: [GPUAcceleratorNode]? = nil,
+        gpuShareClients: [GPUShareClientSample]? = nil,
         hostWiFi: HostWiFiReading? = nil,
         chipTemperatureSensors: [ChipTemperatureSensor]? = nil,
         hostPageCounters: HostPageCounters? = nil
@@ -294,6 +303,7 @@ struct SampledFrame: Sendable {
         self.exitedEnergyProcesses = exitedEnergyProcesses
         self.energyLiveGenerations = energyLiveGenerations
         self.gpuNodes = gpuNodes
+        self.gpuShareClients = gpuShareClients
         self.hostWiFi = hostWiFi
         self.chipTemperatureSensors = chipTemperatureSensors
         self.hostPageCounters = hostPageCounters

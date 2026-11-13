@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Full GPU page. Two readings, an optional core-count line, one utilization curve, and the shared throttle card.
+/// Full GPU page. Two readings, an optional core-count line, one utilization curve, the top GPU-share card, and the shared throttle card.
 struct GPUOverviewSection: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
 
@@ -59,25 +59,28 @@ struct GPUOverviewSection: View {
 
     private var readingsBody: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                readingCard(title: GPUPageCopy.utilization, value: vm.gpuPage.utilizationText, symbol: "display")
-                readingCard(title: GPUPageCopy.memory, value: vm.gpuPage.memoryText, symbol: "memorychip")
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    readingCard(title: GPUPageCopy.utilization, value: vm.gpuPage.utilizationText, symbol: "display")
+                    readingCard(title: GPUPageCopy.memory, value: vm.gpuPage.memoryText, symbol: "memorychip")
+                }
+                .frame(height: 132)
+                if let cores = vm.gpuPage.coreCountText {
+                    Text(cores)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                PulseCard {
+                    chart
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(.vertical, 4)
+                }
+                .frame(minHeight: 180)
             }
-            .frame(height: 132)
-            if let cores = vm.gpuPage.coreCountText {
-                Text(cores)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            PulseCard {
-                chart
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.vertical, 4)
-            }
-            .frame(minHeight: 180)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(accessibilityLabel)
+            GPUShareCard()
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityLabel)
     }
 
     private var accessibilityLabel: String {

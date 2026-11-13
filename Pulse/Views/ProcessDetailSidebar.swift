@@ -187,6 +187,7 @@ struct ProcessDetailSidebar: View {
                 switch projection {
                 case .memoryExisting:
                     metrics(detail)
+                    memoryPeak(detail)
                     if let slot = vm.memoryGrowthSlot {
                         memoryTrend(slot, curveRow: detail.row)
                     }
@@ -378,7 +379,6 @@ struct ProcessDetailSidebar: View {
         let kind = row.bundleIdentifier == nil ? "进程" : "App"
         return "\(kind) · PID \(row.pid)"
     }
-
     private func metrics(_ detail: ProcessDetail) -> some View {
         let row = memoryMagnitudeRow(fallback: displayedMemoryRow(detail.row))
         let memory = memoryField(row)

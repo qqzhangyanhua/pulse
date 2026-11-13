@@ -73,6 +73,10 @@ struct DashboardCore {
     private(set) var networkHistory = SystemNetworkHistory()
     private(set) var diskHistory = SystemDiskHistory()
     var gpuPage = GPUPageState.initial
+    /// Top GPU-share rows. Nil until a GPU-page read. Not the machine-wide curve.
+    private(set) var gpuShare: GPUSharePresentation?
+    /// Last on-page AGX sample. Off-page frames do not move it.
+    private var gpuShareBaseline: GPUShareBaseline?
     var chipTemperature = ChipTemperaturePageState.initial
     /// Nil until the machine page's reader returns. Not cleared on leave.
     var machineFacts: MachineFacts?
@@ -231,6 +235,7 @@ struct DashboardCore {
         nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
         diskHistory = nextDisk
         recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
+        recordGPUShare(clients: frame.gpuShareClients, rows: frame.rows, at: frame.snapshot.capturedAt, page: page)
         recordChip(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt, page: page)
         memoryPage = MemoryPageProjection.apply(
             counters: frame.hostPageCounters,
@@ -299,6 +304,26 @@ struct DashboardCore {
             current: gpuPage,
             transition: .stayed
         )
+    }
+
+    /// Host utilization above is every page. This rank runs only while the GPU page is visible.
+    private mutating func recordGPUShare(
+        clients: [GPUShareClientSample]?,
+        rows: [ProcessRow],
+        at date: Date,
+        page: DashboardPage
+    ) {
+        guard page == .gpu, let clients else { return }
+        let step = GPUShareProjection.step(
+            clients: clients,
+            rows: rows,
+            ownPid: ownPid,
+            sampledAt: date,
+            baseline: gpuShareBaseline
+        )
+        guard step.publish else { return }
+        gpuShare = step.card
+        gpuShareBaseline = step.baseline
     }
 
     private mutating func recordChip(

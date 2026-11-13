@@ -340,7 +340,8 @@ enum EnergyPage {
             groupedMemberCount: memberCount,
             parentPid: lead.parentPid,
             userID: lead.userID,
-            startTimeSeconds: lead.startTimeSeconds
+            startTimeSeconds: lead.startTimeSeconds,
+            lifetimeMaxFootprintBytes: lead.lifetimeMaxFootprintBytes
         )
     }
 
