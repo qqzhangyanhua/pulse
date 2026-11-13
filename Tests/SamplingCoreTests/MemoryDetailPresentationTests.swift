@@ -7,7 +7,7 @@ final class MemoryDetailPresentationTests: XCTestCase {
     private let gib: UInt64 = 1_073_741_824
 
     func testMemoryPagePositiveTotalUsesFootprintTitleAndShareCaption() {
-        let cases: [(UInt64, UInt64)] = shareBands() + [(0, 16 * gib)]
+        let cases: [(UInt64, UInt64)] = shareBands() + [(UInt64(0), 16 * gib)]
         for (part, total) in cases {
             let share = ByteFormat.share(part: part, total: total)
             let copy = MemoryDetailPresentation.field(page: .memory, part: part, total: total)

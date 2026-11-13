@@ -125,6 +125,10 @@
 		B00000000000000000000085 /* HostWiFiReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000085 /* HostWiFiReader.swift */; };
 		B00000000000000000000092 /* HostWiFiLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000092 /* HostWiFiLocation.swift */; };
 		B00000000000000000000093 /* MemoryDashboardVM+Navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000093 /* MemoryDashboardVM+Navigation.swift */; };
+		B00000000000000000000094 /* ChipTemperature.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000094 /* ChipTemperature.swift */; };
+		B00000000000000000000095 /* HostChipTemperatureReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000095 /* HostChipTemperatureReader.swift */; };
+		B00000000000000000000096 /* MemoryDashboardVM+ChipTemperature.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000096 /* MemoryDashboardVM+ChipTemperature.swift */; };
+		B00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift */; };
 		B00000000000000000000090 /* PublicIPLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000090 /* PublicIPLookup.swift */; };
 		B00000000000000000000091 /* PublicIPURLSessionTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000091 /* PublicIPURLSessionTransport.swift */; };
 		B00000000000000000000013 /* OverviewCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* OverviewCards.swift */; };
@@ -259,6 +263,10 @@
 		A00000000000000000000085 /* HostWiFiReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostWiFiReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000092 /* HostWiFiLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostWiFiLocation.swift; sourceTree = "<group>"; };
 		A00000000000000000000093 /* MemoryDashboardVM+Navigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+Navigation.swift"; sourceTree = "<group>"; };
+		A00000000000000000000094 /* ChipTemperature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipTemperature.swift; sourceTree = "<group>"; };
+		A00000000000000000000095 /* HostChipTemperatureReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostChipTemperatureReader.swift; sourceTree = "<group>"; };
+		A00000000000000000000096 /* MemoryDashboardVM+ChipTemperature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+ChipTemperature.swift"; sourceTree = "<group>"; };
+		A00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MachineOverviewSection+ChipTemperature.swift"; sourceTree = "<group>"; };
 		A00000000000000000000090 /* PublicIPLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicIPLookup.swift; sourceTree = "<group>"; };
 		A00000000000000000000091 /* PublicIPURLSessionTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicIPURLSessionTransport.swift; sourceTree = "<group>"; };
 		A00000000000000000000013 /* OverviewCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewCards.swift; sourceTree = "<group>"; };
@@ -330,6 +338,7 @@
 				A0000000000000000000004E /* ProcessPermissionFootnote.swift */,
 				A0000000000000000000001B /* CPUPage.swift */,
 				A0000000000000000000007B /* GPUPage.swift */,
+				A00000000000000000000094 /* ChipTemperature.swift */,
 				A00000000000000000000066 /* EnergyPage.swift */,
 				A0000000000000000000006A /* EnergyBattery.swift */,
 				A00000000000000000000070 /* EnergyMachineHistory.swift */,
@@ -370,6 +379,7 @@
 				A00000000000000000000091 /* PublicIPURLSessionTransport.swift */,
 				A00000000000000000000023 /* HostDiskReader.swift */,
 				A0000000000000000000007C /* HostGPUReader.swift */,
+				A00000000000000000000095 /* HostChipTemperatureReader.swift */,
 				A00000000000000000000014 /* CPULoad.swift */,
 				A0000000000000000000001E /* HostNetwork.swift */,
 				A00000000000000000000022 /* HostDisk.swift */,
@@ -412,6 +422,7 @@
 				A0000000000000000000007A /* MemoryDashboardVM+SamplingClock.swift */,
 				A00000000000000000000077 /* MemoryDashboardVM+ThermalAdvice.swift */,
 				A0000000000000000000007E /* MemoryDashboardVM+GPU.swift */,
+				A00000000000000000000096 /* MemoryDashboardVM+ChipTemperature.swift */,
 				A00000000000000000000082 /* MemoryDashboardVM+NetworkConnection.swift */,
 				A00000000000000000000071 /* MemoryDashboardVM+EnergyRanking.swift */,
 			);
@@ -445,6 +456,7 @@
 				A0000000000000000000003C /* MachineOverviewSection.swift */,
 				A0000000000000000000007D /* GPUOverviewSection.swift */,
 				A00000000000000000000079 /* MachineOverviewSection+Throughput.swift */,
+				A00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift */,
 				A00000000000000000000013 /* OverviewCards.swift */,
 				A0000000000000000000000C /* ProcessTablePane.swift */,
 				A00000000000000000000067 /* EnergyProcessTable.swift */,
@@ -634,7 +646,11 @@
 				B0000000000000000000006E /* MemoryDashboardVM+HostWatch.swift in Sources */,
 				B0000000000000000000007A /* MemoryDashboardVM+SamplingClock.swift in Sources */,
 				B0000000000000000000007B /* GPUPage.swift in Sources */,
+				B00000000000000000000094 /* ChipTemperature.swift in Sources */,
 				B0000000000000000000007C /* HostGPUReader.swift in Sources */,
+				B00000000000000000000095 /* HostChipTemperatureReader.swift in Sources */,
+				B00000000000000000000096 /* MemoryDashboardVM+ChipTemperature.swift in Sources */,
+				B00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift in Sources */,
 				B0000000000000000000007D /* GPUOverviewSection.swift in Sources */,
 				B0000000000000000000007E /* MemoryDashboardVM+GPU.swift in Sources */,
 				B0000000000000000000007F /* HostConnection.swift in Sources */,
