@@ -173,7 +173,11 @@
 		B00000000000000000000390 /* SymptomDiagnosis.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000390 /* SymptomDiagnosis.swift */; };
 		B00000000000000000000391 /* DashboardCore+Symptom.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000391 /* DashboardCore+Symptom.swift */; };
 		B00000000000000000000392 /* MemoryDashboardVM+Symptom.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000392 /* MemoryDashboardVM+Symptom.swift */; };
-		B00000000000000000000393 /* SymptomPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000393 /* SymptomPanel.swift */; };
+				B00000000000000000000393 /* SymptomPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000393 /* SymptomPanel.swift */; };
+		B00000000000000000000310 /* HistoryCurveRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000310 /* HistoryCurveRange.swift */; };
+		B00000000000000000000311 /* DashboardCore+HistoryRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000311 /* DashboardCore+HistoryRange.swift */; };
+		B00000000000000000000312 /* MemoryDashboardVM+HistoryRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000312 /* MemoryDashboardVM+HistoryRange.swift */; };
+		B00000000000000000000313 /* HistoryRangeControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000313 /* HistoryRangeControl.swift */; };
 		B00000000000000000000201 /* PausedProcessLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000201 /* PausedProcessLedger.swift */; };
 		B00000000000000000000202 /* PausedProcessStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000202 /* PausedProcessStore.swift */; };
 		B00000000000000000000203 /* DashboardCore+Pause.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000203 /* DashboardCore+Pause.swift */; };
@@ -244,7 +248,11 @@
 		A00000000000000000000390 /* SymptomDiagnosis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomDiagnosis.swift; sourceTree = "<group>"; };
 		A00000000000000000000391 /* DashboardCore+Symptom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Symptom.swift"; sourceTree = "<group>"; };
 		A00000000000000000000392 /* MemoryDashboardVM+Symptom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+Symptom.swift"; sourceTree = "<group>"; };
-		A00000000000000000000393 /* SymptomPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomPanel.swift; sourceTree = "<group>"; };
+				A00000000000000000000393 /* SymptomPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomPanel.swift; sourceTree = "<group>"; };
+		A00000000000000000000310 /* HistoryCurveRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCurveRange.swift; sourceTree = "<group>"; };
+		A00000000000000000000311 /* DashboardCore+HistoryRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+HistoryRange.swift"; sourceTree = "<group>"; };
+		A00000000000000000000312 /* MemoryDashboardVM+HistoryRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+HistoryRange.swift"; sourceTree = "<group>"; };
+		A00000000000000000000313 /* HistoryRangeControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryRangeControl.swift; sourceTree = "<group>"; };
 		A00000000000000000000201 /* PausedProcessLedger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PausedProcessLedger.swift; sourceTree = "<group>"; };
 		A00000000000000000000202 /* PausedProcessStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PausedProcessStore.swift; sourceTree = "<group>"; };
 		A00000000000000000000203 /* DashboardCore+Pause.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Pause.swift"; sourceTree = "<group>"; };
@@ -453,6 +461,8 @@
 				A00000000000000000000282 /* DashboardCore+History.swift */,
 				A00000000000000000000390 /* SymptomDiagnosis.swift */,
 				A00000000000000000000391 /* DashboardCore+Symptom.swift */,
+				A00000000000000000000310 /* HistoryCurveRange.swift */,
+				A00000000000000000000311 /* DashboardCore+HistoryRange.swift */,
 				A00000000000000000000250 /* NettopDecoder.swift */,
 				A00000000000000000000260 /* EnergyModelSample.swift */,
 				A00000000000000000000201 /* PausedProcessLedger.swift */,
@@ -591,6 +601,7 @@
 				A00000000000000000000142 /* MemoryDashboardVM+SleepAssertion.swift */,
 				A00000000000000000000354 /* MemoryDashboardVM+LaunchItems.swift */,
 				A00000000000000000000392 /* MemoryDashboardVM+Symptom.swift */,
+				A00000000000000000000312 /* MemoryDashboardVM+HistoryRange.swift */,
 				A00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift */,
 				A00000000000000000000205 /* MemoryDashboardVM+Pause.swift */,
 				A00000000000000000000223 /* MemoryDashboardVM+Priority.swift */,
@@ -643,6 +654,7 @@
 				A0000000000000000000006C /* EnergyBatteryCardView.swift */,
 				A00000000000000000000141 /* SleepAssertionCardView.swift */,
 				A00000000000000000000393 /* SymptomPanel.swift */,
+				A00000000000000000000313 /* HistoryRangeControl.swift */,
 				A00000000000000000000072 /* EnergyHistoryChart.swift */,
 				A0000000000000000000004F /* ProcessPermissionFootnoteLabel.swift */,
 				A0000000000000000000000D /* ProcessDetailSidebar.swift */,
@@ -800,6 +812,10 @@
 				B00000000000000000000391 /* DashboardCore+Symptom.swift in Sources */,
 				B00000000000000000000392 /* MemoryDashboardVM+Symptom.swift in Sources */,
 				B00000000000000000000393 /* SymptomPanel.swift in Sources */,
+				B00000000000000000000310 /* HistoryCurveRange.swift in Sources */,
+				B00000000000000000000311 /* DashboardCore+HistoryRange.swift in Sources */,
+				B00000000000000000000312 /* MemoryDashboardVM+HistoryRange.swift in Sources */,
+				B00000000000000000000313 /* HistoryRangeControl.swift in Sources */,
 				B00000000000000000000281 /* HistoryStore.swift in Sources */,
 				B00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift in Sources */,
 				B00000000000000000000201 /* PausedProcessLedger.swift in Sources */,

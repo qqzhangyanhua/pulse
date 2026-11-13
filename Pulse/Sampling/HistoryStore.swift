@@ -101,10 +101,14 @@ final class HistoryStore: @unchecked Sendable {
     }
 
     func events(from start: Date, to end: Date) -> [HistoryEvent] {
+        datedEvents(from: start, to: end).map(\.event)
+    }
+
+    func datedEvents(from start: Date, to end: Date) -> [HistoryStoredEvent] {
         queue.sync {
             if database == nil { open() }
             guard let database else { return [] }
-            let sql = "SELECT kind, detail FROM event WHERE at >= ? AND at <= ? ORDER BY id"
+            let sql = "SELECT at, kind, detail FROM event WHERE at >= ? AND at <= ? ORDER BY id"
             var statement: OpaquePointer?
             guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK, let statement else {
                 return []
@@ -112,24 +116,32 @@ final class HistoryStore: @unchecked Sendable {
             defer { sqlite3_finalize(statement) }
             sqlite3_bind_double(statement, 1, start.timeIntervalSince1970)
             sqlite3_bind_double(statement, 2, end.timeIntervalSince1970)
-            var rows: [HistoryEvent] = []
+            var rows: [HistoryStoredEvent] = []
             while sqlite3_step(statement) == SQLITE_ROW {
-                guard let kind = text(statement, 0) else { continue }
-                let detail = text(statement, 1)
-                switch kind {
-                case "pressure":
-                    if let detail { rows.append(.pressure(detail)) }
-                case "thermal":
-                    if let detail { rows.append(.thermal(detail)) }
-                case "sleep":
-                    rows.append(.sleep)
-                case "wake":
-                    rows.append(.wake)
-                default:
-                    break
-                }
+                guard let event = event(kind: text(statement, 1), detail: text(statement, 2)) else { continue }
+                rows.append(HistoryStoredEvent(
+                    at: Date(timeIntervalSince1970: sqlite3_column_double(statement, 0)),
+                    event: event
+                ))
             }
             return rows
+        }
+    }
+
+    private func event(kind: String?, detail: String?) -> HistoryEvent? {
+        switch kind {
+        case "pressure":
+            guard let detail else { return nil }
+            return .pressure(detail)
+        case "thermal":
+            guard let detail else { return nil }
+            return .thermal(detail)
+        case "sleep":
+            return .sleep
+        case "wake":
+            return .wake
+        default:
+            return nil
         }
     }
 

@@ -65,6 +65,7 @@ struct CPUOverviewSection: View {
     private var readyBody: some View {
         VStack(spacing: 12) {
             ThermalAdviceCard()
+            HistoryRangeControl(range: vm.historyCurveRange, select: vm.selectHistoryCurveRange)
             PulseCard {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -141,7 +142,14 @@ struct CPUOverviewSection: View {
 
     @ViewBuilder
     private var chart: some View {
-        if vm.cpuHistory.samples.count < 2 {
+        if let plot = vm.historyCurvePlot(\.cpuPercent) {
+            HistoryRangeChart(
+                plot: plot,
+                tint: PulsePalette.chartCPU,
+                domain: domain,
+                formatY: { CPUPercentText.string($0) }
+            )
+        } else if vm.cpuHistory.samples.count < 2 {
             ChartPlaceholder(text: "曲线采集中")
         } else {
             HistoryAnnotatedChart(
@@ -158,7 +166,8 @@ struct CPUOverviewSection: View {
     }
 
     private var domain: ClosedRange<Double> {
-        let peak = vm.cpuHistory.samples.map(\.value).max() ?? 0
-        return 0...max(peak * 1.2, 5)
+        let live = vm.cpuHistory.samples.map(\.value).max() ?? 0
+        let history = vm.historyCurvePlot(\.cpuPercent)?.points.compactMap(\.value).max() ?? 0
+        return 0...max(max(live, history) * 1.2, 5)
     }
 }

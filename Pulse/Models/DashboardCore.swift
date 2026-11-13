@@ -111,6 +111,12 @@ struct DashboardCore {
     var historyDraft: HistoryDraft?
     /// Saved retention. The adapter sets this before each sample. Absent choice is 90 days.
     var historyRetention: HistoryRetention = .days(90)
+    /// Curve window for the five resource pages. Page changes return this to live.
+    var historyCurveRange: HistoryCurveRange = .live
+    /// Samples loaded for the current non-live window. Empty while 「实时」.
+    var historyCurveSamples: [HistorySample] = []
+    var historyCurveEvents: [HistoryStoredEvent] = []
+    var historyCurveEnd: Date?
     /// Thermal and pressure changes not yet copied into `historyDraft`.
     var pendingHistoryEvents: [HistoryEvent] = []
     var lastHistoryPressure: PressureLevel?

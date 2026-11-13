@@ -57,6 +57,7 @@ struct NetworkOverviewSection: View {
     private var readyBody: some View {
         VStack(spacing: 12) {
             ThermalAdviceCard()
+            HistoryRangeControl(range: vm.historyCurveRange, select: vm.selectHistoryCurveRange)
             NetworkConnectionCardView(placeholder: false)
             HStack(spacing: 12) {
                 NetworkRateCard(
@@ -64,13 +65,15 @@ struct NetworkOverviewSection: View {
                     symbol: "arrow.down",
                     rate: vm.hostNetworkRates.inboundBytesPerSecond,
                     samples: vm.networkHistory.inbound.samples,
-                    thermalNotice: vm.thermalAdvice == nil ? vm.thermalNotice : nil
+                    thermalNotice: vm.thermalAdvice == nil ? vm.thermalNotice : nil,
+                    history: vm.historyCurvePlot(\.networkInBytesPerSecond)
                 )
                 NetworkRateCard(
                     title: NetworkPageCopy.outboundTitle,
                     symbol: "arrow.up",
                     rate: vm.hostNetworkRates.outboundBytesPerSecond,
-                    samples: vm.networkHistory.outbound.samples
+                    samples: vm.networkHistory.outbound.samples,
+                    history: vm.historyCurvePlot(\.networkOutBytesPerSecond)
                 )
             }
             .frame(height: 150)
@@ -147,6 +150,7 @@ private struct NetworkRateCard: View {
     let rate: Double?
     let samples: [ChartSample]
     var thermalNotice: String? = nil
+    var history: HistoryCurvePlot? = nil
 
     var body: some View {
         PulseCard {
@@ -192,7 +196,14 @@ private struct NetworkRateCard: View {
 
     @ViewBuilder
     private var chart: some View {
-        if samples.count < 2 {
+        if let history {
+            HistoryRangeChart(
+                plot: history,
+                tint: PulsePalette.chartNetwork,
+                domain: domain,
+                formatY: { NetworkRateText.string($0) }
+            )
+        } else if samples.count < 2 {
             ChartPlaceholder(text: NetworkPageCopy.chartCollecting)
         } else {
             HistoryAnnotatedChart(
@@ -209,7 +220,8 @@ private struct NetworkRateCard: View {
     }
 
     private var domain: ClosedRange<Double> {
-        let peak = samples.map(\.value).max() ?? 0
-        return 0...max(peak * 1.2, 1_024)
+        let live = samples.map(\.value).max() ?? 0
+        let stored = history?.points.compactMap(\.value).max() ?? 0
+        return 0...max(max(live, stored) * 1.2, 1_024)
     }
 }

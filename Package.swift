@@ -111,6 +111,8 @@ let package = Package(
                 "Models/NetworkPage.swift",
                 "Models/HistoryPolicy.swift",
                 "Models/DashboardCore+History.swift",
+                "Models/HistoryCurveRange.swift",
+                "Models/DashboardCore+HistoryRange.swift",
                 "Models/SymptomDiagnosis.swift",
                 "Models/DashboardCore+Symptom.swift",
                 "Models/NettopDecoder.swift",
