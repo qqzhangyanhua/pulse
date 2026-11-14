@@ -1,6 +1,6 @@
 # ADR-0018：Sparkle 更新只在询问后检查
 
-状态：提议（#200）。提议不是现行行为，不要写进 `docs/TECH.md`。本条补充 [ADR-0005](0005-manual-public-ip-request.md)，不改写它：公网 IP 仍只在用户点击「查询公网 IP」之后才查。不改变 [ADR-0001](0001-process-memory-footprint.md) 的内存占用，不改变 [ADR-0002](0002-process-energy-wakeups.md) 的能耗和唤醒，不改变 [ADR-0003](0003-thermal-state-api.md) 的热状态来源和对 `IOServiceOpen` 的禁止，不改变 [ADR-0004](0004-gpu-accelerator-stats.md) 的 GPU 读数，不改变 [ADR-0006](0006-location-for-wifi-name.md) 的定位权限，不改变 [ADR-0007](0007-chip-temperature.md) 的芯片温度。已采纳的曲线、历史、外部命令和功耗频率也不改。分发仍是 Developer ID 加公证，不是 Mac App Store。
+状态：提议（#200）。提议不是现行行为，不要写进 `docs/TECH.md`。本条收窄 [ADR-0005](0005-manual-public-ip-request.md)「这是 Pulse 的第一次出站请求」和「启动不请求」这两句，不改写那篇。「这是 Pulse 的第一次出站请求」不再覆盖每一次出站请求。公网 IP 仍只在用户点击「查询公网 IP」之后才查。更新检查是第二种，而且只有用户允许之后才有。「启动不请求」仍约束公网 IP。用户允许更新之后，启动可以交给 Sparkle 做一次检查。启动仍然不查询公网 IP。不改变 [ADR-0001](0001-process-memory-footprint.md) 的内存占用，不改变 [ADR-0002](0002-process-energy-wakeups.md) 的能耗和唤醒，不改变 [ADR-0003](0003-thermal-state-api.md) 的热状态来源和对 `IOServiceOpen` 的禁止，不改变 [ADR-0004](0004-gpu-accelerator-stats.md) 的 GPU 读数，不改变 [ADR-0006](0006-location-for-wifi-name.md) 的定位权限，不改变 [ADR-0007](0007-chip-temperature.md) 的芯片温度。已采纳的曲线、历史、外部命令和功耗频率也不改。分发仍是 Developer ID 加公证，不是 Mac App Store。
 
 ## 背景
 

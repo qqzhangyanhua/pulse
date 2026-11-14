@@ -13,7 +13,7 @@
 ## 决定
 
 - 新增一个小组件扩展 target。扩展开沙盒。主应用保持非沙盒。不改用 Mac App Store 证书。
-- App Group 标识是 `group.` 加上 Team ID，再加上 `.com.qqzhangyanhua.pulse`。Team ID 在签名时取自 `DEVELOPMENT_TEAM` 所在的环境。不提交写死的团队编号。主应用和扩展用同一串。不是不带 Team ID 的 `group.com.qqzhangyanhua.pulse`。
+- App Group 标识以 Team ID 为前缀：`{TeamID}.group.com.qqzhangyanhua.pulse`。拼法是 `$(TeamIdentifierPrefix)` 接上 `group.com.qqzhangyanhua.pulse`。Team ID 仍在签名时取自 `DEVELOPMENT_TEAM` 所在的环境，不提交写死的团队编号。主应用和扩展用同一串。不是 `group.{TeamID}.com.qqzhangyanhua.pulse`，也不是不带 Team ID 的 `group.com.qqzhangyanhua.pulse`。
 - 主应用的 entitlements 在现有定位权限之外加上这个 App Group，沙盒仍关。扩展的 entitlements 只有沙盒和这个 App Group。定位权限仍只在主应用。
 - 主应用在一次采样成功之后，把一份小读数写进这个 App Group：压力档，加上按内存占用降序的前 3 名。内存占用相同则 pid 较小的在前。没有内存占用读数的进程不进这三名，也不当成 0。不足 3 个就少写几行，不编造进程补满。写不进 App Group 时不改放到别处。
 - 压力只有现有两档：「正常」和「偏高」。没有第三档。压力缺失，或某一行的名称缺失，是「—」，不是 0，也不是编出来的名字。这一行的内存占用若缺失，同样是「—」。
@@ -64,5 +64,5 @@
 ### 4. 公证纳入扩展并写明沙盒拆分
 
 - 阻塞：第 3 张。本 ADR 仍是提议时不做；改为已采纳之后才改公证脚本和 `docs/RELEASE.md`。
-- 交付：同一次归档用同一张 Developer ID 签上扩展。主应用仍非沙盒。RELEASE.md 写明 group 标识的拼法，以及沙盒只在扩展上。定位权限仍只在主应用。
-- 测试接缝：WiringSourceTests。抓住主应用没有打开沙盒、定位权限没有落到扩展、文档里的标识带 Team ID 而不是写死的团队编号。放掉没有证书时公证能不能真的通过。
+- 交付：同一次归档用同一张 Developer ID 签上扩展。主应用仍非沙盒。RELEASE.md 写明标识的拼法：`$(TeamIdentifierPrefix)` 接上 `group.com.qqzhangyanhua.pulse`，得到 `{TeamID}.group.com.qqzhangyanhua.pulse`。沙盒只在扩展上。定位权限仍只在主应用。不写死团队编号。
+- 测试接缝：WiringSourceTests。抓住主应用没有打开沙盒、定位权限没有落到扩展，以及文档里的标识是 `{TeamID}.group.com.qqzhangyanhua.pulse`，也就是 `$(TeamIdentifierPrefix)` 加上 `group.com.qqzhangyanhua.pulse`。不是 `group.{TeamID}.com.qqzhangyanhua.pulse`，也不是不带 Team ID 的 `group.com.qqzhangyanhua.pulse`。放掉没有证书时公证能不能真的通过。

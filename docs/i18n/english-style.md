@@ -52,20 +52,22 @@
 
 ## 术语
 
-以 `GLOSSARY.md` 为准。英文栏是唯一译法。避开栏里的说法，中英文都不要拿来替换。
+`GLOSSARY.md` 是中文术语表。本指南的英文栏才是要用的译法。避开栏里的说法，中英文都不要拿来替换。
+
+「正常 / 偏高」和「余量充足 / 余量紧张」是界面字符串，不是 `GLOSSARY.md` 的条目。
 
 | 中文 | 英文 | 含义 | 避开 |
 |---|---|---|---|
 | 内存占用 | Memory footprint | 进程的内存占用。不是驻留内存 | 不要写成 memory usage 或 RAM。也不是 GPU 占用内存 |
-| 正常 / 偏高 | Normal / Elevated | 压力只有这两档 | 不要加 Critical、Warning、Danger |
-| 余量充足 / 余量紧张 | Plenty of headroom / Headroom is tight | 这两档下面的说明 | 不要写成 low memory 或 memory leak |
+| 正常 / 偏高 | Normal / Elevated | 压力只有这两档。界面字符串，不是术语表条目 | 不要加 Critical、Warning、Danger |
+| 余量充足 / 余量紧张 | Plenty of headroom / Headroom is tight | 这两档下面的说明。界面字符串，不是术语表条目 | 不要写成 low memory 或 memory leak |
 | 芯片温度 | Chip temperature | 芯片上最热的一处当前温度，单位摄氏度。不分 CPU 和 GPU，也不是平均值 | CPU 温度、GPU 温度、核心温度、SMC 温度。不要写成 CPU temperature 或 GPU temperature |
 | GPU 使用率 | GPU utilization | 整机 GPU 的设备级占用，一个 0–100 的百分比 | 渲染器利用率、分块利用率、Metal 计数器 |
 | GPU 占用内存 | GPU memory in use | GPU 正在占用的统一内存字节。不是独立显存，也没有总量 | 显存、VRAM、分配内存、内存占用 |
 | GPU 核心数 | GPU cores | 整机 GPU 的核心个数。有读数时是 “N-core GPU”，没有就不显示。不是使用率 | 显存、GPU 温度、核心温度 |
 | GPU 占比 | GPU share | 最近一个采样间隔里，单个进程占用 GPU 的时间占墙钟时间的比例 | 进程 GPU 使用率、GPU%。不是市场份额 |
 | 阻止睡眠 | Preventing sleep | 进程持有断言，让 Mac 或显示器不进入睡眠 | 防休眠、唤醒锁。不要写成 sleep lock |
-| 换入 / 换出 | Page-ins / Page-outs | 每秒从磁盘读进内存、或从内存写到磁盘的内存页，包括交换和文件页 | 页面错误、交换速率。不要写成 page faults 或 swap rate |
+| 换入 / 换出 | Page-ins / Page-outs | 每秒从磁盘读进内存、或从内存写到磁盘的内存页，包括交换和文件页。界面按每秒字节显示：「0 字节/秒」是 “0 bytes/s”。读不到的速率仍是「—」 | 页面错误、交换速率。不要写成 page faults 或 swap rate |
 | 内存占用峰值 | Peak footprint | 进程自启动以来达到过的最高内存占用 | 最大内存、峰值驻留 |
 | 暂停 / 继续 | Pause / Resume | 暂时停止运行，可以用继续恢复。不是退出 | 挂起、冻结。不要写成 suspend 或 freeze |
 | 降低优先级 | Lower priority | 以更低的优先级调度，可以恢复 | 限速、节流。不要写成 throttle |
