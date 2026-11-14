@@ -1,6 +1,6 @@
 # ADR-0016：命令行工具自行采样并拒绝常驻端口
 
-状态：已采纳（#198）。不改变 [ADR-0005](0005-manual-public-ip-request.md)：命令行不发起出站请求，也不监听端口，因此不补充那一条。不改变 [ADR-0001](0001-process-memory-footprint.md) 的内存占用。不放开 [ADR-0003](0003-thermal-state-api.md) 和 [ADR-0007](0007-chip-temperature.md) 对 `IOServiceOpen` 和 SMC 的禁止。不改变 [ADR-0011](0011-external-commands.md)：不为命令行把 `nettop` 留在后台。
+状态：已采纳（#198）。不改变 [ADR-0005](0005-manual-public-ip-request.md)：命令行不发起出站请求，也不监听端口，因此不补充那一条。不改变 [ADR-0001](0001-process-memory-footprint.md) 的内存占用。不放开 [ADR-0003](0003-thermal-state-api.md) 和 [ADR-0007](0007-chip-temperature.md) 对 `IOServiceOpen` 和 SMC 的禁止。不改变 [ADR-0011](0011-external-commands.md)：`nettop` 仍只在网络页启动，命令行不启动它，也不为它开一次性的例外。不改变 [ADR-0012](0012-energy-model-power-frequency.md)：Energy Model 仍只在 CPU 页、GPU 页或能耗页被选中时读取，命令行不订阅。这两处读数在命令行里是 JSON `null`。
 
 ## 背景
 
@@ -16,8 +16,8 @@
 - 读数用和应用程序同一套口径，不发明第二套指标。内存占用仍是内存占用。不调用 `IOServiceOpen`，不读 SMC，不用 `powermetrics`，不装特权 Helper。
 - `top --json` 把一帧写成一份 JSON，只打到标准输出，不是连续的事件流。进程按内存占用从高到低；同值按 pid 升序，与快照名次相同。内存占用缺失的排在有读数的后面，不按 0 参与排序。缺失字段是 JSON `null`，不是 0，也不是字符串「—」。真实 0 仍是 0。整帧采不到时失败退出，不打印一份全 0 的 JSON。错误走标准错误，不混进这份 JSON。
 - 这一帧不套快照的默认隐去，进程名保留，给本机脚本用。不包含公网 IP。命令行不发起查询。
-- 速率需要上一拍才能相减。没有差值时该字段是 `null`，不是 0。这一次命令最多再采一拍算出这一帧，然后退出，不按固定间隔一直采。自己启动的子进程（包括 `nettop`，如果这一次启动了它）在退出前停掉。不把采样循环、`nettop` 或 Energy Model 订阅留在命令结束之后。
-- 只在某一页可见时才读的读数，不因命令行改成常驻，也不改口径。读不到就是 `null`。快照仍不收录芯片温度。
+- 速率需要上一拍才能相减。没有差值时该字段是 `null`，不是 0。主机字节计数若在应用里本来就要多采一拍做差，这一次命令仍可以多采一拍，然后退出。不按固定间隔一直采。退出之后不留下子进程。
+- 命令行不启动 `nettop`，也不订阅 Energy Model。不为这两处开一次性的例外。[ADR-0011](0011-external-commands.md) 仍只在网络页启动 `nettop`。[ADR-0012](0012-energy-model-power-frequency.md) 仍只在 CPU 页、GPU 页或能耗页被选中时读 Energy Model。这两处读数在命令行里是 JSON `null`。其它只在某一页可见时才读的读数，不因命令行改成常驻，也不改口径。读不到就是 `null`。快照仍不收录芯片温度。
 - `pulse snapshot` 通过现有 SnapshotExport 写出一份快照后退出。默认隐去保持今天：进程名、带用户名的路径、主机名、IP。不因为走命令行就改成默认展示，也不增加关掉隐去的参数。不弹保存面板。不发起新的查询。行数和字段跟 SnapshotExport 今天的文档一致，不另写一份更长的报告。`top --json` 不截成快照里的前几名。
 - 只认这两个用法。`pulse top` 不带 `--json` 时拒绝并退出，不退化成停在终端里刷新。不认识的参数同样拒绝并退出。
 - 打包：在 `Pulse.app/Contents/MacOS/pulse` 放第二个可执行文件，与应用一起用 Developer ID 签名并公证。图形界面的可执行文件仍是 `Pulse`。这个工具保持非沙盒，否则读不到其它进程的内存占用；主应用也保持非沙盒。不新增 entitlement，不加特权 Helper，不改走 Mac App Store。使用者自己做符号链接。本 ticket 不改 `RELEASE.md`；位置和符号链接写在后续第 4 张。
@@ -34,7 +34,7 @@
 ## 不考虑
 
 - 附着到正在运行的 Pulse，或用 XPC / 守护进程转发读数。
-- 交互式 `top`、按秒刷新的流，以及任何退出后仍留着的采样器或 `nettop`。
+- 交互式 `top`、按秒刷新的流，以及任何留在退出之后的采样器。命令行不启动 `nettop`，也不订阅 Energy Model，包括只跑一次。
 - 本机或非本机的 Prometheus、HTTP 或其它监听端口。默认关闭也不做。远程监控另一台 Mac 不做。
 - 第二套指标、SMC、风扇、`IOServiceOpen`、特权 Helper、为命令行新加的出站请求。
 - 在命令行关掉快照隐去，或把公网 IP 写进 JSON 或快照。
