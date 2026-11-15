@@ -67,7 +67,7 @@ struct GPUOverviewSection: View {
                 .frame(height: 132)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(EnergyModelCopy.gpuPowerLine(watts: vm.cpuEnergy?.gpuWatts))
-                    Text(EnergyModelCopy.gpuFrequencyLine(hertz: vm.cpuEnergy?.gpuHertz))
+                    Text(EnergyModelCopy.gpuFrequencyLine(vm.cpuEnergy?.gpuFrequency ?? .missing))
                 }
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -93,7 +93,7 @@ struct GPUOverviewSection: View {
     private var accessibilityLabel: String {
         var line = "\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)"
         line += "，\(EnergyModelCopy.gpuPowerLine(watts: vm.cpuEnergy?.gpuWatts))"
-        line += "，\(EnergyModelCopy.gpuFrequencyLine(hertz: vm.cpuEnergy?.gpuHertz))"
+        line += "，\(EnergyModelCopy.gpuFrequencyLine(vm.cpuEnergy?.gpuFrequency ?? .missing))"
         if let cores = vm.gpuPage.coreCountText {
             line += "，\(cores)"
         }

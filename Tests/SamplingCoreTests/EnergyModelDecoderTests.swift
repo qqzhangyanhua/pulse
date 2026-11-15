@@ -211,6 +211,84 @@ final class EnergyModelDecoderTests: XCTestCase {
         XCTAssertNil(EnergyModelDecoder.dominantHertz([(name: "2400 MHz", residency: 0)]))
     }
 
+    func testGPUFrequencyIsTheResidencyWeightedAverageOfWorkingStates() {
+        // P2 for 3 and P4 for 1. OFF is not a frequency: (486e6 * 3 + 778e6) / 4 = 559e6.
+        let frequency = EnergyModelDecoder.gpuFrequency(
+            states: [
+                GPUFrequencyState(subgroup: "GPU Performance States", name: "OFF", residency: 100),
+                GPUFrequencyState(subgroup: "GPU Performance States", name: "P2", residency: 3),
+                GPUFrequencyState(subgroup: "GPU Performance States", name: "P4", residency: 1),
+            ],
+            table: m1ProVoltageTable()
+        )
+        XCTAssertEqual(frequency, .hertz(559_000_000))
+    }
+
+    func testWholeIntervalOffShowsIdleRatherThanZeroOrMissing() {
+        let frequency = EnergyModelDecoder.gpuFrequency(
+            states: [
+                GPUFrequencyState(subgroup: "GPU Performance States", name: "OFF", residency: 40),
+                GPUFrequencyState(subgroup: "GPU Performance States", name: "P1", residency: 0),
+                GPUFrequencyState(subgroup: "GPU Performance States", name: "P99", residency: 0),
+            ],
+            table: nil
+        )
+        XCTAssertEqual(frequency, .idle)
+        XCTAssertEqual(EnergyModelCopy.gpuFrequencyLine(frequency), "GPU 频率 · 空闲")
+        XCTAssertFalse(EnergyModelCopy.gpuFrequencyLine(frequency).contains("—"))
+        XCTAssertFalse(EnergyModelCopy.gpuFrequencyLine(frequency).contains("0"))
+    }
+
+    func testMissingTableOrUnmappedGearStaysMissing() {
+        let working = GPUFrequencyState(subgroup: "GPU Performance States", name: "P2", residency: 3)
+        let unknown = GPUFrequencyState(subgroup: "GPU Performance States", name: "FAST", residency: 1)
+        XCTAssertEqual(
+            EnergyModelDecoder.gpuFrequency(states: [working, unknown], table: m1ProVoltageTable()),
+            .missing
+        )
+        let beyondTable = GPUFrequencyState(subgroup: "GPU Performance States", name: "P7", residency: 1)
+        XCTAssertEqual(
+            EnergyModelDecoder.gpuFrequency(states: [working, beyondTable], table: m1ProVoltageTable()),
+            .missing
+        )
+        XCTAssertEqual(EnergyModelDecoder.gpuFrequency(states: [working], table: nil), .missing)
+        let offAndWorking = [
+            GPUFrequencyState(subgroup: "GPU Performance States", name: "OFF", residency: 50),
+            working,
+        ]
+        XCTAssertEqual(EnergyModelDecoder.gpuFrequency(states: offAndWorking, table: nil), .missing)
+        XCTAssertEqual(EnergyModelCopy.gpuFrequencyLine(.missing), "GPU 频率 · —")
+        XCTAssertNotEqual(
+            EnergyModelCopy.gpuFrequencyLine(.missing),
+            EnergyModelCopy.gpuFrequencyLine(.idle)
+        )
+    }
+
+    func testGPUFrequencyWithoutASampleDeltaStaysMissing() {
+        XCTAssertEqual(EnergyModelDecoder.gpuFrequency(states: [], table: m1ProVoltageTable()), .missing)
+        let untouched = [
+            GPUFrequencyState(subgroup: "GPU Performance States", name: "OFF", residency: 0),
+            GPUFrequencyState(subgroup: "GPU Performance States", name: "P1", residency: 0),
+        ]
+        XCTAssertEqual(
+            EnergyModelDecoder.gpuFrequency(states: untouched, table: m1ProVoltageTable()),
+            .missing
+        )
+    }
+
+    func testGPUFrequencyIgnoresStatesOutsidePerformanceStates() {
+        // Same 559 MHz average. Another subgroup's P6 must not move it.
+        let frequency = EnergyModelDecoder.gpuFrequency(
+            states: [
+                GPUFrequencyState(subgroup: "GPU Performance States", name: "P2", residency: 3),
+                GPUFrequencyState(subgroup: "GPU Performance States", name: "P4", residency: 1),
+                GPUFrequencyState(subgroup: "GPU SW States", name: "P6", residency: 100),
+            ],
+            table: m1ProVoltageTable()
+        )
+        XCTAssertEqual(frequency, .hertz(559_000_000))
+    }
+
     func testDisplayedWattsAndFrequencyKeepMissingAndRealZeroApart() {
         XCTAssertEqual(EnergyModelCopy.gpuPowerLine(watts: nil), "GPU 功耗 · —")
         XCTAssertFalse(EnergyModelCopy.gpuPowerLine(watts: nil).contains("0"))
@@ -226,6 +304,46 @@ final class EnergyModelDecoderTests: XCTestCase {
         XCTAssertEqual(EnergyModelCopy.aneLine(watts: 1.5), "ANE 功耗 · 1.5 W")
         XCTAssertEqual(EnergyModelCopy.dramLine(watts: 0), "DRAM 功耗 · 0.0 W")
         XCTAssertEqual(EnergyModelCopy.dramLine(watts: nil), "DRAM 功耗 · —")
+    }
+
+    func testCPUClusterFrequencyStaysOnTheDominantNamedState() {
+        XCTAssertEqual(
+            EnergyModelDecoder.dominantHertz([
+                (name: "3.2 GHz", residency: 10),
+                (name: "2400 MHz", residency: 40),
+            ]),
+            2_400_000_000
+        )
+        XCTAssertNil(EnergyModelDecoder.dominantHertz([(name: "P1", residency: 90)]))
+        XCTAssertNil(EnergyModelDecoder.hertz(fromStateName: "P6"))
+    }
+
+    func testGPUFrequencyReaderSuppliesThePerformanceSubgroupAndRegistryBytes() throws {
+        let reader = try repoText("Pulse/Sampling/HostEnergyModelReader.swift")
+        XCTAssertTrue(reader.contains("\"GPU Performance States\""))
+        XCTAssertTrue(reader.contains("EnergyModelDecoder.gpuFrequency"))
+        XCTAssertTrue(reader.contains("voltageStates9Bytes"))
+        XCTAssertFalse(reader.contains("dominantHertz"))
+        XCTAssertFalse(reader.contains("IOServiceOpen"))
+        XCTAssertFalse(reader.contains("import IOKit"))
+        XCTAssertTrue(reader.contains("hertz(fromStateName:"))
+
+        let registry = try repoText("Pulse/Sampling/HostEnergyModelReader+VoltageStates.swift")
+        XCTAssertTrue(registry.contains("\"voltage-states9\""))
+        XCTAssertTrue(registry.contains("\"pmgr\""))
+        XCTAssertTrue(registry.contains("IORegistryEntryCreateCFProperties"))
+        XCTAssertFalse(registry.contains("IOServiceOpen"))
+
+        let package = try repoText("Package.swift")
+        let parts = package.components(separatedBy: "sources:")
+        XCTAssertEqual(parts.count, 2)
+        XCTAssertTrue(parts[0].contains("\"Sampling/HostEnergyModelReader+VoltageStates.swift\""))
+        XCTAssertTrue(parts[1].contains("\"Models/VoltageStates9.swift\""))
+        XCTAssertFalse(parts[1].contains("HostEnergyModelReader"))
+
+        let project = try repoText("Pulse.xcodeproj/project.pbxproj")
+        XCTAssertTrue(project.contains("VoltageStates9.swift in Sources"))
+        XCTAssertTrue(project.contains("HostEnergyModelReader+VoltageStates.swift in Sources"))
     }
 
     func testPagesReadGPUAndMachineRailsOnlyWhileVisible() throws {
@@ -271,7 +389,10 @@ final class EnergyModelDecoderTests: XCTestCase {
 
         let overview = try repoText("Pulse/Views/GPUOverviewSection.swift")
         XCTAssertTrue(overview.contains("EnergyModelCopy.gpuPowerLine"))
-        XCTAssertTrue(overview.contains("EnergyModelCopy.gpuFrequencyLine"))
+        let frequencyCall = "EnergyModelCopy.gpuFrequencyLine(vm.cpuEnergy?.gpuFrequency ?? .missing)"
+        XCTAssertEqual(occurrenceCount(of: frequencyCall, in: overview), 2)
+        let label = try braceBody(after: "private var accessibilityLabel", in: overview)
+        XCTAssertTrue(label.contains(frequencyCall))
 
         for relative in [
             "Pulse/MenuBar/MenuBarStatus.swift",
@@ -286,6 +407,18 @@ final class EnergyModelDecoderTests: XCTestCase {
                 XCTAssertFalse(text.contains(token), "\(relative) \(token)")
             }
         }
+    }
+
+    private func m1ProVoltageTable() -> [VoltageState9] {
+        [
+            VoltageState9(hertz: 0, millivolts: 0),
+            VoltageState9(hertz: 389_000_000, millivolts: 0),
+            VoltageState9(hertz: 486_000_000, millivolts: 0),
+            VoltageState9(hertz: 648_000_000, millivolts: 0),
+            VoltageState9(hertz: 778_000_000, millivolts: 0),
+            VoltageState9(hertz: 972_000_000, millivolts: 0),
+            VoltageState9(hertz: 1_296_000_000, millivolts: 0),
+        ]
     }
 
     private func pair(

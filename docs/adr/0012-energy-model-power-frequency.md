@@ -1,6 +1,6 @@
 # ADR-0012：CPU、GPU、ANE、DRAM 的功耗和频率读 Energy Model
 
-状态：已采纳（#192、#211）。补充 [ADR-0004](0004-gpu-accelerator-stats.md)，不放开它对 `IOServiceOpen`、SMC、Metal 计数器和 `powermetrics` 的禁止。GPU 页显示这一条订阅读到的 GPU 功耗和 GPU 频率。使用率仍不把渲染器或分块器的百分比平均成使用率，仍不显示温度，仍不调用 `IOServiceOpen`。能耗页显示 ANE 和 DRAM 功耗。补充（#219）：macOS 26 打不开下面的 framework 路径，读取器先 `dlopen` `/usr/lib/libIOReport.dylib`，打不开再试 framework 路径，仍只用 `dlopen`，两个都打不开时读数是「—」。GPU 功耗的相加规则已被 [ADR-0020](0020-gpu-power-energy-channel.md) 取代：有 `GPU Energy` 通道时只用它。
+状态：已采纳（#192、#211）。补充 [ADR-0004](0004-gpu-accelerator-stats.md)，不放开它对 `IOServiceOpen`、SMC、Metal 计数器和 `powermetrics` 的禁止。GPU 页显示这一条订阅读到的 GPU 功耗和 GPU 频率。使用率仍不把渲染器或分块器的百分比平均成使用率，仍不显示温度，仍不调用 `IOServiceOpen`。能耗页显示 ANE 和 DRAM 功耗。补充（#219）：macOS 26 打不开下面的 framework 路径，读取器先 `dlopen` `/usr/lib/libIOReport.dylib`，打不开再试 framework 路径，仍只用 `dlopen`，两个都打不开时读数是「—」。GPU 功耗的相加规则已被 [ADR-0020](0020-gpu-power-energy-channel.md) 取代：有 `GPU Energy` 通道时只用它。GPU 频率「名字只是档位标签时保持「—」、不用频率表」已被 [ADR-0021](0021-gpu-frequency-weighted.md) 取代。
 
 ## 背景
 
@@ -16,7 +16,7 @@ CPU 页已经有整机百分比、最忙一核，以及进程上的能耗影响�
 - 频率订阅组名 `CPU Stats`。性能核认 `Performance`、`P-Cluster`、`P-Core`，能效核认 `Efficiency`、`E-Cluster`、`E-Core`。当前频率是这一拍驻留最多的那个状态。只有这个状态的名字写着 GHz、MHz，或本身就是赫兹、兆赫兹数字时才显示。名字只是档位标签时保持「—」。不用频率表里的最大值。
 - 三行都在 CPU 总览，文案是「CPU 功耗」「性能核」「能效核」。不写入 CPU 曲线，也不写入本机历史。
 - GPU 功耗把通道名含 `GPU` 的有限瓦特相加（已被 [ADR-0020](0020-gpu-power-energy-channel.md) 取代：有 `GPU Energy` 通道时只用它）。一个都对不上是「—」。ANE 认 `ANE` 或 `Neural`，不区分大小写。DRAM 认 `DRAM`。单位仍是该通道自己的 `mJ` 或 `nJ`。未知单位、负差或非有限数不计入；全都不是有限数则该项是「—」。真实 0 仍是 `0.0 W`。
-- GPU 频率用同一只读取器里的 `GPU Stats` 样本差，不在 `HostGPUReader` 里再订一份。当前频率是驻留最多且驻留大于 0 的那个状态，而且只解析这个状态的名字。名字只是档位标签时保持「—」。不用频率表里的最大值。真实 0 是 `0.00 GHz`。
+- GPU 频率用同一只读取器里的 `GPU Stats` 样本差，不在 `HostGPUReader` 里再订一份。当前频率是驻留最多且驻留大于 0 的那个状态，而且只解析这个状态的名字。名字只是档位标签时保持「—」。不用频率表里的最大值。真实 0 是 `0.00 GHz`。（这一条已被 [ADR-0021](0021-gpu-frequency-weighted.md) 取代：只读 `GPU Performance States`，用 `voltage-states9` 把 `Pn` 映射成频率，按非 OFF 档的停留加权；整个间隔都是 OFF 时显示「空闲」。）
 - ANE 和 DRAM 放在能耗页电池卡旁边，不放进 `EnergyBattery.card`。没有内置电池时卡片为 nil，这两项仍显示。
 - 这些读数不进菜单栏、快照或进程表。
 

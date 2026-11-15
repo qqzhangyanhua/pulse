@@ -6,12 +6,24 @@ struct EnergyModelChannel: Equatable {
     var cumulative: Double
 }
 
+struct GPUFrequencyState: Equatable {
+    var subgroup: String
+    var name: String
+    var residency: Int64
+}
+
+enum GPUFrequency: Equatable {
+    case missing
+    case idle
+    case hertz(Double)
+}
+
 struct EnergyModelReading: Equatable {
     var cpuWatts: Double? = nil
     var performanceHertz: Double? = nil
     var efficiencyHertz: Double? = nil
     var gpuWatts: Double? = nil
-    var gpuHertz: Double? = nil
+    var gpuFrequency: GPUFrequency = .missing
     var aneWatts: Double? = nil
     var dramWatts: Double? = nil
 }
@@ -89,6 +101,32 @@ enum EnergyModelDecoder {
         summedWatts(channels: channels, elapsed: elapsed) { $0.contains("DRAM") }
     }
 
+    /// Non-OFF residency in `GPU Performance States` only, weighted by time.
+    /// The whole interval OFF is idle, even when the table is missing.
+    static func gpuFrequency(
+        states: [GPUFrequencyState],
+        table: [VoltageState9]?
+    ) -> GPUFrequency {
+        var numerator = 0.0
+        var denominator = 0.0
+        var off: Int64 = 0
+        for state in states where state.subgroup == "GPU Performance States" && state.residency > 0 {
+            let name = state.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            if name == "OFF" {
+                off += state.residency
+                continue
+            }
+            guard let table, let hertz = hertz(forGear: name, table: table) else { return .missing }
+            numerator += hertz * Double(state.residency)
+            denominator += Double(state.residency)
+        }
+        if denominator > 0, numerator.isFinite {
+            return .hertz(numerator / denominator)
+        }
+        if off > 0 { return .idle }
+        return .missing
+    }
+
     /// The state that spent the most time. Only that name is parsed.
     /// A higher frequency with less residency is not the current frequency.
     static func dominantHertz(_ states: [(name: String, residency: Int64)]) -> Double? {
@@ -120,6 +158,17 @@ enum EnergyModelDecoder {
         }
         guard matched, finite, sum.isFinite else { return nil }
         return sum
+    }
+
+    /// `Pn` is table entry n. Entry 0 is OFF, so P0 is not a working gear.
+    private static func hertz(forGear name: String, table: [VoltageState9]) -> Double? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.first == "P" else { return nil }
+        let digits = trimmed.dropFirst()
+        guard let index = Int(digits), index > 0, String(index) == digits, index < table.count else {
+            return nil
+        }
+        return Double(table[index].hertz)
     }
 
     static func frequencyHertz(_ value: Double) -> Double? {
@@ -156,6 +205,18 @@ enum EnergyModelCopy {
         guard let hertz, hertz.isFinite, hertz >= 0 else { return "GPU 频率 · —" }
         let ghz = hertz / 1_000_000_000
         return "GPU 频率 · \(String(format: "%.2f", locale: CPUPercentText.posix, ghz)) GHz"
+    }
+
+    /// Idle is its own reading. A hertz value, including a real 0, still formats as GHz.
+    static func gpuFrequencyLine(_ frequency: GPUFrequency) -> String {
+        switch frequency {
+        case .missing:
+            return "GPU 频率 · —"
+        case .idle:
+            return "GPU 频率 · 空闲"
+        case .hertz(let hertz):
+            return gpuFrequencyLine(hertz: hertz)
+        }
     }
 
     static func aneLine(watts: Double?) -> String {
