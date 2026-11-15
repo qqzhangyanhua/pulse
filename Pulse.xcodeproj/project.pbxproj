@@ -126,6 +126,7 @@
 		B00000000000000000000410 /* GPUOverviewSection+Readings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000410 /* GPUOverviewSection+Readings.swift */; };
 		B00000000000000000000411 /* GPUOverviewSection+Chart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000411 /* GPUOverviewSection+Chart.swift */; };
 		B00000000000000000000412 /* GPUOverviewSection+Share.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000412 /* GPUOverviewSection+Share.swift */; };
+		B00000000000000000000413 /* GPUOverviewSection+Recovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000413 /* GPUOverviewSection+Recovery.swift */; };
 		B00000000000000000000420 /* GPUTimeMinuteLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000420 /* GPUTimeMinuteLedger.swift */; };
 		B00000000000000000000421 /* GPUOverviewSection+GPUTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000421 /* GPUOverviewSection+GPUTime.swift */; };
 		B0000000000000000000007E /* MemoryDashboardVM+GPU.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000007E /* MemoryDashboardVM+GPU.swift */; };
@@ -401,6 +402,7 @@
 		A00000000000000000000410 /* GPUOverviewSection+Readings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GPUOverviewSection+Readings.swift"; sourceTree = "<group>"; };
 		A00000000000000000000411 /* GPUOverviewSection+Chart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GPUOverviewSection+Chart.swift"; sourceTree = "<group>"; };
 		A00000000000000000000412 /* GPUOverviewSection+Share.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GPUOverviewSection+Share.swift"; sourceTree = "<group>"; };
+		A00000000000000000000413 /* GPUOverviewSection+Recovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GPUOverviewSection+Recovery.swift"; sourceTree = "<group>"; };
 		A00000000000000000000420 /* GPUTimeMinuteLedger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPUTimeMinuteLedger.swift; sourceTree = "<group>"; };
 		A00000000000000000000421 /* GPUOverviewSection+GPUTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GPUOverviewSection+GPUTime.swift"; sourceTree = "<group>"; };
 		A00000000000000000000170 /* GPUShareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPUShareCard.swift; sourceTree = "<group>"; };
@@ -668,6 +670,7 @@
 				A00000000000000000000410 /* GPUOverviewSection+Readings.swift */,
 				A00000000000000000000411 /* GPUOverviewSection+Chart.swift */,
 				A00000000000000000000412 /* GPUOverviewSection+Share.swift */,
+				A00000000000000000000413 /* GPUOverviewSection+Recovery.swift */,
 				A00000000000000000000421 /* GPUOverviewSection+GPUTime.swift */,
 				A00000000000000000000170 /* GPUShareCard.swift */,
 				A00000000000000000000079 /* MachineOverviewSection+Throughput.swift */,
@@ -951,6 +954,7 @@
 				B00000000000000000000410 /* GPUOverviewSection+Readings.swift in Sources */,
 				B00000000000000000000411 /* GPUOverviewSection+Chart.swift in Sources */,
 				B00000000000000000000412 /* GPUOverviewSection+Share.swift in Sources */,
+				B00000000000000000000413 /* GPUOverviewSection+Recovery.swift in Sources */,
 				B00000000000000000000421 /* GPUOverviewSection+GPUTime.swift in Sources */,
 				B0000000000000000000007E /* MemoryDashboardVM+GPU.swift in Sources */,
 				B0000000000000000000007F /* HostConnection.swift in Sources */,

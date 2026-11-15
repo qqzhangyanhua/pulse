@@ -69,7 +69,7 @@ final class SnapshotExportTests: XCTestCase {
         assertShared("GPU 占用内存", "2 KB", in: doc)
         XCTAssertTrue(doc.markdown.contains("GPU 使用率：42.5%"))
         XCTAssertTrue(doc.markdown.contains("GPU 占用内存：2 KB"))
-        for absent in ["GPU 功耗", "GPU 频率", "渲染器", "分块器", "核 GPU"] {
+        for absent in ["GPU 功耗", "GPU 频率", "渲染器", "分块器", "GPU 恢复次数", "核 GPU"] {
             XCTAssertFalse(doc.previewText.contains(absent), absent)
             XCTAssertFalse(doc.html.contains(absent), absent)
             XCTAssertFalse(doc.markdown.contains(absent), absent)

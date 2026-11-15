@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Full GPU page. Spec labels, four reading cards, one utilization curve, the GPU-share card, and the hour GPU-time card.
+/// Full GPU page. Spec labels, four reading cards, one utilization curve, the GPU-share card, recovery count, and the hour GPU-time card.
 struct GPUOverviewSection: View {
     /// Internal so the readings, chart, and share extensions share one environment object.
     @EnvironmentObject var vm: MemoryDashboardVM
@@ -70,13 +70,14 @@ struct GPUOverviewSection: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilityLabel)
             chartAndShare
+            recoveryCard
             gpuTimeCard
         }
     }
 
     private var accessibilityLabel: String {
         var line = "\(MachinePageCopy.chipValue(vm.machineFacts?.chipName))"
-        line += "，\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)"
+        line += "，\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.renderer) \(vm.gpuPage.rendererText)，\(GPUPageCopy.tiler) \(vm.gpuPage.tilerText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)"
         line += "，\(EnergyModelCopy.gpuPowerLine(watts: vm.cpuEnergy?.gpuWatts))"
         line += "，\(EnergyModelCopy.gpuFrequencyLine(vm.cpuEnergy?.gpuFrequency ?? .missing))"
         if let cores = vm.gpuPage.coreCountText {
