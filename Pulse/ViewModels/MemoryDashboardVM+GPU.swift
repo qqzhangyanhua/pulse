@@ -40,4 +40,14 @@ extension MemoryDashboardVM {
     func refreshGPUDisplays() {
         mutateCore { $0.apply(gpuDisplays: HostGPUDisplayReader.read()) }
     }
+
+    /// GPU-share name. False when the pid has left the live process rows.
+    func gpuShareNameOpensMemoryPage(_ pid: Int32) -> Bool {
+        core.gpuShareNameOpensMemoryPage(pid)
+    }
+
+    /// Name tap. Present pid focuses memory, then selects. A missing pid does nothing.
+    func openGPUShareProcess(_ pid: Int32) {
+        mutateCore { $0.openGPUShareProcess(pid) }
+    }
 }
