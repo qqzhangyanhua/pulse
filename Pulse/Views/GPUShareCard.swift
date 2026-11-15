@@ -49,10 +49,7 @@ struct GPUShareCard: View {
                     size: 16
                 )
                 .accessibilityHidden(true)
-                Text(row.name)
-                    .font(.callout)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                processName(row)
                 Text(row.shareText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -69,6 +66,28 @@ struct GPUShareCard: View {
                 shareBar(fraction)
             }
         }
+    }
+
+    /// The name only. A pid outside the live process rows stays plain text.
+    @ViewBuilder
+    private func processName(_ row: GPUShareRow) -> some View {
+        if vm.gpuShareNameOpensMemoryPage(row.pid) {
+            Button {
+                vm.openGPUShareProcess(row.pid)
+            } label: {
+                nameLabel(row.name)
+            }
+            .buttonStyle(.plain)
+        } else {
+            nameLabel(row.name)
+        }
+    }
+
+    private func nameLabel(_ name: String) -> some View {
+        Text(name)
+            .font(.callout)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Empty when the fraction is 0. Hidden from VoiceOver so the percent text keeps the real value.

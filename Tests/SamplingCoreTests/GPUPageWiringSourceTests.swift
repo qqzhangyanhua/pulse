@@ -74,6 +74,20 @@ final class GPUPageWiringSourceTests: XCTestCase {
         let share = try repoText("Pulse/Views/GPUShareCard.swift")
         XCTAssertTrue(share.contains("row.barFraction"))
         XCTAssertTrue(share.contains("terminateThermalAdvice"))
+        XCTAssertEqual(occurrenceCount(of: "terminateThermalAdvice", in: share), 1)
+        XCTAssertFalse(share.contains("focusMemoryPage"))
+        XCTAssertFalse(share.contains("selectPidIfPresent"))
+        XCTAssertFalse(share.contains("TopAppLocation"))
+        XCTAssertFalse(share.contains("locateMemoryTopApp"))
+        let quitClosure = share.components(separatedBy: "Button(\"退出\")")[1]
+            .components(separatedBy: "private func processName")[0]
+        XCTAssertTrue(quitClosure.contains("terminateThermalAdvice"))
+        XCTAssertFalse(quitClosure.contains("openGPUShareProcess"))
+        XCTAssertFalse(quitClosure.contains("gpuShareNameOpensMemoryPage"))
+        let nameTap = share.components(separatedBy: "private func processName")[1]
+        XCTAssertTrue(nameTap.contains("if vm.gpuShareNameOpensMemoryPage(row.pid)"))
+        XCTAssertTrue(nameTap.contains("vm.openGPUShareProcess(row.pid)"))
+        XCTAssertFalse(nameTap.contains("terminateThermalAdvice"))
         XCTAssertTrue(share.contains(".accessibilityHidden(true)"))
 
         let copy = try repoText("Pulse/Models/ProcessRowCopy.swift")
