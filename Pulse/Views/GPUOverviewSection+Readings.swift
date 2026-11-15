@@ -11,32 +11,6 @@ extension GPUOverviewSection {
         }
     }
 
-    var readingCards: some View {
-        HStack(spacing: 12) {
-            utilizationCard
-            memoryCard
-            readingCard(
-                title: GPUPageCopy.power,
-                value: EnergyModelCopy.gpuPowerReading(vm.cpuEnergy?.gpuWatts),
-                symbol: "bolt.fill",
-                samples: vm.gpuPage.powerSparkline.samples,
-                draws: vm.gpuPage.showsPowerSparkline,
-                domain: vm.gpuPage.powerSparklineDomain,
-                formatY: { EnergyModelCopy.gpuPowerReading($0) }
-            )
-            readingCard(
-                title: GPUPageCopy.frequency,
-                value: EnergyModelCopy.gpuFrequencyReading(vm.cpuEnergy?.gpuFrequency ?? .missing),
-                symbol: "speedometer",
-                samples: vm.gpuPage.frequencySparkline.samples,
-                draws: vm.gpuPage.showsFrequencySparkline,
-                domain: vm.gpuPage.frequencySparklineDomain,
-                formatY: { EnergyModelCopy.gpuFrequencyReading($0) }
-            )
-        }
-        .frame(height: 142)
-    }
-
     private var utilizationCard: some View {
         PulseCard {
             VStack(alignment: .leading, spacing: 6) {
@@ -113,6 +87,32 @@ extension GPUOverviewSection {
         }
         .frame(height: 4)
         .accessibilityHidden(true)
+    }
+
+    var readingCards: some View {
+        HStack(spacing: 12) {
+            utilizationCard
+            memoryCard
+            readingCard(
+                title: GPUPageCopy.power,
+                value: EnergyModelCopy.gpuPowerReading(vm.cpuEnergy?.gpuWatts),
+                symbol: "bolt.fill",
+                samples: vm.gpuPage.powerSparkline.samples,
+                draws: vm.gpuPage.showsPowerSparkline,
+                domain: vm.gpuPage.powerSparklineDomain,
+                formatY: { EnergyModelCopy.gpuPowerReading($0) }
+            )
+            readingCard(
+                title: GPUPageCopy.frequency,
+                value: EnergyModelCopy.gpuFrequencyReading(vm.cpuEnergy?.gpuFrequency ?? .missing),
+                symbol: "speedometer",
+                samples: vm.gpuPage.frequencySparkline.samples,
+                draws: vm.gpuPage.showsFrequencySparkline,
+                domain: vm.gpuPage.frequencySparklineDomain,
+                formatY: { EnergyModelCopy.gpuFrequencyReading($0) }
+            )
+        }
+        .frame(height: 142)
     }
 
     private func readingCard(
