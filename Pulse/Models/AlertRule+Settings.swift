@@ -27,6 +27,7 @@ enum AlertMetric: String, Codable, Equatable, Hashable, Sendable, CaseIterable {
     case memoryPressure
     case chipTemperature
     case diskFree
+    case gpuUtilization
 
     var title: String {
         switch self {
@@ -35,6 +36,7 @@ enum AlertMetric: String, Codable, Equatable, Hashable, Sendable, CaseIterable {
         case .memoryPressure: return "内存压力"
         case .chipTemperature: return "芯片温度"
         case .diskFree: return "磁盘剩余"
+        case .gpuUtilization: return "GPU 使用率"
         }
     }
 
@@ -43,13 +45,14 @@ enum AlertMetric: String, Codable, Equatable, Hashable, Sendable, CaseIterable {
         case .cpu: return .cpu
         case .memoryFootprint, .memoryPressure: return .memory
         case .chipTemperature, .diskFree: return .machine
+        case .gpuUtilization: return .gpu
         }
     }
 
     /// Shown next to the threshold field. Memory pressure has no number.
     var thresholdUnit: String {
         switch self {
-        case .cpu: return "%"
+        case .cpu, .gpuUtilization: return "%"
         case .memoryFootprint, .diskFree: return "GB"
         case .chipTemperature: return "°C"
         case .memoryPressure: return ""
@@ -65,7 +68,7 @@ enum AlertMetric: String, Codable, Equatable, Hashable, Sendable, CaseIterable {
         switch self {
         case .memoryFootprint, .diskFree:
             return number * 1_073_741_824
-        case .cpu, .chipTemperature, .memoryPressure:
+        case .cpu, .chipTemperature, .memoryPressure, .gpuUtilization:
             return number
         }
     }
@@ -76,7 +79,7 @@ enum AlertMetric: String, Codable, Equatable, Hashable, Sendable, CaseIterable {
             return AlertThresholdText.plain(stored / 1_073_741_824)
         case .memoryPressure:
             return ""
-        case .cpu, .chipTemperature:
+        case .cpu, .chipTemperature, .gpuUtilization:
             return AlertThresholdText.plain(stored)
         }
     }
@@ -142,23 +145,6 @@ struct CustomAlertRule: Equatable, Sendable, Codable, Identifiable {
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty, name == trimmed else { return false }
             return metric == .cpu || metric == .memoryFootprint
-        }
-    }
-
-    var notificationBody: String {
-        switch metric {
-        case .cpu:
-            return "\(object.phrase) CPU 已持续超过 \(AlertThresholdText.percent(threshold))"
-        case .memoryFootprint:
-            let bytes = UInt64(max(threshold, 0))
-            return "\(object.phrase)内存占用已持续超过 \(ByteFormat.memory(bytes))"
-        case .memoryPressure:
-            return "\(object.phrase)内存压力已持续偏高"
-        case .chipTemperature:
-            return "\(object.phrase)芯片温度已持续超过 \(AlertThresholdText.degrees(threshold))"
-        case .diskFree:
-            let bytes = UInt64(max(threshold, 0))
-            return "\(object.phrase)磁盘剩余已持续低于 \(ByteFormat.memory(bytes))"
         }
     }
 
@@ -265,6 +251,8 @@ struct CustomAlertRule: Equatable, Sendable, Codable, Identifiable {
                 ),
                 pid: nil
             )
+        case .gpuUtilization:
+            return gpuMeasurement(frame)
         }
     }
 
@@ -295,7 +283,7 @@ struct CustomAlertRule: Equatable, Sendable, Codable, Identifiable {
                 breached: AlertComparison.breached(metric: .memoryFootprint, threshold: threshold, value: best.value),
                 pid: best.pid
             )
-        case .memoryPressure, .chipTemperature, .diskFree:
+        case .memoryPressure, .chipTemperature, .diskFree, .gpuUtilization:
             return AlertMeasurement(breached: nil, pid: nil)
         }
     }
@@ -374,6 +362,8 @@ struct AlertFrame: Equatable, Sendable {
     var memoryPressure: PressureLevel? = nil
     var chipTemperatureCelsius: Double? = nil
     var diskFreeBytes: UInt64? = nil
+    /// Selected accelerator utilization. Nil is missing, not zero.
+    var gpuUtilizationPercent: Double? = nil
     var processes: [AlertProcessSample] = []
 }
 
@@ -392,7 +382,7 @@ enum AlertComparison {
             return value < threshold
         case .memoryPressure:
             return value > 0
-        case .cpu, .memoryFootprint, .chipTemperature:
+        case .cpu, .memoryFootprint, .chipTemperature, .gpuUtilization:
             return value > threshold
         }
     }

@@ -87,6 +87,8 @@ struct DashboardCore {
     private(set) var networkHistory = SystemNetworkHistory()
     private(set) var diskHistory = SystemDiskHistory()
     var gpuPage = GPUPageState.initial
+    /// Selected-node utilization for alerts. Nil when this tick did not read GPU. Not zero, and not the page's previous percent.
+    private(set) var gpuAlertUtilizationPercent: Double?
     /// Top GPU-share rows. Nil until a GPU-page read. Not the machine-wide curve.
     private(set) var gpuShare: GPUSharePresentation?
     /// Last on-page AGX sample. Off-page frames do not move it.
@@ -342,6 +344,7 @@ struct DashboardCore {
         } else if nodes != nil {
             frame = .succeeded
         } else {
+            gpuAlertUtilizationPercent = nil
             return
         }
         gpuPage = GPUPageProjection.apply(
@@ -351,6 +354,7 @@ struct DashboardCore {
             current: gpuPage,
             transition: .stayed
         )
+        gpuAlertUtilizationPercent = failed ? nil : AlertGPUReading.percent(from: nodes)
     }
 
     /// Host utilization above is every page. This rank runs only while the GPU page is visible.

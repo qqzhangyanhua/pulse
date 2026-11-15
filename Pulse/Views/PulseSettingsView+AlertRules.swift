@@ -153,6 +153,12 @@ struct AlertRuleEditor: View {
         }
         .padding(20)
         .frame(width: 420)
+        .onChange(of: model.metric) { _, metric in
+            model.thresholdText = AlertMetricForm.thresholdText(
+                afterChoosing: metric,
+                current: model.thresholdText
+            )
+        }
         .onChange(of: model.objectIsApp) { _, isApp in
             guard isApp, model.metric != .cpu, model.metric != .memoryFootprint else { return }
             model.metric = .cpu
