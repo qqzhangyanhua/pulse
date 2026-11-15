@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Full GPU page. Spec labels, four reading cards, one utilization curve, and the GPU-share card.
+/// Full GPU page. Spec labels, four reading cards, one utilization curve, the GPU-share card, and the frequency-distribution card.
 struct GPUOverviewSection: View {
     /// Internal so the readings, chart, and share extensions share one environment object.
     @EnvironmentObject var vm: MemoryDashboardVM
@@ -71,6 +71,7 @@ struct GPUOverviewSection: View {
             .accessibilityLabel(accessibilityLabel)
             chartAndShare
             recoveryCard
+            frequencyDistributionCard
         }
     }
 

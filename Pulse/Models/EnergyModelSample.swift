@@ -18,12 +18,34 @@ enum GPUFrequency: Equatable {
     case hertz(Double)
 }
 
+/// One frequency-distribution bar. `fraction` is residency / total residency.
+struct GPUFrequencyDistributionBar: Equatable, Identifiable {
+    var id: Int
+    var label: String
+    var percentText: String
+    var fraction: Double
+}
+
+/// Bars for the latest GPU-page interval. `.missing` is 「—」, not an empty list and not 0%.
+enum GPUFrequencyDistribution: Equatable {
+    case missing
+    case bars([GPUFrequencyDistributionBar])
+}
+
+enum GPUFrequencyDistributionCopy {
+    static let title = "频率分布"
+    static let off = "关闭"
+    static let missing = "—"
+}
+
 struct EnergyModelReading: Equatable {
     var cpuWatts: Double? = nil
     var performanceHertz: Double? = nil
     var efficiencyHertz: Double? = nil
     var gpuWatts: Double? = nil
     var gpuFrequency: GPUFrequency = .missing
+    /// Same performance-state delta as `gpuFrequency`. Not a second sample.
+    var gpuFrequencyDistribution: GPUFrequencyDistribution = .missing
     var aneWatts: Double? = nil
     var dramWatts: Double? = nil
 }
@@ -127,6 +149,31 @@ enum EnergyModelDecoder {
         return .missing
     }
 
+    /// One bar per positive residency in `GPU Performance States`.
+    /// Share is that residency over the total, one decimal. Zero residency is omitted.
+    /// OFF is 「关闭」. A gear the table maps is MHz; otherwise the raw name.
+    static func gpuFrequencyDistribution(
+        states: [GPUFrequencyState],
+        table: [VoltageState9]?
+    ) -> GPUFrequencyDistribution {
+        let visible = states.filter { state in
+            state.subgroup == "GPU Performance States" && state.residency > 0
+        }
+        guard !visible.isEmpty else { return .missing }
+        let total = visible.reduce(0.0) { $0 + Double($1.residency) }
+        guard total > 0, total.isFinite else { return .missing }
+        let bars = visible.enumerated().map { index, state in
+            let residency = Double(state.residency)
+            return GPUFrequencyDistributionBar(
+                id: index,
+                label: distributionLabel(state.name, table: table),
+                percentText: CPUPercentText.string(residency / total * 100),
+                fraction: residency / total
+            )
+        }
+        return .bars(bars)
+    }
+
     /// The state that spent the most time. Only that name is parsed.
     /// A higher frequency with less residency is not the current frequency.
     static func dominantHertz(_ states: [(name: String, residency: Int64)]) -> Double? {
@@ -169,6 +216,26 @@ enum EnergyModelDecoder {
             return nil
         }
         return Double(table[index].hertz)
+    }
+
+    private static func distributionLabel(_ name: String, table: [VoltageState9]?) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed == "OFF" { return GPUFrequencyDistributionCopy.off }
+        if let table, let hertz = hertz(forGear: trimmed, table: table) {
+            return megahertzLabel(hertz)
+        }
+        return trimmed
+    }
+
+    /// Whole megahertz when the table entry is an integer MHz. Otherwise one decimal.
+    private static func megahertzLabel(_ hertz: Double) -> String {
+        let mhz = hertz / 1_000_000
+        guard mhz.isFinite, mhz >= 0 else { return GPUFrequencyDistributionCopy.missing }
+        let whole = mhz.rounded()
+        if abs(hertz - whole * 1_000_000) < 1 {
+            return "\(Int(whole)) MHz"
+        }
+        return String(format: "%.1f MHz", locale: CPUPercentText.posix, mhz)
     }
 
     static func frequencyHertz(_ value: Double) -> Double? {

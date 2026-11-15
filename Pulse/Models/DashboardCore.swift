@@ -91,6 +91,8 @@ struct DashboardCore {
     private(set) var gpuAlertUtilizationPercent: Double?
     /// Top GPU-share rows. Nil until a GPU-page read. Not the machine-wide curve.
     private(set) var gpuShare: GPUSharePresentation?
+    /// Frequency-distribution card. Only a GPU-page sample writes it. Not saved.
+    private(set) var gpuFrequencyDistribution: GPUFrequencyDistribution = .missing
     /// Last on-page AGX sample. Off-page frames do not move it.
     private var gpuShareBaseline: GPUShareBaseline?
     var chipTemperature = ChipTemperaturePageState.initial
@@ -267,6 +269,7 @@ struct DashboardCore {
         systemCpuPercent = frame.systemCpuPercent
         busiestCorePercent = frame.busiestCorePercent
         cpuEnergy = frame.cpuEnergy
+        recordGPUFrequencyDistribution(energy: frame.cpuEnergy, page: page)
         hostNetworkRates = frame.hostNetworkRates
         hostDiskRates = frame.hostDiskRates
         hostWiFi = frame.hostWiFi
@@ -357,6 +360,12 @@ struct DashboardCore {
             transition: .stayed
         )
         gpuAlertUtilizationPercent = failed ? nil : AlertGPUReading.percent(from: nodes)
+    }
+
+    /// Off-page frames keep the last card. On the GPU page, no sample delta is 「—」.
+    private mutating func recordGPUFrequencyDistribution(energy: EnergyModelReading?, page: DashboardPage) {
+        guard page == .gpu else { return }
+        gpuFrequencyDistribution = energy?.gpuFrequencyDistribution ?? .missing
     }
 
     /// Host utilization above is every page. This rank runs only while the GPU page is visible.

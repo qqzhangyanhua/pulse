@@ -96,7 +96,10 @@ enum HostEnergyModelReader {
         }
         if gpu {
             reading.gpuWatts = EnergyModelDecoder.gpuWatts(channels: channels, elapsed: elapsed)
-            reading.gpuFrequency = gpuFrequency(symbols: symbols)
+            let states = gpuPerformanceStates(symbols: symbols)
+            let table = voltageStates9Bytes().flatMap(VoltageStates9.parse)
+            reading.gpuFrequency = EnergyModelDecoder.gpuFrequency(states: states, table: table)
+            reading.gpuFrequencyDistribution = EnergyModelDecoder.gpuFrequencyDistribution(states: states, table: table)
         }
         if rails {
             reading.aneWatts = EnergyModelDecoder.aneWatts(channels: channels, elapsed: elapsed)
@@ -109,6 +112,7 @@ enum HostEnergyModelReader {
            reading.efficiencyHertz == nil,
            reading.gpuWatts == nil,
            reading.gpuFrequency == .missing,
+           reading.gpuFrequencyDistribution == .missing,
            reading.aneWatts == nil,
            reading.dramWatts == nil {
             return nil
@@ -116,8 +120,9 @@ enum HostEnergyModelReader {
         return reading
     }
 
-    /// One GPU Stats delta, only the performance-states subgroup, plus the pmgr table.
-    private static func gpuFrequency(symbols: Symbols) -> GPUFrequency {
+    /// One GPU Stats delta, only the performance-states subgroup.
+    /// Frequency and the distribution card share this array.
+    private static func gpuPerformanceStates(symbols: Symbols) -> [GPUFrequencyState] {
         var states: [GPUFrequencyState] = []
         withDeltaChannels(in: gpuStatsGroup, slot: &gpuStats, symbols: symbols) { channels in
             for channel in channels {
@@ -135,8 +140,7 @@ enum HostEnergyModelReader {
                 }
             }
         }
-        let table = voltageStates9Bytes().flatMap(VoltageStates9.parse)
-        return EnergyModelDecoder.gpuFrequency(states: states, table: table)
+        return states
     }
 
     /// One CPU Stats delta. Each cluster's frequency is the state that spent the
