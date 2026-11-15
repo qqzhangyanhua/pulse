@@ -83,7 +83,7 @@ enum HostGPUReader {
 
     private static func statistic(name: String, value: Any) -> GPUStatistic {
         guard let number = value as? NSNumber, !isBoolean(number) else { return .unreadable }
-        if name == GPUPageProjection.inUseSystemMemoryKey {
+        if name == GPUPageProjection.inUseSystemMemoryKey || name == GPUPageProjection.allocSystemMemoryKey {
             return memoryBytes(number)
         }
         return .number(number.doubleValue)

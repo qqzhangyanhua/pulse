@@ -88,6 +88,7 @@ actor MemorySampler {
         let hostNetworkRates = consumeSystemNetwork(at: capturedAt)
         let hostDiskRates = consumeSystemDisk(at: capturedAt)
         let gpuNodes = HostGPUReader.read()
+        let gpuRecommendedMaxWorkingSetBytes = HostGPUMemoryLimitReader.recommendedMaxWorkingSetBytes()
         let gpuShareClients = readsGPUShare ? HostGPUShareReader.read() : nil
         let chipTemperatureSensors = readChipTemperature ? HostChipTemperatureReader.read() : nil
         let cpuEnergy = (readEnergyModel || readGPUEnergy || readMachineRails)
@@ -119,6 +120,7 @@ actor MemorySampler {
                         processListFailed: true
                     ),
                     gpuNodes: gpuNodes,
+                    gpuRecommendedMaxWorkingSetBytes: gpuRecommendedMaxWorkingSetBytes,
                     gpuShareClients: gpuShareClients,
                     hostWiFi: hostWiFi,
                     chipTemperatureSensors: chipTemperatureSensors,
@@ -272,6 +274,7 @@ actor MemorySampler {
                 exitedEnergyProcesses: energyMinuteLedger.exitedProcesses,
                 energyLiveGenerations: energyMinuteLedger.liveGenerations,
                 gpuNodes: gpuNodes,
+                gpuRecommendedMaxWorkingSetBytes: gpuRecommendedMaxWorkingSetBytes,
                 gpuShareClients: gpuShareClients,
                 hostWiFi: hostWiFi,
                 chipTemperatureSensors: chipTemperatureSensors,

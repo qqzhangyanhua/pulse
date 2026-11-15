@@ -196,7 +196,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(card.contains("vm.gpuPage.memoryText"))
         XCTAssertEqual(occurrenceCount(of: "vm.selectPage(.gpu)", in: card), 1)
         XCTAssertTrue(card.contains("Button"))
-        for forbidden in ["GPU 功耗", "GPU 频率", "coreCountText", "核 GPU", "渲染器", "分块器", "GPU 恢复次数", "rendererText", "tilerText", "recoveryText", "显存", "容量", "HistoryAnnotatedChart"] {
+        for forbidden in ["GPU 功耗", "GPU 频率", "coreCountText", "核 GPU", "渲染器", "分块器", "GPU 恢复次数", "rendererText", "tilerText", "recoveryText", "已分配", "建议上限", "allocatedText", "memoryBarFraction", "显存", "容量", "HistoryAnnotatedChart"] {
             XCTAssertFalse(card.contains(forbidden), forbidden)
         }
 
@@ -216,6 +216,10 @@ final class GPUPageWiringSourceTests: XCTestCase {
             "GPU 恢复次数",
             "Renderer Utilization",
             "Tiler Utilization",
+            "已分配",
+            "建议上限",
+            "Alloc system memory",
+            "recommendedMaxWorkingSetSize",
         ]
         let menuBar = repoRoot().appendingPathComponent("Pulse/MenuBar", isDirectory: true)
         let entries = try FileManager.default.contentsOfDirectory(at: menuBar, includingPropertiesForKeys: nil)
@@ -289,6 +293,72 @@ final class GPUPageWiringSourceTests: XCTestCase {
         let projection = try repoText("Pulse/Models/GPUPage.swift")
         XCTAssertTrue(projection.contains("\"Renderer Utilization %\""))
         XCTAssertTrue(projection.contains("\"Tiler Utilization %\""))
+    }
+
+    func testRecommendedWorkingSetReadsOnlyTheStaticProperty() throws {
+        let reader = try repoText("Pulse/Sampling/HostGPUMemoryLimitReader.swift")
+        XCTAssertEqual(occurrenceCount(of: "recommendedMaxWorkingSetSize", in: reader), 1)
+        XCTAssertTrue(reader.contains("MTLCreateSystemDefaultDevice"))
+        for api in [
+            "MTLCounter",
+            "MTLCounterSampleBuffer",
+            "MTLCounterSampleBufferDescriptor",
+            "counterSet",
+            "sampleBuffer",
+            "IOServiceOpen",
+            "powermetrics",
+            "总量",
+        ] {
+            XCTAssertFalse(reader.contains(api), api)
+        }
+
+        let package = try repoText("Package.swift")
+        let parts = package.components(separatedBy: "sources:")
+        XCTAssertEqual(parts.count, 2)
+        XCTAssertTrue(parts[0].contains("\"Sampling/HostGPUMemoryLimitReader.swift\""))
+        XCTAssertFalse(parts[1].contains("HostGPUMemoryLimitReader"))
+
+        let project = try repoText("Pulse.xcodeproj/project.pbxproj")
+        XCTAssertEqual(occurrenceCount(of: "HostGPUMemoryLimitReader.swift in Sources", in: project), 2)
+
+        let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
+        XCTAssertEqual(occurrenceCount(of: "HostGPUMemoryLimitReader.recommendedMaxWorkingSetBytes()", in: sampler), 1)
+
+        let gpuReader = try repoText("Pulse/Sampling/HostGPUReader.swift")
+        XCTAssertTrue(gpuReader.contains("GPUPageProjection.allocSystemMemoryKey"))
+        XCTAssertFalse(gpuReader.contains("\"Alloc system memory\""))
+        XCTAssertFalse(gpuReader.contains("recommendedMaxWorkingSetSize"))
+        XCTAssertFalse(gpuReader.contains("MTLCounter"))
+
+        let projection = try repoText("Pulse/Models/GPUPage.swift")
+        XCTAssertTrue(projection.contains("\"Alloc system memory\""))
+        XCTAssertFalse(projection.contains("import Metal"))
+        XCTAssertFalse(projection.contains("MTLCounter"))
+        XCTAssertFalse(projection.contains("总量"))
+
+        let readings = try repoText("Pulse/Views/GPUOverviewSection+Readings.swift")
+        XCTAssertTrue(readings.contains("GPUPageCopy.allocated"))
+        XCTAssertTrue(readings.contains("vm.gpuPage.allocatedText"))
+        XCTAssertTrue(readings.contains("vm.gpuPage.memoryBarFraction"))
+        XCTAssertTrue(readings.contains("GPUPageCopy.recommendedLimitLine"))
+        XCTAssertFalse(readings.contains("总量"))
+        XCTAssertFalse(readings.contains("MTLCounter"))
+        XCTAssertFalse(readings.contains("容量"))
+
+        for relative in [
+            "Pulse/Models/SnapshotExport.swift",
+            "Pulse/Models/SnapshotExport+Redaction.swift",
+            "Pulse/Models/DashboardCore+Snapshot.swift",
+            "Pulse/Models/DashboardCore+History.swift",
+            "Pulse/Sampling/HistoryStore.swift",
+            "Pulse/Models/HistoryPolicy.swift",
+        ] {
+            let text = try repoText(relative)
+            XCTAssertFalse(text.contains("已分配"), relative)
+            XCTAssertFalse(text.contains("建议上限"), relative)
+            XCTAssertFalse(text.contains("recommendedMaxWorkingSet"), relative)
+            XCTAssertFalse(text.contains("allocatedMemory"), relative)
+        }
     }
 
     func testIOReportReadersTryTheSystemDylibBeforeTheFramework() throws {

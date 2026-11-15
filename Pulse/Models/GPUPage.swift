@@ -54,6 +54,10 @@ enum GPUPageChrome: Equatable, Sendable {
 struct GPUPageState: Equatable, Sendable {
     var utilizationPercent: Double?
     var inUseMemoryBytes: UInt64?
+    /// Selected node's allocated system memory. Nil when that value is not a byte count.
+    var allocatedMemoryBytes: UInt64?
+    /// Recommended working set for this successful frame. Nil when the reader returned none.
+    var recommendedMaxWorkingSetBytes: UInt64?
     var coreCount: Int?
     /// Selected node's renderer percent. Not part of utilization or the curve.
     var rendererPercent: Double?
@@ -87,12 +91,31 @@ struct GPUPageState: Equatable, Sendable {
         return ByteFormat.memory(inUseMemoryBytes)
     }
 
+    var allocatedText: String {
+        guard let allocatedMemoryBytes else { return CPUPercentText.missing }
+        return ByteFormat.memory(allocatedMemoryBytes)
+    }
+
+    var recommendedLimitText: String {
+        guard let recommendedMaxWorkingSetBytes else { return CPUPercentText.missing }
+        return ByteFormat.memory(recommendedMaxWorkingSetBytes)
+    }
+
+    /// Nil when either byte count is missing. A ratio above 1 draws full; the texts stay real.
+    var memoryBarFraction: Double? {
+        guard let used = inUseMemoryBytes, let limit = recommendedMaxWorkingSetBytes else { return nil }
+        if limit == 0 { return used == 0 ? 0 : 1 }
+        return min(1, Double(used) / Double(limit))
+    }
+
     /// Fewer than two points is not a line.
     var showsCurve: Bool { history.samples.count >= 2 }
 
     static let initial = GPUPageState(
         utilizationPercent: nil,
         inUseMemoryBytes: nil,
+        allocatedMemoryBytes: nil,
+        recommendedMaxWorkingSetBytes: nil,
         coreCount: nil,
         rendererPercent: nil,
         tilerPercent: nil,
@@ -110,6 +133,8 @@ enum GPUPageCopy {
     static let recovery = "GPU 恢复次数"
     static let recoveryCaption = "GPU 卡住后，驱动重置它的次数"
     static let memory = "GPU 占用内存"
+    static let allocated = "已分配"
+    static let recommendedLimit = "建议上限"
     static let power = "GPU 功耗"
     static let frequency = "GPU 频率"
     static let sampling = "正在采样…"
@@ -119,6 +144,10 @@ enum GPUPageCopy {
 
     static func coreCountLine(_ count: Int) -> String {
         "\(count) 核 GPU"
+    }
+
+    static func recommendedLimitLine(_ value: String) -> String {
+        "\(recommendedLimit) \(value)"
     }
 }
 
@@ -150,9 +179,11 @@ enum GPUPageProjection {
     static let tilerUtilizationKey = "Tiler Utilization %"
     static let recoveryCountKey = "recoveryCount"
     static let inUseSystemMemoryKey = "In use system memory"
+    static let allocSystemMemoryKey = "Alloc system memory"
 
     static func apply(
         nodes: [GPUAcceleratorNode] = [],
+        recommendedMaxWorkingSetBytes: UInt64? = nil,
         frame: GPUFrameOutcome,
         sampledAt: Date?,
         current: GPUPageState,
@@ -163,13 +194,20 @@ enum GPUPageProjection {
         case .justLeft:
             return current
         case .justEntered, .stayed:
-            return applyFrame(frame, nodes: nodes, sampledAt: sampledAt, to: current)
+            return applyFrame(
+                frame,
+                nodes: nodes,
+                recommendedMaxWorkingSetBytes: recommendedMaxWorkingSetBytes,
+                sampledAt: sampledAt,
+                to: current
+            )
         }
     }
 
     private static func applyFrame(
         _ frame: GPUFrameOutcome,
         nodes: [GPUAcceleratorNode],
+        recommendedMaxWorkingSetBytes: UInt64?,
         sampledAt: Date?,
         to current: GPUPageState
     ) -> GPUPageState {
@@ -192,6 +230,8 @@ enum GPUPageProjection {
             var next = current
             next.utilizationPercent = reading.utilization
             next.inUseMemoryBytes = reading.memory
+            next.allocatedMemoryBytes = reading.allocated
+            next.recommendedMaxWorkingSetBytes = recommendedMaxWorkingSetBytes
             next.rendererPercent = reading.renderer
             next.tilerPercent = reading.tiler
             next.recoveryCount = reading.recovery
@@ -206,6 +246,7 @@ enum GPUPageProjection {
     private struct ChosenReading {
         var utilization: Double?
         var memory: UInt64?
+        var allocated: UInt64?
         var renderer: Double?
         var tiler: Double?
         var recovery: Int?
@@ -214,14 +255,22 @@ enum GPUPageProjection {
     /// Nodes that have in-use memory win, even when the value is not a byte count.
     /// Otherwise the first in-range device percent wins. A present device key
     /// that is out of range is not eligible and does not use the device channel.
-    /// Renderer, tiler, and recovery come from that same node. Nothing is summed.
+    /// Renderer, tiler, recovery, and allocated bytes come from that same node.
     private static func reading(from nodes: [GPUAcceleratorNode]) -> ChosenReading {
         guard let node = chosenNode(in: nodes) else {
-            return ChosenReading(utilization: nil, memory: nil, renderer: nil, tiler: nil, recovery: nil)
+            return ChosenReading(
+                utilization: nil,
+                memory: nil,
+                allocated: nil,
+                renderer: nil,
+                tiler: nil,
+                recovery: nil
+            )
         }
         return ChosenReading(
             utilization: utilization(on: node),
             memory: memoryBytes(on: node),
+            allocated: allocatedBytes(on: node),
             renderer: percent(node.statistics[rendererUtilizationKey]),
             tiler: percent(node.statistics[tilerUtilizationKey]),
             recovery: recoveryCount(on: node)
@@ -281,6 +330,12 @@ enum GPUPageProjection {
 
     private static func memoryBytes(on node: GPUAcceleratorNode) -> UInt64? {
         guard case .bytes(let bytes) = node.statistics[inUseSystemMemoryKey] else { return nil }
+        return bytes
+    }
+
+    /// Another node's allocated bytes are not borrowed when this one is not a byte count.
+    private static func allocatedBytes(on node: GPUAcceleratorNode) -> UInt64? {
+        guard case .bytes(let bytes) = node.statistics[allocSystemMemoryKey] else { return nil }
         return bytes
     }
 }
