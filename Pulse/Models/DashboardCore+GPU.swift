@@ -38,4 +38,18 @@ extension DashboardCore {
             transition: transition
         )
     }
+
+    /// GPU-share name. Only a pid still in the live process rows can open the memory page.
+    func gpuShareNameOpensMemoryPage(_ pid: Int32) -> Bool {
+        ProcessSelection.acceptedPid(pid, in: rows) != nil
+    }
+
+    /// Name tap. Present pid: `focusMemoryPage`, then select-if-present. Filters stay.
+    /// A missing pid changes nothing.
+    mutating func openGPUShareProcess(_ pid: Int32) -> [DashboardEffect] {
+        guard let accepted = ProcessSelection.acceptedPid(pid, in: rows) else { return [] }
+        var effects = focusMemoryPage()
+        effects += select(pid: accepted)
+        return effects
+    }
 }
