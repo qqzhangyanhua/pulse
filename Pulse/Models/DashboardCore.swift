@@ -93,6 +93,10 @@ struct DashboardCore {
     private(set) var gpuShare: GPUSharePresentation?
     /// Last on-page AGX sample. Off-page frames do not move it.
     private var gpuShareBaseline: GPUShareBaseline?
+    /// Hour ledger fed on every page. Not the share baseline, and not on disk.
+    var gpuTimeLedger = GPUTimeMinuteLedger()
+    /// Top GPU-time rows. Nil until a frame includes an AGX client read.
+    var gpuTime: GPUTimePresentation?
     var chipTemperature = ChipTemperaturePageState.initial
     /// Nil until the machine page's reader returns. Not cleared on leave.
     var machineFacts: MachineFacts?
@@ -285,6 +289,12 @@ struct DashboardCore {
         recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
         noteHistory(frame)
         recordGPUShare(clients: frame.gpuShareClients, rows: frame.rows, at: frame.snapshot.capturedAt, page: page)
+        recordGPUTime(
+            clients: frame.gpuShareClients,
+            rows: frame.rows,
+            listFailed: frame.processListFailed,
+            at: frame.snapshot.capturedAt
+        )
         recordChip(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt, page: page)
         memoryPage = MemoryPageProjection.apply(
             counters: frame.hostPageCounters,

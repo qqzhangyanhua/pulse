@@ -307,7 +307,6 @@ final class MemoryDashboardVM: ObservableObject {
     }
 
     private func tick(_ flight: SamplingFlight) async {
-        await sampler.setReadsGPUShare(readsGPUShare)
         let result = await sampler.sample(readChipTemperature: selectedPage == .machine, readEnergyModel: selectedPage == .cpu, readGPUEnergy: selectedPage == .gpu, readMachineRails: selectedPage == .energy)
         if Task.isCancelled {
             samplingGate.invalidate()
