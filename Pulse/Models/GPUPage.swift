@@ -55,11 +55,26 @@ struct GPUPageState: Equatable, Sendable {
     var utilizationPercent: Double?
     var inUseMemoryBytes: UInt64?
     var coreCount: Int?
+    /// Selected node's renderer percent. Not part of utilization or the curve.
+    var rendererPercent: Double?
+    /// Selected node's tiler percent. Not part of utilization or the curve.
+    var tilerPercent: Double?
+    /// Selected node's non-negative recovery count. Nil when it is not an integer.
+    var recoveryCount: Int?
     var history: SystemCPUHistory
     var visitSucceeded: Bool
     var chrome: GPUPageChrome
 
     var utilizationText: String { CPUPercentText.string(utilizationPercent) }
+
+    var rendererText: String { CPUPercentText.string(rendererPercent) }
+
+    var tilerText: String { CPUPercentText.string(tilerPercent) }
+
+    var recoveryText: String {
+        guard let recoveryCount else { return CPUPercentText.missing }
+        return "\(recoveryCount) 次"
+    }
 
     /// Hidden when the registry key is missing. Not a dash.
     var coreCountText: String? {
@@ -79,6 +94,9 @@ struct GPUPageState: Equatable, Sendable {
         utilizationPercent: nil,
         inUseMemoryBytes: nil,
         coreCount: nil,
+        rendererPercent: nil,
+        tilerPercent: nil,
+        recoveryCount: nil,
         history: SystemCPUHistory(),
         visitSucceeded: false,
         chrome: .skeleton
@@ -87,6 +105,10 @@ struct GPUPageState: Equatable, Sendable {
 
 enum GPUPageCopy {
     static let utilization = "GPU 使用率"
+    static let renderer = "渲染器"
+    static let tiler = "分块器"
+    static let recovery = "GPU 恢复次数"
+    static let recoveryCaption = "GPU 卡住后，驱动重置它的次数"
     static let memory = "GPU 占用内存"
     static let power = "GPU 功耗"
     static let frequency = "GPU 频率"
@@ -124,6 +146,9 @@ enum GPUCoreCount {
 
 enum GPUPageProjection {
     static let deviceUtilizationKey = "Device Utilization %"
+    static let rendererUtilizationKey = "Renderer Utilization %"
+    static let tilerUtilizationKey = "Tiler Utilization %"
+    static let recoveryCountKey = "recoveryCount"
     static let inUseSystemMemoryKey = "In use system memory"
 
     static func apply(
@@ -167,6 +192,9 @@ enum GPUPageProjection {
             var next = current
             next.utilizationPercent = reading.utilization
             next.inUseMemoryBytes = reading.memory
+            next.rendererPercent = reading.renderer
+            next.tilerPercent = reading.tiler
+            next.recoveryCount = reading.recovery
             next.coreCount = GPUCoreCount.first(in: nodes)
             next.visitSucceeded = true
             next.chrome = .readings
@@ -175,13 +203,29 @@ enum GPUPageProjection {
         }
     }
 
+    private struct ChosenReading {
+        var utilization: Double?
+        var memory: UInt64?
+        var renderer: Double?
+        var tiler: Double?
+        var recovery: Int?
+    }
+
     /// Nodes that have in-use memory win, even when the value is not a byte count.
     /// Otherwise the first in-range device percent wins. A present device key
     /// that is out of range is not eligible and does not use the device channel.
-    /// Nothing is summed.
-    private static func reading(from nodes: [GPUAcceleratorNode]) -> (utilization: Double?, memory: UInt64?) {
-        guard let node = chosenNode(in: nodes) else { return (nil, nil) }
-        return (utilization(on: node), memoryBytes(on: node))
+    /// Renderer, tiler, and recovery come from that same node. Nothing is summed.
+    private static func reading(from nodes: [GPUAcceleratorNode]) -> ChosenReading {
+        guard let node = chosenNode(in: nodes) else {
+            return ChosenReading(utilization: nil, memory: nil, renderer: nil, tiler: nil, recovery: nil)
+        }
+        return ChosenReading(
+            utilization: utilization(on: node),
+            memory: memoryBytes(on: node),
+            renderer: percent(node.statistics[rendererUtilizationKey]),
+            tiler: percent(node.statistics[tilerUtilizationKey]),
+            recovery: recoveryCount(on: node)
+        )
     }
 
     private static func chosenNode(in nodes: [GPUAcceleratorNode]) -> GPUAcceleratorNode? {
@@ -210,15 +254,24 @@ enum GPUPageProjection {
         return percent(node.ioReportDevicePercent)
     }
 
-    private static func percent(_ statistic: GPUStatistic) -> Double? {
+    private static func percent(_ statistic: GPUStatistic?) -> Double? {
         switch statistic {
         case .number(let number):
             return percent(number)
         case .bytes(let bytes):
             return percent(Double(bytes))
-        case .unreadable:
+        case .unreadable, nil:
             return nil
         }
+    }
+
+    /// A non-negative whole number. A fraction, a sign, or a non-finite value stays missing.
+    private static func recoveryCount(on node: GPUAcceleratorNode) -> Int? {
+        guard case .number(let number) = node.statistics[recoveryCountKey] else { return nil }
+        guard number.isFinite, number >= 0, number < Double(Int.max), number == number.rounded() else {
+            return nil
+        }
+        return Int(number)
     }
 
     private static func percent(_ value: Double?) -> Double? {
