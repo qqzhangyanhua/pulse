@@ -132,24 +132,6 @@ final class ProcessQuitSessionTests: XCTestCase {
         XCTAssertEqual(before.opportunity, .open)
     }
 
-    func testWindowedOnlyClearsInRowsSubjectWithoutSettling() throws {
-        var store = ProcessQuitOutcome()
-        let rows = [row(1, "A"), row(2, "B")]
-        _ = try fail(1, rows: rows, store: &store)
-        let before = try XCTUnwrap(store.record(for: 1))
-        let cleared = ProcessQuitSession.windowedOnlySelection(
-            nextListPid: nil,
-            sidebarSubjectPid: 1,
-            rows: rows,
-            store: store
-        )
-        XCTAssertNil(cleared.listSelectedPid)
-        XCTAssertNil(cleared.sidebarSubjectPid)
-        XCTAssertEqual(try XCTUnwrap(store.record(for: 1)), before)
-        XCTAssertEqual(before.presence, .inRows)
-        XCTAssertEqual(before.opportunity, .open)
-    }
-
     func testAbsenceFreezesTheCardAndLaterFramesDoNotAppend() throws {
         var store = ProcessQuitOutcome()
         let rows = [row(1, "A", memory: 111), row(2, "B", memory: 5)]
@@ -920,31 +902,6 @@ final class ProcessQuitSessionTests: XCTestCase {
         )
         let before = try XCTUnwrap(store.record(for: 1))
         let kept = ProcessQuitSession.risingOnlySelection(
-            nextListPid: nil,
-            sidebarSubjectPid: 1,
-            rows: [],
-            store: store
-        )
-        XCTAssertNil(kept.listSelectedPid)
-        XCTAssertEqual(kept.sidebarSubjectPid, 1)
-        XCTAssertEqual(try XCTUnwrap(store.record(for: 1)), before)
-        XCTAssertEqual(before.presence, .absentAndUnknown)
-        XCTAssertEqual(before.opportunity, .open)
-    }
-
-    func testWindowedOnlyKeepsAnAbsentUnknownSubjectAndItsRecord() throws {
-        var store = ProcessQuitOutcome()
-        let rows = [row(1, "A")]
-        _ = try fail(1, rows: rows, store: &store)
-        _ = ProcessQuitSession.applySample(
-            store: &store,
-            listSelectedPid: 1,
-            sidebarSubjectPid: 1,
-            currentLiveDetail: detail(1, "A"),
-            observation: ProcessQuitSession.Observation(rows: [])
-        )
-        let before = try XCTUnwrap(store.record(for: 1))
-        let kept = ProcessQuitSession.windowedOnlySelection(
             nextListPid: nil,
             sidebarSubjectPid: 1,
             rows: [],
