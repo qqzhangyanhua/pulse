@@ -29,12 +29,29 @@ final class GPUPageWiringSourceTests: XCTestCase {
     }
 
     func testGPUOverviewUsesTheSharedThrottleCardAndOneUtilizationCurve() throws {
-        let overview = try repoText("Pulse/Views/GPUOverviewSection.swift")
+        let overview = try WiringSourceText.text(for: "GPUOverviewSection")
         XCTAssertTrue(overview.contains("ThermalAdviceCard()"))
+        XCTAssertTrue(overview.contains("ScrollView"))
         XCTAssertTrue(overview.contains("GPUPageCopy.utilization"))
         XCTAssertTrue(overview.contains("GPUPageCopy.memory"))
+        XCTAssertTrue(overview.contains("GPUPageCopy.power"))
+        XCTAssertTrue(overview.contains("GPUPageCopy.frequency"))
+        XCTAssertTrue(overview.contains("EnergyModelCopy.gpuPowerReading"))
+        XCTAssertTrue(overview.contains("EnergyModelCopy.gpuFrequencyReading"))
+        XCTAssertTrue(overview.contains("EnergyModelCopy.gpuPowerLine"))
+        XCTAssertTrue(overview.contains("EnergyModelCopy.gpuFrequencyLine"))
+        XCTAssertTrue(overview.contains("MachinePageCopy.chipValue"))
+        XCTAssertTrue(overview.contains("if let cores = vm.gpuPage.coreCountText"))
         XCTAssertTrue(overview.contains("vm.gpuPage.showsCurve"))
         XCTAssertTrue(overview.contains("vm.gpuPage.coreCountText"))
+        XCTAssertTrue(overview.contains("curveSummary("))
+        XCTAssertTrue(overview.contains("GPUCurveSummary.meanTitle"))
+        XCTAssertTrue(overview.contains("GPUCurveSummary.peakTitle"))
+        XCTAssertTrue(overview.contains("HistoryCurvePresentation.annotation"))
+        XCTAssertTrue(overview.contains("HistoryRangeControl("))
+        XCTAssertTrue(overview.contains("ViewThatFits"))
+        XCTAssertTrue(overview.contains("760"))
+        XCTAssertTrue(overview.contains(".frame(width: 340)"))
         XCTAssertEqual(occurrenceCount(of: "HistoryAnnotatedChart", in: overview), 1)
         XCTAssertFalse(overview.contains("ProcessTablePane"))
         XCTAssertFalse(overview.contains("ProcessDetailSidebar"))
@@ -44,6 +61,20 @@ final class GPUPageWiringSourceTests: XCTestCase {
         for forbidden in ["显存", "VRAM", "即将推出", "危险", "泄漏", "容量"] {
             XCTAssertFalse(overview.contains(forbidden), forbidden)
         }
+
+        let page = try repoText("Pulse/Views/GPUOverviewSection.swift")
+        var cursor = page.startIndex
+        for token in ["ThermalAdviceCard()", "specLabels", "readingCards", "HistoryRangeControl(", "chartAndShare"] {
+            guard let found = page.range(of: token, range: cursor..<page.endIndex) else {
+                return XCTFail(token)
+            }
+            cursor = found.upperBound
+        }
+
+        let share = try repoText("Pulse/Views/GPUShareCard.swift")
+        XCTAssertTrue(share.contains("row.barFraction"))
+        XCTAssertTrue(share.contains("terminateThermalAdvice"))
+        XCTAssertTrue(share.contains(".accessibilityHidden(true)"))
 
         let copy = try repoText("Pulse/Models/ProcessRowCopy.swift")
         XCTAssertTrue(copy.contains("case .machine, .gpu:"))
@@ -142,6 +173,9 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(parts[0].contains("\"Sampling/HostGPUReader.swift\""))
         XCTAssertTrue(parts[1].contains("\"Models/GPUPage.swift\""))
         XCTAssertFalse(parts[1].contains("HostGPUReader.swift"))
+        XCTAssertFalse(parts[1].contains("GPUOverviewSection+Readings.swift"))
+        XCTAssertFalse(parts[1].contains("GPUOverviewSection+Chart.swift"))
+        XCTAssertFalse(parts[1].contains("GPUOverviewSection+Share.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
         XCTAssertFalse(project.contains("IOReport.framework"))
@@ -149,6 +183,9 @@ final class GPUPageWiringSourceTests: XCTestCase {
             "GPUPage.swift in Sources",
             "HostGPUReader.swift in Sources",
             "GPUOverviewSection.swift in Sources",
+            "GPUOverviewSection+Readings.swift in Sources",
+            "GPUOverviewSection+Chart.swift in Sources",
+            "GPUOverviewSection+Share.swift in Sources",
             "MemoryDashboardVM+GPU.swift in Sources",
         ] {
             XCTAssertTrue(project.contains(name), name)

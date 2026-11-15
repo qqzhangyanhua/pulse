@@ -239,7 +239,7 @@ final class HistoryCurveWiringSourceTests: XCTestCase {
             let text = try String(contentsOf: file, encoding: .utf8)
             let charts = occurrenceCount(of: "HistoryAnnotatedChart", in: text)
             switch file.lastPathComponent {
-            case "CPUOverviewSection.swift", "GPUOverviewSection.swift":
+            case "CPUOverviewSection.swift", "GPUOverviewSection+Chart.swift":
                 XCTAssertEqual(charts, 1, file.lastPathComponent)
             case "NetworkOverviewSection.swift", "DiskOverviewSection.swift":
                 XCTAssertEqual(charts, 0, file.lastPathComponent)

@@ -40,29 +40,50 @@ struct GPUShareCard: View {
     }
 
     private func processRow(_ row: GPUShareRow) -> some View {
-        HStack(spacing: 8) {
-            ProcessIconView(
-                pid: row.pid,
-                bundleIdentifier: row.bundleIdentifier,
-                executablePath: row.executablePath,
-                size: 16
-            )
-            .accessibilityHidden(true)
-            Text(row.name)
-                .font(.callout)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text(row.shareText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-                .accessibilityLabel("\(GPUShareCopy.title) \(row.shareText)")
-            Button("退出") {
-                let pid = row.pid
-                Task { await vm.terminateThermalAdvice(pid: pid) }
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                ProcessIconView(
+                    pid: row.pid,
+                    bundleIdentifier: row.bundleIdentifier,
+                    executablePath: row.executablePath,
+                    size: 16
+                )
+                .accessibilityHidden(true)
+                Text(row.name)
+                    .font(.callout)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(row.shareText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .accessibilityLabel("\(GPUShareCopy.title) \(row.shareText)")
+                Button("退出") {
+                    let pid = row.pid
+                    Task { await vm.terminateThermalAdvice(pid: pid) }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            if let fraction = row.barFraction {
+                shareBar(fraction)
+            }
         }
+    }
+
+    /// Empty when the fraction is 0. Hidden from VoiceOver so the percent text keeps the real value.
+    private func shareBar(_ fraction: Double) -> some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.white.opacity(0.08))
+                if fraction > 0 {
+                    Capsule()
+                        .fill(PulsePalette.accent)
+                        .frame(width: proxy.size.width * CGFloat(fraction))
+                }
+            }
+        }
+        .frame(height: 4)
+        .accessibilityHidden(true)
     }
 }
