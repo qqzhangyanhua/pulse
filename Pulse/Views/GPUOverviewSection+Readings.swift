@@ -14,7 +14,7 @@ extension GPUOverviewSection {
     var readingCards: some View {
         HStack(spacing: 12) {
             utilizationCard
-            readingCard(title: GPUPageCopy.memory, value: vm.gpuPage.memoryText, symbol: "memorychip")
+            memoryCard
             readingCard(
                 title: GPUPageCopy.power,
                 value: EnergyModelCopy.gpuPowerReading(vm.cpuEnergy?.gpuWatts),
@@ -61,6 +61,50 @@ extension GPUOverviewSection {
         .font(.system(size: 10))
         .lineLimit(1)
         .minimumScaleFactor(0.6)
+    }
+
+    private var memoryCard: some View {
+        PulseCard {
+            VStack(alignment: .leading, spacing: 6) {
+                metricLabel(GPUPageCopy.memory, symbol: "memorychip")
+                Spacer(minLength: 0)
+                Text(vm.gpuPage.memoryText)
+                    .font(.system(size: 25, weight: .semibold))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                HStack(spacing: 8) {
+                    engineTag(GPUPageCopy.allocated, vm.gpuPage.allocatedText)
+                    Spacer(minLength: 0)
+                }
+                if let fraction = vm.gpuPage.memoryBarFraction {
+                    memoryLimitBar(fraction)
+                    Text(GPUPageCopy.recommendedLimitLine(vm.gpuPage.recommendedLimitText))
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        }
+    }
+
+    /// Empty when the fraction is 0. Hidden from VoiceOver so the caption keeps the real bytes.
+    private func memoryLimitBar(_ fraction: Double) -> some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.white.opacity(0.08))
+                if fraction > 0 {
+                    Capsule()
+                        .fill(PulsePalette.accent)
+                        .frame(width: proxy.size.width * CGFloat(fraction))
+                }
+            }
+        }
+        .frame(height: 4)
+        .accessibilityHidden(true)
     }
 
     private func readingCard(title: String, value: String, symbol: String) -> some View {

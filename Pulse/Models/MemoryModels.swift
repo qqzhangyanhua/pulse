@@ -259,6 +259,9 @@ struct SampledFrame: Sendable {
     let energyLiveGenerations: [Int32: Int]
     /// Accelerator nodes for this tick. Nil when this tick did not read GPU.
     let gpuNodes: [GPUAcceleratorNode]?
+    /// Recommended working set for this tick. Nil when that static read returned none.
+    /// Not written to history or a saved snapshot.
+    let gpuRecommendedMaxWorkingSetBytes: UInt64?
     /// AGX user clients for this tick. Nil means this tick did not read them.
     /// An empty array was read and had no client.
     let gpuShareClients: [GPUShareClientSample]?
@@ -285,6 +288,7 @@ struct SampledFrame: Sendable {
         exitedEnergyProcesses: [ExitedEnergyProcess] = [],
         energyLiveGenerations: [Int32: Int] = [:],
         gpuNodes: [GPUAcceleratorNode]? = nil,
+        gpuRecommendedMaxWorkingSetBytes: UInt64? = nil,
         gpuShareClients: [GPUShareClientSample]? = nil,
         hostWiFi: HostWiFiReading? = nil,
         chipTemperatureSensors: [ChipTemperatureSensor]? = nil,
@@ -306,6 +310,7 @@ struct SampledFrame: Sendable {
         self.exitedEnergyProcesses = exitedEnergyProcesses
         self.energyLiveGenerations = energyLiveGenerations
         self.gpuNodes = gpuNodes
+        self.gpuRecommendedMaxWorkingSetBytes = gpuRecommendedMaxWorkingSetBytes
         self.gpuShareClients = gpuShareClients
         self.hostWiFi = hostWiFi
         self.chipTemperatureSensors = chipTemperatureSensors

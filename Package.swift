@@ -30,6 +30,7 @@ let package = Package(
                 "Sampling/PublicIPURLSessionTransport.swift",
                 "Sampling/HostDiskReader.swift",
                 "Sampling/HostGPUReader.swift",
+                "Sampling/HostGPUMemoryLimitReader.swift",
                 "Sampling/HostGPUShareReader.swift",
                 "Sampling/HostChipTemperatureReader.swift",
                 "Sampling/ProcessCodeSignatureReader.swift",

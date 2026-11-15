@@ -63,7 +63,9 @@
 | 余量充足 / 余量紧张 | Plenty of headroom / Headroom is tight | 这两档下面的说明。界面字符串，不是术语表条目 | 不要写成 low memory 或 memory leak |
 | 芯片温度 | Chip temperature | 芯片上最热的一处当前温度，单位摄氏度。不分 CPU 和 GPU，也不是平均值 | CPU 温度、GPU 温度、核心温度、SMC 温度。不要写成 CPU temperature 或 GPU temperature |
 | GPU 使用率 | GPU utilization | 整机 GPU 的设备级占用，一个 0–100 的百分比 | 渲染器利用率、分块利用率、Metal 计数器 |
-| GPU 占用内存 | GPU memory in use | GPU 正在占用的统一内存字节。不是独立显存，也没有总量 | 显存、VRAM、分配内存、内存占用 |
+| GPU 占用内存 | GPU memory in use | GPU 正在占用的统一内存字节。不是独立显存，也不是已经分配的字节 | 显存、VRAM、分配内存、内存占用、显存总量 |
+| GPU 已分配内存 | Allocated GPU memory | 被选中加速器上驱动已经分配的系统内存。小标签是「已分配」。不是字节数是「—」 | 显存总量、占用内存。不要写成 VRAM total |
+| GPU 内存建议上限 | Recommended GPU memory limit | `recommendedMaxWorkingSetSize`。进度条标注「建议上限」。缺数不画条。超过 1 时条画满，文字仍是真实字节 | 显存总量。不要写成 VRAM total |
 | GPU 核心数 | GPU cores | 整机 GPU 的核心个数。有读数时是 “N-core GPU”，没有就不显示。不是使用率 | 显存、GPU 温度、核心温度 |
 | GPU 占比 | GPU share | 最近一个采样间隔里，单个进程占用 GPU 的时间占墙钟时间的比例 | 进程 GPU 使用率、GPU%。不是市场份额 |
 | 阻止睡眠 | Preventing sleep | 进程持有断言，让 Mac 或显示器不进入睡眠 | 防休眠、唤醒锁。不要写成 sleep lock |

@@ -282,7 +282,7 @@ struct DashboardCore {
         var nextDisk = diskHistory
         nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
         diskHistory = nextDisk
-        recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
+        recordGPU(nodes: frame.gpuNodes, recommendedMaxWorkingSetBytes: frame.gpuRecommendedMaxWorkingSetBytes, failed: false, at: frame.snapshot.capturedAt)
         noteHistory(frame)
         recordGPUShare(clients: frame.gpuShareClients, rows: frame.rows, at: frame.snapshot.capturedAt, page: page)
         recordChip(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt, page: page)
@@ -335,6 +335,7 @@ struct DashboardCore {
     /// Nil nodes means this tick did not read GPU. A missing percent is not stored as 0.
     private mutating func recordGPU(
         nodes: [GPUAcceleratorNode]?,
+        recommendedMaxWorkingSetBytes: UInt64? = nil,
         failed: Bool,
         at date: Date?
     ) {
@@ -349,6 +350,7 @@ struct DashboardCore {
         }
         gpuPage = GPUPageProjection.apply(
             nodes: nodes ?? [],
+            recommendedMaxWorkingSetBytes: recommendedMaxWorkingSetBytes,
             frame: frame,
             sampledAt: date,
             current: gpuPage,

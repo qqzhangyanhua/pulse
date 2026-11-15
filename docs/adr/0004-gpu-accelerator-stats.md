@@ -1,6 +1,6 @@
 # ADR-0004：整机 GPU 读加速器已公布的性能统计
 
-状态：已采纳（#159）。不改变 [ADR-0001](0001-process-memory-footprint.md) 的进程内存占用，不改变 [ADR-0002](0002-process-energy-wakeups.md) 的能耗和唤醒，不改变 [ADR-0003](0003-thermal-state-api.md) 的热状态来源。
+状态：已采纳（#159）。「不取已分配字节」和「没有容量条」已被 [ADR-0025](0025-gpu-allocated-memory.md) 取代。仍不把物理内存当成显存总量，仍不读 Metal 性能计数器。不改变 [ADR-0001](0001-process-memory-footprint.md) 的进程内存占用，不改变 [ADR-0002](0002-process-energy-wakeups.md) 的能耗和唤醒，不改变 [ADR-0003](0003-thermal-state-api.md) 的热状态来源。
 
 ## 背景
 
@@ -12,7 +12,7 @@ GPU 加速器在注册表里公布性能统计。设备级百分比和正在占�
 
 - 整机 GPU 只读加速器已经公布的性能统计。使用率优先用设备级百分比。这个键不存在时，才读同一加速器的 IOReport 设备通道。
 - 不使用 Metal 性能计数器，不使用 `powermetrics`，不调用 `IOServiceOpen`，不读 SMC。
-- GPU 占用内存取加速器正在占用的系统内存字节。不取已分配字节，不把物理内存当成显存总量。
+- GPU 占用内存取加速器正在占用的系统内存字节。不取已分配字节，不把物理内存当成显存总量。其中「不取已分配字节」和「没有容量条」已被 [ADR-0025](0025-gpu-allocated-memory.md) 取代。仍不把物理内存当成显存总量。
 
 ## 后果
 
