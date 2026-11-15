@@ -197,6 +197,37 @@ enum ProcessQuitSession {
         rows: [ProcessRow],
         store: ProcessQuitOutcome
     ) -> Selection {
+        listRewriteSelection(
+            nextListPid: nextListPid,
+            sidebarSubjectPid: sidebarSubjectPid,
+            rows: rows,
+            store: store
+        )
+    }
+
+    /// Windowed keep rewrites the list id only. An in-rows subject clears with the
+    /// list. An absent unknown record stays on the sidebar. The store is not mutated.
+    static func windowedOnlySelection(
+        nextListPid: Int32?,
+        sidebarSubjectPid: Int32?,
+        rows: [ProcessRow],
+        store: ProcessQuitOutcome
+    ) -> Selection {
+        listRewriteSelection(
+            nextListPid: nextListPid,
+            sidebarSubjectPid: sidebarSubjectPid,
+            rows: rows,
+            store: store
+        )
+    }
+
+    /// Shared list-id rewrite. An in-rows subject clears. An absent unknown record stays.
+    private static func listRewriteSelection(
+        nextListPid: Int32?,
+        sidebarSubjectPid: Int32?,
+        rows: [ProcessRow],
+        store: ProcessQuitOutcome
+    ) -> Selection {
         let legal = ProcessQuitOutcome.legalListSelection(nextListPid, in: rows)
         let subject: Int32?
         if let legal {

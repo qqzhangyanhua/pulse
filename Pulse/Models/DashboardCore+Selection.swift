@@ -189,7 +189,7 @@ extension DashboardCore {
         )
         guard next != selectedPid else { return [] }
         return commitQuitSelection(
-            ProcessQuitSession.risingOnlySelection(
+            ProcessQuitSession.windowedOnlySelection(
                 nextListPid: next,
                 sidebarSubjectPid: sidebarSubjectPid,
                 rows: rows,
@@ -206,11 +206,10 @@ extension DashboardCore {
         )
         guard next != selectedPid else { return [] }
         return commitQuitSelection(
-            ProcessQuitSession.risingOnlySelection(
-                nextListPid: next,
+            ProcessQuitSession.followListSelection(
+                listSelectedPid: next,
                 sidebarSubjectPid: sidebarSubjectPid,
-                rows: rows,
-                store: quitOutcome
+                rows: rows
             )
         )
     }
