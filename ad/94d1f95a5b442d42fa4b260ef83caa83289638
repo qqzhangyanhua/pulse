@@ -1,0 +1,23 @@
+Pulse/Models/EnergyModelSample.swift
+  s_6a3a80b17d9eb2::t_4d945629708cce 20-21,67-68,73
+Tests/SamplingCoreTests/EnergyModelDecoderTests.swift
+  s_6a3a80b17d9eb2::t_b761169d3a81ad 122-135
+docs/adr/0020-gpu-power-energy-channel.md
+  s_6a3a80b17d9eb2::t_7bec0bcab3def8 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "ad94d1f95a5b442d42fa4b260ef83caa83289638",
+  "prompts": {},
+  "sessions": {
+    "s_6a3a80b17d9eb2": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "47397575-06e1-43ab-8dc4-1df746dc9b2d",
+        "model": "unknown"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
