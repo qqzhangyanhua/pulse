@@ -89,6 +89,41 @@ final class EnergyModelDecoderTests: XCTestCase {
         XCTAssertEqual(watts, 2)
     }
 
+    func testGPUEnergyChannelIsUsedAloneNotAddedToItsParts() {
+        // Measured on an M1 Pro over 1 s: GPU Energy already includes GPU0 and GPU SRAM0.
+        let watts = EnergyModelDecoder.gpuWatts(
+            channels: [
+                pair("GPU0", "mJ", 0, 285),
+                pair("GPU SRAM0", "mJ", 0, 11),
+                pair("GPU Energy", "nJ", 0, 303_000_000),
+            ],
+            elapsed: 1
+        )
+        XCTAssertEqual(try XCTUnwrap(watts), 0.303, accuracy: 1e-9)
+    }
+
+    func testWithoutGPUEnergyTheGPUChannelsAreSummed() {
+        let watts = EnergyModelDecoder.gpuWatts(
+            channels: [
+                pair("GPU0", "mJ", 0, 285),
+                pair("GPU SRAM0", "mJ", 0, 11),
+                pair("CPU Energy", "mJ", 0, 900),
+            ],
+            elapsed: 1
+        )
+        XCTAssertEqual(try XCTUnwrap(watts), 0.296, accuracy: 1e-9)
+    }
+
+    func testUnreadableGPUEnergyStaysMissingInsteadOfFallingBackToItsParts() {
+        let channels = [
+            pair("GPU0", "mJ", 0, 285),
+            pair("GPU SRAM0", "mJ", 0, 11),
+        ]
+        XCTAssertNil(EnergyModelDecoder.gpuWatts(channels: channels + [pair("GPU Energy", "nJ", 5_000, 1_000)], elapsed: 1))
+        XCTAssertNil(EnergyModelDecoder.gpuWatts(channels: channels + [pair("GPU Energy", "furlong", 0, 1_000)], elapsed: 1))
+        XCTAssertEqual(EnergyModelDecoder.gpuWatts(channels: channels + [pair("GPU Energy", "nJ", 7, 7)], elapsed: 1), 0)
+    }
+
     func testANEMatchesEitherNameAndIgnoresCase() {
         let watts = EnergyModelDecoder.aneWatts(
             channels: [

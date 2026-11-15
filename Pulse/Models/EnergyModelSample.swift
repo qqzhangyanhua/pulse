@@ -56,12 +56,17 @@ enum EnergyModelDecoder {
         )
     }
 
-    /// Sum of finite GPU channels. No matching name is nil, not zero.
+    /// `GPU Energy` already contains the other GPU channels, so it is used alone
+    /// when present. Without it, GPU-named channels are summed. No match is nil.
     static func gpuWatts(
         channels: [(previous: EnergyModelChannel, current: EnergyModelChannel)],
         elapsed: TimeInterval
     ) -> Double? {
-        summedWatts(channels: channels, elapsed: elapsed) { $0.contains("GPU") }
+        let total = "GPU Energy"
+        if channels.contains(where: { $0.current.name == total }) {
+            return summedWatts(channels: channels, elapsed: elapsed) { $0 == total }
+        }
+        return summedWatts(channels: channels, elapsed: elapsed) { $0.contains("GPU") }
     }
 
     /// `ANE` or `Neural`, case insensitive. Same sum rule as GPU.
