@@ -15,11 +15,14 @@ extension MachineOverviewSection {
                 }
                 .frame(width: 146, alignment: .leading)
                 chipTemperatureChart
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 108)
+                    .clipped()
             }
         }
         .frame(maxWidth: .infinity)
         .frame(height: 148, alignment: .topLeading)
+        .clipped()
     }
 
     @ViewBuilder

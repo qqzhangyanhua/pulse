@@ -6,7 +6,25 @@ extension MachineOverviewSection {
         PulseCard {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
-                    iconLabel(LaunchItemCopy.title, symbol: "list.bullet", tint: PulsePalette.accent)
+                    Button {
+                        launchItemsExpanded.toggle()
+                    } label: {
+                        HStack(spacing: 6) {
+                            iconLabel(LaunchItemCopy.title, symbol: "list.bullet", tint: PulsePalette.accent)
+                            if !launchItemsExpanded, !vm.launchItems.isEmpty {
+                                Text("\(vm.launchItems.count)")
+                                    .font(.caption2.weight(.medium))
+                                    .foregroundStyle(.secondary)
+                                    .monospacedDigit()
+                            }
+                            Image(systemName: launchItemsExpanded ? "chevron.down" : "chevron.right")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(LaunchItemCopy.title)
+                    .accessibilityValue(launchItemsExpanded ? "已展开" : "已折叠")
                     Spacer(minLength: 4)
                     Button(LaunchItemCopy.openSettings) {
                         SMAppService.openSystemSettingsLoginItems()
@@ -14,25 +32,29 @@ extension MachineOverviewSection {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                 }
-                if vm.launchItems.isEmpty {
-                    Text(LaunchItemCopy.empty)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                } else {
-                    columnTitles
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 6) {
-                            ForEach(vm.launchItems) { row in
-                                launchItemRow(row)
-                            }
-                        }
-                    }
+                if launchItemsExpanded {
+                    launchItemBody
                 }
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 220, alignment: .topLeading)
+    }
+
+    @ViewBuilder
+    private var launchItemBody: some View {
+        if vm.launchItems.isEmpty {
+            Text(LaunchItemCopy.empty)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        } else {
+            columnTitles
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(vm.launchItems) { row in
+                    launchItemRow(row)
+                }
+            }
+        }
     }
 
     private var columnTitles: some View {

@@ -316,6 +316,7 @@ struct TopAppCard: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
                         .font(.caption2)
@@ -337,6 +338,7 @@ struct TopAppCard: View {
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                         }
                     }
                 } else {

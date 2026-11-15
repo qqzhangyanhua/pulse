@@ -53,6 +53,9 @@ final class LaunchItemWiringSourceTests: XCTestCase {
         XCTAssertTrue(section.contains("row.enabled"))
         XCTAssertTrue(section.contains("SMAppService.openSystemSettingsLoginItems()"))
         XCTAssertTrue(section.contains("LaunchItemCopy.openSettings"))
+        XCTAssertTrue(section.contains("if launchItemsExpanded"))
+        XCTAssertTrue(section.contains("已折叠"))
+        XCTAssertFalse(section.contains("ScrollView"))
         XCTAssertFalse(section.contains("sfltool"))
         XCTAssertFalse(section.contains("LoginItemProjection"))
         XCTAssertFalse(section.contains("SMAppService.mainApp"))
@@ -61,6 +64,8 @@ final class LaunchItemWiringSourceTests: XCTestCase {
 
         let overview = try repoText("Pulse/Views/MachineOverviewSection.swift")
         XCTAssertTrue(overview.contains("launchItemsSection"))
+        XCTAssertTrue(overview.contains("@State var launchItemsExpanded = false"))
+        XCTAssertTrue(overview.contains("ScrollView"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
         for name in [

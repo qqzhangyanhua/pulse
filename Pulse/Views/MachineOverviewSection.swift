@@ -5,6 +5,7 @@ import SwiftUI
 struct MachineOverviewSection: View {
     /// Internal so `MachineOverviewSection+Throughput` can read the same environment object.
     @EnvironmentObject var vm: MemoryDashboardVM
+    @State var launchItemsExpanded = false
 
     var body: some View {
         let model = MachineOverview.project(
@@ -12,7 +13,7 @@ struct MachineOverviewSection: View {
             cpuPercent: vm.systemCpuPercent, cpuSeries: vm.cpuHistory.samples,
             memorySeries: vm.usageHistory.samples, thermalNotice: vm.thermalNotice
         )
-        VStack(alignment: .leading, spacing: 12) {
+        ScrollView { VStack(alignment: .leading, spacing: 12) {
             ThermalAdviceCard()
             HStack(spacing: 12) {
                 identity(model).frame(minWidth: 310, idealWidth: 344, maxWidth: 376)
@@ -42,9 +43,9 @@ struct MachineOverviewSection: View {
                 topWorkloadCard
                 diagnostics(model)
             }
-            .frame(minHeight: 200, maxHeight: .infinity)
+            .frame(height: 248)
+        }.frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private func identity(_ model: MachineOverview.Model) -> some View {

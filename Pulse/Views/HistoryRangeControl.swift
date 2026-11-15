@@ -2,6 +2,10 @@ import Charts
 import SwiftUI
 
 struct HistoryRangeControl: View {
+    /// Pinned so the clipped overview slot can reserve exactly this much.
+    /// AppKit's regular segmented control is 24pt; 28 leaves the focus ring inside the slot.
+    static let barHeight: CGFloat = 28
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let range: HistoryCurveRange
     let select: (HistoryCurveRange) -> Void
@@ -14,6 +18,8 @@ struct HistoryRangeControl: View {
         }
         .pickerStyle(.segmented)
         .labelsHidden()
+        .controlSize(.regular)
+        .frame(height: Self.barHeight)
         .accessibilityLabel("曲线范围")
         .animation(reduceMotion ? nil : PulseMotion.page, value: range)
     }

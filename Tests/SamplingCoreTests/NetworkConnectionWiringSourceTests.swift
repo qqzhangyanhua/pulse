@@ -94,8 +94,10 @@ final class NetworkConnectionWiringSourceTests: XCTestCase {
         XCTAssertFalse(height.contains("case .cpu, .network, .disk:"))
         XCTAssertTrue(height.contains("case .network:"))
         // Wi-Fi adds the SSID row. Placeholder or non-Wi-Fi is 148; Wi-Fi is 206.
-        // The clipped slot is 368 (206 + 12 + 150) so the spare gap stays under the rate charts.
-        XCTAssertTrue(height.contains("368"))
+        // The clipped slot is the range control, a gap, 206, a gap, and the 150 rate row,
+        // so the spare gap stays under the rate charts.
+        XCTAssertTrue(height.contains("206 + 12 + 150 + 12 + HistoryRangeControl.barHeight"))
+        XCTAssertFalse(height.contains("368"))
         XCTAssertFalse(height.contains("336"))
         XCTAssertFalse(height.contains("274"))
         XCTAssertFalse(height.contains("300"))
