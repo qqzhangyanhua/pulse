@@ -290,6 +290,7 @@ struct DashboardCore {
         nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
         diskHistory = nextDisk
         recordGPU(nodes: frame.gpuNodes, recommendedMaxWorkingSetBytes: frame.gpuRecommendedMaxWorkingSetBytes, failed: false, at: frame.snapshot.capturedAt)
+        recordGPUSparklines(energy: frame.cpuEnergy, at: frame.snapshot.capturedAt, page: page)
         noteHistory(frame)
         recordGPUShare(clients: frame.gpuShareClients, rows: frame.rows, at: frame.snapshot.capturedAt, page: page)
         recordGPUTime(

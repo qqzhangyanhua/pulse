@@ -18,12 +18,20 @@ extension GPUOverviewSection {
             readingCard(
                 title: GPUPageCopy.power,
                 value: EnergyModelCopy.gpuPowerReading(vm.cpuEnergy?.gpuWatts),
-                symbol: "bolt.fill"
+                symbol: "bolt.fill",
+                samples: vm.gpuPage.powerSparkline.samples,
+                draws: vm.gpuPage.showsPowerSparkline,
+                domain: vm.gpuPage.powerSparklineDomain,
+                formatY: { EnergyModelCopy.gpuPowerReading($0) }
             )
             readingCard(
                 title: GPUPageCopy.frequency,
                 value: EnergyModelCopy.gpuFrequencyReading(vm.cpuEnergy?.gpuFrequency ?? .missing),
-                symbol: "speedometer"
+                symbol: "speedometer",
+                samples: vm.gpuPage.frequencySparkline.samples,
+                draws: vm.gpuPage.showsFrequencySparkline,
+                domain: vm.gpuPage.frequencySparklineDomain,
+                formatY: { EnergyModelCopy.gpuFrequencyReading($0) }
             )
         }
         .frame(height: 142)
@@ -107,7 +115,15 @@ extension GPUOverviewSection {
         .accessibilityHidden(true)
     }
 
-    private func readingCard(title: String, value: String, symbol: String) -> some View {
+    private func readingCard(
+        title: String,
+        value: String,
+        symbol: String,
+        samples: [ChartSample]? = nil,
+        draws: Bool = false,
+        domain: ClosedRange<Double> = 0...1,
+        formatY: @escaping (Double) -> String = { _ in "" }
+    ) -> some View {
         PulseCard {
             VStack(alignment: .leading, spacing: 6) {
                 metricLabel(title, symbol: symbol)
@@ -117,6 +133,23 @@ extension GPUOverviewSection {
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
+                if let samples {
+                    Group {
+                        if draws {
+                            SparklineChart(
+                                samples: samples,
+                                tint: PulsePalette.accent,
+                                domain: domain,
+                                formatY: formatY,
+                                showsAxes: false
+                            )
+                        } else {
+                            Color.clear
+                        }
+                    }
+                    .frame(height: 36)
+                    .accessibilityHidden(true)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }

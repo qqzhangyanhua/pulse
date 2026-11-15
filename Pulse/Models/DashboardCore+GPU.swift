@@ -18,6 +18,21 @@ extension DashboardCore {
             current: gpuPage,
             transition: transition
         )
+        if transition == .justLeft {
+            gpuPage.powerSparkline.reset()
+            gpuPage.frequencySparkline.reset()
+        }
+    }
+
+    /// Power and frequency rings for this visit. Other pages do not append.
+    /// The utilization curve is not this series.
+    mutating func recordGPUSparklines(energy: EnergyModelReading?, at date: Date?, page: DashboardPage) {
+        guard page == .gpu else { return }
+        gpuPage.powerSparkline.record(percent: GPULiveSparkline.watts(energy?.gpuWatts), at: date)
+        gpuPage.frequencySparkline.record(
+            percent: GPULiveSparkline.hertz(energy?.gpuFrequency ?? .missing),
+            at: date
+        )
     }
 
     /// Leave and enter apply here, before the next sample. Same-page calls do not write.

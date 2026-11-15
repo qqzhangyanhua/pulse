@@ -66,6 +66,10 @@ struct GPUPageState: Equatable, Sendable {
     /// Selected node's non-negative recovery count. Nil when it is not an integer.
     var recoveryCount: Int?
     var history: SystemCPUHistory
+    /// Live power points for this GPU-page visit. Not the utilization curve, and not history.
+    var powerSparkline = SystemCPUHistory()
+    /// Live frequency points in hertz. Idle is absent, not 0.
+    var frequencySparkline = SystemCPUHistory()
     var visitSucceeded: Bool
     var chrome: GPUPageChrome
 
@@ -111,6 +115,20 @@ struct GPUPageState: Equatable, Sendable {
     /// Fewer than two points is not a line.
     var showsCurve: Bool { history.samples.count >= 2 }
 
+    /// Fewer than two power points is not a line.
+    var showsPowerSparkline: Bool { powerSparkline.samples.count >= 2 }
+
+    /// Fewer than two frequency points is not a line.
+    var showsFrequencySparkline: Bool { frequencySparkline.samples.count >= 2 }
+
+    var powerSparklineDomain: ClosedRange<Double> {
+        GPULiveSparkline.domain(powerSparkline.samples.map(\.value))
+    }
+
+    var frequencySparklineDomain: ClosedRange<Double> {
+        GPULiveSparkline.domain(frequencySparkline.samples.map(\.value))
+    }
+
     static let initial = GPUPageState(
         utilizationPercent: nil,
         inUseMemoryBytes: nil,
@@ -124,6 +142,29 @@ struct GPUPageState: Equatable, Sendable {
         visitSucceeded: false,
         chrome: .skeleton
     )
+}
+
+/// Points drawn on the power and frequency cards. Missing and idle are not points.
+enum GPULiveSparkline {
+    /// Finite watts, including a real 0. Nil and non-finite stay off the line.
+    static func watts(_ watts: Double?) -> Double? {
+        guard let watts, watts.isFinite else { return nil }
+        return watts
+    }
+
+    /// Working hertz, including a real 0. Idle and missing are not 0 Hz.
+    static func hertz(_ frequency: GPUFrequency) -> Double? {
+        guard case .hertz(let hertz) = frequency, hertz.isFinite, hertz >= 0 else { return nil }
+        return hertz
+    }
+
+    /// Sample span, with a pad that stays visible for both watts and hertz.
+    static func domain(_ values: [Double]) -> ClosedRange<Double> {
+        guard let low = values.min(), let high = values.max() else { return 0...1 }
+        let span = high - low
+        let pad = max(span * 0.25, max(abs(high), abs(low), 1) * 0.08)
+        return (low - pad)...(high + pad)
+    }
 }
 
 enum GPUPageCopy {
