@@ -22,7 +22,7 @@ extension GPUOverviewSection {
             )
             readingCard(
                 title: GPUPageCopy.frequency,
-                value: EnergyModelCopy.gpuFrequencyReading(vm.cpuEnergy?.gpuHertz),
+                value: EnergyModelCopy.gpuFrequencyReading(vm.cpuEnergy?.gpuFrequency ?? .missing),
                 symbol: "speedometer"
             )
         }

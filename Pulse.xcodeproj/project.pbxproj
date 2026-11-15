@@ -168,7 +168,9 @@
 		B00000000000000000000250 /* NettopDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000250 /* NettopDecoder.swift */; };
 		B00000000000000000000251 /* NettopReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000251 /* NettopReader.swift */; };
 		B00000000000000000000260 /* EnergyModelSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000260 /* EnergyModelSample.swift */; };
+		B00000000000000000000262 /* VoltageStates9.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000262 /* VoltageStates9.swift */; };
 		B00000000000000000000261 /* HostEnergyModelReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000261 /* HostEnergyModelReader.swift */; };
+		B00000000000000000000263 /* HostEnergyModelReader+VoltageStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000263 /* HostEnergyModelReader+VoltageStates.swift */; };
 		B00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift */; };
 		B00000000000000000000280 /* HistoryPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000280 /* HistoryPolicy.swift */; };
 		B00000000000000000000281 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000281 /* HistoryStore.swift */; };
@@ -243,7 +245,9 @@
 		A00000000000000000000250 /* NettopDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NettopDecoder.swift; sourceTree = "<group>"; };
 		A00000000000000000000251 /* NettopReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NettopReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000260 /* EnergyModelSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyModelSample.swift; sourceTree = "<group>"; };
+		A00000000000000000000262 /* VoltageStates9.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoltageStates9.swift; sourceTree = "<group>"; };
 		A00000000000000000000261 /* HostEnergyModelReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostEnergyModelReader.swift; sourceTree = "<group>"; };
+		A00000000000000000000263 /* HostEnergyModelReader+VoltageStates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HostEnergyModelReader+VoltageStates.swift"; sourceTree = "<group>"; };
 		A00000000000000000000252 /* MemoryDashboardVM+NetworkRates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+NetworkRates.swift"; sourceTree = "<group>"; };
 		A00000000000000000000280 /* HistoryPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryPolicy.swift; sourceTree = "<group>"; };
 		A00000000000000000000281 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
@@ -471,6 +475,7 @@
 				A00000000000000000000311 /* DashboardCore+HistoryRange.swift */,
 				A00000000000000000000250 /* NettopDecoder.swift */,
 				A00000000000000000000260 /* EnergyModelSample.swift */,
+				A00000000000000000000262 /* VoltageStates9.swift */,
 				A00000000000000000000201 /* PausedProcessLedger.swift */,
 				A00000000000000000000202 /* PausedProcessStore.swift */,
 				A00000000000000000000203 /* DashboardCore+Pause.swift */,
@@ -580,6 +585,7 @@
 				A00000000000000000000281 /* HistoryStore.swift */,
 				A00000000000000000000251 /* NettopReader.swift */,
 				A00000000000000000000261 /* HostEnergyModelReader.swift */,
+				A00000000000000000000263 /* HostEnergyModelReader+VoltageStates.swift */,
 			);
 			path = Sampling;
 			sourceTree = "<group>";
@@ -814,7 +820,9 @@
 				B00000000000000000000250 /* NettopDecoder.swift in Sources */,
 				B00000000000000000000251 /* NettopReader.swift in Sources */,
 				B00000000000000000000260 /* EnergyModelSample.swift in Sources */,
+				B00000000000000000000262 /* VoltageStates9.swift in Sources */,
 				B00000000000000000000261 /* HostEnergyModelReader.swift in Sources */,
+				B00000000000000000000263 /* HostEnergyModelReader+VoltageStates.swift in Sources */,
 				B00000000000000000000280 /* HistoryPolicy.swift in Sources */,
 				B00000000000000000000282 /* DashboardCore+History.swift in Sources */,
 				B00000000000000000000390 /* SymptomDiagnosis.swift in Sources */,

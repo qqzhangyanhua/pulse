@@ -77,7 +77,7 @@ struct GPUOverviewSection: View {
         var line = "\(MachinePageCopy.chipValue(vm.machineFacts?.chipName))"
         line += "，\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)"
         line += "，\(EnergyModelCopy.gpuPowerLine(watts: vm.cpuEnergy?.gpuWatts))"
-        line += "，\(EnergyModelCopy.gpuFrequencyLine(hertz: vm.cpuEnergy?.gpuHertz))"
+        line += "，\(EnergyModelCopy.gpuFrequencyLine(vm.cpuEnergy?.gpuFrequency ?? .missing))"
         if let cores = vm.gpuPage.coreCountText {
             line += "，\(cores)"
         }
