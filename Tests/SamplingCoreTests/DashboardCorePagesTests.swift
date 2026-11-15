@@ -337,6 +337,60 @@ final class DashboardCorePagesTests: XCTestCase {
         XCTAssertNotEqual(frozen?.savedAt, capturedAt)
     }
 
+    func testFrozenSnapshotWritesThePublishedGPUReadings() throws {
+        var core = DashboardCore(ownPid: 1)
+        let savedAt = Date(timeIntervalSince1970: 1_700_000_500)
+        let capturedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        _ = core.apply(
+            result: success(frame(rows: [row(pid: 7, name: "Mail", cpu: 12)], capturedAt: capturedAt)),
+            accepted: true,
+            page: .memory
+        )
+        let unread = try XCTUnwrap(core.frozenSnapshot(savedAt: savedAt))
+        let unreadDoc = snapshotDocument(unread)
+        XCTAssertNil(unread.gpuUtilizationPercent)
+        XCTAssertNil(unread.gpuInUseMemoryBytes)
+        XCTAssertTrue(unreadDoc.previewText.contains("GPU 使用率：不可用"))
+        XCTAssertTrue(unreadDoc.previewText.contains("GPU 占用内存：不可用"))
+        XCTAssertFalse(unreadDoc.previewText.contains("GPU 使用率：0.0%"))
+        XCTAssertFalse(unreadDoc.previewText.contains("GPU 占用内存：0 字节"))
+
+        _ = core.apply(
+            result: success(frame(rows: [row(pid: 7, name: "Mail", cpu: 12)], capturedAt: capturedAt, gpu: true)),
+            accepted: true,
+            page: .cpu
+        )
+        let frozen = try XCTUnwrap(core.frozenSnapshot(savedAt: savedAt))
+        XCTAssertEqual(frozen.gpuUtilizationPercent, 41)
+        XCTAssertEqual(frozen.gpuInUseMemoryBytes, 8_192)
+        let doc = snapshotDocument(frozen)
+        XCTAssertTrue(doc.previewText.contains("GPU 使用率：41.0%"))
+        XCTAssertTrue(doc.html.contains("GPU 使用率：41.0%"))
+        XCTAssertTrue(doc.markdown.contains("GPU 占用内存：8 KB"))
+        XCTAssertFalse(doc.previewText.contains("GPU 功耗"))
+        XCTAssertFalse(doc.previewText.contains("GPU 频率"))
+
+        _ = core.apply(
+            result: success(frame(
+                rows: [row(pid: 7, name: "Mail", cpu: 12)],
+                capturedAt: capturedAt,
+                gpuNodes: [GPUAcceleratorNode(statistics: [
+                    GPUPageProjection.deviceUtilizationKey: .number(0),
+                    GPUPageProjection.inUseSystemMemoryKey: .bytes(0),
+                ])]
+            )),
+            accepted: true,
+            page: .machine
+        )
+        let zero = try XCTUnwrap(core.frozenSnapshot(savedAt: savedAt))
+        let zeroDoc = snapshotDocument(zero)
+        XCTAssertEqual(zero.gpuUtilizationPercent, 0)
+        XCTAssertEqual(zero.gpuInUseMemoryBytes, 0)
+        XCTAssertTrue(zeroDoc.previewText.contains("GPU 使用率：0.0%"))
+        XCTAssertTrue(zeroDoc.previewText.contains("GPU 占用内存：0 字节"))
+        XCTAssertFalse(zeroDoc.previewText.contains("GPU 使用率：不可用"))
+    }
+
     func testFrozenSnapshotKeepsPathHostnameAndAddressOutOfTheDefaultReport() throws {
         var core = DashboardCore(ownPid: 1)
         let savedAt = Date(timeIntervalSince1970: 1_700_000_500)
@@ -389,6 +443,13 @@ final class DashboardCorePagesTests: XCTestCase {
         XCTAssertFalse(after.markdown.contains("203.0.113.9"))
     }
 
+    private func snapshotDocument(_ frozen: SnapshotExport) -> SnapshotDocument {
+        var calendar = Calendar(identifier: .gregorian)
+        let zone = TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = zone
+        return SnapshotDocument.make(frozen: frozen, calendar: calendar, timeZone: zone)
+    }
+
     private func success(_ frame: SampledFrame) -> Result<SampledFrame, PageDeliveryError> {
         .success(frame)
     }
@@ -410,6 +471,7 @@ final class DashboardCorePagesTests: XCTestCase {
         pid: Int32 = 7,
         capturedAt: Date = Date(timeIntervalSince1970: 1_700_000_000),
         gpu: Bool = false,
+        gpuNodes: [GPUAcceleratorNode]? = nil,
         chip: Bool = false
     ) -> SampledFrame {
         let listed = rows ?? [row(pid: pid, name: "Mail", cpu: cpu ?? 12)]
@@ -432,10 +494,10 @@ final class DashboardCorePagesTests: XCTestCase {
             hostDiskRates: HostDiskRates(readBytesPerSecond: 5_600, writeBytesPerSecond: 780),
             topMemorySeries: [:],
             busiestCorePercent: 91,
-            gpuNodes: gpu ? [GPUAcceleratorNode(statistics: [
+            gpuNodes: gpuNodes ?? (gpu ? [GPUAcceleratorNode(statistics: [
                 GPUPageProjection.deviceUtilizationKey: .number(41),
                 GPUPageProjection.inUseSystemMemoryKey: .bytes(8_192),
-            ])] : nil,
+            ])] : nil),
             hostWiFi: HostWiFiReading(rssi: -42, noise: -90, ssid: "Office"),
             chipTemperatureSensors: chip ? [ChipTemperatureSensor(productName: "PMU tdie", celsius: 62)] : nil
         )
