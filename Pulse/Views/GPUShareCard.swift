@@ -63,7 +63,7 @@ struct GPUShareCard: View {
                 .controlSize(.small)
             }
             if let fraction = row.barFraction {
-                shareBar(fraction)
+                FractionCapsuleTrack(fraction: fraction)
             }
         }
     }
@@ -88,21 +88,5 @@ struct GPUShareCard: View {
             .font(.callout)
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// Empty when the fraction is 0. Hidden from VoiceOver so the percent text keeps the real value.
-    private func shareBar(_ fraction: Double) -> some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.08))
-                if fraction > 0 {
-                    Capsule()
-                        .fill(PulsePalette.accent)
-                        .frame(width: proxy.size.width * CGFloat(fraction))
-                }
-            }
-        }
-        .frame(height: 4)
-        .accessibilityHidden(true)
     }
 }

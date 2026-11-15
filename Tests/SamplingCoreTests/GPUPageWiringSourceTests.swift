@@ -64,7 +64,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
 
         let page = try repoText("Pulse/Views/GPUOverviewSection.swift")
         var cursor = page.startIndex
-        for token in ["ThermalAdviceCard()", "specLabels", "readingCards", "HistoryRangeControl(", "chartAndShare", "recoveryCard", "frequencyDistributionCard"] {
+        for token in ["ThermalAdviceCard()", "specLabels", "readingCards", "HistoryRangeControl(", "chartAndShare", "recoveryCard", "frequencyDistributionCard", "gpuTimeCard", "displaysCard"] {
             guard let found = page.range(of: token, range: cursor..<page.endIndex) else {
                 return XCTFail(token)
             }
@@ -282,6 +282,8 @@ final class GPUPageWiringSourceTests: XCTestCase {
         let card = try repoText("Pulse/Views/GPUOverviewSection+GPUTime.swift")
         XCTAssertTrue(card.contains("GPUTimeCopy.title"))
         XCTAssertTrue(card.contains("GPUTimeCopy.exited"))
+        XCTAssertTrue(card.contains("CPUPercentText.missing"))
+        XCTAssertFalse(card.contains("if let gpuTime"))
         XCTAssertFalse(card.contains("terminateThermalAdvice"))
         XCTAssertFalse(card.contains("IOServiceOpen"))
 
@@ -329,7 +331,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
 
         let page = try repoText("Pulse/Views/GPUOverviewSection.swift")
         var cursor = page.startIndex
-        for token in ["chartAndShare", "recoveryCard", "gpuTimeCard"] {
+        for token in ["chartAndShare", "recoveryCard", "frequencyDistributionCard", "gpuTimeCard", "displaysCard"] {
             guard let found = page.range(of: token, range: cursor..<page.endIndex) else {
                 return XCTFail(token)
             }

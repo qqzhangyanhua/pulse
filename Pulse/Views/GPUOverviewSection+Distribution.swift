@@ -38,22 +38,8 @@ extension GPUOverviewSection {
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
-            distributionBar(bar.fraction)
+            FractionCapsuleTrack(fraction: bar.fraction)
         }
-    }
-
-    /// Hidden from VoiceOver so the percent text keeps the real value.
-    private func distributionBar(_ fraction: Double) -> some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.08))
-                Capsule()
-                    .fill(PulsePalette.accent)
-                    .frame(width: proxy.size.width * CGFloat(min(max(fraction, 0), 1)))
-            }
-        }
-        .frame(height: 4)
-        .accessibilityHidden(true)
     }
 
     private var distributionAccessibilityLabel: String {

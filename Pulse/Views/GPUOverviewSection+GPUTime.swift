@@ -1,29 +1,26 @@
 import SwiftUI
 
 extension GPUOverviewSection {
-    /// Hour ranking. Samples from other pages are already in the total.
-    @ViewBuilder
+    /// Hour ranking. An empty ledger is 「—」, not a missing card.
     var gpuTimeCard: some View {
-        if let gpuTime = vm.gpuTime {
-            card(gpuTime)
-        }
+        card(vm.gpuTime)
     }
 
-    private func card(_ gpuTime: GPUTimePresentation) -> some View {
+    private func card(_ gpuTime: GPUTimePresentation?) -> some View {
         PulseCard {
             VStack(alignment: .leading, spacing: 8) {
                 Text(GPUTimeCopy.title)
                     .font(.subheadline.weight(.medium))
                     .lineLimit(1)
-                if gpuTime.rows.isEmpty {
+                if let rows = gpuTime?.rows, !rows.isEmpty {
+                    ForEach(rows) { row in
+                        timeRow(row)
+                    }
+                } else {
                     Text(CPUPercentText.missing)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                } else {
-                    ForEach(gpuTime.rows) { row in
-                        timeRow(row)
-                    }
                 }
             }
         }

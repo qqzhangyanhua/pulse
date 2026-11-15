@@ -13,16 +13,28 @@ final class GPUDisplayWiringSourceTests: XCTestCase {
         for required in [
             "CGGetActiveDisplayList",
             "CGDisplayCopyDisplayMode",
-            "CGDisplayModeGetRefreshRate",
-            "CGDisplayModeGetPixelWidth",
-            "CGDisplayModeGetPixelHeight",
+            ".refreshRate",
+            ".pixelWidth",
+            ".pixelHeight",
             "CGDisplayIsBuiltin",
             "maximumFramesPerSecond",
             "NSScreenNumber",
         ] {
             XCTAssertTrue(reader.contains(required), required)
         }
-        for forbidden in ["IOServiceOpen", "IOReport", "GPUDisplayProjection", "\" Hz\"", "内建"] {
+        for forbidden in [
+            "IOServiceOpen",
+            "IOReport",
+            "GPUDisplayProjection",
+            "\" Hz\"",
+            "内建",
+            "CGDisplayModeGetRefreshRate",
+            "CGDisplayModeGetPixelWidth",
+            "CGDisplayModeGetPixelHeight",
+            "takeUnretainedValue",
+            "CGDisplayModeRelease",
+            "?? 0",
+        ] {
             XCTAssertFalse(reader.contains(forbidden), forbidden)
         }
     }
@@ -86,11 +98,13 @@ final class GPUDisplayWiringSourceTests: XCTestCase {
     func testCardIsOnTheGPUPageAndStaysOutOfHistoryMenuBarSnapshotAndMachineCard() throws {
         let page = try repoText("Pulse/Views/GPUOverviewSection.swift")
         guard let chart = page.range(of: "chartAndShare")?.upperBound,
+              let time = page.range(of: "gpuTimeCard")?.upperBound,
               let card = page.range(of: "displaysCard")?.lowerBound
         else {
-            return XCTFail("displays card follows the chart and share")
+            return XCTFail("displays card follows the gpu time card")
         }
-        XCTAssertLessThan(chart, card)
+        XCTAssertLessThan(chart, time)
+        XCTAssertLessThan(time, card)
 
         let view = try repoText("Pulse/Views/GPUOverviewSection+Displays.swift")
         XCTAssertTrue(view.contains("GPUDisplayCopy.title"))

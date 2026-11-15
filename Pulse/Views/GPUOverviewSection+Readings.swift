@@ -60,7 +60,7 @@ extension GPUOverviewSection {
                     Spacer(minLength: 0)
                 }
                 if let fraction = vm.gpuPage.memoryBarFraction {
-                    memoryLimitBar(fraction)
+                    FractionCapsuleTrack(fraction: fraction)
                     Text(GPUPageCopy.recommendedLimitLine(vm.gpuPage.recommendedLimitText))
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
@@ -71,22 +71,6 @@ extension GPUOverviewSection {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
-    }
-
-    /// Empty when the fraction is 0. Hidden from VoiceOver so the caption keeps the real bytes.
-    private func memoryLimitBar(_ fraction: Double) -> some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.08))
-                if fraction > 0 {
-                    Capsule()
-                        .fill(PulsePalette.accent)
-                        .frame(width: proxy.size.width * CGFloat(fraction))
-                }
-            }
-        }
-        .frame(height: 4)
-        .accessibilityHidden(true)
     }
 
     var readingCards: some View {

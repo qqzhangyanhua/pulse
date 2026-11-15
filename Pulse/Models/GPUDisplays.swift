@@ -4,8 +4,10 @@ import Foundation
 /// Zero hertz is variable refresh, not a missing reading.
 struct GPUDisplayReading: Equatable, Sendable {
     var isBuiltIn: Bool
-    var pixelWidth: Int
-    var pixelHeight: Int
+    /// Nil when the current mode cannot be copied. Not stored as 0.
+    var pixelWidth: Int?
+    /// Nil when the current mode cannot be copied. Not stored as 0.
+    var pixelHeight: Int?
     /// Current mode refresh in hertz. Zero is variable refresh.
     /// Nil, negative, or non-finite is missing.
     var modeRefreshHertz: Double?
@@ -52,8 +54,9 @@ enum GPUDisplayProjection {
         )
     }
 
-    private static func resolutionText(width: Int, height: Int) -> String {
-        guard width > 0, height > 0 else { return GPUDisplayCopy.missing }
+    /// Nil or a non-positive side is 「—」, not `0 × 0`.
+    private static func resolutionText(width: Int?, height: Int?) -> String {
+        guard let width, let height, width > 0, height > 0 else { return GPUDisplayCopy.missing }
         return "\(width) × \(height)"
     }
 

@@ -174,19 +174,6 @@ enum EnergyModelDecoder {
         return .bars(bars)
     }
 
-    /// The state that spent the most time. Only that name is parsed.
-    /// A higher frequency with less residency is not the current frequency.
-    static func dominantHertz(_ states: [(name: String, residency: Int64)]) -> Double? {
-        var winner: (name: String, residency: Int64)?
-        for state in states where state.residency > 0 {
-            if state.residency > (winner?.residency ?? -1) {
-                winner = state
-            }
-        }
-        guard let winner else { return nil }
-        return hertz(fromStateName: winner.name)
-    }
-
     private static func summedWatts(
         channels: [(previous: EnergyModelChannel, current: EnergyModelChannel)],
         elapsed: TimeInterval,

@@ -94,6 +94,26 @@ final class GPUDisplayTests: XCTestCase {
         XCTAssertFalse(card.showsMissing)
     }
 
+    func testNilPixelSizeStaysNilAndShowsADash() {
+        let unread = reading(builtIn: true, width: nil, height: nil, hertz: nil, maximumFramesPerSecond: 120)
+        XCTAssertNil(unread.pixelWidth)
+        XCTAssertNil(unread.pixelHeight)
+        XCTAssertNotEqual(unread.pixelWidth, 0)
+        XCTAssertNotEqual(unread.pixelHeight, 0)
+
+        let card = GPUDisplayProjection.present([unread])
+        XCTAssertEqual(card.rows.map(\.resolutionText), ["—"])
+        XCTAssertEqual(card.rows.map(\.refreshText), ["—"])
+        XCTAssertNotEqual(card.rows[0].resolutionText, "0 × 0")
+        XCTAssertFalse(card.showsMissing)
+
+        let widthOnly = GPUDisplayProjection.present([
+            reading(builtIn: false, width: nil, height: 1080, hertz: 60),
+        ])
+        XCTAssertEqual(widthOnly.rows.map(\.resolutionText), ["—"])
+        XCTAssertNotEqual(widthOnly.rows[0].resolutionText, "0 × 1080")
+    }
+
     func testDisplaySnapshotStaysOffTheSampleAndOffHistory() {
         var core = DashboardCore(ownPid: 1)
         XCTAssertTrue(core.gpuDisplays.showsMissing)
@@ -162,8 +182,8 @@ final class GPUDisplayTests: XCTestCase {
 
     private func reading(
         builtIn: Bool,
-        width: Int,
-        height: Int,
+        width: Int?,
+        height: Int?,
         hertz: Double?,
         maximumFramesPerSecond: Int? = nil
     ) -> GPUDisplayReading {

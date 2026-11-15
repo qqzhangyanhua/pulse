@@ -121,6 +121,7 @@
 		B00000000000000000000168 /* GPUShare.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000168 /* GPUShare.swift */; };
 		B00000000000000000000169 /* HostGPUShareReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000169 /* HostGPUShareReader.swift */; };
 		B00000000000000000000170 /* GPUShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000170 /* GPUShareCard.swift */; };
+		B00000000000000000000450 /* FractionCapsuleTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000450 /* FractionCapsuleTrack.swift */; };
 		B0000000000000000000007C /* HostGPUReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000007C /* HostGPUReader.swift */; };
 		B00000000000000000000420 /* HostGPUMemoryLimitReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000420 /* HostGPUMemoryLimitReader.swift */; };
 		B0000000000000000000007D /* GPUOverviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000007D /* GPUOverviewSection.swift */; };
@@ -416,6 +417,7 @@
 		A00000000000000000000441 /* HostGPUDisplayReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostGPUDisplayReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000442 /* GPUOverviewSection+Displays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GPUOverviewSection+Displays.swift"; sourceTree = "<group>"; };
 		A00000000000000000000170 /* GPUShareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPUShareCard.swift; sourceTree = "<group>"; };
+		A00000000000000000000450 /* FractionCapsuleTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractionCapsuleTrack.swift; sourceTree = "<group>"; };
 		A0000000000000000000007E /* MemoryDashboardVM+GPU.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+GPU.swift"; sourceTree = "<group>"; };
 		A0000000000000000000007F /* HostConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostConnection.swift; sourceTree = "<group>"; };
 		A00000000000000000000080 /* HostConnectionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostConnectionMonitor.swift; sourceTree = "<group>"; };
@@ -688,6 +690,7 @@
 				A00000000000000000000431 /* GPUOverviewSection+GPUTime.swift */,
 				A00000000000000000000442 /* GPUOverviewSection+Displays.swift */,
 				A00000000000000000000170 /* GPUShareCard.swift */,
+				A00000000000000000000450 /* FractionCapsuleTrack.swift */,
 				A00000000000000000000079 /* MachineOverviewSection+Throughput.swift */,
 				A00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift */,
 				A00000000000000000000394 /* MachineOverviewSection+GPU.swift */,
@@ -959,6 +962,7 @@
 				B00000000000000000000168 /* GPUShare.swift in Sources */,
 				B00000000000000000000169 /* HostGPUShareReader.swift in Sources */,
 				B00000000000000000000170 /* GPUShareCard.swift in Sources */,
+				B00000000000000000000450 /* FractionCapsuleTrack.swift in Sources */,
 				B00000000000000000000148 /* MemoryPage.swift in Sources */,
 				B00000000000000000000094 /* ChipTemperature.swift in Sources */,
 				B0000000000000000000007C /* HostGPUReader.swift in Sources */,

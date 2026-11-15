@@ -70,10 +70,10 @@ struct GPUOverviewSection: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilityLabel)
             chartAndShare
-            displaysCard
             recoveryCard
             frequencyDistributionCard
             gpuTimeCard
+            displaysCard
         }
     }
 

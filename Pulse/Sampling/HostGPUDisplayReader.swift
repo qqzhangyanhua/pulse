@@ -19,16 +19,14 @@ enum HostGPUDisplayReader {
     }
 
     private static func reading(id: CGDirectDisplayID, screens: [NSScreen]) -> GPUDisplayReading {
+        // Copy is +1. Swift imports it as `CGDisplayMode?`, so ARC releases it.
         let mode = CGDisplayCopyDisplayMode(id)
-        let hertz = mode.map { CGDisplayModeGetRefreshRate($0) }
-        let width = mode.map { Int(CGDisplayModeGetPixelWidth($0)) } ?? 0
-        let height = mode.map { Int(CGDisplayModeGetPixelHeight($0)) } ?? 0
         let maximum = screens.first { displayID($0) == id }?.maximumFramesPerSecond
         return GPUDisplayReading(
             isBuiltIn: CGDisplayIsBuiltin(id) != 0,
-            pixelWidth: width,
-            pixelHeight: height,
-            modeRefreshHertz: hertz,
+            pixelWidth: mode.map { Int($0.pixelWidth) },
+            pixelHeight: mode.map { Int($0.pixelHeight) },
+            modeRefreshHertz: mode?.refreshRate,
             maximumFramesPerSecond: maximum
         )
     }

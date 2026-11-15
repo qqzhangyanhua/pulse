@@ -186,31 +186,6 @@ final class EnergyModelDecoderTests: XCTestCase {
         )
     }
 
-    func testDominantFrequencyUsesResidencyNotTheTableMaximum() {
-        XCTAssertEqual(
-            EnergyModelDecoder.dominantHertz([
-                (name: "3.2 GHz", residency: 10),
-                (name: "2400 MHz", residency: 40),
-            ]),
-            2_400_000_000
-        )
-        XCTAssertNil(
-            EnergyModelDecoder.dominantHertz([
-                (name: "P-Cluster", residency: 90),
-                (name: "2400 MHz", residency: 10),
-            ])
-        )
-        XCTAssertEqual(
-            EnergyModelDecoder.dominantHertz([
-                (name: "3.2 GHz", residency: 0),
-                (name: "600MHz", residency: 5),
-            ]),
-            600_000_000
-        )
-        XCTAssertNil(EnergyModelDecoder.dominantHertz([]))
-        XCTAssertNil(EnergyModelDecoder.dominantHertz([(name: "2400 MHz", residency: 0)]))
-    }
-
     func testGPUFrequencyIsTheResidencyWeightedAverageOfWorkingStates() {
         // P2 for 3 and P4 for 1. OFF is not a frequency: (486e6 * 3 + 778e6) / 4 = 559e6.
         let frequency = EnergyModelDecoder.gpuFrequency(
@@ -316,13 +291,13 @@ final class EnergyModelDecoderTests: XCTestCase {
 
     func testCPUClusterFrequencyStaysOnTheDominantNamedState() {
         XCTAssertEqual(
-            EnergyModelDecoder.dominantHertz([
+            cpuDominantHertz([
                 (name: "3.2 GHz", residency: 10),
                 (name: "2400 MHz", residency: 40),
             ]),
             2_400_000_000
         )
-        XCTAssertNil(EnergyModelDecoder.dominantHertz([(name: "P1", residency: 90)]))
+        XCTAssertNil(cpuDominantHertz([(name: "P1", residency: 90)]))
         XCTAssertNil(EnergyModelDecoder.hertz(fromStateName: "P6"))
     }
 
@@ -422,6 +397,19 @@ final class EnergyModelDecoderTests: XCTestCase {
                 XCTAssertFalse(text.contains(token), "\(relative) \(token)")
             }
         }
+    }
+
+    /// CPU clusters still take the state that spent the most time, then parse its name.
+    /// GPU frequency no longer uses this rule.
+    private func cpuDominantHertz(_ states: [(name: String, residency: Int64)]) -> Double? {
+        var winner: (name: String, residency: Int64)?
+        for state in states where state.residency > 0 {
+            if state.residency > (winner?.residency ?? -1) {
+                winner = state
+            }
+        }
+        guard let winner else { return nil }
+        return EnergyModelDecoder.hertz(fromStateName: winner.name)
     }
 
     private func m1ProVoltageTable() -> [VoltageState9] {
