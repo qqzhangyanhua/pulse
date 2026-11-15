@@ -17,6 +17,8 @@ struct EnergyModelReading: Equatable {
 }
 
 enum EnergyModelDecoder {
+    static let gpuTotalChannel = "GPU Energy"
+
     static func deltaWatts(
         previous: EnergyModelChannel?,
         current: EnergyModelChannel,
@@ -62,14 +64,13 @@ enum EnergyModelDecoder {
         channels: [(previous: EnergyModelChannel, current: EnergyModelChannel)],
         elapsed: TimeInterval
     ) -> Double? {
-        let total = "GPU Energy"
-        if channels.contains(where: { $0.current.name == total }) {
-            return summedWatts(channels: channels, elapsed: elapsed) { $0 == total }
+        if channels.contains(where: { $0.current.name == gpuTotalChannel }) {
+            return summedWatts(channels: channels, elapsed: elapsed) { $0 == gpuTotalChannel }
         }
         return summedWatts(channels: channels, elapsed: elapsed) { $0.contains("GPU") }
     }
 
-    /// `ANE` or `Neural`, case insensitive. Same sum rule as GPU.
+    /// `ANE` or `Neural`, case insensitive. Finite matching channels are summed; no match is nil.
     static func aneWatts(
         channels: [(previous: EnergyModelChannel, current: EnergyModelChannel)],
         elapsed: TimeInterval

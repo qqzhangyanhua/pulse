@@ -119,9 +119,20 @@ final class EnergyModelDecoderTests: XCTestCase {
             pair("GPU0", "mJ", 0, 285),
             pair("GPU SRAM0", "mJ", 0, 11),
         ]
-        XCTAssertNil(EnergyModelDecoder.gpuWatts(channels: channels + [pair("GPU Energy", "nJ", 5_000, 1_000)], elapsed: 1))
-        XCTAssertNil(EnergyModelDecoder.gpuWatts(channels: channels + [pair("GPU Energy", "furlong", 0, 1_000)], elapsed: 1))
-        XCTAssertEqual(EnergyModelDecoder.gpuWatts(channels: channels + [pair("GPU Energy", "nJ", 7, 7)], elapsed: 1), 0)
+        let negativeDelta = channels + [pair("GPU Energy", "nJ", 5_000, 1_000)]
+        XCTAssertNil(EnergyModelDecoder.gpuWatts(channels: negativeDelta, elapsed: 1))
+
+        let unknownUnit = channels + [pair("GPU Energy", "furlong", 0, 1_000)]
+        XCTAssertNil(EnergyModelDecoder.gpuWatts(channels: unknownUnit, elapsed: 1))
+    }
+
+    func testZeroDeltaGPUEnergyIsRealZero() {
+        let channels = [
+            pair("GPU0", "mJ", 0, 285),
+            pair("GPU SRAM0", "mJ", 0, 11),
+            pair("GPU Energy", "nJ", 7, 7),
+        ]
+        XCTAssertEqual(EnergyModelDecoder.gpuWatts(channels: channels, elapsed: 1), 0)
     }
 
     func testANEMatchesEitherNameAndIgnoresCase() {
