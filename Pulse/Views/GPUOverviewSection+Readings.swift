@@ -13,7 +13,7 @@ extension GPUOverviewSection {
 
     var readingCards: some View {
         HStack(spacing: 12) {
-            readingCard(title: GPUPageCopy.utilization, value: vm.gpuPage.utilizationText, symbol: "display")
+            utilizationCard
             readingCard(title: GPUPageCopy.memory, value: vm.gpuPage.memoryText, symbol: "memorychip")
             readingCard(
                 title: GPUPageCopy.power,
@@ -27,6 +27,40 @@ extension GPUOverviewSection {
             )
         }
         .frame(height: 142)
+    }
+
+    private var utilizationCard: some View {
+        PulseCard {
+            VStack(alignment: .leading, spacing: 6) {
+                metricLabel(GPUPageCopy.utilization, symbol: "display")
+                Spacer(minLength: 0)
+                Text(vm.gpuPage.utilizationText)
+                    .font(.system(size: 25, weight: .semibold))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                HStack(spacing: 8) {
+                    engineTag(GPUPageCopy.renderer, vm.gpuPage.rendererText)
+                    engineTag(GPUPageCopy.tiler, vm.gpuPage.tilerText)
+                    Spacer(minLength: 0)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        }
+    }
+
+    private func engineTag(_ title: String, _ value: String) -> some View {
+        HStack(spacing: 3) {
+            Text(title)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .fontWeight(.semibold)
+                .monospacedDigit()
+                .foregroundStyle(Color.primary.opacity(0.85))
+        }
+        .font(.system(size: 10))
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
     }
 
     private func readingCard(title: String, value: String, symbol: String) -> some View {
