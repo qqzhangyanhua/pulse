@@ -70,6 +70,7 @@ struct GPUOverviewSection: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilityLabel)
             chartAndShare
+            displaysCard
         }
     }
 

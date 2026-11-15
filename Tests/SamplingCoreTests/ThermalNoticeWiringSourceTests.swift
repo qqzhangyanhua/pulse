@@ -50,7 +50,11 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         XCTAssertTrue(thermal.contains("ThermalNotice.message(for:"))
         XCTAssertFalse(vm.contains("ThermalNotice.message(for:"))
         XCTAssertFalse(vm.contains("Timer"))
-        XCTAssertEqual(occurrenceCount(of: "addObserver", in: vm), 1)
+        XCTAssertEqual(
+            occurrenceCount(of: "addObserver", in: vm),
+            2,
+            "GPU displays observe screen parameters while the GPU page is open"
+        )
     }
 
     func testMenuBarDoesNotReadThermalState() throws {
@@ -116,7 +120,11 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         let hold = try braceBody(after: "if projected.processes.isEmpty, projected.noHighLoad == false", in: advice)
         XCTAssertEqual(compact(hold), "{return}")
         XCTAssertTrue(advice.contains("excludingPid: ownPid"))
-        XCTAssertEqual(occurrenceCount(of: "addObserver", in: try WiringSourceText.text(for: "MemoryDashboardVM")), 1)
+        XCTAssertEqual(
+            occurrenceCount(of: "addObserver", in: try WiringSourceText.text(for: "MemoryDashboardVM")),
+            2,
+            "GPU displays observe screen parameters while the GPU page is open"
+        )
     }
 
     func testFourOverviewsShareTheThermalNoticeProperty() throws {
@@ -341,7 +349,11 @@ final class ThermalNoticeWiringSourceTests: XCTestCase {
         let finishGate = try braceBody(after: "if let token", in: perform)
         XCTAssertTrue(finishGate.contains("finishQuit("))
         XCTAssertFalse(finishGate.contains("ProcessActions.terminate"))
-        XCTAssertEqual(occurrenceCount(of: "addObserver", in: try WiringSourceText.text(for: "MemoryDashboardVM")), 1)
+        XCTAssertEqual(
+            occurrenceCount(of: "addObserver", in: try WiringSourceText.text(for: "MemoryDashboardVM")),
+            2,
+            "GPU displays observe screen parameters while the GPU page is open"
+        )
     }
 
     func testAdviceRowUsesExecutablePathWhenTheRunningAppHasNoIcon() throws {

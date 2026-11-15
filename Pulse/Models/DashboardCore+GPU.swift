@@ -38,4 +38,16 @@ extension DashboardCore {
             transition: transition
         )
     }
+
+    /// Replaces the display card. Nil or empty is 「—」 for the whole card.
+    /// Not called from the sampling frame, and not written into history.
+    mutating func apply(gpuDisplays readings: [GPUDisplayReading]?) -> [DashboardEffect] {
+        gpuDisplays = GPUDisplayProjection.present(readings)
+        return []
+    }
+
+    /// Display list only. Utilization sampling stays on every page.
+    func gpuDisplayWatchEffect(on page: DashboardPage) -> DashboardEffect {
+        page == .gpu ? .startGPUDisplayWatch : .stopGPUDisplayWatch
+    }
 }
