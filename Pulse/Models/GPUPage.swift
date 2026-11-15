@@ -88,6 +88,8 @@ struct GPUPageState: Equatable, Sendable {
 enum GPUPageCopy {
     static let utilization = "GPU 使用率"
     static let memory = "GPU 占用内存"
+    static let power = "GPU 功耗"
+    static let frequency = "GPU 频率"
     static let sampling = "正在采样…"
     static let failureTitle = "暂时读不到 GPU 数据"
     static let failureMessage = SamplingRetryChrome.overviewFailureMessage
@@ -227,5 +229,41 @@ enum GPUPageProjection {
     private static func memoryBytes(on node: GPUAcceleratorNode) -> UInt64? {
         guard case .bytes(let bytes) = node.statistics[inUseSystemMemoryKey] else { return nil }
         return bytes
+    }
+}
+
+/// Mean and peak texts for the utilization curve. Both are 「—」 when no number qualifies.
+struct GPUCurveSummary: Equatable, Sendable {
+    var meanText: String
+    var peakText: String
+
+    static let meanTitle = "均值"
+    static let peakTitle = "峰值"
+}
+
+extension GPUPageState {
+    /// 「实时」 uses the in-memory ring. Other ranges use history points.
+    /// A nil point is a gap, not 0. No finite number is 「—」.
+    func curveSummary(range: HistoryCurveRange, historyPoints: [Double?]) -> GPUCurveSummary {
+        let numbers = range == .live ? finiteLiveSamples : finiteHistoryPoints(historyPoints)
+        guard !numbers.isEmpty, let peak = numbers.max() else {
+            return GPUCurveSummary(meanText: CPUPercentText.missing, peakText: CPUPercentText.missing)
+        }
+        let mean = numbers.reduce(0, +) / Double(numbers.count)
+        return GPUCurveSummary(
+            meanText: CPUPercentText.string(mean),
+            peakText: CPUPercentText.string(peak)
+        )
+    }
+
+    private var finiteLiveSamples: [Double] {
+        history.samples.map(\.value).filter(\.isFinite)
+    }
+
+    private func finiteHistoryPoints(_ points: [Double?]) -> [Double] {
+        points.compactMap { point in
+            guard let point, point.isFinite else { return nil }
+            return point
+        }
     }
 }

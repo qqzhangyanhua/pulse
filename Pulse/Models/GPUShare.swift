@@ -213,6 +213,14 @@ struct GPUShareRow: Equatable, Sendable, Identifiable {
     var bundleIdentifier: String?
     var executablePath: String?
     var id: Int32 { pid }
+
+    /// Nil means no bar. 0 is an empty track. Above 100% stays full; the text keeps the real value.
+    var barFraction: Double? {
+        guard let percent, percent.isFinite else { return nil }
+        if percent <= 0 { return 0 }
+        if percent >= 100 { return 1 }
+        return percent / 100
+    }
 }
 
 struct GPUShareBaseline: Equatable, Sendable {

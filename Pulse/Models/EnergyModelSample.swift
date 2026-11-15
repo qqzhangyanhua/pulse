@@ -149,13 +149,24 @@ enum EnergyModelDecoder {
 
 enum EnergyModelCopy {
     static func gpuPowerLine(watts: Double?) -> String {
-        wattsLine("GPU 功耗", watts)
+        "GPU 功耗 · \(gpuPowerReading(watts))"
     }
 
     static func gpuFrequencyLine(hertz: Double?) -> String {
-        guard let hertz, hertz.isFinite, hertz >= 0 else { return "GPU 频率 · —" }
+        "GPU 频率 · \(gpuFrequencyReading(hertz))"
+    }
+
+    /// Card value. Missing and non-finite stay 「—」. Real 0 is `0.0 W`.
+    static func gpuPowerReading(_ watts: Double?) -> String {
+        guard let watts, watts.isFinite else { return "—" }
+        return String(format: "%.1f W", locale: CPUPercentText.posix, watts)
+    }
+
+    /// Card value. Missing, non-finite, and negative stay 「—」. Real 0 is `0.00 GHz`.
+    static func gpuFrequencyReading(_ hertz: Double?) -> String {
+        guard let hertz, hertz.isFinite, hertz >= 0 else { return "—" }
         let ghz = hertz / 1_000_000_000
-        return "GPU 频率 · \(String(format: "%.2f", locale: CPUPercentText.posix, ghz)) GHz"
+        return String(format: "%.2f GHz", locale: CPUPercentText.posix, ghz)
     }
 
     static func aneLine(watts: Double?) -> String {
