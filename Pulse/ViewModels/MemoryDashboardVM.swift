@@ -110,6 +110,7 @@ final class MemoryDashboardVM: ObservableObject {
     private var samplingClock = SamplingClock()
     private var samplingGate = SamplingRequestGate()
     var thermalObserver: NSObjectProtocol?
+    var gpuDisplayObserver: NSObjectProtocol?
     var machineRefreshTask: Task<Void, Never>?
     var energyBatteryRefreshTask: Task<Void, Never>?
     var sleepAssertionRefreshTask: Task<Void, Never>?
@@ -128,6 +129,7 @@ final class MemoryDashboardVM: ObservableObject {
             energyBatteryRefreshTask?.cancel()
             sleepAssertionRefreshTask?.cancel()
             launchItemRefreshTask?.cancel()
+            endGPUDisplayWatch()
             stopProcessNetworkWatch()
             endThermalWatch()
             endConnectionWatch()
@@ -446,6 +448,8 @@ final class MemoryDashboardVM: ObservableObject {
                 syncLaunchItemWatch()
             case .startProcessNetworkWatch, .stopProcessNetworkWatch:
                 syncProcessNetworkWatch()
+            case .startGPUDisplayWatch, .stopGPUDisplayWatch:
+                syncGPUDisplayWatch()
             case .lookupPublicIP(let queriedAt):
                 let transport = PublicIPURLSessionTransport()
                 Task { [weak self] in

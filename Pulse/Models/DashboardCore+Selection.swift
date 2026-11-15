@@ -239,6 +239,7 @@ extension DashboardCore {
             effects.append(.stopEnergyBatteryWatch)
             effects.append(.stopSleepAssertionWatch)
         }
+        effects.append(gpuDisplayWatchEffect(on: selectedPage))
         if selectedPage == .network {
             effects.append(.startProcessNetworkWatch)
         } else {

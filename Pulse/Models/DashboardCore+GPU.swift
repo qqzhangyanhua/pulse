@@ -84,6 +84,18 @@ extension DashboardCore {
         )
     }
 
+    /// Replaces the display card. Nil or empty is 「—」 for the whole card.
+    /// Not called from the sampling frame, and not written into history.
+    mutating func apply(gpuDisplays readings: [GPUDisplayReading]?) -> [DashboardEffect] {
+        gpuDisplays = GPUDisplayProjection.present(readings)
+        return []
+    }
+
+    /// Display list only. Utilization sampling stays on every page.
+    func gpuDisplayWatchEffect(on page: DashboardPage) -> DashboardEffect {
+        page == .gpu ? .startGPUDisplayWatch : .stopGPUDisplayWatch
+    }
+
     /// GPU-share name. Only a pid still in the live process rows can open the memory page.
     func gpuShareNameOpensMemoryPage(_ pid: Int32) -> Bool {
         ProcessSelection.acceptedPid(pid, in: rows) != nil

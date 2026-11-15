@@ -37,6 +37,9 @@ enum DashboardEffect: Equatable {
     /// `nettop` while the network page is selected. Not a sampler task.
     case startProcessNetworkWatch
     case stopProcessNetworkWatch
+    /// CoreGraphics display list while the GPU page is selected. Not a sample tick.
+    case startGPUDisplayWatch
+    case stopGPUDisplayWatch
     /// Outbound public-IP lookup. Returned only from the query click.
     case lookupPublicIP(queriedAt: Date)
     /// System location prompt for the Wi-Fi name. Returned only from the allow click.
@@ -99,6 +102,8 @@ struct DashboardCore {
     var gpuTimeLedger = GPUTimeMinuteLedger()
     /// Top GPU-time rows. Nil until a frame includes an AGX client read.
     var gpuTime: GPUTimePresentation?
+    /// Active screens for the GPU page. Not written by the sample frame.
+    var gpuDisplays = GPUDisplaysCard.missing
     var chipTemperature = ChipTemperaturePageState.initial
     /// Nil until the machine page's reader returns. Not cleared on leave.
     var machineFacts: MachineFacts?
