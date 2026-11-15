@@ -212,6 +212,29 @@ enum ProcessQuitSession {
         return Selection(listSelectedPid: legal, sidebarSubjectPid: subject)
     }
 
+    /// Windowed keep rewrites the list id only. An in-rows subject clears with the
+    /// list. An absent unknown record stays on the sidebar. The store is not mutated.
+    static func windowedOnlySelection(
+        nextListPid: Int32?,
+        sidebarSubjectPid: Int32?,
+        rows: [ProcessRow],
+        store: ProcessQuitOutcome
+    ) -> Selection {
+        let legal = ProcessQuitOutcome.legalListSelection(nextListPid, in: rows)
+        let subject: Int32?
+        if let legal {
+            subject = legal
+        } else if let sidebarSubjectPid,
+                  let record = store.record(for: sidebarSubjectPid),
+                  record.presence == .absentAndUnknown,
+                  ProcessQuitOutcome.legalListSelection(sidebarSubjectPid, in: rows) == nil {
+            subject = sidebarSubjectPid
+        } else {
+            subject = nil
+        }
+        return Selection(listSelectedPid: legal, sidebarSubjectPid: subject)
+    }
+
     static func ordinaryTerminate(
         store: inout ProcessQuitOutcome,
         listSelectedPid: Int32?,

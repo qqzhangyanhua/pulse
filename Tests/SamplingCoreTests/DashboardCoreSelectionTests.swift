@@ -179,6 +179,45 @@ final class DashboardCoreSelectionTests: XCTestCase {
         XCTAssertNil(core.selectedPid)
     }
 
+    func testTurningGroupingOnMovesSelectionToTheHeaviestSameNamePid() throws {
+        var core = DashboardCore(ownPid: 1)
+        accept(&core, rows: [
+            row(2, "Chrome", memory: 10, cpu: 1),
+            row(9, "Chrome", memory: 30, cpu: 1),
+        ])
+        _ = core.select(pid: 2)
+        let issued = core.quitSelected()
+        guard case .terminate(let pid, _, let token) = issued.first else {
+            return XCTFail("expected a terminate effect, got \(issued)")
+        }
+        core.finishQuit(pid: pid, token: try XCTUnwrap(token), result: .requestFailed, taskCancelled: false)
+        let before = core.quitOutcome
+        XCTAssertEqual(core.selectedPid, 2)
+        XCTAssertEqual(core.sidebarSubjectPid, 2)
+
+        XCTAssertEqual(core.setGroupedByApp(true), [.forwardSelectedPid(9)])
+
+        XCTAssertEqual(core.selectedPid, 9)
+        XCTAssertEqual(core.sidebarSubjectPid, 9)
+        XCTAssertEqual(core.quitOutcome, before)
+    }
+
+    func testFilterSelectionCallSitesDoNotShareTheRisingOnlyClear() throws {
+        let source = try selectionSource("Pulse/Models/DashboardCore+Selection.swift")
+        let rising = try functionBody(named: "applyRisingOnlySelection", in: source)
+        let windowed = try functionBody(named: "applyWindowedOnlySelection", in: source)
+        let grouped = try functionBody(named: "applyGroupedByAppSelection", in: source)
+
+        XCTAssertTrue(rising.contains("ProcessQuitSession.risingOnlySelection("))
+        XCTAssertTrue(windowed.contains("ProcessQuitSession.windowedOnlySelection("))
+        XCTAssertFalse(windowed.contains("risingOnlySelection"))
+        XCTAssertTrue(grouped.contains("ProcessQuitSession.followListSelection("))
+        XCTAssertTrue(grouped.contains("listSelectedPid: next"))
+        XCTAssertTrue(grouped.contains("sidebarSubjectPid: sidebarSubjectPid"))
+        XCTAssertTrue(grouped.contains("rows: rows"))
+        XCTAssertFalse(grouped.contains("risingOnlySelection"))
+    }
+
     func testTreeFocusUsesTheLiveDecisionSetAndLeavesTheStoredWindowedPids() {
         var kept = DashboardCore(ownPid: 1)
         accept(&kept, rows: [
@@ -292,6 +331,37 @@ final class DashboardCoreSelectionTests: XCTestCase {
                 value: Double(index) * 1_048_576
             )
         }
+    }
+
+    private func selectionSource(_ relative: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        return try String(contentsOf: root.appendingPathComponent(relative), encoding: .utf8)
+    }
+
+    private func functionBody(named name: String, in source: String) throws -> String {
+        guard let range = source.range(of: "func \(name)("),
+              let brace = source[range.lowerBound...].firstIndex(of: "{")
+        else {
+            XCTFail("missing \(name)")
+            return ""
+        }
+        var depth = 0
+        var index = brace
+        while index < source.endIndex {
+            let character = source[index]
+            if character == "{" { depth += 1 }
+            if character == "}" {
+                depth -= 1
+                if depth == 0 {
+                    return String(source[brace...index])
+                }
+            }
+            index = source.index(after: index)
+        }
+        return ""
     }
 }
 
