@@ -123,6 +123,9 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertFalse(reader.contains("Energy Model"))
         XCTAssertFalse(reader.contains("Renderer Utilization"))
         XCTAssertFalse(reader.contains("Tiler Utilization"))
+        XCTAssertTrue(projection.contains("Renderer Utilization %"))
+        XCTAssertTrue(projection.contains("Tiler Utilization %"))
+        XCTAssertTrue(projection.contains("\"recoveryCount\""))
         XCTAssertFalse(reader.contains("missing.count == 1"))
         XCTAssertFalse(reader.contains("copy[missing[0]]"))
         XCTAssertTrue(reader.contains("for index in missing"))
@@ -193,7 +196,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(card.contains("vm.gpuPage.memoryText"))
         XCTAssertEqual(occurrenceCount(of: "vm.selectPage(.gpu)", in: card), 1)
         XCTAssertTrue(card.contains("Button"))
-        for forbidden in ["GPU 功耗", "GPU 频率", "coreCountText", "核 GPU", "渲染器", "分块器", "显存", "容量", "HistoryAnnotatedChart"] {
+        for forbidden in ["GPU 功耗", "GPU 频率", "coreCountText", "核 GPU", "渲染器", "分块器", "GPU 恢复次数", "rendererText", "tilerText", "recoveryText", "显存", "容量", "HistoryAnnotatedChart"] {
             XCTAssertFalse(card.contains(forbidden), forbidden)
         }
 
@@ -208,6 +211,11 @@ final class GPUPageWiringSourceTests: XCTestCase {
             "In use system memory",
             "GPU 功耗",
             "GPU 频率",
+            "渲染器",
+            "分块器",
+            "GPU 恢复次数",
+            "Renderer Utilization",
+            "Tiler Utilization",
         ]
         let menuBar = repoRoot().appendingPathComponent("Pulse/MenuBar", isDirectory: true)
         let entries = try FileManager.default.contentsOfDirectory(at: menuBar, includingPropertiesForKeys: nil)
@@ -231,6 +239,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertFalse(parts[1].contains("GPUOverviewSection+Readings.swift"))
         XCTAssertFalse(parts[1].contains("GPUOverviewSection+Chart.swift"))
         XCTAssertFalse(parts[1].contains("GPUOverviewSection+Share.swift"))
+        XCTAssertFalse(parts[1].contains("GPUOverviewSection+Recovery.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
         XCTAssertFalse(project.contains("IOReport.framework"))
@@ -241,10 +250,45 @@ final class GPUPageWiringSourceTests: XCTestCase {
             "GPUOverviewSection+Readings.swift in Sources",
             "GPUOverviewSection+Chart.swift in Sources",
             "GPUOverviewSection+Share.swift in Sources",
+            "GPUOverviewSection+Recovery.swift in Sources",
             "MemoryDashboardVM+GPU.swift in Sources",
         ] {
             XCTAssertTrue(project.contains(name), name)
         }
+    }
+
+    func testRendererLabelsAndRecoveryCardStayOnTheGPUPage() throws {
+        let readings = try repoText("Pulse/Views/GPUOverviewSection+Readings.swift")
+        XCTAssertTrue(readings.contains("GPUPageCopy.renderer"))
+        XCTAssertTrue(readings.contains("vm.gpuPage.rendererText"))
+        XCTAssertTrue(readings.contains("GPUPageCopy.tiler"))
+        XCTAssertTrue(readings.contains("vm.gpuPage.tilerText"))
+        XCTAssertFalse(readings.contains("Renderer Utilization"))
+        XCTAssertFalse(readings.contains("Tiler Utilization"))
+
+        let recovery = try repoText("Pulse/Views/GPUOverviewSection+Recovery.swift")
+        XCTAssertTrue(recovery.contains("GPUPageCopy.recovery"))
+        XCTAssertTrue(recovery.contains("GPUPageCopy.recoveryCaption"))
+        XCTAssertTrue(recovery.contains("vm.gpuPage.recoveryText"))
+        XCTAssertFalse(recovery.contains("最近一次"))
+        XCTAssertFalse(recovery.contains("自开机以来"))
+        XCTAssertFalse(recovery.contains("recoveryCount"))
+
+        let page = try repoText("Pulse/Views/GPUOverviewSection.swift")
+        var cursor = page.startIndex
+        for token in ["chartAndShare", "recoveryCard"] {
+            guard let found = page.range(of: token, range: cursor..<page.endIndex) else {
+                return XCTFail(token)
+            }
+            cursor = found.upperBound
+        }
+
+        let reader = try repoText("Pulse/Sampling/HostGPUReader.swift")
+        XCTAssertFalse(reader.contains("Renderer Utilization"))
+        XCTAssertFalse(reader.contains("Tiler Utilization"))
+        let projection = try repoText("Pulse/Models/GPUPage.swift")
+        XCTAssertTrue(projection.contains("\"Renderer Utilization %\""))
+        XCTAssertTrue(projection.contains("\"Tiler Utilization %\""))
     }
 
     func testIOReportReadersTryTheSystemDylibBeforeTheFramework() throws {

@@ -70,12 +70,13 @@ struct GPUOverviewSection: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilityLabel)
             chartAndShare
+            recoveryCard
         }
     }
 
     private var accessibilityLabel: String {
         var line = "\(MachinePageCopy.chipValue(vm.machineFacts?.chipName))"
-        line += "，\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)"
+        line += "，\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.renderer) \(vm.gpuPage.rendererText)，\(GPUPageCopy.tiler) \(vm.gpuPage.tilerText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)"
         line += "，\(EnergyModelCopy.gpuPowerLine(watts: vm.cpuEnergy?.gpuWatts))"
         line += "，\(EnergyModelCopy.gpuFrequencyLine(vm.cpuEnergy?.gpuFrequency ?? .missing))"
         if let cores = vm.gpuPage.coreCountText {
