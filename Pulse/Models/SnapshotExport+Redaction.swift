@@ -122,6 +122,8 @@ struct SnapshotDocument: Equatable, Sendable {
             field("网络上行", rateText(frozen.networkOutboundBytesPerSecond)),
             field("磁盘读取", rateText(frozen.diskReadBytesPerSecond)),
             field("磁盘写入", rateText(frozen.diskWriteBytesPerSecond)),
+            field("GPU 使用率", cpuText(frozen.gpuUtilizationPercent)),
+            field("GPU 占用内存", frozen.gpuInUseMemoryBytes.map(ByteFormat.memory) ?? SnapshotExportCopy.unavailable),
         ])
         if !redaction.hidesHostname, let hostname = frozen.hostname {
             lines.append(field("主机名", hostname))

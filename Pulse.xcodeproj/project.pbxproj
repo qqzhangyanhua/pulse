@@ -205,6 +205,7 @@
 		B00000000000000000000352 /* LaunchItemReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000352 /* LaunchItemReader.swift */; };
 		B00000000000000000000353 /* MachineOverviewSection+LaunchItems.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000353 /* MachineOverviewSection+LaunchItems.swift */; };
 		B00000000000000000000354 /* MemoryDashboardVM+LaunchItems.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000354 /* MemoryDashboardVM+LaunchItems.swift */; };
+		B00000000000000000000394 /* MachineOverviewSection+GPU.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000394 /* MachineOverviewSection+GPU.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -268,6 +269,7 @@
 		A00000000000000000000352 /* LaunchItemReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchItemReader.swift; sourceTree = "<group>"; };
 		A00000000000000000000353 /* MachineOverviewSection+LaunchItems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MachineOverviewSection+LaunchItems.swift"; sourceTree = "<group>"; };
 		A00000000000000000000354 /* MemoryDashboardVM+LaunchItems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MemoryDashboardVM+LaunchItems.swift"; sourceTree = "<group>"; };
+		A00000000000000000000394 /* MachineOverviewSection+GPU.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MachineOverviewSection+GPU.swift"; sourceTree = "<group>"; };
 		A00000000000000000000049 /* ProcessRowCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRowCopy.swift; sourceTree = "<group>"; };
 		A00000000000000000000043 /* ProcessMemoryChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessMemoryChoice.swift; sourceTree = "<group>"; };
 		A00000000000000000000028 /* ByteFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteFormat.swift; sourceTree = "<group>"; };
@@ -646,6 +648,7 @@
 				A00000000000000000000170 /* GPUShareCard.swift */,
 				A00000000000000000000079 /* MachineOverviewSection+Throughput.swift */,
 				A00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift */,
+				A00000000000000000000394 /* MachineOverviewSection+GPU.swift */,
 				A00000000000000000000353 /* MachineOverviewSection+LaunchItems.swift */,
 				A00000000000000000000013 /* OverviewCards.swift */,
 				A0000000000000000000000C /* ProcessTablePane.swift */,
@@ -915,6 +918,7 @@
 				B00000000000000000000095 /* HostChipTemperatureReader.swift in Sources */,
 				B00000000000000000000096 /* MemoryDashboardVM+ChipTemperature.swift in Sources */,
 				B00000000000000000000097 /* MachineOverviewSection+ChipTemperature.swift in Sources */,
+				B00000000000000000000394 /* MachineOverviewSection+GPU.swift in Sources */,
 				B0000000000000000000007D /* GPUOverviewSection.swift in Sources */,
 				B0000000000000000000007E /* MemoryDashboardVM+GPU.swift in Sources */,
 				B0000000000000000000007F /* HostConnection.swift in Sources */,

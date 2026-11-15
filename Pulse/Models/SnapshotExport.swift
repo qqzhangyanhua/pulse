@@ -22,6 +22,7 @@ enum SnapshotExportCopy {
 }
 
 /// Frozen fields for one save. Bundle ids, curves, per-process disk, energy, and wakeups are not copied.
+/// GPU power, frequency, renderer, tiler, core count, and process share are not copied.
 /// Executable paths, the host name, and an address are copied only so redaction can hide them.
 struct SnapshotExport: Equatable, Sendable {
     struct Process: Equatable, Sendable {
@@ -52,6 +53,10 @@ struct SnapshotExport: Equatable, Sendable {
     let networkOutboundBytesPerSecond: Double?
     let diskReadBytesPerSecond: Double?
     let diskWriteBytesPerSecond: Double?
+    /// Published GPU page utilization. Nil stays missing; a real 0 stays 0.
+    let gpuUtilizationPercent: Double?
+    /// Published in-use GPU memory. Nil stays missing; a real 0 stays 0 bytes.
+    let gpuInUseMemoryBytes: UInt64?
     /// Noted host name. Nil when the adapter has not recorded one. Not read here.
     let hostname: String?
     /// Address already held in memory. Nil when there is none. Not a new lookup.
@@ -70,7 +75,9 @@ struct SnapshotExport: Equatable, Sendable {
         processListFailed: Bool,
         savedAt: Date,
         hostname: String? = nil,
-        ipAddress: String? = nil
+        ipAddress: String? = nil,
+        gpuUtilizationPercent: Double? = nil,
+        gpuInUseMemoryBytes: UInt64? = nil
     ) -> SnapshotExport? {
         guard let snapshot else { return nil }
         return SnapshotExport(
@@ -92,6 +99,8 @@ struct SnapshotExport: Equatable, Sendable {
             networkOutboundBytesPerSecond: hostNetworkRates.outboundBytesPerSecond,
             diskReadBytesPerSecond: hostDiskRates.readBytesPerSecond,
             diskWriteBytesPerSecond: hostDiskRates.writeBytesPerSecond,
+            gpuUtilizationPercent: gpuUtilizationPercent,
+            gpuInUseMemoryBytes: gpuInUseMemoryBytes,
             hostname: nonBlank(hostname),
             ipAddress: nonBlank(ipAddress),
             processes: rows.map {

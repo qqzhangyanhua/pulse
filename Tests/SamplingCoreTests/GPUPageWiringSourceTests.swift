@@ -118,7 +118,6 @@ final class GPUPageWiringSourceTests: XCTestCase {
             "Pulse/MenuBar/MenuBarStatus.swift",
             "Pulse/MenuBar/MenuBarPopoverView.swift",
             "Pulse/Models/MenuBarReading.swift",
-            "Pulse/Models/SnapshotExport.swift",
             "Pulse/Views/MachineOverviewSection.swift",
             "Pulse/Views/MachineOverviewSection+ChipTemperature.swift",
             "Pulse/Views/MachineOverviewSection+Throughput.swift",
@@ -132,6 +131,48 @@ final class GPUPageWiringSourceTests: XCTestCase {
             XCTAssertFalse(text.contains("coreCountText"), relative)
             XCTAssertFalse(text.contains("核 GPU"), relative)
             XCTAssertFalse(text.contains("gpu-core-count"), relative)
+        }
+    }
+
+    func testMachineGPUCardOpensTheGPUPageAndTheMenuBarStaysClear() throws {
+        let overview = try repoText("Pulse/Views/MachineOverviewSection.swift")
+        XCTAssertEqual(occurrenceCount(of: "gpuCard", in: overview), 1)
+        XCTAssertFalse(overview.contains("selectPage(.gpu)"))
+        XCTAssertFalse(overview.contains("GPU 使用率"))
+        XCTAssertFalse(overview.contains("gpuPage"))
+
+        let card = try repoText("Pulse/Views/MachineOverviewSection+GPU.swift")
+        XCTAssertTrue(card.contains("GPUPageCopy.utilization"))
+        XCTAssertTrue(card.contains("GPUPageCopy.memory"))
+        XCTAssertTrue(card.contains("vm.gpuPage.utilizationText"))
+        XCTAssertTrue(card.contains("vm.gpuPage.memoryText"))
+        XCTAssertEqual(occurrenceCount(of: "vm.selectPage(.gpu)", in: card), 1)
+        XCTAssertTrue(card.contains("Button"))
+        for forbidden in ["GPU 功耗", "GPU 频率", "coreCountText", "核 GPU", "渲染器", "分块器", "显存", "容量", "HistoryAnnotatedChart"] {
+            XCTAssertFalse(card.contains(forbidden), forbidden)
+        }
+
+        let project = try repoText("Pulse.xcodeproj/project.pbxproj")
+        XCTAssertEqual(occurrenceCount(of: "MachineOverviewSection+GPU.swift in Sources", in: project), 2)
+
+        let readings = [
+            "GPU 使用率",
+            "GPU 占用内存",
+            "gpuPage",
+            "Device Utilization",
+            "In use system memory",
+            "GPU 功耗",
+            "GPU 频率",
+        ]
+        let menuBar = repoRoot().appendingPathComponent("Pulse/MenuBar", isDirectory: true)
+        let entries = try FileManager.default.contentsOfDirectory(at: menuBar, includingPropertiesForKeys: nil)
+        let sources = entries.filter { $0.pathExtension == "swift" }
+        XCTAssertFalse(sources.isEmpty)
+        for entry in sources {
+            let text = try String(contentsOf: entry, encoding: .utf8)
+            for reading in readings {
+                XCTAssertFalse(text.contains(reading), "\(entry.lastPathComponent) \(reading)")
+            }
         }
     }
 
@@ -180,12 +221,15 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertFalse(package.contains("linkerSettings"))
     }
 
+    private func repoRoot() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
     private func repoText(_ relative: String) throws -> String {
-        let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        return try String(contentsOf: root.appendingPathComponent(relative), encoding: .utf8)
+        try String(contentsOf: repoRoot().appendingPathComponent(relative), encoding: .utf8)
     }
 
     private func occurrenceCount(of needle: String, in source: String) -> Int {

@@ -62,6 +62,93 @@ final class SnapshotExportTests: XCTestCase {
         XCTAssertEqual(doc.previewText.contains("不可用"), doc.html.contains("不可用"))
     }
 
+    func testSnapshotWritesGPUUtilizationAndInUseMemory() throws {
+        let frozen = try XCTUnwrap(freeze(gpuUtilizationPercent: 42.5, gpuInUseMemoryBytes: 2_048))
+        let doc = document(frozen)
+        assertShared("GPU 使用率", "42.5%", in: doc)
+        assertShared("GPU 占用内存", "2 KB", in: doc)
+        XCTAssertTrue(doc.markdown.contains("GPU 使用率：42.5%"))
+        XCTAssertTrue(doc.markdown.contains("GPU 占用内存：2 KB"))
+        for absent in ["GPU 功耗", "GPU 频率", "渲染器", "分块器", "核 GPU"] {
+            XCTAssertFalse(doc.previewText.contains(absent), absent)
+            XCTAssertFalse(doc.html.contains(absent), absent)
+            XCTAssertFalse(doc.markdown.contains(absent), absent)
+        }
+    }
+
+    func testSnapshotWritesUnavailableWhenGPUReadingsAreMissing() throws {
+        let frozen = try XCTUnwrap(freeze())
+        let doc = document(frozen)
+        assertShared("GPU 使用率", "不可用", in: doc)
+        assertShared("GPU 占用内存", "不可用", in: doc)
+        XCTAssertTrue(doc.markdown.contains("GPU 使用率：不可用"))
+        XCTAssertTrue(doc.markdown.contains("GPU 占用内存：不可用"))
+        XCTAssertFalse(doc.previewText.contains("GPU 使用率：0.0%"))
+        XCTAssertFalse(doc.previewText.contains("GPU 占用内存：0 字节"))
+        XCTAssertFalse(doc.html.contains("GPU 使用率：0.0%"))
+        XCTAssertFalse(doc.html.contains("GPU 占用内存：0 字节"))
+        XCTAssertFalse(doc.markdown.contains("GPU 使用率：0.0%"))
+        XCTAssertFalse(doc.markdown.contains("GPU 占用内存：0 字节"))
+    }
+
+    func testSnapshotWritesRealZeroGPUReadings() throws {
+        let frozen = try XCTUnwrap(freeze(gpuUtilizationPercent: 0, gpuInUseMemoryBytes: 0))
+        let doc = document(frozen)
+        assertShared("GPU 使用率", "0.0%", in: doc)
+        assertShared("GPU 占用内存", "0 字节", in: doc)
+        XCTAssertTrue(doc.markdown.contains("GPU 使用率：0.0%"))
+        XCTAssertTrue(doc.markdown.contains("GPU 占用内存：0 字节"))
+        XCTAssertFalse(doc.previewText.contains("GPU 使用率：不可用"))
+        XCTAssertFalse(doc.previewText.contains("GPU 占用内存：不可用"))
+        XCTAssertFalse(doc.html.contains("GPU 使用率：不可用"))
+        XCTAssertFalse(doc.html.contains("GPU 占用内存：不可用"))
+    }
+
+    func testSnapshotKeepsOneGPUReadingWhenTheOtherIsMissing() throws {
+        let idleMemory = try XCTUnwrap(freeze(gpuUtilizationPercent: 0, gpuInUseMemoryBytes: nil))
+        let idleDoc = document(idleMemory)
+        assertShared("GPU 使用率", "0.0%", in: idleDoc)
+        assertShared("GPU 占用内存", "不可用", in: idleDoc)
+
+        let quietGPU = try XCTUnwrap(freeze(gpuUtilizationPercent: nil, gpuInUseMemoryBytes: 0))
+        let quietDoc = document(quietGPU)
+        assertShared("GPU 使用率", "不可用", in: quietDoc)
+        assertShared("GPU 占用内存", "0 字节", in: quietDoc)
+
+        let unreadable = try XCTUnwrap(freeze(gpuUtilizationPercent: .nan, gpuInUseMemoryBytes: 4_096))
+        let unreadableDoc = document(unreadable)
+        assertShared("GPU 使用率", "不可用", in: unreadableDoc)
+        assertShared("GPU 占用内存", "4 KB", in: unreadableDoc)
+        let lowered = (unreadableDoc.previewText + unreadableDoc.html + unreadableDoc.markdown).lowercased()
+        XCTAssertFalse(lowered.contains("nan"))
+    }
+
+    func testGPUSnapshotLinesLeaveRedactionUnchanged() throws {
+        let frozen = try XCTUnwrap(freeze(
+            rows: [row(pid: 4, name: "SecretApp", memory: 9, path: "/Users/alice/bin/tool")],
+            hostname: "alices-mac.local",
+            ipAddress: "203.0.113.9",
+            gpuUtilizationPercent: 12,
+            gpuInUseMemoryBytes: 0
+        ))
+        let doc = document(frozen, redaction: .default)
+        assertShared("GPU 使用率", "12.0%", in: doc)
+        assertShared("GPU 占用内存", "0 字节", in: doc)
+        XCTAssertTrue(doc.markdown.contains("GPU 使用率：12.0%"))
+        XCTAssertTrue(doc.markdown.contains("GPU 占用内存：0 字节"))
+        let hidden = "已隐去：进程名、带用户名的路径、主机名、IP"
+        XCTAssertTrue(doc.previewText.contains(hidden))
+        XCTAssertTrue(doc.html.contains(hidden))
+        XCTAssertTrue(doc.markdown.contains(hidden))
+        for secret in ["SecretApp", "/Users/alice", "alice", "alices-mac.local", "203.0.113.9"] {
+            XCTAssertFalse(doc.previewText.contains(secret), secret)
+            XCTAssertFalse(doc.html.contains(secret), secret)
+            XCTAssertFalse(doc.markdown.contains(secret), secret)
+        }
+        XCTAssertTrue(doc.previewText.contains("4 · 已隐藏 · 9 字节"))
+        XCTAssertFalse(doc.previewText.contains("GPU 使用率：不可用"))
+    }
+
     func testOneSideCanBeMissingWhileTheOtherZeroStaysZero() throws {
         let frozen = try XCTUnwrap(freeze(
             swap: nil,
@@ -379,7 +466,9 @@ final class SnapshotExportTests: XCTestCase {
         samplingFailed: Bool = false,
         processListFailed: Bool = false,
         hostname: String? = nil,
-        ipAddress: String? = nil
+        ipAddress: String? = nil,
+        gpuUtilizationPercent: Double? = nil,
+        gpuInUseMemoryBytes: UInt64? = nil
     ) -> SnapshotExport? {
         SnapshotExport.freeze(
             snapshot: hostSnapshot(
@@ -407,7 +496,9 @@ final class SnapshotExportTests: XCTestCase {
             processListFailed: processListFailed,
             savedAt: savedAt,
             hostname: hostname,
-            ipAddress: ipAddress
+            ipAddress: ipAddress,
+            gpuUtilizationPercent: gpuUtilizationPercent,
+            gpuInUseMemoryBytes: gpuInUseMemoryBytes
         )
     }
 

@@ -15,7 +15,9 @@ extension DashboardCore {
             processListFailed: processListFailed,
             savedAt: savedAt,
             hostname: snapshotHostname,
-            ipAddress: heldAddress
+            ipAddress: heldAddress,
+            gpuUtilizationPercent: gpuPage.utilizationPercent,
+            gpuInUseMemoryBytes: gpuPage.inUseMemoryBytes
         )
     }
 

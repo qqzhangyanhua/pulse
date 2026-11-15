@@ -31,7 +31,7 @@ struct MachineOverviewSection: View {
             .frame(height: 142)
 
             chipTemperatureCard
-
+            gpuCard
             if let battery = model.battery {
                 batteryBlock(battery)
             }
