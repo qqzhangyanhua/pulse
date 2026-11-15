@@ -39,6 +39,36 @@ extension DashboardCore {
         )
     }
 
+    /// Every accepted frame that read AGX, on every page. A failed process list does not seal.
+    mutating func recordGPUTime(
+        clients: [GPUShareClientSample]?,
+        rows: [ProcessRow],
+        listFailed: Bool,
+        at date: Date
+    ) {
+        guard let clients else { return }
+        let grouped = Dictionary(grouping: clients.filter { $0.pid != nil }) { $0.pid! }
+        var live: [GPUTimeLiveSample] = []
+        var seen = Set<Int32>()
+        if !listFailed {
+            for row in rows {
+                guard seen.insert(row.pid).inserted, let start = row.startTimeSeconds else { continue }
+                live.append(
+                    GPUTimeLiveSample(
+                        pid: row.pid,
+                        startTimeSeconds: start,
+                        name: row.name,
+                        clients: grouped[row.pid] ?? []
+                    )
+                )
+            }
+        }
+        gpuTimeLedger.advance(live: live, at: date, listSucceeded: !listFailed)
+        gpuTime = GPUTimePresentation(
+            rows: GPUTimeRanking.card(entries: gpuTimeLedger.entries, ownPid: ownPid)
+        )
+    }
+
     /// GPU-share name. Only a pid still in the live process rows can open the memory page.
     func gpuShareNameOpensMemoryPage(_ pid: Int32) -> Bool {
         ProcessSelection.acceptedPid(pid, in: rows) != nil

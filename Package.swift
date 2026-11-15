@@ -154,6 +154,7 @@ let package = Package(
                 "Sampling/ProcessEnergy.swift",
                 "Sampling/ProcessEnergyWindow.swift",
                 "Sampling/ProcessEnergyMinuteLedger.swift",
+                "Sampling/GPUTimeMinuteLedger.swift",
                 "Sampling/SamplingPace.swift",
                 "Sampling/SamplingRequestGate.swift",
                 "Sampling/SamplingRetryChrome.swift",

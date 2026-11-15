@@ -211,6 +211,8 @@ final class GPUPageWiringSourceTests: XCTestCase {
             "In use system memory",
             "GPU 功耗",
             "GPU 频率",
+            "最近 1 小时 GPU 时间",
+            "GPU 时间",
             "渲染器",
             "分块器",
             "GPU 恢复次数",
@@ -243,8 +245,11 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertFalse(parts[1].contains("GPUOverviewSection+Readings.swift"))
         XCTAssertFalse(parts[1].contains("GPUOverviewSection+Chart.swift"))
         XCTAssertFalse(parts[1].contains("GPUOverviewSection+Share.swift"))
+        XCTAssertFalse(parts[1].contains("GPUOverviewSection+GPUTime.swift"))
         XCTAssertFalse(parts[1].contains("GPUOverviewSection+Recovery.swift"))
         XCTAssertFalse(parts[1].contains("GPUOverviewSection+Distribution.swift"))
+        XCTAssertTrue(parts[1].contains("\"Sampling/GPUTimeMinuteLedger.swift\""))
+        XCTAssertTrue(parts[0].contains("\"Sampling/HostGPUShareReader.swift\""))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
         XCTAssertFalse(project.contains("IOReport.framework"))
@@ -255,12 +260,54 @@ final class GPUPageWiringSourceTests: XCTestCase {
             "GPUOverviewSection+Readings.swift in Sources",
             "GPUOverviewSection+Chart.swift in Sources",
             "GPUOverviewSection+Share.swift in Sources",
+            "GPUOverviewSection+GPUTime.swift in Sources",
             "GPUOverviewSection+Recovery.swift in Sources",
             "GPUOverviewSection+Distribution.swift in Sources",
+            "GPUTimeMinuteLedger.swift in Sources",
             "MemoryDashboardVM+GPU.swift in Sources",
         ] {
             XCTAssertTrue(project.contains(name), name)
         }
+    }
+
+    func testGPUTimeCardIsBelowTheShareCardAndTheClientReadStaysClosed() throws {
+        let page = try repoText("Pulse/Views/GPUOverviewSection.swift")
+        guard let share = page.range(of: "chartAndShare")?.upperBound,
+              let time = page.range(of: "gpuTimeCard")?.lowerBound
+        else {
+            return XCTFail("gpu time card")
+        }
+        XCTAssertLessThan(share, time)
+
+        let card = try repoText("Pulse/Views/GPUOverviewSection+GPUTime.swift")
+        XCTAssertTrue(card.contains("GPUTimeCopy.title"))
+        XCTAssertTrue(card.contains("GPUTimeCopy.exited"))
+        XCTAssertFalse(card.contains("terminateThermalAdvice"))
+        XCTAssertFalse(card.contains("IOServiceOpen"))
+
+        let reader = try repoText("Pulse/Sampling/HostGPUShareReader.swift")
+        XCTAssertFalse(reader.contains("IOServiceOpen("))
+        XCTAssertTrue(reader.contains("IORegistryEntryCreateCFProperties"))
+        XCTAssertTrue(reader.contains("AGXDeviceUserClient"))
+
+        let sampler = try repoText("Pulse/Sampling/MemorySampler.swift")
+        XCTAssertTrue(sampler.contains("HostGPUShareReader.read()"))
+        XCTAssertFalse(sampler.contains("readsGPUShare"))
+        XCTAssertEqual(occurrenceCount(of: "HostGPUShareReader.read()", in: sampler), 1)
+
+        let ledger = try repoText("Pulse/Sampling/GPUTimeMinuteLedger.swift")
+        XCTAssertTrue(ledger.contains("import Foundation"))
+        XCTAssertFalse(ledger.contains("import Darwin"))
+        XCTAssertFalse(ledger.contains("import IOKit"))
+        XCTAssertFalse(ledger.contains("import SwiftUI"))
+        XCTAssertFalse(ledger.contains("IOServiceOpen"))
+
+        let history = try repoText("Pulse/Sampling/HistoryStore.swift")
+        XCTAssertFalse(history.contains("GPUTimeMinuteLedger"))
+        XCTAssertFalse(history.contains("最近 1 小时 GPU 时间"))
+        let snapshot = try repoText("Pulse/Models/SnapshotExport.swift")
+        XCTAssertFalse(snapshot.contains("最近 1 小时 GPU 时间"))
+        XCTAssertFalse(snapshot.contains("GPUTimeMinuteLedger"))
     }
 
     func testRendererLabelsAndRecoveryCardStayOnTheGPUPage() throws {
@@ -282,7 +329,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
 
         let page = try repoText("Pulse/Views/GPUOverviewSection.swift")
         var cursor = page.startIndex
-        for token in ["chartAndShare", "recoveryCard"] {
+        for token in ["chartAndShare", "recoveryCard", "gpuTimeCard"] {
             guard let found = page.range(of: token, range: cursor..<page.endIndex) else {
                 return XCTFail(token)
             }
