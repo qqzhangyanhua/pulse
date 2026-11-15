@@ -1,0 +1,21 @@
+Tests/SamplingCoreTests/GPUPageWiringSourceTests.swift
+  s_1e04cd720b9f78::t_90502bff578459 71,170-171
+docs/adr/0012-energy-model-power-frequency.md
+  s_1e04cd720b9f78::t_837ac215a26762 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "6b78d20569047fb94d6f1a9696013018179c7988",
+  "prompts": {},
+  "sessions": {
+    "s_1e04cd720b9f78": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "d60393aa-71f1-4739-99f1-5f22f6117527",
+        "model": "unknown"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
