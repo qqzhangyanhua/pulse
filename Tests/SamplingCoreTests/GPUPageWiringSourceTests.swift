@@ -64,7 +64,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
 
         let page = try repoText("Pulse/Views/GPUOverviewSection.swift")
         var cursor = page.startIndex
-        for token in ["ThermalAdviceCard()", "specLabels", "readingCards", "HistoryRangeControl(", "chartAndShare"] {
+        for token in ["ThermalAdviceCard()", "specLabels", "readingCards", "HistoryRangeControl(", "chartAndShare", "frequencyDistributionCard"] {
             guard let found = page.range(of: token, range: cursor..<page.endIndex) else {
                 return XCTFail(token)
             }
@@ -217,6 +217,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertFalse(parts[1].contains("GPUOverviewSection+Readings.swift"))
         XCTAssertFalse(parts[1].contains("GPUOverviewSection+Chart.swift"))
         XCTAssertFalse(parts[1].contains("GPUOverviewSection+Share.swift"))
+        XCTAssertFalse(parts[1].contains("GPUOverviewSection+Distribution.swift"))
 
         let project = try repoText("Pulse.xcodeproj/project.pbxproj")
         XCTAssertFalse(project.contains("IOReport.framework"))
@@ -227,6 +228,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
             "GPUOverviewSection+Readings.swift in Sources",
             "GPUOverviewSection+Chart.swift in Sources",
             "GPUOverviewSection+Share.swift in Sources",
+            "GPUOverviewSection+Distribution.swift in Sources",
             "MemoryDashboardVM+GPU.swift in Sources",
         ] {
             XCTAssertTrue(project.contains(name), name)
