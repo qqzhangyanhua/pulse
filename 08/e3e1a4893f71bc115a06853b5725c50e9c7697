@@ -1,0 +1,29 @@
+Pulse/Models/EnergyModelSample.swift
+  s_6a3a80b17d9eb2::t_70cef8ff2097ec 59-60,65-69
+Tests/SamplingCoreTests/EnergyModelDecoderTests.swift
+  s_6a3a80b17d9eb2::t_862fa68ac31963 92-126
+docs/PRD.md
+  s_6a3a80b17d9eb2::t_183c3ded495513 37
+docs/TECH.md
+  s_6a3a80b17d9eb2::t_01b4926111fa12 60,168,339
+docs/adr/0012-energy-model-power-frequency.md
+  s_6a3a80b17d9eb2::t_f8584136d0c793 3,18
+docs/adr/0020-gpu-power-energy-channel.md
+  s_6a3a80b17d9eb2::t_81bb0e46fcbe11 1-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "08e3e1a4893f71bc115a06853b5725c50e9c7697",
+  "prompts": {},
+  "sessions": {
+    "s_6a3a80b17d9eb2": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "47397575-06e1-43ab-8dc4-1df746dc9b2d",
+        "model": "unknown"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
