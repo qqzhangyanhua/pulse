@@ -154,6 +154,31 @@ final class GPUPageWiringSourceTests: XCTestCase {
         }
     }
 
+    func testIOReportReadersTryTheSystemDylibBeforeTheFramework() throws {
+        let dylib = "\"/usr/lib/libIOReport.dylib\""
+        let framework = "\"/System/Library/PrivateFrameworks/IOReport.framework/IOReport\""
+        for relative in ["Pulse/Sampling/HostGPUReader.swift", "Pulse/Sampling/HostEnergyModelReader.swift"] {
+            let reader = try repoText(relative)
+            guard let dylibAt = reader.range(of: dylib)?.lowerBound,
+                  let frameworkAt = reader.range(of: framework)?.lowerBound
+            else {
+                XCTFail("\(relative) must name both IOReport paths")
+                continue
+            }
+            XCTAssertLessThan(dylibAt, frameworkAt, relative)
+            XCTAssertEqual(occurrenceCount(of: "dlopen(", in: reader), 1, relative)
+            XCTAssertTrue(reader.contains("dlopen($0, RTLD_LAZY | RTLD_LOCAL)"), relative)
+            XCTAssertFalse(reader.contains("IOServiceOpen"), relative)
+        }
+
+        let project = try repoText("Pulse.xcodeproj/project.pbxproj")
+        XCTAssertFalse(project.contains("libIOReport"))
+        XCTAssertFalse(project.contains("IOReport.framework"))
+        let package = try repoText("Package.swift")
+        XCTAssertFalse(package.contains("IOReport"))
+        XCTAssertFalse(package.contains("linkerSettings"))
+    }
+
     private func repoText(_ relative: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

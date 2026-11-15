@@ -106,7 +106,11 @@ enum HostGPUReader {
 /// Device residency for the whole machine. Opened with `dlopen`, not linked.
 /// The first sample has no delta, so it stays nil instead of storing 0.
 private enum IOReportDeviceChannel {
-    private static let frameworkPath = "/System/Library/PrivateFrameworks/IOReport.framework/IOReport"
+    // macOS 26 no longer opens the framework path ("not in dyld cache"); the dylib still does.
+    private static let libraryPaths = [
+        "/usr/lib/libIOReport.dylib",
+        "/System/Library/PrivateFrameworks/IOReport.framework/IOReport",
+    ]
     private static let groupName = "GPU Stats"
     private static let subgroupName = "GPU Performance States"
     private static let offState = "OFF"
@@ -171,7 +175,7 @@ private enum IOReportDeviceChannel {
     private static func loadedSymbols() -> Symbols? {
         if let symbols { return symbols }
         if unavailable { return nil }
-        guard let opened = dlopen(frameworkPath, RTLD_LAZY | RTLD_LOCAL) else {
+        guard let opened = libraryPaths.lazy.compactMap({ dlopen($0, RTLD_LAZY | RTLD_LOCAL) }).first else {
             unavailable = true
             return nil
         }

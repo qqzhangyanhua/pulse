@@ -5,7 +5,11 @@ import Foundation
 /// CPU Stats and GPU Stats are separate group deltas on that same library.
 /// The first sample of a subscription has no delta, so watts and frequency stay nil.
 enum HostEnergyModelReader {
-    private static let frameworkPath = "/System/Library/PrivateFrameworks/IOReport.framework/IOReport"
+    // macOS 26 no longer opens the framework path ("not in dyld cache"); the dylib still does.
+    private static let libraryPaths = [
+        "/usr/lib/libIOReport.dylib",
+        "/System/Library/PrivateFrameworks/IOReport.framework/IOReport",
+    ]
     private static let energyGroup = "Energy Model"
     private static let cpuStatsGroup = "CPU Stats"
     private static let gpuStatsGroup = "GPU Stats"
@@ -195,7 +199,7 @@ enum HostEnergyModelReader {
     private static func loadedSymbols() -> Symbols? {
         if let symbols { return symbols }
         if unavailable { return nil }
-        guard let opened = dlopen(frameworkPath, RTLD_LAZY | RTLD_LOCAL) else {
+        guard let opened = libraryPaths.lazy.compactMap({ dlopen($0, RTLD_LAZY | RTLD_LOCAL) }).first else {
             unavailable = true
             return nil
         }

@@ -1,6 +1,6 @@
 # ADR-0012：CPU、GPU、ANE、DRAM 的功耗和频率读 Energy Model
 
-状态：已采纳（#192、#211）。补充 [ADR-0004](0004-gpu-accelerator-stats.md)，不放开它对 `IOServiceOpen`、SMC、Metal 计数器和 `powermetrics` 的禁止。GPU 页显示这一条订阅读到的 GPU 功耗和 GPU 频率。使用率仍不把渲染器或分块器的百分比平均成使用率，仍不显示温度，仍不调用 `IOServiceOpen`。能耗页显示 ANE 和 DRAM 功耗。
+状态：已采纳（#192、#211）。补充 [ADR-0004](0004-gpu-accelerator-stats.md)，不放开它对 `IOServiceOpen`、SMC、Metal 计数器和 `powermetrics` 的禁止。GPU 页显示这一条订阅读到的 GPU 功耗和 GPU 频率。使用率仍不把渲染器或分块器的百分比平均成使用率，仍不显示温度，仍不调用 `IOServiceOpen`。能耗页显示 ANE 和 DRAM 功耗。补充（#219）：macOS 26 打不开下面的 framework 路径，读取器先 `dlopen` `/usr/lib/libIOReport.dylib`，打不开再试 framework 路径，仍只用 `dlopen`，两个都打不开时读数是「—」。
 
 ## 背景
 
