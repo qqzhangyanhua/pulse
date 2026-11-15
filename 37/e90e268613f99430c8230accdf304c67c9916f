@@ -1,0 +1,36 @@
+Pulse/Views/MachineOverviewSection.swift
+  s_4cc478d054b0f7::t_ee45248633766d 8,16,46-47
+Pulse/Views/MachineOverviewSection+ChipTemperature.swift
+  s_4cc478d054b0f7::t_dd1d74fe0772a9 18-20,25
+docs/TECH.md
+  s_4cc478d054b0f7::t_c108bb505afdb8 334
+  s_4cc478d054b0f7::t_351444a87a610e 156,160
+Pulse/Views/MachineOverviewSection+LaunchItems.swift
+  s_4cc478d054b0f7::t_0897865e367930 9-27,35-36,41-57
+Pulse/Views/OverviewCards.swift
+  s_4cc478d054b0f7::t_bf9160e112c79d 319,341
+Pulse/Views/MemoryDashboardView.swift
+  s_4cc478d054b0f7::t_f8dd080df3fa95 175-178,181,209,211,216-218
+Tests/SamplingCoreTests/NetworkConnectionWiringSourceTests.swift
+  s_4cc478d054b0f7::t_969fc527cbf068 97-100
+Pulse/Views/HistoryRangeControl.swift
+  s_4cc478d054b0f7::t_0e3f7e91bdfd52 5-8,21-22
+Tests/SamplingCoreTests/LaunchItemWiringSourceTests.swift
+  s_4cc478d054b0f7::t_d9f22409cbb4a4 56-58,67-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "37e90e268613f99430c8230accdf304c67c9916f",
+  "prompts": {},
+  "sessions": {
+    "s_4cc478d054b0f7": {
+      "agent_id": {
+        "tool": "grok",
+        "id": "01a1df0d-9b44-7211-b444-85dafce5d8f5",
+        "model": "grok-4.7-build-fast"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
