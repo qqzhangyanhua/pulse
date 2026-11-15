@@ -68,6 +68,7 @@ final class GPUPageWiringSourceTests: XCTestCase {
         XCTAssertTrue(reader.contains("GPUCoreCount.parse"))
         XCTAssertFalse(reader.contains("IOServiceOpen"))
         XCTAssertFalse(reader.contains("powermetrics"))
+        XCTAssertTrue(reader.contains("/usr/lib/libIOReport.dylib"))
         XCTAssertTrue(reader.contains("/System/Library/PrivateFrameworks/IOReport.framework/IOReport"))
         XCTAssertTrue(reader.contains("\"GPU Stats\""))
         XCTAssertTrue(reader.contains("\"GPU Performance States\""))
@@ -166,8 +167,8 @@ final class GPUPageWiringSourceTests: XCTestCase {
                 continue
             }
             XCTAssertLessThan(dylibAt, frameworkAt, relative)
-            XCTAssertEqual(occurrenceCount(of: "dlopen(", in: reader), 1, relative)
-            XCTAssertTrue(reader.contains("dlopen($0, RTLD_LAZY | RTLD_LOCAL)"), relative)
+            XCTAssertTrue(reader.contains("dlopen("), relative)
+            XCTAssertTrue(reader.contains("RTLD_LAZY | RTLD_LOCAL"), relative)
             XCTAssertFalse(reader.contains("IOServiceOpen"), relative)
         }
 

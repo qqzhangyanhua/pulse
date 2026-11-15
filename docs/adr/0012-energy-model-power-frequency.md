@@ -11,7 +11,7 @@ CPU 页已经有整机百分比、最忙一核，以及进程上的能耗影响�
 ## 决定
 
 - CPU 功耗和簇频率只在 CPU 页被选中时读。GPU 功耗和 GPU 频率只在 GPU 页被选中时读。ANE 和 DRAM 只在能耗页被选中时读。离开对应页不再读。冷启动停在内存页，不读。不放进每一页都打开的 GPU 使用率采样里，也不用 `setGPUSampling` 当作 Energy Model 的页面开关。
-- 用 `dlopen` 打开 `/System/Library/PrivateFrameworks/IOReport.framework/IOReport`，`RTLD_LAZY | RTLD_LOCAL`。不把 IOReport 加进链接阶段，不调用 `IOServiceOpen`。
+- 用 `dlopen` 打开 IOReport，`RTLD_LAZY | RTLD_LOCAL`：先试 `/usr/lib/libIOReport.dylib`，打不开再试 `/System/Library/PrivateFrameworks/IOReport.framework/IOReport`。不把 IOReport 加进链接阶段，不调用 `IOServiceOpen`。
 - 功耗订阅组名 `Energy Model`。第一拍只做基线。之后用样本差里的能量除以经过的秒。单位按该通道自己的标签：`mJ` 或 `nJ`。通道名不含 `CPU` 的不计入 CPU 功耗。单位不认识、差为负、或不是有限数，这一拍是「—」，不是 0。真实 0 瓦仍显示 `0.0 W`。
 - 频率订阅组名 `CPU Stats`。性能核认 `Performance`、`P-Cluster`、`P-Core`，能效核认 `Efficiency`、`E-Cluster`、`E-Core`。当前频率是这一拍驻留最多的那个状态。只有这个状态的名字写着 GHz、MHz，或本身就是赫兹、兆赫兹数字时才显示。名字只是档位标签时保持「—」。不用频率表里的最大值。
 - 三行都在 CPU 总览，文案是「CPU 功耗」「性能核」「能效核」。不写入 CPU 曲线，也不写入本机历史。
