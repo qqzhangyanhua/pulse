@@ -200,23 +200,3 @@ enum PressureNoticePreference {
     }
 }
 
-extension AlertFrame {
-    /// Menu-bar code must not name the chip-temperature type. The caller passes an already gated Celsius.
-    static func sampled(
-        systemCpuPercent: Double?,
-        usedMemoryBytes: UInt64?,
-        memoryPressure: PressureLevel?,
-        chipCelsius: Double?,
-        diskFreeBytes: UInt64?,
-        processes: [AlertProcessSample]
-    ) -> AlertFrame {
-        AlertFrame(
-            systemCpuPercent: systemCpuPercent,
-            usedMemoryBytes: usedMemoryBytes,
-            memoryPressure: memoryPressure,
-            chipTemperatureCelsius: chipCelsius,
-            diskFreeBytes: diskFreeBytes,
-            processes: processes
-        )
-    }
-}

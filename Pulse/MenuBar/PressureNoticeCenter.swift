@@ -101,6 +101,7 @@ final class PressureNoticeCenter: NSObject, UNUserNotificationCenterDelegate {
             memoryPressure: dashboard.snapshot?.pressure,
             chipCelsius: dashboard.machinePageCelsius,
             diskFreeBytes: dashboard.machineFacts?.volume.availableBytes,
+            gpuUtilizationPercent: dashboard.gpuAlertUtilizationPercent,
             processes: dashboard.rows.map { row in
                 AlertProcessSample(
                     pid: row.pid,

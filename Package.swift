@@ -139,6 +139,7 @@ let package = Package(
                 "Models/MenuBarReading.swift",
                 "Models/AlertRule.swift",
                 "Models/AlertRule+Settings.swift",
+                "Models/AlertRule+GPU.swift",
                 "Models/LoginItem.swift",
                 "Models/LaunchItem.swift",
                 "Models/ThermalAdviceThrottle.swift",
