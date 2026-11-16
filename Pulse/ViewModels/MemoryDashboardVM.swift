@@ -61,12 +61,8 @@ final class MemoryDashboardVM: ObservableObject {
     var cpuHistory: SystemCPUHistory { core.cpuHistory }
     var networkHistory: SystemNetworkHistory { core.networkHistory }
     var diskHistory: SystemDiskHistory { core.diskHistory }
-    /// GPU page readings. Samples taken off that page do not write this.
-    var gpuPage: GPUPageState { core.gpuPage }
-    /// Top GPU-share rows. Ranked only while the GPU page is visible.
-    var gpuShare: GPUSharePresentation? { core.gpuShare }
-    /// Frequency-distribution card. Samples taken off the GPU page do not write this.
-    var gpuFrequencyDistribution: GPUFrequencyDistribution { core.gpuFrequencyDistribution }
+    /// All GPU readings. Which page records what is decided inside `GPUState`.
+    var gpu: GPUState { core.gpu }
     /// Machine-page chip temperature. Other pages do not write this.
     var chipTemperature: ChipTemperaturePageState { core.chipTemperature }
     var energyMachineHistory: EnergyMachineHistory { core.energyMachineHistory }

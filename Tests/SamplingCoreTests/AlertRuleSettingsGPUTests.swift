@@ -228,8 +228,8 @@ final class AlertRuleSettingsGPUTests: XCTestCase {
             accepted: true,
             page: .memory
         )
-        XCTAssertEqual(core.gpuAlertUtilizationPercent, 90)
-        XCTAssertEqual(core.gpuPage.utilizationPercent, 90)
+        XCTAssertEqual(core.gpu.alertUtilizationPercent, 90)
+        XCTAssertEqual(core.gpu.page.utilizationPercent, 90)
 
         _ = core.apply(
             result: Result<SampledFrame, AlertGPUDeliveryError>.success(
@@ -238,8 +238,8 @@ final class AlertRuleSettingsGPUTests: XCTestCase {
             accepted: true,
             page: .cpu
         )
-        XCTAssertEqual(core.gpuPage.utilizationPercent, 90)
-        XCTAssertNil(core.gpuAlertUtilizationPercent)
+        XCTAssertEqual(core.gpu.page.utilizationPercent, 90)
+        XCTAssertNil(core.gpu.alertUtilizationPercent)
 
         let frame = AlertFrame.sampled(
             systemCpuPercent: core.systemCpuPercent,
@@ -247,7 +247,7 @@ final class AlertRuleSettingsGPUTests: XCTestCase {
             memoryPressure: core.snapshot?.pressure,
             chipCelsius: nil,
             diskFreeBytes: nil,
-            gpuUtilizationPercent: core.gpuAlertUtilizationPercent,
+            gpuUtilizationPercent: core.gpu.alertUtilizationPercent,
             processes: []
         )
         XCTAssertNil(frame.gpuUtilizationPercent)
@@ -269,7 +269,7 @@ final class AlertRuleSettingsGPUTests: XCTestCase {
             contentsOf: repoRoot().appendingPathComponent("Pulse/MenuBar/PressureNoticeCenter.swift"),
             encoding: .utf8
         )
-        XCTAssertTrue(center.contains("gpuUtilizationPercent: dashboard.gpuAlertUtilizationPercent"))
+        XCTAssertTrue(center.contains("gpuUtilizationPercent: dashboard.gpu.alertUtilizationPercent"))
         XCTAssertFalse(center.contains("GPU 使用率"))
     }
     private func at(_ time: TimeInterval) -> Date {

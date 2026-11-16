@@ -14,7 +14,7 @@ extension DashboardCore {
         ))
         pendingHistoryEvents = []
         lastHistoryPressure = pressure
-        let gpuPercent = frame.gpuNodes == nil ? nil : gpuPage.utilizationPercent
+        let gpuPercent = frame.gpuNodes == nil ? nil : gpu.page.utilizationPercent
         let capturedAt = frame.snapshot.capturedAt
         let retention = historyRetention
         let sample = HistorySample(

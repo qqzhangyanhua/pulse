@@ -4,7 +4,7 @@ extension GPUOverviewSection {
     var specLabels: some View {
         HStack(spacing: 6) {
             specPill(symbol: "cpu.fill", text: MachinePageCopy.chipValue(vm.machineFacts?.chipName))
-            if let cores = vm.gpuPage.coreCountText {
+            if let cores = vm.gpu.page.coreCountText {
                 specPill(symbol: "square.grid.3x3.fill", text: cores)
             }
             Spacer(minLength: 0)
@@ -16,14 +16,14 @@ extension GPUOverviewSection {
             VStack(alignment: .leading, spacing: 6) {
                 metricLabel(GPUPageCopy.utilization, symbol: "display")
                 Spacer(minLength: 0)
-                Text(vm.gpuPage.utilizationText)
+                Text(vm.gpu.page.utilizationText)
                     .font(.system(size: 25, weight: .semibold))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                 HStack(spacing: 8) {
-                    engineTag(GPUPageCopy.renderer, vm.gpuPage.rendererText)
-                    engineTag(GPUPageCopy.tiler, vm.gpuPage.tilerText)
+                    engineTag(GPUPageCopy.renderer, vm.gpu.page.rendererText)
+                    engineTag(GPUPageCopy.tiler, vm.gpu.page.tilerText)
                     Spacer(minLength: 0)
                 }
             }
@@ -50,18 +50,18 @@ extension GPUOverviewSection {
             VStack(alignment: .leading, spacing: 6) {
                 metricLabel(GPUPageCopy.memory, symbol: "memorychip")
                 Spacer(minLength: 0)
-                Text(vm.gpuPage.memoryText)
+                Text(vm.gpu.page.memoryText)
                     .font(.system(size: 25, weight: .semibold))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                 HStack(spacing: 8) {
-                    engineTag(GPUPageCopy.allocated, vm.gpuPage.allocatedText)
+                    engineTag(GPUPageCopy.allocated, vm.gpu.page.allocatedText)
                     Spacer(minLength: 0)
                 }
-                if let fraction = vm.gpuPage.memoryBarFraction {
+                if let fraction = vm.gpu.page.memoryBarFraction {
                     FractionCapsuleTrack(fraction: fraction)
-                    Text(GPUPageCopy.recommendedLimitLine(vm.gpuPage.recommendedLimitText))
+                    Text(GPUPageCopy.recommendedLimitLine(vm.gpu.page.recommendedLimitText))
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
@@ -79,20 +79,20 @@ extension GPUOverviewSection {
             memoryCard
             readingCard(
                 title: GPUPageCopy.power,
-                value: EnergyModelCopy.gpuPowerReading(vm.cpuEnergy?.gpuWatts),
+                value: vm.gpu.powerText,
                 symbol: "bolt.fill",
-                samples: vm.gpuPage.powerSparkline.samples,
-                draws: vm.gpuPage.showsPowerSparkline,
-                domain: vm.gpuPage.powerSparklineDomain,
+                samples: vm.gpu.page.powerSparkline.samples,
+                draws: vm.gpu.page.showsPowerSparkline,
+                domain: vm.gpu.page.powerSparklineDomain,
                 formatY: { EnergyModelCopy.gpuPowerReading($0) }
             )
             readingCard(
                 title: GPUPageCopy.frequency,
-                value: EnergyModelCopy.gpuFrequencyReading(vm.cpuEnergy?.gpuFrequency ?? .missing),
+                value: vm.gpu.frequencyText,
                 symbol: "speedometer",
-                samples: vm.gpuPage.frequencySparkline.samples,
-                draws: vm.gpuPage.showsFrequencySparkline,
-                domain: vm.gpuPage.frequencySparklineDomain,
+                samples: vm.gpu.page.frequencySparkline.samples,
+                draws: vm.gpu.page.showsFrequencySparkline,
+                domain: vm.gpu.page.frequencySparklineDomain,
                 formatY: { EnergyModelCopy.gpuFrequencyReading($0) }
             )
         }

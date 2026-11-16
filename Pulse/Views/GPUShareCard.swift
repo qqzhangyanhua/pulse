@@ -5,7 +5,7 @@ struct GPUShareCard: View {
     @EnvironmentObject private var vm: MemoryDashboardVM
 
     var body: some View {
-        if let share = vm.gpuShare {
+        if let share = vm.gpu.share {
             card(share)
         }
     }

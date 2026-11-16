@@ -8,7 +8,7 @@ extension GPUOverviewSection {
                 Text(GPUFrequencyDistributionCopy.title)
                     .font(.subheadline.weight(.medium))
                     .lineLimit(1)
-                switch vm.gpuFrequencyDistribution {
+                switch vm.gpu.frequencyDistribution {
                 case .missing:
                     Text(GPUFrequencyDistributionCopy.missing)
                         .font(.caption)
@@ -43,7 +43,7 @@ extension GPUOverviewSection {
     }
 
     private var distributionAccessibilityLabel: String {
-        switch vm.gpuFrequencyDistribution {
+        switch vm.gpu.frequencyDistribution {
         case .missing:
             return "\(GPUFrequencyDistributionCopy.title)，\(GPUFrequencyDistributionCopy.missing)"
         case .bars(let bars):

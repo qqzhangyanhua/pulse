@@ -5,7 +5,7 @@ extension GPUOverviewSection {
         PulseCard {
             VStack(alignment: .leading, spacing: 6) {
                 metricLabel(GPUPageCopy.recovery, symbol: "arrow.clockwise")
-                Text(vm.gpuPage.recoveryText)
+                Text(vm.gpu.page.recoveryText)
                     .font(.system(size: 25, weight: .semibold))
                     .monospacedDigit()
                     .lineLimit(1)
@@ -19,6 +19,6 @@ extension GPUOverviewSection {
         }
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(GPUPageCopy.recovery) \(vm.gpuPage.recoveryText)，\(GPUPageCopy.recoveryCaption)")
+        .accessibilityLabel("\(GPUPageCopy.recovery) \(vm.gpu.page.recoveryText)，\(GPUPageCopy.recoveryCaption)")
     }
 }

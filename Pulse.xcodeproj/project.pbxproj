@@ -157,6 +157,8 @@
 		B00000000000000000000103 /* DashboardCore+Network.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000103 /* DashboardCore+Network.swift */; };
 		B00000000000000000000104 /* DashboardCore+Thermal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000104 /* DashboardCore+Thermal.swift */; };
 		B00000000000000000000105 /* DashboardCore+GPU.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000105 /* DashboardCore+GPU.swift */; };
+		B00000000000000000000451 /* GPUState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000451 /* GPUState.swift */; };
+		B00000000000000000000452 /* DashboardCore+ChipTemperature.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000452 /* DashboardCore+ChipTemperature.swift */; };
 		B00000000000000000000106 /* DashboardCore+Machine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000106 /* DashboardCore+Machine.swift */; };
 		B00000000000000000000107 /* DashboardCore+Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000107 /* DashboardCore+Snapshot.swift */; };
 		B00000000000000000000108 /* ProcessOwnership.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000108 /* ProcessOwnership.swift */; };
@@ -233,6 +235,8 @@
 		A00000000000000000000103 /* DashboardCore+Network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Network.swift"; sourceTree = "<group>"; };
 		A00000000000000000000104 /* DashboardCore+Thermal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Thermal.swift"; sourceTree = "<group>"; };
 		A00000000000000000000105 /* DashboardCore+GPU.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+GPU.swift"; sourceTree = "<group>"; };
+		A00000000000000000000451 /* GPUState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPUState.swift; sourceTree = "<group>"; };
+		A00000000000000000000452 /* DashboardCore+ChipTemperature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+ChipTemperature.swift"; sourceTree = "<group>"; };
 		A00000000000000000000106 /* DashboardCore+Machine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Machine.swift"; sourceTree = "<group>"; };
 		A00000000000000000000107 /* DashboardCore+Snapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCore+Snapshot.swift"; sourceTree = "<group>"; };
 		A00000000000000000000108 /* ProcessOwnership.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessOwnership.swift; sourceTree = "<group>"; };
@@ -483,6 +487,8 @@
 				A00000000000000000000103 /* DashboardCore+Network.swift */,
 				A00000000000000000000104 /* DashboardCore+Thermal.swift */,
 				A00000000000000000000105 /* DashboardCore+GPU.swift */,
+				A00000000000000000000451 /* GPUState.swift */,
+				A00000000000000000000452 /* DashboardCore+ChipTemperature.swift */,
 				A00000000000000000000106 /* DashboardCore+Machine.swift */,
 				A00000000000000000000107 /* DashboardCore+Snapshot.swift */,
 				A00000000000000000000138 /* SleepAssertion.swift */,
@@ -829,6 +835,8 @@
 				B00000000000000000000103 /* DashboardCore+Network.swift in Sources */,
 				B00000000000000000000104 /* DashboardCore+Thermal.swift in Sources */,
 				B00000000000000000000105 /* DashboardCore+GPU.swift in Sources */,
+				B00000000000000000000451 /* GPUState.swift in Sources */,
+				B00000000000000000000452 /* DashboardCore+ChipTemperature.swift in Sources */,
 				B00000000000000000000106 /* DashboardCore+Machine.swift in Sources */,
 				B00000000000000000000107 /* DashboardCore+Snapshot.swift in Sources */,
 				B00000000000000000000108 /* ProcessOwnership.swift in Sources */,

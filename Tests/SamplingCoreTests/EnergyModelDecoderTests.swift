@@ -371,16 +371,21 @@ final class EnergyModelDecoderTests: XCTestCase {
         )
 
         let overview = try repoText("Pulse/Views/GPUOverviewSection.swift")
-        XCTAssertTrue(overview.contains("EnergyModelCopy.gpuPowerLine"))
+        XCTAssertTrue(overview.contains("vm.gpu.powerLine"))
         XCTAssertFalse(overview.contains("Text(EnergyModelCopy.gpuFrequencyLine"))
         XCTAssertFalse(overview.contains("dominantHertz"))
-        let frequencyCall = "EnergyModelCopy.gpuFrequencyLine(vm.cpuEnergy?.gpuFrequency ?? .missing)"
+        let frequencyCall = "vm.gpu.frequencyLine"
         XCTAssertEqual(occurrenceCount(of: frequencyCall, in: overview), 1)
         let label = try braceBody(after: "private var accessibilityLabel", in: overview)
         XCTAssertTrue(label.contains(frequencyCall))
         let readings = try repoText("Pulse/Views/GPUOverviewSection+Readings.swift")
-        let cardCall = "EnergyModelCopy.gpuFrequencyReading(vm.cpuEnergy?.gpuFrequency ?? .missing)"
+        let cardCall = "vm.gpu.frequencyText"
         XCTAssertEqual(occurrenceCount(of: cardCall, in: readings), 1)
+        let state = try repoText("Pulse/Models/GPUState.swift")
+        XCTAssertTrue(state.contains("EnergyModelCopy.gpuPowerLine(watts: watts)"))
+        XCTAssertTrue(state.contains("EnergyModelCopy.gpuFrequencyLine(frequency)"))
+        XCTAssertTrue(state.contains("EnergyModelCopy.gpuFrequencyReading(frequency)"))
+        XCTAssertTrue(state.contains("frequency = energy?.gpuFrequency ?? .missing"))
         XCTAssertFalse(readings.contains("gpuHertz"))
         XCTAssertFalse(readings.contains("dominantHertz"))
 

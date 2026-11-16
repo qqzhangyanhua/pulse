@@ -16,20 +16,20 @@ final class DashboardCoreGPUTimeTests: XCTestCase {
             page: .cpu
         )
 
-        XCTAssertNil(core.gpuShare)
-        XCTAssertEqual(core.gpuTime?.rows.map(\.name), ["Safari"])
-        XCTAssertEqual(core.gpuTime?.rows.map(\.secondsText), ["1.5 秒"])
-        XCTAssertEqual(core.gpuTime?.rows.map(\.exited), [false])
+        XCTAssertNil(core.gpu.share)
+        XCTAssertEqual(core.gpu.time?.rows.map(\.name), ["Safari"])
+        XCTAssertEqual(core.gpu.time?.rows.map(\.secondsText), ["1.5 秒"])
+        XCTAssertEqual(core.gpu.time?.rows.map(\.exited), [false])
 
         _ = core.apply(
             result: success(frame(at: 1_002, samples: [(1, 10, 100, 2_500_000_000, "Safari")])),
             accepted: true,
             page: .network
         )
-        XCTAssertNil(core.gpuShare)
-        XCTAssertEqual(core.gpuTime?.rows.map(\.secondsText), ["2.5 秒"])
-        XCTAssertNotEqual(core.gpuTime?.rows.map(\.secondsText), ["1.5 秒"])
-        XCTAssertNotEqual(core.gpuTime?.rows.first?.secondsText, "0.0 秒")
+        XCTAssertNil(core.gpu.share)
+        XCTAssertEqual(core.gpu.time?.rows.map(\.secondsText), ["2.5 秒"])
+        XCTAssertNotEqual(core.gpu.time?.rows.map(\.secondsText), ["1.5 秒"])
+        XCTAssertNotEqual(core.gpu.time?.rows.first?.secondsText, "0.0 秒")
     }
 
     func testGPUTimeTopFivePutsTheSmallerPidFirstOnATie() {
@@ -49,14 +49,14 @@ final class DashboardCoreGPUTimeTests: XCTestCase {
         )
         _ = core.apply(result: success(frame(at: 2_001, samples: ranked)), accepted: true, page: .energy)
 
-        XCTAssertEqual(core.gpuTime?.rows.map(\.pid), [4, 5, 42, 6, 11])
-        XCTAssertEqual(core.gpuTime?.rows.map(\.name), ["Four", "Five", "Pulse", "Six", "Eleven"])
+        XCTAssertEqual(core.gpu.time?.rows.map(\.pid), [4, 5, 42, 6, 11])
+        XCTAssertEqual(core.gpu.time?.rows.map(\.name), ["Four", "Five", "Pulse", "Six", "Eleven"])
         XCTAssertEqual(
-            core.gpuTime?.rows.map(\.secondsText),
+            core.gpu.time?.rows.map(\.secondsText),
             ["9.0 秒", "8.0 秒", "8.0 秒", "7.0 秒", "6.0 秒"]
         )
-        XCTAssertFalse(core.gpuTime?.rows.contains { $0.pid == 12 } ?? true)
-        XCTAssertNil(core.gpuShare)
+        XCTAssertFalse(core.gpu.time?.rows.contains { $0.pid == 12 } ?? true)
+        XCTAssertNil(core.gpu.share)
     }
 
     private func success(_ frame: SampledFrame) -> Result<SampledFrame, GPUTimeDeliveryError> {

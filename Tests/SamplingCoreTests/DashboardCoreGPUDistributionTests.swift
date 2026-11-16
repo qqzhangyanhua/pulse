@@ -33,7 +33,7 @@ final class DashboardCoreGPUDistributionTests: XCTestCase {
     func testFrequencyDistributionWithoutASampleDeltaIsADash() {
         var core = DashboardCore(ownPid: 1)
         _ = core.apply(result: success(frame(reading: nil)), accepted: true, page: .gpu)
-        XCTAssertEqual(core.gpuFrequencyDistribution, .missing)
+        XCTAssertEqual(core.gpu.frequencyDistribution, .missing)
         XCTAssertEqual(GPUFrequencyDistributionCopy.missing, "—")
 
         var seen = EnergyModelReading()
@@ -47,8 +47,8 @@ final class DashboardCoreGPUDistributionTests: XCTestCase {
         quiet.gpuFrequency = .missing
         quiet.gpuFrequencyDistribution = .missing
         _ = core.apply(result: success(frame(reading: quiet)), accepted: true, page: .gpu)
-        XCTAssertEqual(core.gpuFrequencyDistribution, .missing)
-        XCTAssertNotEqual(core.gpuFrequencyDistribution, seen.gpuFrequencyDistribution)
+        XCTAssertEqual(core.gpu.frequencyDistribution, .missing)
+        XCTAssertNotEqual(core.gpu.frequencyDistribution, seen.gpuFrequencyDistribution)
     }
 
     private func success(_ frame: SampledFrame) -> Result<SampledFrame, GPUDistributionDeliveryError> {
@@ -56,12 +56,12 @@ final class DashboardCoreGPUDistributionTests: XCTestCase {
     }
 
     private func labels(_ core: DashboardCore) -> [String] {
-        guard case .bars(let bars) = core.gpuFrequencyDistribution else { return [] }
+        guard case .bars(let bars) = core.gpu.frequencyDistribution else { return [] }
         return bars.map(\.label)
     }
 
     private func percents(_ core: DashboardCore) -> [String] {
-        guard case .bars(let bars) = core.gpuFrequencyDistribution else { return [] }
+        guard case .bars(let bars) = core.gpu.frequencyDistribution else { return [] }
         return bars.map(\.percentText)
     }
 
