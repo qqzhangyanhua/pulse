@@ -3,91 +3,26 @@ import Foundation
 extension DashboardCore {
     /// Leave and enter apply here, before the next sample. Same-page calls do not write.
     mutating func publishGPUPageTransition(from previous: DashboardPage, to page: DashboardPage) {
-        let transition: GPUPageTransition
-        if previous != .gpu, page == .gpu {
-            transition = .justEntered
-        } else if previous == .gpu, page != .gpu {
-            transition = .justLeft
-        } else {
-            return
-        }
-        let frame: GPUFrameOutcome = transition == .justEntered && samplingFailed ? .failed : .pending
-        gpuPage = GPUPageProjection.apply(
-            frame: frame,
-            sampledAt: nil,
-            current: gpuPage,
-            transition: transition
-        )
-        if transition == .justLeft {
-            gpuPage.powerSparkline.reset()
-            gpuPage.frequencySparkline.reset()
-        }
+        gpu.transition(from: previous, to: page, samplingFailed: samplingFailed)
     }
 
-    /// Power and frequency rings for this visit. Other pages do not append.
-    /// The utilization curve is not this series.
-    mutating func recordGPUSparklines(energy: EnergyModelReading?, at date: Date?, page: DashboardPage) {
-        guard page == .gpu else { return }
-        gpuPage.powerSparkline.record(percent: GPULiveSparkline.watts(energy?.gpuWatts), at: date)
-        gpuPage.frequencySparkline.record(
-            percent: GPULiveSparkline.hertz(energy?.gpuFrequency ?? .missing),
-            at: date
-        )
-    }
-
-    /// Leave and enter apply here, before the next sample. Same-page calls do not write.
-    mutating func publishChipTemperaturePageTransition(from previous: DashboardPage, to page: DashboardPage) {
-        let transition: ChipTemperaturePageTransition
-        if previous != .machine, page == .machine {
-            transition = .justEntered
-        } else if previous == .machine, page != .machine {
-            transition = .justLeft
-        } else {
-            return
-        }
-        let frame: ChipTemperatureFrameOutcome = transition == .justEntered && samplingFailed ? .failed : .pending
-        chipTemperature = ChipTemperaturePageProjection.apply(
-            frame: frame,
-            sampledAt: nil,
-            current: chipTemperature,
-            transition: transition
-        )
-    }
-
-    /// Every accepted frame that read AGX, on every page. A failed process list does not seal.
-    mutating func recordGPUTime(
-        clients: [GPUShareClientSample]?,
-        rows: [ProcessRow],
-        listFailed: Bool,
-        at date: Date
-    ) {
-        guard let clients else { return }
-        let grouped = Dictionary(grouping: clients.filter { $0.pid != nil }) { $0.pid! }
-        var live: [GPUTimeLiveSample] = []
-        var seen = Set<Int32>()
-        if !listFailed {
-            for row in rows {
-                guard seen.insert(row.pid).inserted, let start = row.startTimeSeconds else { continue }
-                live.append(
-                    GPUTimeLiveSample(
-                        pid: row.pid,
-                        startTimeSeconds: start,
-                        name: row.name,
-                        clients: grouped[row.pid] ?? []
-                    )
-                )
-            }
-        }
-        gpuTimeLedger.advance(live: live, at: date, listSucceeded: !listFailed)
-        gpuTime = GPUTimePresentation(
-            rows: GPUTimeRanking.card(entries: gpuTimeLedger.entries, ownPid: ownPid)
+    /// The GPU slice of one accepted frame. Not a second read.
+    static func gpuFrameInput(_ frame: SampledFrame) -> GPUFrameInput {
+        GPUFrameInput(
+            nodes: frame.gpuNodes,
+            recommendedMaxWorkingSetBytes: frame.gpuRecommendedMaxWorkingSetBytes,
+            energy: frame.cpuEnergy,
+            shareClients: frame.gpuShareClients,
+            rows: frame.rows,
+            processListFailed: frame.processListFailed,
+            sampledAt: frame.snapshot.capturedAt
         )
     }
 
     /// Replaces the display card. Nil or empty is 「—」 for the whole card.
     /// Not called from the sampling frame, and not written into history.
     mutating func apply(gpuDisplays readings: [GPUDisplayReading]?) -> [DashboardEffect] {
-        gpuDisplays = GPUDisplayProjection.present(readings)
+        gpu.apply(displays: readings)
         return []
     }
 

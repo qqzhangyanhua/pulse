@@ -6,12 +6,12 @@ extension GPUOverviewSection {
         PulseCard {
             VStack(alignment: .leading, spacing: 8) {
                 metricLabel(GPUDisplayCopy.title, symbol: "display.2")
-                if vm.gpuDisplays.showsMissing {
+                if vm.gpu.displays.showsMissing {
                     Text(GPUDisplayCopy.missing)
                         .font(.system(size: 22, weight: .semibold))
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(Array(vm.gpuDisplays.rows.enumerated()), id: \.offset) { _, row in
+                    ForEach(Array(vm.gpu.displays.rows.enumerated()), id: \.offset) { _, row in
                         displayRow(row)
                     }
                 }
@@ -38,10 +38,10 @@ extension GPUOverviewSection {
     }
 
     private var displaysAccessibilityLabel: String {
-        if vm.gpuDisplays.showsMissing {
+        if vm.gpu.displays.showsMissing {
             return "\(GPUDisplayCopy.title)，\(GPUDisplayCopy.missing)"
         }
-        let lines = vm.gpuDisplays.rows.map { row in
+        let lines = vm.gpu.displays.rows.map { row in
             "\(row.kindText)，\(row.resolutionText)，\(row.refreshText)"
         }
         return "\(GPUDisplayCopy.title)，\(lines.joined(separator: "；"))"

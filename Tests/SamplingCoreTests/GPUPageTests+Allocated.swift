@@ -167,13 +167,13 @@ extension GPUPageTests {
             page: .memory
         )
 
-        XCTAssertEqual(core.gpuPage.inUseMemoryBytes, 2_097_152)
-        XCTAssertEqual(core.gpuPage.memoryText, "2 MB")
-        XCTAssertEqual(core.gpuPage.allocatedMemoryBytes, 50)
-        XCTAssertEqual(core.gpuPage.allocatedText, "50 字节")
-        XCTAssertNotEqual(core.gpuPage.allocatedMemoryBytes, 9_000)
-        XCTAssertEqual(core.gpuPage.memoryBarFraction, 1)
-        XCTAssertEqual(core.gpuPage.recommendedLimitText, "1 MB")
+        XCTAssertEqual(core.gpu.page.inUseMemoryBytes, 2_097_152)
+        XCTAssertEqual(core.gpu.page.memoryText, "2 MB")
+        XCTAssertEqual(core.gpu.page.allocatedMemoryBytes, 50)
+        XCTAssertEqual(core.gpu.page.allocatedText, "50 字节")
+        XCTAssertNotEqual(core.gpu.page.allocatedMemoryBytes, 9_000)
+        XCTAssertEqual(core.gpu.page.memoryBarFraction, 1)
+        XCTAssertEqual(core.gpu.page.recommendedLimitText, "1 MB")
     }
 
     private func projectAllocated(

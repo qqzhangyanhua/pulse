@@ -8,8 +8,8 @@ extension MachineOverviewSection {
         } label: {
             PulseCard {
                 HStack(alignment: .center, spacing: 16) {
-                    gpuReading(GPUPageCopy.utilization, value: vm.gpuPage.utilizationText, symbol: "display", tint: PulsePalette.chartCPU)
-                    gpuReading(GPUPageCopy.memory, value: vm.gpuPage.memoryText, symbol: "memorychip", tint: PulsePalette.accent)
+                    gpuReading(GPUPageCopy.utilization, value: vm.gpu.page.utilizationText, symbol: "display", tint: PulsePalette.chartCPU)
+                    gpuReading(GPUPageCopy.memory, value: vm.gpu.page.memoryText, symbol: "memorychip", tint: PulsePalette.accent)
                     Image(systemName: "chevron.right")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
@@ -37,6 +37,6 @@ extension MachineOverviewSection {
     }
 
     private var gpuAccessibility: String {
-        "\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)，打开 GPU 页"
+        "\(GPUPageCopy.utilization) \(vm.gpu.page.utilizationText)，\(GPUPageCopy.memory) \(vm.gpu.page.memoryText)，打开 GPU 页"
     }
 }

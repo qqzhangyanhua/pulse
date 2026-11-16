@@ -3,7 +3,7 @@ import SwiftUI
 extension GPUOverviewSection {
     /// Hour ranking. An empty ledger is 「—」, not a missing card.
     var gpuTimeCard: some View {
-        card(vm.gpuTime)
+        card(vm.gpu.time)
     }
 
     private func card(_ gpuTime: GPUTimePresentation?) -> some View {

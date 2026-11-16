@@ -22,7 +22,7 @@ extension GPUOverviewSection {
     }
 
     private var curveSummary: GPUCurveSummary {
-        vm.gpuPage.curveSummary(
+        vm.gpu.page.curveSummary(
             range: vm.historyCurveRange,
             historyPoints: vm.historyCurvePlot(\.gpuPercent)?.points.map(\.value) ?? []
         )
@@ -52,15 +52,15 @@ extension GPUOverviewSection {
                 domain: domain,
                 formatY: { CPUPercentText.string($0) }
             )
-        } else if vm.gpuPage.showsCurve {
+        } else if vm.gpu.page.showsCurve {
             HistoryAnnotatedChart(
                 annotation: HistoryCurvePresentation.annotation(
-                    current: vm.gpuPage.utilizationPercent,
-                    sampleCount: vm.gpuPage.history.samples.count
+                    current: vm.gpu.page.utilizationPercent,
+                    sampleCount: vm.gpu.page.history.samples.count
                 )
             ) {
                 SparklineChart(
-                    samples: vm.gpuPage.history.samples,
+                    samples: vm.gpu.page.history.samples,
                     tint: PulsePalette.accent,
                     domain: domain,
                     formatY: { CPUPercentText.string($0) }
@@ -72,7 +72,7 @@ extension GPUOverviewSection {
     }
 
     private var domain: ClosedRange<Double> {
-        let live = vm.gpuPage.history.samples.map(\.value).max() ?? 0
+        let live = vm.gpu.page.history.samples.map(\.value).max() ?? 0
         let stored = vm.historyCurvePlot(\.gpuPercent)?.points.compactMap(\.value).max() ?? 0
         return 0...max(max(live, stored) * 1.2, 5)
     }

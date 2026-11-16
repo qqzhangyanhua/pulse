@@ -117,7 +117,7 @@ final class GPUFrequencyDistributionTests: XCTestCase {
         XCTAssertFalse(reader.contains("IOServiceOpen"))
 
         let card = try distributionRepoText("Pulse/Views/GPUOverviewSection+Distribution.swift")
-        XCTAssertTrue(card.contains("vm.gpuFrequencyDistribution"))
+        XCTAssertTrue(card.contains("vm.gpu.frequencyDistribution"))
         XCTAssertTrue(card.contains("GPUFrequencyDistributionCopy.title"))
         XCTAssertTrue(card.contains("GPUFrequencyDistributionCopy.missing"))
         XCTAssertFalse(card.contains("vm.cpuEnergy"))

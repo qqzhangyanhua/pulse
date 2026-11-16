@@ -51,7 +51,7 @@ extension MemoryDashboardVM {
             },
             memoryPressure: core.snapshot?.pressure,
             thermalName: core.lastHistoryThermalName,
-            gpuPercent: core.gpuPage.utilizationPercent,
+            gpuPercent: core.gpu.page.utilizationPercent,
             dischargeMilliamps: facts?.battery?.milliamps,
             diskFreeBytes: facts?.volume.availableBytes,
             diskTotalBytes: facts?.volume.totalBytes,

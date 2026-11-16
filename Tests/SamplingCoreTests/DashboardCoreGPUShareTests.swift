@@ -17,8 +17,8 @@ final class DashboardCoreGPUShareTests: XCTestCase {
         _ = core.apply(result: success(frame(at: 1_000, samples: ranked.map { ($0.0, $0.1, UInt64(0), $0.3) })), accepted: true, page: .gpu)
         _ = core.apply(result: success(frame(at: 1_001, samples: ranked)), accepted: true, page: .gpu)
 
-        guard case .rows(let rows) = core.gpuShare else {
-            return XCTFail("expected five rows, got \(String(describing: core.gpuShare))")
+        guard case .rows(let rows) = core.gpu.share else {
+            return XCTFail("expected five rows, got \(String(describing: core.gpu.share))")
         }
         XCTAssertEqual(rows.map(\.pid), [7, 42, 5, 4, 3])
         XCTAssertEqual(rows.map(\.name), ["Seven", "Pulse", "Five", "Four", "Three"])
@@ -29,8 +29,8 @@ final class DashboardCoreGPUShareTests: XCTestCase {
     func testShareIsNotRankedOffTheGPUPage() {
         var core = DashboardCore(ownPid: 1)
         _ = core.apply(result: success(frame(at: 900, samples: [(1, 10, 9_000_000_000, "Safari")])), accepted: true, page: .memory)
-        XCTAssertNil(core.gpuShare)
-        XCTAssertEqual(core.gpuPage.utilizationPercent, 41)
+        XCTAssertNil(core.gpu.share)
+        XCTAssertEqual(core.gpu.page.utilizationPercent, 41)
 
         _ = core.apply(result: success(frame(at: 1_000, samples: [(1, 10, 0, "Safari")])), accepted: true, page: .gpu)
         _ = core.apply(result: success(frame(at: 1_001, samples: [(1, 10, 500_000_000, "Safari")])), accepted: true, page: .gpu)
@@ -38,7 +38,7 @@ final class DashboardCoreGPUShareTests: XCTestCase {
 
         _ = core.apply(result: success(frame(at: 1_002, samples: [(1, 10, 10_000_000_000, "Safari")])), accepted: true, page: .memory)
         XCTAssertEqual(shareTexts(core), ["50.0%"])
-        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41, 41, 41, 41])
+        XCTAssertEqual(core.gpu.page.history.samples.map(\.value), [41, 41, 41, 41])
 
         _ = core.apply(result: success(frame(at: 1_003, samples: [(1, 10, 600_000_000, "Safari")])), accepted: true, page: .gpu)
         XCTAssertEqual(shareTexts(core), ["5.0%"])
@@ -50,10 +50,10 @@ final class DashboardCoreGPUShareTests: XCTestCase {
         _ = core.apply(result: success(frame(at: 1_000, samples: [(1, 8, 2_000_000_000, "Preview")])), accepted: true, page: .gpu)
         _ = core.apply(result: success(frame(at: 1_001, samples: [(1, 8, 1_000_000_000, "Preview")])), accepted: true, page: .gpu)
 
-        guard case .rows(let rows) = core.gpuShare else {
-            return XCTFail("expected one dash row, got \(String(describing: core.gpuShare))")
+        guard case .rows(let rows) = core.gpu.share else {
+            return XCTFail("expected one dash row, got \(String(describing: core.gpu.share))")
         }
-        XCTAssertNotEqual(core.gpuShare, .missing)
+        XCTAssertNotEqual(core.gpu.share, .missing)
         XCTAssertEqual(rows.map(\.pid), [8])
         XCTAssertEqual(rows.map(\.shareText), ["—"])
         XCTAssertNil(rows[0].percent)
@@ -81,8 +81,8 @@ final class DashboardCoreGPUShareTests: XCTestCase {
         _ = core.apply(result: success(frame(at: 1_000, samples: baseline)), accepted: true, page: .gpu)
         _ = core.apply(result: success(frame(at: 1_001, samples: current)), accepted: true, page: .gpu)
 
-        guard case .rows(let rows) = core.gpuShare else {
-            return XCTFail("expected ranked rows, got \(String(describing: core.gpuShare))")
+        guard case .rows(let rows) = core.gpu.share else {
+            return XCTFail("expected ranked rows, got \(String(describing: core.gpu.share))")
         }
         XCTAssertEqual(rows.map(\.pid), [1, 2, 4, 6, 8])
         XCTAssertEqual(rows.map(\.shareText), ["90.0%", "70.0%", "60.0%", "40.0%", "—"])
@@ -94,15 +94,15 @@ final class DashboardCoreGPUShareTests: XCTestCase {
         _ = core.apply(result: success(frame(at: 1_000, samples: [(1, 4, 0, "FinalCut")])), accepted: true, page: .gpu)
         _ = core.apply(result: success(frame(at: 1_001, samples: [(1, 4, 2_500_000_000, "FinalCut")])), accepted: true, page: .gpu)
         XCTAssertEqual(shareTexts(core), ["250.0%"])
-        XCTAssertNotEqual(core.gpuShare, .missing)
+        XCTAssertNotEqual(core.gpu.share, .missing)
     }
 
     func testNoAGXClientsAreAMissingCardNotZeros() {
         var core = DashboardCore(ownPid: 1)
         _ = core.apply(result: success(frame(at: 1_000, samples: [])), accepted: true, page: .gpu)
 
-        XCTAssertEqual(core.gpuShare, .missing)
-        XCTAssertEqual(core.gpuPage.utilizationPercent, 41)
+        XCTAssertEqual(core.gpu.share, .missing)
+        XCTAssertEqual(core.gpu.page.utilizationPercent, 41)
     }
 
     func testListedGPUShareNameOpensMemoryPageAndKeepsFilters() {
@@ -150,12 +150,12 @@ final class DashboardCoreGPUShareTests: XCTestCase {
     }
 
     private func shareTexts(_ core: DashboardCore) -> [String] {
-        guard case .rows(let rows) = core.gpuShare else { return [] }
+        guard case .rows(let rows) = core.gpu.share else { return [] }
         return rows.map(\.shareText)
     }
 
     private func named(_ core: DashboardCore) -> [String] {
-        guard case .rows(let rows) = core.gpuShare else { return [] }
+        guard case .rows(let rows) = core.gpu.share else { return [] }
         return rows.map(\.name)
     }
 

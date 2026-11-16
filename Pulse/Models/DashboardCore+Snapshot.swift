@@ -16,8 +16,8 @@ extension DashboardCore {
             savedAt: savedAt,
             hostname: snapshotHostname,
             ipAddress: heldAddress,
-            gpuUtilizationPercent: gpuPage.utilizationPercent,
-            gpuInUseMemoryBytes: gpuPage.inUseMemoryBytes
+            gpuUtilizationPercent: gpu.page.utilizationPercent,
+            gpuInUseMemoryBytes: gpu.page.inUseMemoryBytes
         )
     }
 

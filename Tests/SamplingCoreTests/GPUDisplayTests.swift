@@ -116,40 +116,40 @@ final class GPUDisplayTests: XCTestCase {
 
     func testDisplaySnapshotStaysOffTheSampleAndOffHistory() {
         var core = DashboardCore(ownPid: 1)
-        XCTAssertTrue(core.gpuDisplays.showsMissing)
-        XCTAssertTrue(core.gpuDisplays.rows.isEmpty)
+        XCTAssertTrue(core.gpu.displays.showsMissing)
+        XCTAssertTrue(core.gpu.displays.rows.isEmpty)
 
         XCTAssertEqual(core.apply(gpuDisplays: [
             reading(builtIn: false, width: 1920, height: 1080, hertz: 60),
             reading(builtIn: true, width: 3024, height: 1964, hertz: 0, maximumFramesPerSecond: 120),
         ]), [])
-        XCTAssertEqual(core.gpuDisplays.rows.map(\.kindText), ["内建", "外接"])
-        XCTAssertEqual(core.gpuDisplays.rows.map(\.refreshText), ["120 Hz", "60 Hz"])
+        XCTAssertEqual(core.gpu.displays.rows.map(\.kindText), ["内建", "外接"])
+        XCTAssertEqual(core.gpu.displays.rows.map(\.refreshText), ["120 Hz", "60 Hz"])
         XCTAssertNil(core.historyDraft)
 
-        let shown = core.gpuDisplays
+        let shown = core.gpu.displays
         _ = core.apply(
             result: Result<SampledFrame, GPUDisplayProbeError>.success(frame()),
             accepted: true,
             page: .gpu
         )
-        XCTAssertEqual(core.gpuDisplays, shown)
+        XCTAssertEqual(core.gpu.displays, shown)
         let draft = core.historyDraft
         XCTAssertEqual(core.apply(gpuDisplays: [
             reading(builtIn: false, width: 2560, height: 1440, hertz: 144),
         ]), [])
         XCTAssertEqual(core.historyDraft, draft)
-        XCTAssertEqual(core.gpuDisplays.rows.map(\.refreshText), ["144 Hz"])
+        XCTAssertEqual(core.gpu.displays.rows.map(\.refreshText), ["144 Hz"])
 
         let left = core.selectPage(.memory)
         XCTAssertTrue(left.contains(.stopGPUDisplayWatch))
         XCTAssertFalse(left.contains(.startGPUDisplayWatch))
-        XCTAssertEqual(core.gpuDisplays.rows.map(\.refreshText), ["144 Hz"])
+        XCTAssertEqual(core.gpu.displays.rows.map(\.refreshText), ["144 Hz"])
 
         let entered = core.selectPage(.gpu)
         XCTAssertTrue(entered.contains(.startGPUDisplayWatch))
         XCTAssertFalse(entered.contains(.stopGPUDisplayWatch))
-        XCTAssertEqual(core.gpuDisplays.rows.map(\.kindText), ["外接"])
+        XCTAssertEqual(core.gpu.displays.rows.map(\.kindText), ["外接"])
     }
 
     private func frame() -> SampledFrame {

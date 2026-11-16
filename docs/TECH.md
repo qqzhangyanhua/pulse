@@ -32,7 +32,7 @@ PulseApp ─┬─ ContentView / MemoryDashboardView ── Views/*
 
 - `MemorySampler.sample()` 每次产出一帧不可变的 `SampledFrame`：主机内存快照、进程行、选中进程详情、整机 CPU、最忙一核、主机网络 / 磁盘速率、Top5 内存序列、权限脚注。主线程只读这帧。
 - 主窗、菜单栏、各资源页都读同一个 VM 的同一帧。没有第二个采样器，也没有第二条轮询。这个 VM 归 `PulseAppDelegate`，启动完成就 `start()`，关窗不释放。
-- 仪表盘的同步状态在 `DashboardCore`（`MemoryDashboardVM` 只发布这一份 `core`）。采样应用、选中、页面、排序、过滤、结束进程、暂停与继续、能耗页选中代次、定位 Top App 和 Top3 点击、网络连接与公网 IP、定位授权效果、GPU 与芯片温度的页面切换、降频提示与散热建议、电池卡片、本机信息、工具栏机型名，以及重试投影 `isRetrying` 和快照冻结的状态步骤都在这里，并返回 `DashboardEffect`。`isRetrying` 是采样门闩 `retrying` 的投影，不是第二套重试标志。公网 IP 查询和定位授权只在用户点击时返回。
+- 仪表盘的同步状态在 `DashboardCore`（`MemoryDashboardVM` 只发布这一份 `core`）。采样应用、选中、页面、排序、过滤、结束进程、暂停与继续、能耗页选中代次、定位 Top App 和 Top3 点击、网络连接与公网 IP、定位授权效果、GPU 与芯片温度的页面切换、降频提示与散热建议、电池卡片、本机信息、工具栏机型名，以及重试投影 `isRetrying` 和快照冻结的状态步骤都在这里，并返回 `DashboardEffect`。GPU 的读数和「哪一页记什么」放在 `GPUState`（`core.gpu`，视图读 `vm.gpu`）：`DashboardCore` 只把每一拍成功帧、失败帧和页面切换交给它，GPU 页的功耗和频率卡片数值与小曲线来自同一次记录。`isRetrying` 是采样门闩 `retrying` 的投影，不是第二套重试标志。公网 IP 查询和定位授权只在用户点击时返回。
 - 适配器只保留同名只读转发、意图方法、`perform` / `performExternal`、采样循环，以及热状态、连接、Wi-Fi、电池和本机观察者的注册与注销。副作用从核心交到适配器，由适配器对宿主执行：采样器、`ProcessActions`、本机页和电池观察、公网 IP 传输、定位授权、`ProcessInfo` 热状态通知、读数和快照文件 IO。有窗口 App 的 pid 仍由适配器查询后传入。结束进程的结果、读数、门闩重试位、机型名和查询结果再作为输入交回 `DashboardCore`（例如 `noteMachineLabel`、`noteRetrying`、`finishQuit`、`finishPublicIPLookup`）。
 - `DashboardCore` 放在 `Models/`，但是仪表盘状态，不是纯投影。同目录里其余类型仍是纯投影：输入现有字段，输出文案和状态，不采样、不存历史。
 - 「保存当前快照」不新增采样器。它在主线程抄下已经发布的那一帧，做成预览、本机 HTML 和同一份 Markdown。

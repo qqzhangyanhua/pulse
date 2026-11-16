@@ -9,7 +9,7 @@ struct GPUOverviewSection: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 ThermalAdviceCard()
-                switch vm.gpuPage.chrome {
+                switch vm.gpu.page.chrome {
                 case .skeleton:
                     skeletonBody
                 case .samplingFailure:
@@ -79,15 +79,15 @@ struct GPUOverviewSection: View {
 
     private var accessibilityLabel: String {
         var line = "\(MachinePageCopy.chipValue(vm.machineFacts?.chipName))"
-        line += "，\(GPUPageCopy.utilization) \(vm.gpuPage.utilizationText)，\(GPUPageCopy.renderer) \(vm.gpuPage.rendererText)，\(GPUPageCopy.tiler) \(vm.gpuPage.tilerText)，\(GPUPageCopy.memory) \(vm.gpuPage.memoryText)"
-        line += "，\(EnergyModelCopy.gpuPowerLine(watts: vm.cpuEnergy?.gpuWatts))"
-        line += "，\(EnergyModelCopy.gpuFrequencyLine(vm.cpuEnergy?.gpuFrequency ?? .missing))"
-        if let cores = vm.gpuPage.coreCountText {
+        line += "，\(GPUPageCopy.utilization) \(vm.gpu.page.utilizationText)，\(GPUPageCopy.renderer) \(vm.gpu.page.rendererText)，\(GPUPageCopy.tiler) \(vm.gpu.page.tilerText)，\(GPUPageCopy.memory) \(vm.gpu.page.memoryText)"
+        line += "，\(vm.gpu.powerLine)"
+        line += "，\(vm.gpu.frequencyLine)"
+        if let cores = vm.gpu.page.coreCountText {
             line += "，\(cores)"
         }
         if let note = HistoryCurvePresentation.annotation(
-            current: vm.gpuPage.utilizationPercent,
-            sampleCount: vm.gpuPage.history.samples.count
+            current: vm.gpu.page.utilizationPercent,
+            sampleCount: vm.gpu.page.history.samples.count
         ) {
             return "\(line)，\(note)"
         }

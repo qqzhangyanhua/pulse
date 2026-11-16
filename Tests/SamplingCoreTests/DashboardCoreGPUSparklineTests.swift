@@ -7,23 +7,23 @@ final class DashboardCoreGPUSparklineTests: XCTestCase {
     func testPowerAndFrequencySparklinesAppendOnlyWhileTheGPUPageIsVisible() {
         var core = DashboardCore(ownPid: 1)
         accept(&core, at: 1_700_000_001, watts: 4.5, frequency: .hertz(2_400_000_000), page: .cpu)
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.map(\.value), [])
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.map(\.value), [])
-        XCTAssertFalse(core.gpuPage.showsPowerSparkline)
-        XCTAssertFalse(core.gpuPage.showsFrequencySparkline)
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.map(\.value), [])
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.map(\.value), [])
+        XCTAssertFalse(core.gpu.page.showsPowerSparkline)
+        XCTAssertFalse(core.gpu.page.showsFrequencySparkline)
 
         _ = core.selectPage(.gpu)
         accept(&core, at: 1_700_000_002, watts: 1.5, frequency: .hertz(1_296_000_000), page: .gpu)
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.map(\.value), [1.5])
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.map(\.value), [1_296_000_000])
-        XCTAssertFalse(core.gpuPage.showsPowerSparkline)
-        XCTAssertFalse(core.gpuPage.showsFrequencySparkline)
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.map(\.value), [1.5])
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.map(\.value), [1_296_000_000])
+        XCTAssertFalse(core.gpu.page.showsPowerSparkline)
+        XCTAssertFalse(core.gpu.page.showsFrequencySparkline)
 
         accept(&core, at: 1_700_000_003, watts: 0, frequency: .hertz(0), page: .gpu)
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.map(\.value), [1.5, 0])
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.map(\.value), [1_296_000_000, 0])
-        XCTAssertTrue(core.gpuPage.showsPowerSparkline)
-        XCTAssertTrue(core.gpuPage.showsFrequencySparkline)
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.map(\.value), [1.5, 0])
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.map(\.value), [1_296_000_000, 0])
+        XCTAssertTrue(core.gpu.page.showsPowerSparkline)
+        XCTAssertTrue(core.gpu.page.showsFrequencySparkline)
     }
 
     func testLeavingTheGPUPageClearsBothSparklinesAndKeepsTheUtilizationCurve() {
@@ -31,27 +31,27 @@ final class DashboardCoreGPUSparklineTests: XCTestCase {
         _ = core.selectPage(.gpu)
         accept(&core, at: 1_700_000_010, watts: 1.5, frequency: .hertz(1_296_000_000), page: .gpu, percent: 41)
         accept(&core, at: 1_700_000_011, watts: 2, frequency: .hertz(972_000_000), page: .gpu, percent: 55)
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.map(\.value), [1.5, 2])
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.map(\.value), [1_296_000_000, 972_000_000])
-        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41, 55])
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.map(\.value), [1.5, 2])
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.map(\.value), [1_296_000_000, 972_000_000])
+        XCTAssertEqual(core.gpu.page.history.samples.map(\.value), [41, 55])
 
         _ = core.selectPage(.cpu)
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.map(\.value), [])
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.map(\.value), [])
-        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41, 55])
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.map(\.value), [])
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.map(\.value), [])
+        XCTAssertEqual(core.gpu.page.history.samples.map(\.value), [41, 55])
 
         accept(&core, at: 1_700_000_012, watts: 9, frequency: .hertz(3_000_000_000), page: .cpu, percent: 60)
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.map(\.value), [])
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.map(\.value), [])
-        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41, 55, 60])
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.map(\.value), [])
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.map(\.value), [])
+        XCTAssertEqual(core.gpu.page.history.samples.map(\.value), [41, 55, 60])
 
         _ = core.selectPage(.gpu)
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.map(\.value), [])
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.map(\.value), [])
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.map(\.value), [])
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.map(\.value), [])
         accept(&core, at: 1_700_000_013, watts: 0.4, frequency: .hertz(389_000_000), page: .gpu, percent: 12)
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.map(\.value), [0.4])
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.map(\.value), [389_000_000])
-        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41, 55, 60, 12])
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.map(\.value), [0.4])
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.map(\.value), [389_000_000])
+        XCTAssertEqual(core.gpu.page.history.samples.map(\.value), [41, 55, 60, 12])
     }
 
     func testMissingReadingsAreNotAppendedAndIdleFrequencyIsNotStoredAsZero() {
@@ -63,10 +63,10 @@ final class DashboardCoreGPUSparklineTests: XCTestCase {
         accept(&core, at: 1_700_000_023, watts: .infinity, frequency: .hertz(.nan), page: .gpu)
         accept(&core, at: 1_700_000_024, watts: -.infinity, frequency: .hertz(-1), page: .gpu)
         accept(&core, at: 1_700_000_020, watts: 8, frequency: .hertz(500_000_000), page: .gpu)
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.map(\.value), [1.5])
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.map(\.value), [1_296_000_000])
-        XCTAssertFalse(core.gpuPage.powerSparkline.samples.map(\.value).contains(0))
-        XCTAssertFalse(core.gpuPage.frequencySparkline.samples.map(\.value).contains(0))
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.map(\.value), [1.5])
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.map(\.value), [1_296_000_000])
+        XCTAssertFalse(core.gpu.page.powerSparkline.samples.map(\.value).contains(0))
+        XCTAssertFalse(core.gpu.page.frequencySparkline.samples.map(\.value).contains(0))
 
         _ = core.apply(
             result: Result<SampledFrame, ProbeError>.failure(.unavailable),
@@ -80,8 +80,8 @@ final class DashboardCoreGPUSparklineTests: XCTestCase {
             accepted: false,
             page: .gpu
         )
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.map(\.value), [1.5])
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.map(\.value), [1_296_000_000])
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.map(\.value), [1.5])
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.map(\.value), [1_296_000_000])
     }
 
     func testSparklinesKeepAtMostNinetyPoints() {
@@ -96,14 +96,14 @@ final class DashboardCoreGPUSparklineTests: XCTestCase {
                 page: .gpu
             )
         }
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.count, 90)
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.first?.value, 1)
-        XCTAssertEqual(core.gpuPage.powerSparkline.samples.last?.value, 90)
-        XCTAssertFalse(core.gpuPage.powerSparkline.samples.map(\.value).contains(0))
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.count, 90)
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.first?.value, 1_000_000)
-        XCTAssertEqual(core.gpuPage.frequencySparkline.samples.last?.value, 90_000_000)
-        XCTAssertFalse(core.gpuPage.frequencySparkline.samples.map(\.value).contains(0))
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.count, 90)
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.first?.value, 1)
+        XCTAssertEqual(core.gpu.page.powerSparkline.samples.last?.value, 90)
+        XCTAssertFalse(core.gpu.page.powerSparkline.samples.map(\.value).contains(0))
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.count, 90)
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.first?.value, 1_000_000)
+        XCTAssertEqual(core.gpu.page.frequencySparkline.samples.last?.value, 90_000_000)
+        XCTAssertFalse(core.gpu.page.frequencySparkline.samples.map(\.value).contains(0))
     }
 
     func testHistoryStoreCreateAndInsertSQLHaveNoPowerOrFrequencyColumn() throws {
@@ -148,12 +148,12 @@ final class DashboardCoreGPUSparklineTests: XCTestCase {
     func testPowerAndFrequencyCardsEmbedTheVisitSparklines() throws {
         let overview = try WiringSourceText.text(for: "GPUOverviewSection")
         XCTAssertEqual(occurrenceCount(of: "SparklineChart(", in: overview), 2)
-        XCTAssertTrue(overview.contains("vm.gpuPage.powerSparkline.samples"))
-        XCTAssertTrue(overview.contains("vm.gpuPage.frequencySparkline.samples"))
-        XCTAssertTrue(overview.contains("vm.gpuPage.showsPowerSparkline"))
-        XCTAssertTrue(overview.contains("vm.gpuPage.showsFrequencySparkline"))
-        XCTAssertTrue(overview.contains("vm.gpuPage.powerSparklineDomain"))
-        XCTAssertTrue(overview.contains("vm.gpuPage.frequencySparklineDomain"))
+        XCTAssertTrue(overview.contains("vm.gpu.page.powerSparkline.samples"))
+        XCTAssertTrue(overview.contains("vm.gpu.page.frequencySparkline.samples"))
+        XCTAssertTrue(overview.contains("vm.gpu.page.showsPowerSparkline"))
+        XCTAssertTrue(overview.contains("vm.gpu.page.showsFrequencySparkline"))
+        XCTAssertTrue(overview.contains("vm.gpu.page.powerSparklineDomain"))
+        XCTAssertTrue(overview.contains("vm.gpu.page.frequencySparklineDomain"))
         XCTAssertTrue(overview.contains("showsAxes: false"))
         XCTAssertEqual(occurrenceCount(of: "HistoryAnnotatedChart", in: overview), 1)
         let readings = try repoText("Pulse/Views/GPUOverviewSection+Readings.swift")

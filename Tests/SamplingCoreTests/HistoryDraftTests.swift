@@ -46,7 +46,7 @@ final class HistoryDraftTests: XCTestCase {
         XCTAssertEqual(first.events, [.thermal("serious"), .pressure("elevated")])
         XCTAssertNil(second.sample.gpuPercent)
         XCTAssertTrue(second.events.isEmpty)
-        XCTAssertEqual(core.gpuPage.utilizationPercent, 41)
+        XCTAssertEqual(core.gpu.page.utilizationPercent, 41)
     }
 
     func testNilCPUStaysOutOfTheTopTenAndRealZeroStaysIn() throws {
@@ -96,7 +96,7 @@ final class HistoryDraftTests: XCTestCase {
         )
 
         let core = try repoText("Pulse/Models/DashboardCore.swift")
-        let record = try XCTUnwrap(core.range(of: "recordGPU(nodes: frame.gpuNodes"))
+        let record = try XCTUnwrap(core.range(of: "gpu.absorb(Self.gpuFrameInput(frame)"))
         let note = try XCTUnwrap(core.range(of: "noteHistory(frame)"))
         XCTAssertLessThan(record.lowerBound, note.lowerBound)
         XCTAssertFalse(core.contains("cpuHistory.record"))

@@ -108,21 +108,21 @@ final class GPUCoreCountTests: XCTestCase {
             accepted: true,
             page: .cpu
         )
-        XCTAssertEqual(core.gpuPage.coreCountText, "14 核 GPU")
-        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [6])
+        XCTAssertEqual(core.gpu.page.coreCountText, "14 核 GPU")
+        XCTAssertEqual(core.gpu.page.history.samples.map(\.value), [6])
 
         _ = core.selectPage(.gpu)
-        XCTAssertEqual(core.gpuPage.coreCountText, "14 核 GPU")
-        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [6])
-        XCTAssertEqual(core.gpuPage.chrome, .readings)
+        XCTAssertEqual(core.gpu.page.coreCountText, "14 核 GPU")
+        XCTAssertEqual(core.gpu.page.history.samples.map(\.value), [6])
+        XCTAssertEqual(core.gpu.page.chrome, .readings)
 
         _ = core.apply(
             result: success(frame(percent: 7, coreCount: nil, at: 1_700_000_011)),
             accepted: true,
             page: .memory
         )
-        XCTAssertNil(core.gpuPage.coreCountText)
-        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [6, 7])
+        XCTAssertNil(core.gpu.page.coreCountText)
+        XCTAssertEqual(core.gpu.page.history.samples.map(\.value), [6, 7])
         XCTAssertEqual(core.chipTemperature, .initial)
     }
 

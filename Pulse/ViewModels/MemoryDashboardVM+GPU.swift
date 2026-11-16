@@ -2,15 +2,6 @@ import AppKit
 import Foundation
 
 extension MemoryDashboardVM {
-    /// Selected accelerator utilization for custom alerts. Nil is missing, not zero.
-    var gpuAlertUtilizationPercent: Double? { core.gpuAlertUtilizationPercent }
-
-    /// Last hour of per-process GPU time. Nil before the first AGX read.
-    var gpuTime: GPUTimePresentation? { core.gpuTime }
-
-    /// Active screens. Not a sample tick, and not the menu bar.
-    var gpuDisplays: GPUDisplaysCard { core.gpuDisplays }
-
     /// Read on entry. While this page stays selected, screen-parameter changes read again.
     func syncGPUDisplayWatch() {
         guard selectedPage == .gpu else {

@@ -262,8 +262,8 @@ final class DashboardCorePagesTests: XCTestCase {
         var core = DashboardCore(ownPid: 1)
         let entered = core.selectPage(.gpu)
         XCTAssertTrue(entered.contains(.setGPUSampling(on: true)))
-        XCTAssertEqual(core.gpuPage.chrome, .skeleton)
-        XCTAssertFalse(core.gpuPage.visitSucceeded)
+        XCTAssertEqual(core.gpu.page.chrome, .skeleton)
+        XCTAssertFalse(core.gpu.page.visitSucceeded)
 
         let capturedAt = Date(timeIntervalSince1970: 1_700_000_000)
         _ = core.apply(
@@ -271,19 +271,19 @@ final class DashboardCorePagesTests: XCTestCase {
             accepted: true,
             page: .gpu
         )
-        XCTAssertEqual(core.gpuPage.chrome, .readings)
-        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41])
+        XCTAssertEqual(core.gpu.page.chrome, .readings)
+        XCTAssertEqual(core.gpu.page.history.samples.map(\.value), [41])
 
         _ = core.selectPage(.memory)
-        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41])
-        XCTAssertEqual(core.gpuPage.utilizationPercent, 41)
-        XCTAssertEqual(core.gpuPage.chrome, .readings)
+        XCTAssertEqual(core.gpu.page.history.samples.map(\.value), [41])
+        XCTAssertEqual(core.gpu.page.utilizationPercent, 41)
+        XCTAssertEqual(core.gpu.page.chrome, .readings)
 
         _ = core.selectPage(.gpu)
-        XCTAssertEqual(core.gpuPage.chrome, .readings)
-        XCTAssertEqual(core.gpuPage.utilizationPercent, 41)
-        XCTAssertEqual(core.gpuPage.history.samples.map(\.value), [41])
-        XCTAssertTrue(core.gpuPage.visitSucceeded)
+        XCTAssertEqual(core.gpu.page.chrome, .readings)
+        XCTAssertEqual(core.gpu.page.utilizationPercent, 41)
+        XCTAssertEqual(core.gpu.page.history.samples.map(\.value), [41])
+        XCTAssertTrue(core.gpu.page.visitSucceeded)
 
         var failed = DashboardCore(ownPid: 1)
         _ = failed.apply(
@@ -293,7 +293,7 @@ final class DashboardCorePagesTests: XCTestCase {
         )
         XCTAssertTrue(failed.samplingFailed)
         _ = failed.selectPage(.gpu)
-        XCTAssertEqual(failed.gpuPage.chrome, .samplingFailure)
+        XCTAssertEqual(failed.gpu.page.chrome, .samplingFailure)
 
         var machine = DashboardCore(ownPid: 1)
         _ = machine.selectPage(.machine)
