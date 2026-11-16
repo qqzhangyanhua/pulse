@@ -40,29 +40,53 @@ struct GPUShareCard: View {
     }
 
     private func processRow(_ row: GPUShareRow) -> some View {
-        HStack(spacing: 8) {
-            ProcessIconView(
-                pid: row.pid,
-                bundleIdentifier: row.bundleIdentifier,
-                executablePath: row.executablePath,
-                size: 16
-            )
-            .accessibilityHidden(true)
-            Text(row.name)
-                .font(.callout)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text(row.shareText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-                .accessibilityLabel("\(GPUShareCopy.title) \(row.shareText)")
-            Button("退出") {
-                let pid = row.pid
-                Task { await vm.terminateThermalAdvice(pid: pid) }
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                ProcessIconView(
+                    pid: row.pid,
+                    bundleIdentifier: row.bundleIdentifier,
+                    executablePath: row.executablePath,
+                    size: 16
+                )
+                .accessibilityHidden(true)
+                processName(row)
+                Text(row.shareText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .accessibilityLabel("\(GPUShareCopy.title) \(row.shareText)")
+                Button("退出") {
+                    let pid = row.pid
+                    Task { await vm.terminateThermalAdvice(pid: pid) }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            if let fraction = row.barFraction {
+                FractionCapsuleTrack(fraction: fraction)
+            }
         }
+    }
+
+    /// The name only. A pid outside the live process rows stays plain text.
+    @ViewBuilder
+    private func processName(_ row: GPUShareRow) -> some View {
+        if vm.gpuShareNameOpensMemoryPage(row.pid) {
+            Button {
+                vm.openGPUShareProcess(row.pid)
+            } label: {
+                nameLabel(row.name)
+            }
+            .buttonStyle(.plain)
+        } else {
+            nameLabel(row.name)
+        }
+    }
+
+    private func nameLabel(_ name: String) -> some View {
+        Text(name)
+            .font(.callout)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -305,7 +305,7 @@ final class AlertRuleSettingsTests: XCTestCase {
     }
 
     func testAppRulesCannotUseMachineOnlyMetrics() {
-        for metric in [AlertMetric.memoryPressure, .chipTemperature, .diskFree] {
+        for metric in [AlertMetric.memoryPressure, .chipTemperature, .diskFree, .gpuUtilization] {
             let rule = CustomAlertRule.make(id: "bad-\(metric.rawValue)", object: .app("Chrome"), metric: metric, threshold: 1)
             XCTAssertEqual(AlertRuleCatalog.empty.adding(rule).custom, [], metric.rawValue)
         }

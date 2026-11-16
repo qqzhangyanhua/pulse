@@ -89,7 +89,11 @@ final class HistoryDraftTests: XCTestCase {
         XCTAssertTrue(vm.contains("HistoryStore.shared.write(draft)"))
         XCTAssertTrue(vm.contains("consumeHistoryDraft()"))
         XCTAssertFalse(vm.contains("historyDraft ="))
-        XCTAssertEqual(occurrenceCount(of: "addObserver", in: try WiringSourceText.text(for: "MemoryDashboardVM")), 1)
+        XCTAssertEqual(
+            occurrenceCount(of: "addObserver", in: try WiringSourceText.text(for: "MemoryDashboardVM")),
+            2,
+            "GPU displays observe screen parameters while the GPU page is open"
+        )
 
         let core = try repoText("Pulse/Models/DashboardCore.swift")
         let record = try XCTUnwrap(core.range(of: "recordGPU(nodes: frame.gpuNodes"))

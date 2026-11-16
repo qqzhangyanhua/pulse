@@ -105,6 +105,46 @@ final class DashboardCoreGPUShareTests: XCTestCase {
         XCTAssertEqual(core.gpuPage.utilizationPercent, 41)
     }
 
+    func testListedGPUShareNameOpensMemoryPageAndKeepsFilters() {
+        var core = DashboardCore(ownPid: 1)
+        acceptProcesses(&core, rows: [
+            process(4, "Safari"),
+            process(9, "Mail"),
+        ])
+        _ = core.selectPage(.gpu)
+        _ = core.select(pid: 9)
+        _ = core.setFilter("zzz")
+        _ = core.setRisingOnly(true)
+
+        XCTAssertTrue(core.gpuShareNameOpensMemoryPage(4))
+        _ = core.openGPUShareProcess(4)
+
+        XCTAssertEqual(core.selectedPage, .memory)
+        XCTAssertEqual(core.selectedPid, 4)
+        XCTAssertEqual(core.filter, "zzz")
+        XCTAssertTrue(core.risingOnlyFilter)
+        XCTAssertFalse(core.windowedOnlyFilter)
+        XCTAssertFalse(core.groupedByApp)
+        XCTAssertNil(core.topAppLocateReveal)
+    }
+
+    func testMissingGPUShareNameDoesNotOpenOrChangeFilters() {
+        var core = DashboardCore(ownPid: 1)
+        acceptProcesses(&core, rows: [process(9, "Mail")])
+        _ = core.selectPage(.gpu)
+        _ = core.select(pid: 9)
+        _ = core.setFilter("Mail")
+        _ = core.setRisingOnly(true)
+
+        XCTAssertFalse(core.gpuShareNameOpensMemoryPage(4))
+        XCTAssertEqual(core.openGPUShareProcess(4), [])
+        XCTAssertEqual(core.selectedPage, .gpu)
+        XCTAssertEqual(core.selectedPid, 9)
+        XCTAssertEqual(core.filter, "Mail")
+        XCTAssertTrue(core.risingOnlyFilter)
+        XCTAssertNil(core.topAppLocateReveal)
+    }
+
     private func success(_ frame: SampledFrame) -> Result<SampledFrame, GPUShareDeliveryError> {
         .success(frame)
     }
@@ -167,6 +207,46 @@ final class DashboardCoreGPUShareTests: XCTestCase {
                 ]),
             ],
             gpuShareClients: clients
+        )
+    }
+
+    private func acceptProcesses(_ core: inout DashboardCore, rows: [ProcessRow]) {
+        let capturedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let snapshot = MemorySnapshot(
+            usedBytes: 1_000,
+            totalBytes: 4_000,
+            breakdown: MemoryBreakdown(appBytes: 1, wiredBytes: 1, compressedBytes: 1, cachedBytes: 1),
+            pressure: .normal,
+            pressureMetric: 0.1,
+            pressureSeries: [],
+            capturedAt: capturedAt,
+            swapUsedBytes: 0
+        )
+        let sampled = SampledFrame(
+            snapshot: snapshot,
+            rows: rows,
+            detail: nil,
+            processListFailed: false,
+            systemCpuPercent: 1,
+            hostNetworkRates: .missing,
+            hostDiskRates: .missing
+        )
+        _ = core.apply(
+            result: Result<SampledFrame, GPUShareDeliveryError>.success(sampled),
+            accepted: true,
+            page: core.selectedPage
+        )
+    }
+
+    private func process(_ pid: Int32, _ name: String) -> ProcessRow {
+        ProcessRow(
+            pid: pid,
+            name: name,
+            bundleIdentifier: nil,
+            executablePath: nil,
+            cpuPercent: 1,
+            memoryBytes: 100,
+            threadCount: 1
         )
     }
 }

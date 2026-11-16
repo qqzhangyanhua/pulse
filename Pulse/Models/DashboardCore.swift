@@ -37,6 +37,9 @@ enum DashboardEffect: Equatable {
     /// `nettop` while the network page is selected. Not a sampler task.
     case startProcessNetworkWatch
     case stopProcessNetworkWatch
+    /// CoreGraphics display list while the GPU page is selected. Not a sample tick.
+    case startGPUDisplayWatch
+    case stopGPUDisplayWatch
     /// Outbound public-IP lookup. Returned only from the query click.
     case lookupPublicIP(queriedAt: Date)
     /// System location prompt for the Wi-Fi name. Returned only from the allow click.
@@ -87,10 +90,20 @@ struct DashboardCore {
     private(set) var networkHistory = SystemNetworkHistory()
     private(set) var diskHistory = SystemDiskHistory()
     var gpuPage = GPUPageState.initial
+    /// Selected-node utilization for alerts. Nil when this tick did not read GPU. Not zero, and not the page's previous percent.
+    private(set) var gpuAlertUtilizationPercent: Double?
     /// Top GPU-share rows. Nil until a GPU-page read. Not the machine-wide curve.
     private(set) var gpuShare: GPUSharePresentation?
+    /// Frequency-distribution card. Only a GPU-page sample writes it. Not saved.
+    private(set) var gpuFrequencyDistribution: GPUFrequencyDistribution = .missing
     /// Last on-page AGX sample. Off-page frames do not move it.
     private var gpuShareBaseline: GPUShareBaseline?
+    /// Hour ledger fed on every page. Not the share baseline, and not on disk.
+    var gpuTimeLedger = GPUTimeMinuteLedger()
+    /// Top GPU-time rows. Nil until a frame includes an AGX client read.
+    var gpuTime: GPUTimePresentation?
+    /// Active screens for the GPU page. Not written by the sample frame.
+    var gpuDisplays = GPUDisplaysCard.missing
     var chipTemperature = ChipTemperaturePageState.initial
     /// Nil until the machine page's reader returns. Not cleared on leave.
     var machineFacts: MachineFacts?
@@ -265,6 +278,7 @@ struct DashboardCore {
         systemCpuPercent = frame.systemCpuPercent
         busiestCorePercent = frame.busiestCorePercent
         cpuEnergy = frame.cpuEnergy
+        recordGPUFrequencyDistribution(energy: frame.cpuEnergy, page: page)
         hostNetworkRates = frame.hostNetworkRates
         hostDiskRates = frame.hostDiskRates
         hostWiFi = frame.hostWiFi
@@ -280,9 +294,16 @@ struct DashboardCore {
         var nextDisk = diskHistory
         nextDisk.record(rates: frame.hostDiskRates, at: frame.snapshot.capturedAt)
         diskHistory = nextDisk
-        recordGPU(nodes: frame.gpuNodes, failed: false, at: frame.snapshot.capturedAt)
+        recordGPU(nodes: frame.gpuNodes, recommendedMaxWorkingSetBytes: frame.gpuRecommendedMaxWorkingSetBytes, failed: false, at: frame.snapshot.capturedAt)
+        recordGPUSparklines(energy: frame.cpuEnergy, at: frame.snapshot.capturedAt, page: page)
         noteHistory(frame)
         recordGPUShare(clients: frame.gpuShareClients, rows: frame.rows, at: frame.snapshot.capturedAt, page: page)
+        recordGPUTime(
+            clients: frame.gpuShareClients,
+            rows: frame.rows,
+            listFailed: frame.processListFailed,
+            at: frame.snapshot.capturedAt
+        )
         recordChip(sensors: frame.chipTemperatureSensors, failed: false, at: frame.snapshot.capturedAt, page: page)
         memoryPage = MemoryPageProjection.apply(
             counters: frame.hostPageCounters,
@@ -333,6 +354,7 @@ struct DashboardCore {
     /// Nil nodes means this tick did not read GPU. A missing percent is not stored as 0.
     private mutating func recordGPU(
         nodes: [GPUAcceleratorNode]?,
+        recommendedMaxWorkingSetBytes: UInt64? = nil,
         failed: Bool,
         at date: Date?
     ) {
@@ -342,15 +364,24 @@ struct DashboardCore {
         } else if nodes != nil {
             frame = .succeeded
         } else {
+            gpuAlertUtilizationPercent = nil
             return
         }
         gpuPage = GPUPageProjection.apply(
             nodes: nodes ?? [],
+            recommendedMaxWorkingSetBytes: recommendedMaxWorkingSetBytes,
             frame: frame,
             sampledAt: date,
             current: gpuPage,
             transition: .stayed
         )
+        gpuAlertUtilizationPercent = failed ? nil : AlertGPUReading.percent(from: nodes)
+    }
+
+    /// Off-page frames keep the last card. On the GPU page, no sample delta is 「—」.
+    private mutating func recordGPUFrequencyDistribution(energy: EnergyModelReading?, page: DashboardPage) {
+        guard page == .gpu else { return }
+        gpuFrequencyDistribution = energy?.gpuFrequencyDistribution ?? .missing
     }
 
     /// Host utilization above is every page. This rank runs only while the GPU page is visible.

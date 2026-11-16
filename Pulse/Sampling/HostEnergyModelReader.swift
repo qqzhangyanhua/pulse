@@ -96,7 +96,10 @@ enum HostEnergyModelReader {
         }
         if gpu {
             reading.gpuWatts = EnergyModelDecoder.gpuWatts(channels: channels, elapsed: elapsed)
-            reading.gpuHertz = gpuFrequency(symbols: symbols)
+            let states = gpuPerformanceStates(symbols: symbols)
+            let table = voltageStates9Bytes().flatMap(VoltageStates9.parse)
+            reading.gpuFrequency = EnergyModelDecoder.gpuFrequency(states: states, table: table)
+            reading.gpuFrequencyDistribution = EnergyModelDecoder.gpuFrequencyDistribution(states: states, table: table)
         }
         if rails {
             reading.aneWatts = EnergyModelDecoder.aneWatts(channels: channels, elapsed: elapsed)
@@ -108,7 +111,8 @@ enum HostEnergyModelReader {
            reading.performanceHertz == nil,
            reading.efficiencyHertz == nil,
            reading.gpuWatts == nil,
-           reading.gpuHertz == nil,
+           reading.gpuFrequency == .missing,
+           reading.gpuFrequencyDistribution == .missing,
            reading.aneWatts == nil,
            reading.dramWatts == nil {
             return nil
@@ -116,21 +120,27 @@ enum HostEnergyModelReader {
         return reading
     }
 
-    /// One GPU Stats delta. Frequency is the state with the greatest residency,
-    /// and only when that state's name parses as hertz.
-    private static func gpuFrequency(symbols: Symbols) -> Double? {
-        var states: [(name: String, residency: Int64)] = []
+    /// One GPU Stats delta, only the performance-states subgroup.
+    /// Frequency and the distribution card share this array.
+    private static func gpuPerformanceStates(symbols: Symbols) -> [GPUFrequencyState] {
+        var states: [GPUFrequencyState] = []
         withDeltaChannels(in: gpuStatsGroup, slot: &gpuStats, symbols: symbols) { channels in
             for channel in channels {
+                let subgroup = string(symbols.subgroup(channel)) ?? ""
+                guard subgroup == "GPU Performance States" else { continue }
                 let count = symbols.stateCount(channel)
                 guard count > 0, count <= 64 else { continue }
                 for index in 0..<count {
                     guard let name = string(symbols.stateName(channel, index)) else { continue }
-                    states.append((name: name, residency: symbols.stateResidency(channel, index)))
+                    states.append(GPUFrequencyState(
+                        subgroup: subgroup,
+                        name: name,
+                        residency: symbols.stateResidency(channel, index)
+                    ))
                 }
             }
         }
-        return EnergyModelDecoder.dominantHertz(states)
+        return states
     }
 
     /// One CPU Stats delta. Each cluster's frequency is the state that spent the

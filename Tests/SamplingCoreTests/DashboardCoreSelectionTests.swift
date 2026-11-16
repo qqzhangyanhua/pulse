@@ -55,6 +55,7 @@ final class DashboardCoreSelectionTests: XCTestCase {
             .stopLaunchItemWatch,
             .stopEnergyBatteryWatch,
             .stopSleepAssertionWatch,
+            .stopGPUDisplayWatch,
             .stopProcessNetworkWatch,
         ])
         XCTAssertEqual(core.tableSort, nameSort)
@@ -65,6 +66,7 @@ final class DashboardCoreSelectionTests: XCTestCase {
             .stopLaunchItemWatch,
             .startEnergyBatteryWatch,
             .startSleepAssertionWatch,
+            .stopGPUDisplayWatch,
             .stopProcessNetworkWatch,
         ])
         XCTAssertEqual(core.selectPage(.gpu), [
@@ -73,6 +75,7 @@ final class DashboardCoreSelectionTests: XCTestCase {
             .stopLaunchItemWatch,
             .stopEnergyBatteryWatch,
             .stopSleepAssertionWatch,
+            .startGPUDisplayWatch,
             .stopProcessNetworkWatch,
         ])
         XCTAssertEqual(core.selectPage(.machine), [
@@ -81,6 +84,7 @@ final class DashboardCoreSelectionTests: XCTestCase {
             .startLaunchItemWatch,
             .stopEnergyBatteryWatch,
             .stopSleepAssertionWatch,
+            .stopGPUDisplayWatch,
             .stopProcessNetworkWatch,
         ])
         XCTAssertEqual(core.focusMemoryPage(), [
@@ -90,6 +94,7 @@ final class DashboardCoreSelectionTests: XCTestCase {
             .stopLaunchItemWatch,
             .stopEnergyBatteryWatch,
             .stopSleepAssertionWatch,
+            .stopGPUDisplayWatch,
             .stopProcessNetworkWatch,
         ])
     }
