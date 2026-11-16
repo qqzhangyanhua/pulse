@@ -1,0 +1,93 @@
+Package.swift
+  s_6676aa4665ddd5::t_71732788be68b1 97,108
+Pulse.xcodeproj/project.pbxproj
+  s_6676aa4665ddd5::t_79b21903ac32c3 160-161,238-239,490-491,838-839
+Pulse/Views/GPUOverviewSection+Chart.swift
+  s_6676aa4665ddd5::t_da99296381d796 25,55,58-59,63,75
+Pulse/Views/GPUOverviewSection+Displays.swift
+  s_6676aa4665ddd5::t_1ae7d420d511d0 9,14,41,44
+Pulse/Views/GPUOverviewSection+Distribution.swift
+  s_6676aa4665ddd5::t_571c8d2e9e47dc 11,46
+Pulse/Views/GPUOverviewSection+GPUTime.swift
+  s_6676aa4665ddd5::t_de1c1274acf18e 6
+Pulse/Views/GPUOverviewSection+Readings.swift
+  s_6676aa4665ddd5::t_3ffccbdf5e3d2b 7,19,25-26,53,59,62,64,82,84-86,91,93-95
+Pulse/Views/GPUOverviewSection+Recovery.swift
+  s_6676aa4665ddd5::t_b7d6f520e8fb68 8,22
+Pulse/Views/GPUOverviewSection.swift
+  s_6676aa4665ddd5::t_f95ee86f05f85f 12,82-85,89-90
+Pulse/Views/GPUShareCard.swift
+  s_6676aa4665ddd5::t_9c6fdf54be4bac 8
+Pulse/Views/MachineOverviewSection+GPU.swift
+  s_6676aa4665ddd5::t_8a802581929968 11-12,40
+Tests/SamplingCoreTests/AlertRuleSettingsGPUTests.swift
+  s_6676aa4665ddd5::t_21db1f61710b32 231-232,241-242,250,272
+Tests/SamplingCoreTests/DashboardCoreGPUDistributionTests.swift
+  s_6676aa4665ddd5::t_8d144fcc0a1b1f 36,50-51,59,64
+Tests/SamplingCoreTests/DashboardCoreGPUShareTests.swift
+  s_6676aa4665ddd5::t_bc186323bf5f9d 20-21,32-33,41,53-54,56,84-85,97,104-105,153,158
+Tests/SamplingCoreTests/DashboardCoreGPUSparklineTests.swift
+  s_6676aa4665ddd5::t_72b156a892bec4 10-13,17-20,23-26,34-36,39-41,44-46,49-50,52-54,66-69,83-84,99-106,151-156
+Tests/SamplingCoreTests/DashboardCoreGPUTimeTests.swift
+  s_6676aa4665ddd5::t_67f8486dbe8424 19-22,29-32,52-53,55,58-59
+Tests/SamplingCoreTests/DashboardCorePagesTests.swift
+  s_6676aa4665ddd5::t_e1e336fe1d890b 265-266,274-275,278-280,283-286,296
+Tests/SamplingCoreTests/DashboardCoreSampleTests.swift
+  s_6676aa4665ddd5::t_64d779b6af1a76 52-54,68-71,85-87,118-121,156,218,238-243,255-256,276-277,280-283,287,291-292
+Tests/SamplingCoreTests/EnergyPageWiringSourceTests.swift
+  s_6676aa4665ddd5::t_ae7388f8571b39 47-48
+Tests/SamplingCoreTests/GPUCoreCountTests.swift
+  s_6676aa4665ddd5::t_c721716c283ac6 111-112,115-117,124-125
+Tests/SamplingCoreTests/GPUDisplayTests.swift
+  s_6676aa4665ddd5::t_7b4ec36e4265ed 119-120,126-127,130,136,142,147,152
+Tests/SamplingCoreTests/GPUFrequencyDistributionTests.swift
+  s_6676aa4665ddd5::t_8e27001d9ef2ca 120
+Tests/SamplingCoreTests/GPUPageTests+Allocated.swift
+  s_6676aa4665ddd5::t_27dae32a3ccb3a 170-176
+Tests/SamplingCoreTests/MemoryGrowthListHelpWiringSourceTests.swift
+  s_6676aa4665ddd5::t_37adb416d24b07 132
+Pulse/MenuBar/PressureNoticeCenter.swift
+  s_6676aa4665ddd5::t_b42af64dd9b61b 104
+Pulse/Models/DashboardCore+ChipTemperature.swift
+  s_6676aa4665ddd5::t_c7fb812cd586cb 1-22
+Pulse/Models/DashboardCore+GPU.swift
+  s_6676aa4665ddd5::t_a3d7d0ccae291e 6-18,25
+Pulse/Models/DashboardCore+History.swift
+  s_6676aa4665ddd5::t_37d6ad874b6999 17
+Pulse/Models/DashboardCore+Snapshot.swift
+  s_6676aa4665ddd5::t_a5efe493c458c7 19-20
+Pulse/Models/DashboardCore.swift
+  s_6676aa4665ddd5::t_1c8b2556dc6895 92-93,154,198,284
+Pulse/Models/GPUState.swift
+  s_6676aa4665ddd5::t_cf8414e1e15c46 1-195
+Pulse/ViewModels/MemoryDashboardVM+Symptom.swift
+  s_6676aa4665ddd5::t_985b191f12ddaa 54
+Pulse/ViewModels/MemoryDashboardVM.swift
+  s_6676aa4665ddd5::t_609cb0d5272ce9 64-65
+Tests/SamplingCoreTests/EnergyModelDecoderTests.swift
+  s_6676aa4665ddd5::t_760e6c80d6629f 374,377,382,384-388
+Tests/SamplingCoreTests/GPUPageWiringSourceTests.swift
+  s_6676aa4665ddd5::t_0bc49f26696135 41-45,47-49,198-199,321,323,330,395-396
+Tests/SamplingCoreTests/GPUStateTests.swift
+  s_6676aa4665ddd5::t_a9dc997dadfbf7 1-139
+Tests/SamplingCoreTests/HistoryDraftTests.swift
+  s_6676aa4665ddd5::t_7f71b2b2cb0119 49,99
+docs/TECH.md
+  s_6676aa4665ddd5::t_be3f88782ece61 35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "development:1.6.23",
+  "base_commit_sha": "b2a5e9067719cd55068f1864ea80562f7949c4de",
+  "prompts": {},
+  "sessions": {
+    "s_6676aa4665ddd5": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4e9e4f12-d396-4479-99e6-6703c8bfcf6b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "张艳华 <939593210@qq.com>"
+    }
+  }
+}
